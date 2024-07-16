@@ -25,6 +25,13 @@
 #	define LOD
 #endif
 
+#	if defined(SNOW_COVER)
+#	undef SNOW
+#	undef PROJECTED_UV
+#		include "SnowCover/SnowCover.hlsli"
+#	endif
+
+
 struct VS_INPUT
 {
 	float4 Position : POSITION0;
@@ -947,6 +954,7 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		include "Skylighting/Skylighting.hlsli"
 #	endif
 
+
 PS_OUTPUT main(PS_INPUT input, bool frontFace
 			   : SV_IsFrontFace)
 {
@@ -1363,6 +1371,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	baseColor.xyz = GetWorldMapBaseColor(rawBaseColor.xyz, baseColor.xyz, texProjTmp);
 #	endif  // WORLD_MAP
 
+#	if !defined(HAIR)
+	baseColor.xyz *= input.Color.xyz;
+#	endif
+
 	float3 worldSpaceNormal = modelNormal;
 
 #	if !defined(DRAW_IN_WORLDSPACE)
@@ -1371,6 +1383,29 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif
 
 	float3 screenSpaceNormal = normalize(WorldToView(worldSpaceNormal, false, eyeIndex));
+
+#		if defined(SKYLIGHTING)
+	float skylight = GetSkylightOcclusion(input.WorldPosition + worldSpaceNormal, screenNoise);
+#		else
+	float skylight = 1.0;
+#		endif  // SKYLIGHTING
+
+#	if defined(SNOW_COVER)
+	//float3 pos = float3(diffuseUv.x, diffuseUv.y, 0);
+	float3 pos = (input.WorldPosition + CameraPosAdjust[eyeIndex]).xyz;
+	if(snowCoverSettings.EnableSnowCover)
+		ApplySnow(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos, skylight, viewPosition.z);
+	glossiness = glossiness.xxxx;
+#	endif
+#	if defined(SNOW_COVER)
+#		if !defined(DRAW_IN_WORLDSPACE)// && (defined(SKINNED) || !defined(MODELSPACENORMALS))
+	[flatten] if (!input.WorldSpace)
+		modelNormal.xyz = mul(transpose(input.World[eyeIndex]), float4(worldSpaceNormal, 0));
+	else
+#		endif
+		modelNormal.xyz = worldSpaceNormal;
+		modelNormal.xyz = normalize(modelNormal.xyz);
+#	endif
 
 #	if !defined(MODELSPACENORMALS)
 	float3 vertexNormal = tbnTr[2];
@@ -1503,11 +1538,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float maxOcclusion = 1;
 	float minWetnessAngle = 0;
 	minWetnessAngle = saturate(max(minWetnessValue, worldSpaceNormal.z));
-#		if defined(SKYLIGHTING)
-	float skylight = GetSkylightOcclusion(input.WorldPosition + worldSpaceNormal, screenNoise);
-#		else
-	float skylight = 1.0;
-#		endif  // SKYLIGHTING
+
 	bool raindropOccluded = false;
 
 	float4 raindropInfo = float4(0, 0, 1, 0);
@@ -1828,9 +1859,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(HAIR)
 	float3 vertexColor = (input.Color.yyy * (TintColor.xyz - 1.0.xxx) + 1.0.xxx);
 #	else
-	float3 vertexColor = input.Color.xyz;
+	float3 vertexColor = 1;
 #	endif  // defined (HAIR)
-	float3 realVertexColor = vertexColor;
 
 	vertexColor *= color.xyz;
 
@@ -2047,7 +2077,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	psout.MotionVectors.zw = float2(0.0, psout.Diffuse.w);
 	psout.Specular = float4(specularColor.xyz, psout.Diffuse.w);
-	psout.Albedo = float4(baseColor.xyz * realVertexColor, psout.Diffuse.w);
+	psout.Albedo = float4(baseColor.xyz, psout.Diffuse.w);
 
 	float outGlossiness = saturate(glossiness * SSRParams.w);
 

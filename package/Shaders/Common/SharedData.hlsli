@@ -118,6 +118,18 @@ struct LightLimitFixSettings
 	uint pad0;
 };
 
+struct SnowCoverSettings
+{
+    uint Month;
+    float Time;
+    float Snowing;
+    float SnowAmount;
+    float SnowpileAmount;
+
+    uint EnableSnowCover;
+	float pad[2];
+};
+
 cbuffer FeatureData : register(b6)
 {
 	GrassLightingSettings grassLightingSettings;
@@ -126,6 +138,7 @@ cbuffer FeatureData : register(b6)
 	TerraOccSettings terraOccSettings;
 	WetnessEffects wetnessEffects;
 	LightLimitFixSettings lightLimitFixSettings;
+	SnowCoverSettings snowCoverSettings;
 };
 
 Texture2D<float4> TexDepthSampler : register(t20);
