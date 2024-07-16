@@ -170,8 +170,8 @@ const static float DepthOffsets[16] = {
 #		include "CloudShadows/CloudShadows.hlsli"
 #	endif
 #	if defined(SNOW_COVER)
-#	undef SNOW
-#	undef PROJECTED_UV
+#		undef SNOW
+#		undef PROJECTED_UV
 #		include "SnowCover/SnowCover.hlsli"
 #	endif
 
@@ -247,16 +247,16 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 ddy = ddy_coarse(input.ViewPosition);
 	float3 normal = normalize(cross(ddx, ddy));
 
-#	if defined(SNOW_COVER)
+#			if defined(SNOW_COVER)
 	float3 worldPos = (input.WorldPosition).xyz + CameraPosAdjust[eyeIndex];
 	float glossiness = 0;
 	float shininess = 1000;
 	float cover = 1;
 	float3 worldNormal = mul(transpose(CameraView[eyeIndex]), float4(normal, 0)).xyz;
-	if(snowCoverSettings.EnableSnowCover)
+	if (snowCoverSettings.EnableSnowCover)
 		ApplySnowSimple(baseColor.xyz, worldNormal, glossiness, shininess, worldPos, cover);
 	normal = mul(CameraView[eyeIndex], float4(worldNormal, 0)).xyz;
-#	endif
+#			endif
 
 	psout.Normal.xy = EncodeNormal(normal);
 	psout.Normal.zw = 0;
@@ -268,14 +268,14 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 ddy = ddy_coarse(input.WorldPosition);
 	float3 normal = normalize(cross(ddx, ddy));
 
-#	if defined(SNOW_COVER)
+#			if defined(SNOW_COVER)
 	float3 worldPos = (input.WorldPosition).xyz;
 	float glossiness = 0;
 	float shininess = 1000;
 	float cover = 1;
-	if(snowCoverSettings.EnableSnowCover)
+	if (snowCoverSettings.EnableSnowCover)
 		ApplySnowSimple(baseColor.xyz, normal, glossiness, shininess, worldPos, cover);
-#	endif
+#			endif
 
 	float3 directionalAmbientColor = mul(DirectionalAmbientShared, float4(normal, 1.0));
 

@@ -120,13 +120,13 @@ struct LightLimitFixSettings
 
 struct SnowCoverSettings
 {
-    uint Month;
-    float Time;
-    float Snowing;
-    float SnowAmount;
-    float SnowpileAmount;
+	uint Month;
+	float Time;
+	float Snowing;
+	float SnowAmount;
+	float SnowpileAmount;
 
-    uint EnableSnowCover;
+	uint EnableSnowCover;
 	float pad[2];
 };
 

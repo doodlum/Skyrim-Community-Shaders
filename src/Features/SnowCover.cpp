@@ -27,8 +27,7 @@ const float MAX_RAINDROP_CHANCE_MULTIPLIER = 2.0f;
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	SnowCover::Settings,
-	EnableSnowCover
-	)
+	EnableSnowCover)
 
 void SnowCover::DrawSettings()
 {
@@ -41,13 +40,11 @@ void SnowCover::DrawSettings()
 	ImGui::Spacing();
 
 	if (ImGui::TreeNodeEx("...", ImGuiTreeNodeFlags_DefaultOpen)) {
-		
 		ImGui::TreePop();
 	}
 
 	ImGui::Spacing();
 	ImGui::Spacing();
-
 }
 
 float SnowCover::CalculateWeatherTransitionPercentage(float skyCurrentWeatherPct, float beginFade, bool fadeIn)
@@ -182,7 +179,6 @@ SnowCover::PerFrame SnowCover::GetCommonBufferData()
 	data.Time = rainTimer / 1000.f;
 
 	data.settings = settings;
-
 
 	return data;
 }
