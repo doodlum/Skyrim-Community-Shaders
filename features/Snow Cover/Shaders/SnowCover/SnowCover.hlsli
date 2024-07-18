@@ -48,8 +48,8 @@ void ApplySnowSimple(inout float3 color, inout float3 worldNormal, inout float g
 	worldNormal = normalize(lerp(worldNormal, float3(0, 0, 1.0), mult));
 }
 
-float ApplySnowBase(inout float3 color, inout float3 worldNormal, float3 worldPos, float skylight, float viewDist, out float vnoise, out float snoise){
-	//viewDist = max(1, (viewDist)/256);
+float ApplySnowBase(inout float3 color, inout float3 worldNormal, float3 worldPos, float skylight, float3 viewPos, out float vnoise, out float snoise){
+	float viewDist = max(1, (viewPos.z+(sin(viewPos.x*7+viewPos.z*13)))/512);
 	fnl_state noise = fnlCreateState();
 	noise.noise_type = FNL_NOISE_VALUE_CUBIC;
 	noise.fractal_type = FNL_FRACTAL_PINGPONG;
@@ -60,9 +60,9 @@ float ApplySnowBase(inout float3 color, inout float3 worldNormal, float3 worldPo
 	noise.noise_type = FNL_NOISE_OPENSIMPLEX2S;
 	noise.octaves = max(1, (5/viewDist));
 	float simplex_scale = 1;
-	float s = fnlGetNoise2D(noise, worldPos.x*simplex_scale, worldPos.y*simplex_scale);
-	float sx = fnlGetNoise2D(noise, worldPos.x*simplex_scale+1, worldPos.y*simplex_scale);
-	float sy = fnlGetNoise2D(noise, worldPos.x*simplex_scale, worldPos.y*simplex_scale+1);
+	float s = fnlGetNoise2D(noise, worldPos.x*simplex_scale, worldPos.y*simplex_scale)/viewDist;
+	float sx = fnlGetNoise2D(noise, worldPos.x*simplex_scale+1, worldPos.y*simplex_scale)/viewDist;
+	float sy = fnlGetNoise2D(noise, worldPos.x*simplex_scale, worldPos.y*simplex_scale+1)/viewDist;
 	float mult = saturate(pow(worldNormal.z,0.5)-0.15*sx)*skylight;
 	//float mult = 1;
 	vnoise = (v)*0.5+0.5;
@@ -76,11 +76,11 @@ float ApplySnowBase(inout float3 color, inout float3 worldNormal, float3 worldPo
 	return mult;
 }
 #	if defined(TRUE_PBR)
-void ApplySnowPBR(inout float3 color, inout float3 worldNormal, inout PBRSurfaceProperties prop, float3 worldPos, float skylight, float viewDist){
+void ApplySnowPBR(inout float3 color, inout float3 worldNormal, inout PBRSurfaceProperties prop, float3 worldPos, float skylight, float3 viewPos){
 	float r;
 	float s;
 	color = sRGB2Lin(color);//makes no sense but matches vanilla better lol
-	float mult = ApplySnowBase(color, worldNormal, worldPos, skylight, viewDist, r, s);
+	float mult = ApplySnowBase(color, worldNormal, worldPos, skylight, viewPos, r, s);
 	color = Lin2sRGB(color);
 	prop.Metallic *= mult;
 	prop.Roughness = lerp(prop.Roughness, 0.9-0.6*pow(r*s,3.0), mult);
@@ -88,11 +88,11 @@ void ApplySnowPBR(inout float3 color, inout float3 worldNormal, inout PBRSurface
 	prop.AO = lerp(prop.AO, saturate(max(pow(0.5*s,0.5)+0.5,r)), mult);
 }
 #	else
-void ApplySnow(inout float3 color, inout float3 worldNormal, inout float glossiness, inout float shininess, float3 worldPos, float skylight, float viewDist){
+void ApplySnow(inout float3 color, inout float3 worldNormal, inout float glossiness, inout float shininess, float3 worldPos, float skylight, float3 viewPos){
 	float r;
 	float s;
 	//color = sRGB2Lin(color);
-	float mult = ApplySnowBase(color, worldNormal, worldPos, skylight, viewDist, r, s);
+	float mult = ApplySnowBase(color, worldNormal, worldPos, skylight, viewPos, r, s);
 	//color = Lin2sRGB(color);
 	glossiness = lerp(glossiness, 0.5*pow(r*s,3.0), mult);
 	shininess = lerp(shininess, max(1, pow(1-r,3.0)*100), mult);
