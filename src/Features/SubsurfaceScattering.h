@@ -14,11 +14,6 @@ public:
 		return &singleton;
 	}
 
-	static void InstallHooks()
-	{
-		Hooks::Install();
-	}
-
 	struct DiffusionProfile
 	{
 		float BlurRadius;

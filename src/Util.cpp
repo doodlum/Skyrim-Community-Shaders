@@ -240,9 +240,9 @@ namespace Util
 
 	float4 TryGetWaterData(float offsetX, float offsetY)
 	{
-		if (auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton()) {
+		if (RE::BSGraphics::RendererShadowState::GetSingleton()) {
 			if (auto tes = RE::TES::GetSingleton()) {
-				auto position = !REL::Module::IsVR() ? shadowState->GetRuntimeData().posAdjust.getEye() : shadowState->GetVRRuntimeData().posAdjust.getEye();
+				auto position = GetEyePosition(0);
 				position.x += offsetX;
 				position.y += offsetY;
 				if (auto cell = tes->GetCell(position)) {
@@ -270,7 +270,7 @@ namespace Util
 					}
 
 					if (!extraCellWater) {
-						if (auto worldSpace = tes->worldSpace) {
+						if (auto worldSpace = tes->GetRuntimeData2().worldSpace) {
 							if (auto water = worldSpace->worldWater) {
 								data = { float(water->data.deepWaterColor.red) + float(water->data.shallowWaterColor.red),
 									float(water->data.deepWaterColor.green) + float(water->data.shallowWaterColor.green),

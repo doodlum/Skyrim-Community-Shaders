@@ -13,11 +13,6 @@ public:
 		return &singleton;
 	}
 
-	static void InstallHooks()
-	{
-		Hooks::Install();
-	}
-
 	virtual inline std::string GetName() { return "Terrain Blending"; }
 	virtual inline std::string GetShortName() { return "TerrainBlending"; }
 	virtual inline std::string_view GetShaderDefineName() { return "TERRAIN_BLENDING"; }

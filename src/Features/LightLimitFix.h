@@ -19,10 +19,6 @@ public:
 		return &render;
 	}
 
-	static void InstallHooks()
-	{
-		Hooks::Install();
-	}
 	virtual inline std::string GetName() { return "Light Limit Fix"; }
 	virtual inline std::string GetShortName() { return "LightLimitFix"; }
 	inline std::string_view GetShaderDefineName() override { return "LIGHT_LIMIT_FIX"; }

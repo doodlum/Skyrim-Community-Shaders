@@ -564,7 +564,7 @@ void LightLimitFix::Draw(const RE::BSShader*, const uint32_t)
 void LightLimitFix::PostPostLoad()
 {
 	ParticleLights::GetSingleton()->GetConfigs();
-	LightLimitFix::InstallHooks();
+	Hooks::Install();
 }
 
 void LightLimitFix::DataLoaded()

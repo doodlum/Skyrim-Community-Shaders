@@ -1093,9 +1093,19 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		mipLevels[3] = GetMipLevel(uv, TexLandColor4Sampler);
 		mipLevels[4] = GetMipLevel(uv, TexLandColor5Sampler);
 		mipLevels[5] = GetMipLevel(uv, TexLandColor6Sampler);
-		uv = GetParallaxCoords(input, viewPosition.z, uv, mipLevels, viewDirection, tbnTr, screenNoise, pixelOffset);
-		if (extendedMaterialSettings.EnableShadows && parallaxShadowQuality > 0.0f)
-			sh0 = GetTerrainHeight(input, uv, mipLevels);
+		float weights[6];
+		uv = GetParallaxCoords(input, viewPosition.z, uv, mipLevels, viewDirection, tbnTr, screenNoise, pixelOffset, weights);
+		if (extendedMaterialSettings.EnableComplexMaterial) {
+			input.LandBlendWeights1.x = weights[0];
+			input.LandBlendWeights1.y = weights[1];
+			input.LandBlendWeights1.z = weights[2];
+			input.LandBlendWeights1.w = weights[3];
+			input.LandBlendWeights2.x = weights[4];
+			input.LandBlendWeights2.y = weights[5];
+		}
+		if (extendedMaterialSettings.EnableShadows && parallaxShadowQuality > 0.0f) {
+			sh0 = GetTerrainHeight(input, uv, mipLevels, parallaxShadowQuality, weights);
+		}
 	}
 #		endif  // EMAT
 #	endif      // LANDSCAPE
@@ -1537,10 +1547,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float minWetnessAngle = 0;
 	minWetnessAngle = saturate(max(minWetnessValue, worldSpaceNormal.z));
 
-	bool raindropOccluded = false;
-
 	float4 raindropInfo = float4(0, 0, 1, 0);
-	if (wetnessEffects.Raining > 0.0f && wetnessEffects.EnableRaindropFx &&
+	if (worldSpaceNormal.z > 0 && wetnessEffects.Raining > 0.0f && wetnessEffects.EnableRaindropFx &&
 		(dot(input.WorldPosition, input.WorldPosition) < wetnessEffects.RaindropFxRange * wetnessEffects.RaindropFxRange)) {
 		if (skylight > 0.0)
 			raindropInfo = GetRainDrops((input.WorldPosition + CameraPosAdjust[eyeIndex]).xyz, wetnessEffects.Time, worldSpaceNormal);
