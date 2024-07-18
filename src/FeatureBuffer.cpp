@@ -4,9 +4,9 @@
 #include "Features/ExtendedMaterials.h"
 #include "Features/GrassLighting.h"
 #include "Features/LightLimitFix.h"
+#include "Features/SnowCover.h"
 #include "Features/TerrainOcclusion.h"
 #include "Features/WetnessEffects.h"
-#include "Features/SnowCover.h"
 
 template <class... Ts>
 std::pair<unsigned char*, size_t> _GetFeatureBufferData(Ts... feat_datas)
@@ -33,6 +33,5 @@ std::pair<unsigned char*, size_t> GetFeatureBufferData()
 		TerrainOcclusion::GetSingleton()->GetCommonBufferData(),
 		WetnessEffects::GetSingleton()->GetCommonBufferData(),
 		LightLimitFix::GetSingleton()->GetCommonBufferData(),
-		SnowCover::GetSingleton()->GetCommonBufferData()
-	);
+		SnowCover::GetSingleton()->GetCommonBufferData());
 }

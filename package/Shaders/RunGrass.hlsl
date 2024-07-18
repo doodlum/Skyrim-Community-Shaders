@@ -297,11 +297,10 @@ float3x3 CalculateTBN(float3 N, float3 p, float2 uv)
 #	endif
 
 #	if defined(SNOW_COVER)
-#	undef SNOW
-#	undef PROJECTED_UV
+#		undef SNOW
+#		undef PROJECTED_UV
 #		include "SnowCover/SnowCover.hlsli"
 #	endif
-
 
 PS_OUTPUT main(PS_INPUT input, bool frontFace
 			   : SV_IsFrontFace)
@@ -362,14 +361,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (!complex || grassLightingSettings.OverrideComplexGrassSettings)
 		baseColor.xyz *= grassLightingSettings.BasicGrassBrightness;
 
-#	if defined(SNOW_COVER)
+#		if defined(SNOW_COVER)
 	//float3 pos = input.WorldPosition.xyz + CameraPosAdjust[eyeIndex];
-	float3 pos = float3(input.TexCoord.x, input.TexCoord.y, 0)*16;
+	float3 pos = float3(input.TexCoord.x, input.TexCoord.y, 0) * 16;
 	float glossiness = 0;
 	float cover = 1;
-	if(snowCoverSettings.EnableSnowCover)
+	if (snowCoverSettings.EnableSnowCover)
 		ApplySnowSimple(baseColor.xyz, normal, glossiness, shininess, pos, cover);
-#	endif
+#		endif
 
 	float3 dirLightColor = DirLightColorShared.xyz;
 	dirLightColor *= shadowColor.x;

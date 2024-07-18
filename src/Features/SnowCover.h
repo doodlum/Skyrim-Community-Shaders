@@ -22,7 +22,6 @@ public:
 	struct Settings
 	{
 		uint EnableSnowCover = true;
-
 	};
 
 	struct alignas(16) PerFrame

@@ -25,12 +25,11 @@
 #	define LOD
 #endif
 
-#	if defined(SNOW_COVER)
+#if defined(SNOW_COVER)
 #	undef SNOW
 #	undef PROJECTED_UV
-#		include "SnowCover/SnowCover.hlsli"
-#	endif
-
+#	include "SnowCover/SnowCover.hlsli"
+#endif
 
 struct VS_INPUT
 {
@@ -954,7 +953,6 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		include "Skylighting/Skylighting.hlsli"
 #	endif
 
-
 PS_OUTPUT main(PS_INPUT input, bool frontFace
 			   : SV_IsFrontFace)
 {
@@ -1384,27 +1382,27 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 screenSpaceNormal = normalize(WorldToView(worldSpaceNormal, false, eyeIndex));
 
-#		if defined(SKYLIGHTING)
+#	if defined(SKYLIGHTING)
 	float skylight = GetSkylightOcclusion(input.WorldPosition + worldSpaceNormal, screenNoise);
-#		else
+#	else
 	float skylight = 1.0;
-#		endif  // SKYLIGHTING
+#	endif  // SKYLIGHTING
 
 #	if defined(SNOW_COVER)
 	//float3 pos = float3(diffuseUv.x, diffuseUv.y, 0);
 	float3 pos = (input.WorldPosition + CameraPosAdjust[eyeIndex]).xyz;
-	if(snowCoverSettings.EnableSnowCover)
+	if (snowCoverSettings.EnableSnowCover)
 		ApplySnow(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos, skylight, viewPosition.z);
 	glossiness = glossiness.xxxx;
 #	endif
 #	if defined(SNOW_COVER)
-#		if !defined(DRAW_IN_WORLDSPACE)// && (defined(SKINNED) || !defined(MODELSPACENORMALS))
+#		if !defined(DRAW_IN_WORLDSPACE)  // && (defined(SKINNED) || !defined(MODELSPACENORMALS))
 	[flatten] if (!input.WorldSpace)
 		modelNormal.xyz = mul(transpose(input.World[eyeIndex]), float4(worldSpaceNormal, 0));
 	else
 #		endif
 		modelNormal.xyz = worldSpaceNormal;
-		modelNormal.xyz = normalize(modelNormal.xyz);
+	modelNormal.xyz = normalize(modelNormal.xyz);
 #	endif
 
 #	if !defined(MODELSPACENORMALS)
