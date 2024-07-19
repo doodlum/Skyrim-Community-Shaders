@@ -1416,6 +1416,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif
 
 #	if !defined(MODELSPACENORMALS)
+
 	float3 vertexNormal = tbnTr[2];
 	float3 worldSpaceVertexNormal = vertexNormal;
 
