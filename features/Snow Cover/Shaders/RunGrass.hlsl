@@ -369,13 +369,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (snowCoverSettings.EnableSnowCover)
 		ApplySnowSimple(baseColor.xyz, normal, glossiness, shininess, pos, cover);
 #		endif
-#	if defined(WETNESS_EFFECTS)
+#		if defined(WETNESS_EFFECTS)
 	float minWetnessAngle = saturate(max(wetnessEffects.MinRainWetness, normal.z));
 	float rainWetness = wetnessEffects.Wetness * minWetnessAngle * wetnessEffects.MaxRainWetness;
 	shininess = lerp(shininess, 1.0, rainWetness);
-	baseColor.xyz = lerp(baseColor.xyz , baseColor.xyz/5, rainWetness);
+	baseColor.xyz = lerp(baseColor.xyz, baseColor.xyz / 5, rainWetness);
 #		endif
-
 
 	float3 dirLightColor = DirLightColorShared.xyz;
 	dirLightColor *= shadowColor.x;

@@ -50,10 +50,7 @@ void ApplySnowSimple(inout float3 color, inout float3 worldNormal, inout float g
 
 float ApplySnowBase(inout float3 color, inout float3 worldNormal, float3 p, float skylight, float3 viewPos, out float vnoise, out float snoise)
 {
-	float height_tresh = p.z - (p.x*0.010569460362286 - p.y*0.165389061732133 - p.x*p.x*0.000000034552775
-		- p.x*p.y*0.000000572526633 - p.y*p.y*0.000000272913055
-		- p.x*p.x*p.x*0.000000000001466 + p.x*p.x*p.y*0.000000000000441 
-		+ p.x*p.y*p.y*0.000000000003507 + p.y*p.y*p.y*0.000000000006575);
+	float height_tresh = p.z - (p.x * 0.010569460362286 - p.y * 0.165389061732133 - p.x * p.x * 0.000000034552775 - p.x * p.y * 0.000000572526633 - p.y * p.y * 0.000000272913055 - p.x * p.x * p.x * 0.000000000001466 + p.x * p.x * p.y * 0.000000000000441 + p.x * p.y * p.y * 0.000000000003507 + p.y * p.y * p.y * 0.000000000006575);
 	float viewDist = max(1, (viewPos.z + (sin(viewPos.x * 7 + viewPos.z * 13))) / 512);
 	fnl_state noise = fnlCreateState();
 	noise.noise_type = FNL_NOISE_VALUE_CUBIC;
@@ -68,7 +65,7 @@ float ApplySnowBase(inout float3 color, inout float3 worldNormal, float3 p, floa
 	float s = fnlGetNoise2D(noise, p.x * simplex_scale, p.y * simplex_scale) / viewDist;
 	float sx = fnlGetNoise2D(noise, p.x * simplex_scale + 1, p.y * simplex_scale) / viewDist;
 	float sy = fnlGetNoise2D(noise, p.x * simplex_scale, p.y * simplex_scale + 1) / viewDist;
-	float mult = saturate(pow(worldNormal.z, 0.5) - 0.15 * sx) * skylight * saturate(height_tresh/1000);
+	float mult = saturate(pow(worldNormal.z, 0.5) - 0.15 * sx) * skylight * saturate(height_tresh / 1000);
 	//float mult = 1;
 	vnoise = (v)*0.5 + 0.5;
 	snoise = s * 0.5 + 0.5;
