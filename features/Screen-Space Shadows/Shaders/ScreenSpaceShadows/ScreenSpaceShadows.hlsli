@@ -20,16 +20,14 @@ float GetScreenSpaceShadow(float2 a_uv, float a_noise, float3 a_viewPosition, ui
 		float2 offset = mul(BlurOffsets[i], rotationMatrix) * 0.0025;
 
 		float2 sampleUV = a_uv + offset;
-		sampleUV = ConvertToStereoUV(sampleUV, a_eyeIndex);
-		sampleUV = GetDynamicResolutionAdjustedScreenPosition(sampleUV);
-		uint2 sampleCoord = sampleUV * BufferDim.xy;
+		int3 sampleCoord = ConvertUVToSampleCoord(sampleUV, a_eyeIndex);
 
-		float rawDepth = TexDepthSampler.Load(int3(sampleCoord, 0)).x;
+		float rawDepth = TexDepthSampler.Load(sampleCoord).x;
 		float linearDepth = GetScreenDepth(rawDepth);
 
 		float attenuation = 1.0 - saturate(100.0 * abs(linearDepth - a_viewPosition.z) / a_viewPosition.z);
 		if (attenuation > 0.0) {
-			shadow += ScreenSpaceShadowsTexture.Load(int3(sampleCoord, 0)).x * attenuation;
+			shadow += ScreenSpaceShadowsTexture.Load(sampleCoord).x * attenuation;
 			weight += attenuation;
 		}
 	}
@@ -37,7 +35,7 @@ float GetScreenSpaceShadow(float2 a_uv, float a_noise, float3 a_viewPosition, ui
 	if (weight > 0.0)
 		shadow /= weight;
 	else
-		shadow = ScreenSpaceShadowsTexture.Load(int3(GetDynamicResolutionAdjustedScreenPosition(ConvertToStereoUV(a_uv, a_eyeIndex)) * BufferDim.xy, 0)).x;
+		shadow = ScreenSpaceShadowsTexture.Load(ConvertUVToSampleCoord(a_uv, a_eyeIndex)).x;
 
 	return shadow;
 }

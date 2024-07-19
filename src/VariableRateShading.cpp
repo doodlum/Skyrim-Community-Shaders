@@ -190,9 +190,8 @@ void VariableRateShading::Setup()
 	vrsActive = true;
 	logger::info("Successfully initialized NVAPI; Variable Rate Shading is available.");
 
-	auto width = State::GetSingleton()->screenWidth;
-	auto height = State::GetSingleton()->screenHeight;
-	SetupSingleEyeVRS(0, (int)width, (int)height);
+	auto screenSize = State::GetSingleton()->screenSize;
+	SetupSingleEyeVRS(0, (int)screenSize.x, (int)screenSize.y);
 
 	{
 		auto& main = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMAIN];
@@ -224,7 +223,7 @@ void VariableRateShading::Setup()
 				D3D11_TEXTURE2D_DESC texDesc{};
 				target.texture->GetDesc(&texDesc);
 
-				if (texDesc.Width == width && texDesc.Height == height) {
+				if (texDesc.Width == screenSize.x && texDesc.Height == screenSize.y) {
 					screenTargets.insert(i);
 				}
 			}

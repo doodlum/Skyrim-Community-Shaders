@@ -220,8 +220,8 @@ void Deferred::UpdateConstantBuffer()
 
 	auto state = State::GetSingleton();
 
-	data.BufferDim.x = state->screenWidth;
-	data.BufferDim.y = state->screenHeight;
+	data.BufferDim.x = state->screenSize.x;
+	data.BufferDim.y = state->screenSize.y;
 	data.BufferDim.z = 1.0f / data.BufferDim.x;
 	data.BufferDim.w = 1.0f / data.BufferDim.y;
 
@@ -234,7 +234,7 @@ void Deferred::UpdateConstantBuffer()
 	auto imageSpaceManager = RE::ImageSpaceManager::GetSingleton();
 
 	auto useTAA = !REL::Module::IsVR() ? imageSpaceManager->GetRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled : imageSpaceManager->GetVRRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled;
-	data.FrameCount = useTAA ? RE::BSGraphics::State::GetSingleton()->uiFrameCount : 0;
+	data.FrameCount = useTAA ? RE::BSGraphics::State::GetSingleton()->frameCount : 0;
 
 	deferredCB->Update(data);
 }

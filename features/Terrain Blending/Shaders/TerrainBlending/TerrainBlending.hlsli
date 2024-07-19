@@ -10,7 +10,5 @@ float2 ShiftTerrain(float blendFactor, float2 coords, float3 viewDir, float3x3 t
 // Get a raw depth from the depth buffer. [0,1] in uv space
 float GetTerrainOffsetDepth(float2 uv, uint a_eyeIndex = 0)
 {
-	uv = ConvertToStereoUV(uv, a_eyeIndex);
-	uv = GetDynamicResolutionAdjustedScreenPosition(uv);
-	return TerrainBlendingMaskTexture.Load(int3(uv * BufferDim, 0));
+	return TerrainBlendingMaskTexture.Load(ConvertUVToSampleCoord(uv, a_eyeIndex));
 }

@@ -30,10 +30,8 @@ cbuffer SSGICB : register(b1)
 
 	float2 TexDim;
 	float2 RcpTexDim;
-	float2 SrcFrameDim;
-	float2 RcpSrcFrameDim;
-	float2 OutFrameDim;
-	float2 RcpOutFrameDim;
+	float2 FrameDim;
+	float2 RcpFrameDim;
 
 	uint FrameIndex;
 

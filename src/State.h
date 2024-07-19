@@ -134,8 +134,7 @@ public:
 
 	// Skyrim constants
 	bool isVR = false;
-	float screenWidth = 0;
-	float screenHeight = 0;
+	float2 screenSize = {};
 	ID3D11DeviceContext* context = nullptr;
 	ID3D11Device* device = nullptr;
 

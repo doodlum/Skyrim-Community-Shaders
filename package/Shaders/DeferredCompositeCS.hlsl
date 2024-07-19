@@ -40,7 +40,7 @@ Texture2D<half2> SkylightingTexture : register(t9);
 	half3 diffuseColor = MainRW[dispatchID.xy];
 	half3 specularColor = SpecularTexture[dispatchID.xy];
 	half3 albedo = AlbedoTexture[dispatchID.xy];
-	half2 snowParameters = Masks2Texture[dispatchID.xy];
+	half2 snowParameters = Masks2Texture[dispatchID.xy].xy;
 
 	half glossiness = normalGlossiness.z;
 	half3 color = diffuseColor + specularColor;
@@ -50,7 +50,7 @@ Texture2D<half2> SkylightingTexture : register(t9);
 	half3 reflectance = ReflectanceTexture[dispatchID.xy];
 
 	if (reflectance.x > 0.0 || reflectance.y > 0.0 || reflectance.z > 0.0) {
-		half3 normalWS = normalize(mul(CameraViewInverse[eyeIndex], half4(normalVS, 0)));
+		half3 normalWS = normalize(mul(CameraViewInverse[eyeIndex], half4(normalVS, 0)).xyz);
 
 		half wetnessMask = MasksTexture[dispatchID.xy].z;
 
@@ -64,7 +64,7 @@ Texture2D<half2> SkylightingTexture : register(t9);
 		positionCS = mul(CameraViewProjInverse[eyeIndex], positionCS);
 		positionCS.xyz = positionCS.xyz / positionCS.w;
 
-		half3 positionWS = positionCS;
+		half3 positionWS = positionCS.xyz;
 
 		half3 V = normalize(positionWS);
 		half3 R = reflect(V, normalWS);

@@ -53,6 +53,8 @@ namespace Util
 		return shadowState->GetVRRuntimeData().cameraData.getEye(eyeIndex);
 	}
 
+	float2 ConvertToDynamic(float2 size);
+
 	struct DispatchCount
 	{
 		uint x;
@@ -96,7 +98,7 @@ namespace Util
 			last_frame = frame;
 			return retval;
 		}
-		inline bool isNewFrame() { return isNewFrame(RE::BSGraphics::State::GetSingleton()->uiFrameCount); }
+		inline bool isNewFrame() { return isNewFrame(RE::BSGraphics::State::GetSingleton()->frameCount); }
 	};
 
 	// for simple benchmarking

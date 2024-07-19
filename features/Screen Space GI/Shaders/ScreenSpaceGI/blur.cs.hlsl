@@ -6,8 +6,8 @@
 #include "../Common/VR.hlsli"
 #include "common.hlsli"
 
-Texture2D<float4> srcGI : register(t0);                // maybe half-res
-Texture2D<unorm float> srcAccumFrames : register(t1);  // maybe half-res
+Texture2D<float4> srcGI : register(t0);
+Texture2D<unorm float> srcAccumFrames : register(t1);
 Texture2D<half> srcDepth : register(t2);
 Texture2D<half4> srcNormal : register(t3);
 
@@ -33,8 +33,7 @@ float HistoryRadiusScaling(float accumFrames)
 
 [numthreads(8, 8, 1)] void main(const uint2 dtid
 								: SV_DispatchThreadID) {
-	const float2 srcScale = SrcFrameDim * RcpTexDim;
-	const float2 outScale = OutFrameDim * RcpTexDim;
+	const float2 frameScale = FrameDim * RcpTexDim;
 
 	float radius = BlurRadius;
 #ifdef TEMPORAL_DENOISER
@@ -44,7 +43,7 @@ float HistoryRadiusScaling(float accumFrames)
 #endif
 	const uint numSamples = 8;
 
-	const float2 uv = (dtid + .5) * RcpOutFrameDim;
+	const float2 uv = (dtid + .5) * RcpFrameDim;
 	uint eyeIndex = GetEyeIndexFromTexCoord(uv);
 	const float2 screenPos = ConvertFromStereoUV(uv, eyeIndex);
 
@@ -54,35 +53,35 @@ float HistoryRadiusScaling(float accumFrames)
 
 	float4 sum = srcGI[dtid];
 #ifdef TEMPORAL_DENOISER
-	float4 fsum = accumFrames;
+	float fsum = accumFrames;
 #endif
-	float4 wsum = 1;
+	float wsum = 1;
 	for (uint i = 0; i < numSamples; i++) {
 		float w = g_Poisson8[i].z;
 
 		float2 pxOffset = radius * g_Poisson8[i].xy;
 		float2 pxSample = dtid + .5 + pxOffset;
-		float2 uvSample = pxSample * RcpOutFrameDim;
+		float2 uvSample = pxSample * RcpFrameDim;
 		float2 screenPosSample = ConvertFromStereoUV(uvSample, eyeIndex);
 
 		if (any(screenPosSample < 0) || any(screenPosSample > 1))
 			continue;
 
-		float depthSample = srcDepth.SampleLevel(samplerLinearClamp, uvSample * srcScale, 0);
+		float depthSample = srcDepth.SampleLevel(samplerLinearClamp, uvSample * frameScale, 0);
 		float3 posSample = ScreenToViewPosition(screenPosSample, depthSample, eyeIndex);
 
-		float3 normalSample = DecodeNormal(srcNormal.SampleLevel(samplerLinearClamp, uvSample * srcScale, 0).xy);
+		float3 normalSample = DecodeNormal(srcNormal.SampleLevel(samplerLinearClamp, uvSample * frameScale, 0).xy);
 
 		// geometry weight
 		w *= saturate(1 - abs(dot(normal, posSample - pos)) * DistanceNormalisation);
 		// normal weight
 		w *= 1 - saturate(acosFast4(saturate(dot(normalSample, normal))) / fsl_HALF_PI * 2);
 
-		float4 gi = srcGI.SampleLevel(samplerLinearClamp, uvSample * outScale, 0);
+		float4 gi = srcGI.SampleLevel(samplerLinearClamp, uvSample * frameScale, 0);
 
 		sum += gi * w;
 #ifdef TEMPORAL_DENOISER
-		fsum += srcAccumFrames.SampleLevel(samplerLinearClamp, uvSample * outScale, 0) * w;
+		fsum += srcAccumFrames.SampleLevel(samplerLinearClamp, uvSample * frameScale, 0) * w;
 #endif
 		wsum += w;
 	}

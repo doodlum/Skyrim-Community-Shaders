@@ -47,7 +47,7 @@ void GetTerrainOcclusion(
 		terrainAo = TexTerraOcc.SampleLevel(samp, terraOccUV, 0).x;
 
 		// power
-		terrainAo = pow(terrainAo, terraOccSettings.AOPower);
+		terrainAo = pow(abs(terrainAo), terraOccSettings.AOPower);
 
 		// height fadeout
 		float fadeOut = saturate((worldPos.z - terrainHeight) * terraOccSettings.AOFadeOutHeightRcp);

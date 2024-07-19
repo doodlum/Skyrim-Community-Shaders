@@ -343,8 +343,7 @@ void State::SetupResources()
 	renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMAIN].texture->GetDesc(&texDesc);
 
 	isVR = REL::Module::IsVR();
-	screenWidth = (float)texDesc.Width;
-	screenHeight = (float)texDesc.Height;
+	screenSize = { (float)texDesc.Width, (float)texDesc.Height };
 	context = reinterpret_cast<ID3D11DeviceContext*>(renderer->GetRuntimeData().context);
 	device = reinterpret_cast<ID3D11Device*>(renderer->GetRuntimeData().forwarder);
 	context->QueryInterface(__uuidof(pPerf), reinterpret_cast<void**>(&pPerf));
@@ -483,7 +482,7 @@ void State::UpdateSharedData()
 		data.DirLightDirection.Normalize();
 
 		data.CameraData = Util::GetCameraData();
-		data.BufferDim = { screenWidth, screenHeight };
+		data.BufferDim = { screenSize.x, screenSize.y, 1.0f / screenSize.x, 1.0f / screenSize.y };
 		data.Timer = timer;
 
 		auto viewport = RE::BSGraphics::State::GetSingleton();
@@ -491,7 +490,7 @@ void State::UpdateSharedData()
 		auto bTAA = !REL::Module::IsVR() ? imageSpaceManager->GetRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled :
 		                                   imageSpaceManager->GetVRRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled;
 
-		data.FrameCount = viewport->uiFrameCount * (bTAA || State::GetSingleton()->upscalerLoaded);
+		data.FrameCount = viewport->frameCount * (bTAA || State::GetSingleton()->upscalerLoaded);
 
 		for (int i = -2; i <= 2; i++) {
 			for (int k = -2; k <= 2; k++) {

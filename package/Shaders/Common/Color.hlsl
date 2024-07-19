@@ -17,10 +17,10 @@ float RGBToLuminance2(float3 color)
 
 float3 sRGB2Lin(float3 color)
 {
-	return pow(color, 2.2);
+	return pow(abs(color), 2.2);
 }
 
 float3 Lin2sRGB(float3 color)
 {
-	return pow(color, 1.0 / 2.2);
+	return pow(abs(color), 1.0 / 2.2);
 }

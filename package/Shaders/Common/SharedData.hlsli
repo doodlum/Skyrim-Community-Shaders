@@ -143,12 +143,18 @@ cbuffer FeatureData : register(b6)
 
 Texture2D<float4> TexDepthSampler : register(t20);
 
-// Get a raw depth from the depth buffer. [0,1] in uv space
-float GetDepth(float2 uv, uint a_eyeIndex = 0)
+// Get a int3 to be used as texture sample coord. [0,1] in uv space
+int3 ConvertUVToSampleCoord(float2 uv, uint a_eyeIndex)
 {
 	uv = ConvertToStereoUV(uv, a_eyeIndex);
 	uv = GetDynamicResolutionAdjustedScreenPosition(uv);
-	return TexDepthSampler.Load(int3(uv * BufferDim, 0)).x;
+	return int3(uv * BufferDim.xy, 0);
+}
+
+// Get a raw depth from the depth buffer. [0,1] in uv space
+float GetDepth(float2 uv, uint a_eyeIndex = 0)
+{
+	return TexDepthSampler.Load(ConvertUVToSampleCoord(uv, a_eyeIndex)).x;
 }
 
 float GetScreenDepth(float depth)
