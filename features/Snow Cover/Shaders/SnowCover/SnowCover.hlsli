@@ -1,5 +1,5 @@
-#include "SnowCover/FastNoiseLite.hlsl"
 #include "Common/SharedData.hlsli"
+#include "SnowCover/FastNoiseLite.hlsl"
 #if defined(PSHADER)
 
 float MyHash11(float p)
@@ -38,54 +38,55 @@ float SnowNoise(float3 pos)
 // http://chilliant.blogspot.com/2010/11/rgbhsv-in-hlsl.html
 float3 Hue(float H)
 {
-    float R = abs(H * 6 - 3) - 1;
-    float G = 2 - abs(H * 6 - 2);
-    float B = 2 - abs(H * 6 - 4);
-    return saturate(float3(R,G,B));
+	float R = abs(H * 6 - 3) - 1;
+	float G = 2 - abs(H * 6 - 2);
+	float B = 2 - abs(H * 6 - 4);
+	return saturate(float3(R, G, B));
 }
 
 float3 HSVtoRGB(in float3 HSV)
 {
-    return ((Hue(HSV.x) - 1) * HSV.y + 1) * HSV.z;
+	return ((Hue(HSV.x) - 1) * HSV.y + 1) * HSV.z;
 }
 
 float3 RGBtoHSV(in float3 RGB)
 {
-    float3 HSV = 0;
-    HSV.z = max(RGB.r, max(RGB.g, RGB.b));
-    float M = min(RGB.r, min(RGB.g, RGB.b));
-    float C = HSV.z - M;
+	float3 HSV = 0;
+	HSV.z = max(RGB.r, max(RGB.g, RGB.b));
+	float M = min(RGB.r, min(RGB.g, RGB.b));
+	float C = HSV.z - M;
 
-    if (C != 0)
-    {
-        HSV.y = C / HSV.z;
-        float3 Delta = (HSV.z - RGB) / C;
-        Delta.rgb -= Delta.brg;
-        Delta.rg += float2(2,4);
-        if (RGB.r >= HSV.z)
-            HSV.x = Delta.b;
-        else if (RGB.g >= HSV.z)
-            HSV.x = Delta.r;
-        else
-            HSV.x = Delta.g;
-        HSV.x = frac(HSV.x / 6);
-    }
-    return HSV;
+	if (C != 0) {
+		HSV.y = C / HSV.z;
+		float3 Delta = (HSV.z - RGB) / C;
+		Delta.rgb -= Delta.brg;
+		Delta.rg += float2(2, 4);
+		if (RGB.r >= HSV.z)
+			HSV.x = Delta.b;
+		else if (RGB.g >= HSV.z)
+			HSV.x = Delta.r;
+		else
+			HSV.x = Delta.g;
+		HSV.x = frac(HSV.x / 6);
+	}
+	return HSV;
 }
 
-float GetHeightMult(float3 p){
+float GetHeightMult(float3 p)
+{
 	float height_tresh = p.z - (p.x * 0.010569460362286 - p.y * 0.165389061732133 - p.x * p.x * 0.000000034552775 - p.x * p.y * 0.000000572526633 - p.y * p.y * 0.000000272913055 - p.x * p.x * p.x * 0.000000000001466 + p.x * p.x * p.y * 0.000000000000441 + p.x * p.y * p.y * 0.000000000003507 + p.y * p.y * p.y * 0.000000000006575);
-	return height_tresh/1000;
+	return height_tresh / 1000;
 }
 
-float GetEnvironmentalMultiplier(float3 p){
+float GetEnvironmentalMultiplier(float3 p)
+{
 	return saturate(GetHeightMult(p));
 }
 
-float GetGrassMultiplier(float3 p){
+float GetGrassMultiplier(float3 p)
+{
 	float height_tresh = p.z + 2048 - (p.x * 0.010569460362286 - p.y * 0.165389061732133 - p.x * p.x * 0.000000034552775 - p.x * p.y * 0.000000572526633 - p.y * p.y * 0.000000272913055 - p.x * p.x * p.x * 0.000000000001466 + p.x * p.x * p.y * 0.000000000000441 + p.x * p.y * p.y * 0.000000000003507 + p.y * p.y * p.y * 0.000000000006575);
 	return saturate(height_tresh / 1000);
-
 }
 
 void ApplySnowFoliage(inout float3 color, inout float3 worldNormal, inout float glossiness, inout float shininess, float3 p)
@@ -95,9 +96,9 @@ void ApplySnowFoliage(inout float3 color, inout float3 worldNormal, inout float 
 	float v = fnlGetNoise2D(noise, p.x * 512, p.y * 512);
 	noise.octaves = 1;
 	float gmult = saturate(GetHeightMult(p) + 512);
-	float mult = saturate(pow(abs(worldNormal.z), 0.5) - 0.25 * abs(v))*saturate(GetHeightMult(p));
+	float mult = saturate(pow(abs(worldNormal.z), 0.5) - 0.25 * abs(v)) * saturate(GetHeightMult(p));
 	float3 hsv = RGBtoHSV(color);
-	if(hsv.x > 0.5625)
+	if (hsv.x > 0.5625)
 		hsv.x = frac(lerp(hsv.x, 1.125, gmult));
 	else
 		hsv.x = lerp(hsv.x, 0.125, gmult);
@@ -139,7 +140,7 @@ float ApplySnowBase(inout float3 color, inout float3 worldNormal, float3 p, floa
 	//worldNormal = normalize(lerp(worldNormal, MyReorientNormal(worldNormal, float3(sx-s, sy-s,1.0)), mult));
 	return mult;
 }
-#if defined(TRUE_PBR)
+#	if defined(TRUE_PBR)
 void ApplySnowPBR(inout float3 color, inout float3 worldNormal, inout PBRSurfaceProperties prop, float3 p, float skylight, float3 viewPos)
 {
 	float r;
@@ -152,7 +153,7 @@ void ApplySnowPBR(inout float3 color, inout float3 worldNormal, inout PBRSurface
 	prop.F0 = lerp(prop.F0, 0.02 + 0.02 * pow(1 - r, 3.0), mult);
 	prop.AO = lerp(prop.AO, saturate(max(pow(0.5 * s, 0.5) + 0.5, r)), mult);
 }
-#else
+#	else
 void ApplySnow(inout float3 color, inout float3 worldNormal, inout float glossiness, inout float shininess, float3 p, float skylight, float3 viewPos)
 {
 	float r;
@@ -163,5 +164,5 @@ void ApplySnow(inout float3 color, inout float3 worldNormal, inout float glossin
 	glossiness = lerp(glossiness, 0.5 * pow(r * s, 3.0), mult);
 	shininess = lerp(shininess, max(1, pow(1 - r, 3.0) * 100), mult);
 }
-#endif
+#	endif
 #endif
