@@ -1402,7 +1402,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	//float3 pos = float3(diffuseUv.x, diffuseUv.y, 0);
 	float3 pos = (input.WorldPosition + CameraPosAdjust[eyeIndex]).xyz;
 	if (snowCoverSettings.EnableSnowCover)
+#		if defined(TREE_ANIM)
+		ApplySnowFoliage(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos);
+#		else
 		ApplySnow(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos, skylight, viewPosition.z);
+#		endif
 	glossiness = glossiness.xxxx;
 #	endif
 #	if defined(SNOW_COVER)

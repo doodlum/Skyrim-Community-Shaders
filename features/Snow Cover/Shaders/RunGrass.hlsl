@@ -365,9 +365,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	//float3 pos = input.WorldPosition.xyz + CameraPosAdjust[eyeIndex];
 	float3 pos = float3(input.TexCoord.x, input.TexCoord.y, 0) * 16;
 	float glossiness = 0;
-	float cover = 1;
 	if (snowCoverSettings.EnableSnowCover)
-		ApplySnowSimple(baseColor.xyz, normal, glossiness, shininess, pos, cover);
+		ApplySnowFoliage(baseColor.xyz, normal, glossiness, shininess, pos);
 #		endif
 #		if defined(WETNESS_EFFECTS)
 	float minWetnessAngle = saturate(max(wetnessEffects.MinRainWetness, normal.z));

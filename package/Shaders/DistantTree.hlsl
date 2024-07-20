@@ -251,10 +251,9 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 worldPos = (input.WorldPosition).xyz + CameraPosAdjust[eyeIndex];
 	float glossiness = 0;
 	float shininess = 1000;
-	float cover = 1;
 	float3 worldNormal = mul(transpose(CameraView[eyeIndex]), float4(normal, 0)).xyz;
 	if (snowCoverSettings.EnableSnowCover)
-		ApplySnowSimple(baseColor.xyz, worldNormal, glossiness, shininess, worldPos, cover);
+		ApplySnowFoliage(baseColor.xyz, worldNormal, glossiness, shininess, worldPos);
 	normal = mul(CameraView[eyeIndex], float4(worldNormal, 0)).xyz;
 #			endif
 
@@ -272,9 +271,8 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 worldPos = (input.WorldPosition).xyz;
 	float glossiness = 0;
 	float shininess = 1000;
-	float cover = 1;
 	if (snowCoverSettings.EnableSnowCover)
-		ApplySnowSimple(baseColor.xyz, normal, glossiness, shininess, worldPos, cover);
+		ApplySnowFoliage(baseColor.xyz, normal, glossiness, shininess, worldPos);
 #			endif
 
 	float3 directionalAmbientColor = mul(DirectionalAmbientShared, float4(normal, 1.0));
