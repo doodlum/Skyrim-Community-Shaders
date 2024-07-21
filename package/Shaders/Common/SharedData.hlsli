@@ -127,7 +127,12 @@ struct SnowCoverSettings
 	float SnowpileAmount;
 
 	uint EnableSnowCover;
-	float pad[2];
+	uint AffectFoliageColor;
+	float SnowHeightOffset;
+	float FoliageHeightOffset;
+	uint MaxSummerMonth;
+	uint MaxWinterMonth;
+	float pad[1];
 };
 
 cbuffer FeatureData : register(b6)
