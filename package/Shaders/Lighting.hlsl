@@ -980,7 +980,6 @@ void GetTerrainOcclusionAO(
 		// height fadeout (1/2000)
 		float fadeOut = saturate((worldPos.z - terrainHeight) * terraOccSettings.AOFadeOutHeightRcp);
 		terrainAo = lerp(terrainAo, 1, fadeOut);
-
 	}
 }
 
@@ -1435,7 +1434,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	GetTerrainOcclusionAO(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex], length(input.WorldPosition.xyz), SampColorSampler, terrainShadow, terrainAo);
 #	endif
 
-
 #	if defined(SNOW_COVER)
 	//float3 pos = float3(diffuseUv.x, diffuseUv.y, 0);
 	float3 pos = (input.WorldPosition + CameraPosAdjust[eyeIndex]).xyz;
@@ -1443,7 +1441,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		if defined(TREE_ANIM)
 		ApplySnowFoliage(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos);
 #		else
-		ApplySnow(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos,1, viewPosition.z); // TODO put skylighting back later
+		ApplySnow(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos, 1, viewPosition.z);  // TODO put skylighting back later
 #		endif
 	glossiness = glossiness.xxxx;
 #	endif

@@ -2,9 +2,6 @@
 #include "SnowCover/FastNoiseLite.hlsl"
 #if defined(PSHADER)
 
-
-
-
 float MyHash11(float p)
 {
 	return frac(sin(p) * 1e4);
@@ -76,9 +73,10 @@ float3 RGBtoHSV(in float3 RGB)
 }
 
 <<<<<<< HEAD
-float GetHeightMult(float3 p){
+float GetHeightMult(float3 p)
+{
 	float height_tresh = p.z - snowCoverSettings.SnowHeightOffset - (p.x * 0.010569460362286 - p.y * 0.165389061732133 - p.x * p.x * 0.000000034552775 - p.x * p.y * 0.000000572526633 - p.y * p.y * 0.000000272913055 - p.x * p.x * p.x * 0.000000000001466 + p.x * p.x * p.y * 0.000000000000441 + p.x * p.y * p.y * 0.000000000003507 + p.y * p.y * p.y * 0.000000000006575);
-	return height_tresh/1000;
+	return height_tresh / 1000;
 =======
 float GetHeightMult(float3 p)
 {
@@ -108,11 +106,11 @@ void ApplySnowFoliage(inout float3 color, inout float3 worldNormal, inout float 
 	float v = fnlGetNoise2D(noise, p.x * 512, p.y * 512);
 	noise.octaves = 1;
 <<<<<<< HEAD
-	float mult = saturate(pow(abs(worldNormal.z), 0.5) - 0.25 * abs(v))*GetEnvironmentalMultiplier(p);
-	if (snowCoverSettings.AffectFoliageColor){
-		float gmult = saturate(GetHeightMult(p) - snowCoverSettings.FoliageHeightOffset/1000);
+	float mult = saturate(pow(abs(worldNormal.z), 0.5) - 0.25 * abs(v)) * GetEnvironmentalMultiplier(p);
+	if (snowCoverSettings.AffectFoliageColor) {
+		float gmult = saturate(GetHeightMult(p) - snowCoverSettings.FoliageHeightOffset / 1000);
 		float3 hsv = RGBtoHSV(color);
-		if(hsv.x > 0.5625)
+		if (hsv.x > 0.5625)
 			hsv.x = frac(lerp(hsv.x, 1.125, gmult));
 		else
 			hsv.x = lerp(hsv.x, 0.125, gmult);
