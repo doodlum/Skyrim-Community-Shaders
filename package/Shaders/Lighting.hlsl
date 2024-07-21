@@ -953,6 +953,37 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		include "Skylighting/Skylighting.hlsli"
 #	endif
 
+void GetTerrainOcclusionAO(
+	const float3 worldPos, const float viewDistance, SamplerState samp,
+	out float terrainShadow, out float terrainAo)
+{
+	terrainShadow = 1;
+	terrainAo = 1;
+
+	float2 terraOccUV = GetTerrainOcclusionUV(worldPos.xy);
+
+	if (any(terraOccUV < 0) && any(terraOccUV > 1))
+		return;
+
+	[flatten] if (terraOccSettings.EnableTerrainShadow && (viewDistance > terraOccSettings.ShadowFadeDistance.x))
+	{
+		float fadeFactor = saturate((viewDistance - terraOccSettings.ShadowFadeDistance.x) / (terraOccSettings.ShadowFadeDistance.y - terraOccSettings.ShadowFadeDistance.x));
+		float2 shadowHeight = GetTerrainZ(TexShadowHeight.SampleLevel(samp, terraOccUV, 0));
+		float shadowFraction = saturate((worldPos.z - shadowHeight.y) / (shadowHeight.x - shadowHeight.y));
+		terrainShadow = lerp(1, shadowFraction, fadeFactor);
+	}
+
+	{
+		float terrainHeight = GetTerrainZ(TexNormalisedHeight.SampleLevel(samp, terraOccUV, 0).x);
+		terrainAo = TexTerraOcc.SampleLevel(samp, terraOccUV, 0).x;
+
+		// height fadeout (1/2000)
+		float fadeOut = saturate((worldPos.z - terrainHeight) * terraOccSettings.AOFadeOutHeightRcp);
+		terrainAo = lerp(terrainAo, 1, fadeOut);
+
+	}
+}
+
 PS_OUTPUT main(PS_INPUT input, bool frontFace
 			   : SV_IsFrontFace)
 {
@@ -1398,6 +1429,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float skylight = 1.0;
 #	endif  // SKYLIGHTING
 
+	float terrainShadow = 1;
+	float terrainAo = 0;
+#	if defined(TERRA_OCC)
+	GetTerrainOcclusionAO(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex], length(input.WorldPosition.xyz), SampColorSampler, terrainShadow, terrainAo);
+#	endif
+
+
 #	if defined(SNOW_COVER)
 	//float3 pos = float3(diffuseUv.x, diffuseUv.y, 0);
 	float3 pos = (input.WorldPosition + CameraPosAdjust[eyeIndex]).xyz;
@@ -1405,7 +1443,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		if defined(TREE_ANIM)
 		ApplySnowFoliage(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos);
 #		else
-		ApplySnow(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos, skylight, viewPosition.z);
+		ApplySnow(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos,1, viewPosition.z); // TODO put skylighting back later
 #		endif
 	glossiness = glossiness.xxxx;
 #	endif
@@ -1484,9 +1522,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				// (MODELSPACENORMALS))
 
 #	if defined(TERRA_OCC)
-		float terrainShadow = 1;
-		float terrainAo = 1;
-		GetTerrainOcclusion(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex], length(input.WorldPosition.xyz), SampColorSampler, terrainShadow, terrainAo);
 		dirShadow *= terrainShadow;
 		inDirShadow = inDirShadow || dirShadow == 0.0;
 #	endif

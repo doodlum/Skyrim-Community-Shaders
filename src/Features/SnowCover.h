@@ -22,6 +22,11 @@ public:
 	struct Settings
 	{
 		uint EnableSnowCover = true;
+		uint AffectFoliageColor = true;
+		float SnowHeightOffset = 0;
+		float FoliageHeightOffset = -512;
+		uint MaxSummerMonth = 6;
+		uint MaxWinterMonth = 0;
 	};
 
 	struct alignas(16) PerFrame
@@ -33,7 +38,7 @@ public:
 		float SnowpileAmount;
 		Settings settings;
 
-		float pad[2];
+		float pad[1];
 	};
 
 	Settings settings;

@@ -2,6 +2,9 @@
 #include "Common/SharedData.hlsli"
 #if defined(PSHADER)
 
+
+
+
 float MyHash11(float p)
 {
 	return frac(sin(p) * 1e4);
@@ -74,18 +77,12 @@ float3 RGBtoHSV(in float3 RGB)
 }
 
 float GetHeightMult(float3 p){
-	float height_tresh = p.z - (p.x * 0.010569460362286 - p.y * 0.165389061732133 - p.x * p.x * 0.000000034552775 - p.x * p.y * 0.000000572526633 - p.y * p.y * 0.000000272913055 - p.x * p.x * p.x * 0.000000000001466 + p.x * p.x * p.y * 0.000000000000441 + p.x * p.y * p.y * 0.000000000003507 + p.y * p.y * p.y * 0.000000000006575);
+	float height_tresh = p.z - snowCoverSettings.SnowHeightOffset - (p.x * 0.010569460362286 - p.y * 0.165389061732133 - p.x * p.x * 0.000000034552775 - p.x * p.y * 0.000000572526633 - p.y * p.y * 0.000000272913055 - p.x * p.x * p.x * 0.000000000001466 + p.x * p.x * p.y * 0.000000000000441 + p.x * p.y * p.y * 0.000000000003507 + p.y * p.y * p.y * 0.000000000006575);
 	return height_tresh/1000;
 }
 
 float GetEnvironmentalMultiplier(float3 p){
 	return saturate(GetHeightMult(p));
-}
-
-float GetGrassMultiplier(float3 p){
-	float height_tresh = p.z + 2048 - (p.x * 0.010569460362286 - p.y * 0.165389061732133 - p.x * p.x * 0.000000034552775 - p.x * p.y * 0.000000572526633 - p.y * p.y * 0.000000272913055 - p.x * p.x * p.x * 0.000000000001466 + p.x * p.x * p.y * 0.000000000000441 + p.x * p.y * p.y * 0.000000000003507 + p.y * p.y * p.y * 0.000000000006575);
-	return saturate(height_tresh / 1000);
-
 }
 
 void ApplySnowFoliage(inout float3 color, inout float3 worldNormal, inout float glossiness, inout float shininess, float3 p)
@@ -94,17 +91,19 @@ void ApplySnowFoliage(inout float3 color, inout float3 worldNormal, inout float 
 	noise.noise_type = FNL_NOISE_VALUE_CUBIC;
 	float v = fnlGetNoise2D(noise, p.x * 512, p.y * 512);
 	noise.octaves = 1;
-	float gmult = saturate(GetHeightMult(p) + 512);
-	float mult = saturate(pow(abs(worldNormal.z), 0.5) - 0.25 * abs(v))*saturate(GetHeightMult(p));
-	float3 hsv = RGBtoHSV(color);
-	if(hsv.x > 0.5625)
-		hsv.x = frac(lerp(hsv.x, 1.125, gmult));
-	else
-		hsv.x = lerp(hsv.x, 0.125, gmult);
-	//hsv.z = pow(hsv.z, 1+gmult*0.5);
-	color = HSVtoRGB(hsv);
+	float mult = saturate(pow(abs(worldNormal.z), 0.5) - 0.25 * abs(v))*GetEnvironmentalMultiplier(p);
+	if (snowCoverSettings.AffectFoliageColor){
+		float gmult = saturate(GetHeightMult(p) - snowCoverSettings.FoliageHeightOffset/1000);
+		float3 hsv = RGBtoHSV(color);
+		if(hsv.x > 0.5625)
+			hsv.x = frac(lerp(hsv.x, 1.125, gmult));
+		else
+			hsv.x = lerp(hsv.x, 0.125, gmult);
+		//hsv.z = pow(hsv.z, 1+gmult*0.5);
+		color = HSVtoRGB(hsv);
+	}
 	//float mult = skylight;
-	//color = lerp(color, 0.35 + v * 0.05, mult);
+	color = lerp(color, 0.35 + v * 0.05, mult);
 	//color = worldNormal*0.5+0.5;
 	glossiness = lerp(glossiness, 0.5 * pow(v, 3.0), mult);
 	shininess = lerp(shininess, max(1, pow(1 - v, 3.0) * 100), mult);
@@ -127,7 +126,7 @@ float ApplySnowBase(inout float3 color, inout float3 worldNormal, float3 p, floa
 	float s = fnlGetNoise2D(noise, p.x * simplex_scale, p.y * simplex_scale) / viewDist;
 	float sx = fnlGetNoise2D(noise, p.x * simplex_scale + 1, p.y * simplex_scale) / viewDist;
 	float sy = fnlGetNoise2D(noise, p.x * simplex_scale, p.y * simplex_scale + 1) / viewDist;
-	float mult = saturate(pow(worldNormal.z, 0.5) - 0.15 * sx) * skylight * GetEnvironmentalMultiplier(p);
+	float mult = saturate(pow(worldNormal.z, 0.9) - 0.15 * sx) * skylight * GetEnvironmentalMultiplier(p);
 	//float mult = 1;
 	vnoise = (v)*0.5 + 0.5;
 	snoise = s * 0.5 + 0.5;

@@ -27,12 +27,22 @@ const float MAX_RAINDROP_CHANCE_MULTIPLIER = 2.0f;
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	SnowCover::Settings,
-	EnableSnowCover)
+	EnableSnowCover,
+	AffectFoliageColor,
+	SnowHeightOffset,
+	FoliageHeightOffset,
+	MaxSummerMonth,
+	MaxWinterMonth)
 
 void SnowCover::DrawSettings()
 {
 	if (ImGui::TreeNodeEx("Snow Cover", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::Checkbox("Enable Snow Cover", (bool*)&settings.EnableSnowCover);
+		ImGui::Checkbox("Affect Foliage Color", (bool*)&settings.AffectFoliageColor);
+		ImGui::SliderFloat("Snow Line Height Offset", &settings.SnowHeightOffset, -10000.0f, 10000.0f);
+		ImGui::SliderFloat("Foliage Color Height Offset", &settings.FoliageHeightOffset, -10000.0f, 10000.0f);
+		ImGui::SliderInt("Maximum Summer Month", (int*)&settings.MaxSummerMonth, 0, 11);
+		ImGui::SliderInt("Maximum Winter Month", (int*)&settings.MaxWinterMonth, 0, 11);
 		ImGui::TreePop();
 	}
 
