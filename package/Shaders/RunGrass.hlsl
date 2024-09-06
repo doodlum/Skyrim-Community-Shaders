@@ -68,10 +68,10 @@ struct VS_OUTPUT
 	float4 PreviousWorldPosition : POSITION2;
 	float3 VertexNormal : POSITION4;
 	float4 SphereNormal : POSITION5;
-#ifdef VR
+#	ifdef VR
 	float ClipDistance : SV_ClipDistance0;
 	float CullDistance : SV_CullDistance0;
-#endif  // !VR
+#	endif  // !VR
 };
 #endif
 
@@ -248,9 +248,9 @@ VS_OUTPUT main(VS_INPUT input)
 	VS_OUTPUT vsout;
 
 	uint eyeIndex = GetEyeIndexVS(
-#	if defined(VR)
+#		if defined(VR)
 		input.InstanceID
-#	endif
+#		endif
 	);
 	float3x3 world3x3 = float3x3(input.InstanceData2.xyz, input.InstanceData3.xyz, float3(input.InstanceData4.x, input.InstanceData2.w, input.InstanceData3.w));
 
@@ -258,41 +258,41 @@ VS_OUTPUT main(VS_INPUT input)
 	vsout.HPosition = projSpacePosition;
 #	endif  // !VR
 
-#		if defined(RENDER_DEPTH)
-	vsout.Depth = projSpacePosition.zw;
-#		endif  // RENDER_DEPTH
+#	if defined(RENDER_DEPTH)
+vsout.Depth = projSpacePosition.zw;
+#	endif  // RENDER_DEPTH
 
 #	ifdef VR
-	float3 instanceNormal = float3(input.InstanceData2.z, input.InstanceData3.zw);
-	float dirLightAngle = dot(DirLightDirection.xyz, instanceNormal);
-	float3 diffuseMultiplier = input.InstanceData1.www * input.Color.xyz * saturate(dirLightAngle.xxx);
+float3 instanceNormal = float3(input.InstanceData2.z, input.InstanceData3.zw);
+float dirLightAngle = dot(DirLightDirection.xyz, instanceNormal);
+float3 diffuseMultiplier = input.InstanceData1.www * input.Color.xyz * saturate(dirLightAngle.xxx);
 #	endif  // VR
-	float perInstanceFade = dot(cb8[(asuint(cb7[0].x) >> 2)].xyzw, M_IdentityMatrix[(asint(cb7[0].x) & 3)].xyzw);
-	float distanceFade = 1 - saturate((length(mul(WorldViewProj[0], msPosition).xyz) - AlphaParam1) / AlphaParam2);
+float perInstanceFade = dot(cb8[(asuint(cb7[0].x) >> 2)].xyzw, M_IdentityMatrix[(asint(cb7[0].x) & 3)].xyzw);
+float distanceFade = 1 - saturate((length(mul(WorldViewProj[0], msPosition).xyz) - AlphaParam1) / AlphaParam2);
 
-	// Note: input.Color.w is used for wind speed
-	vsout.VertexColor.xyz = input.Color.xyz * input.InstanceData1.www;
-	vsout.VertexColor.w = distanceFade * perInstanceFade;
+// Note: input.Color.w is used for wind speed
+vsout.VertexColor.xyz = input.Color.xyz * input.InstanceData1.www;
+vsout.VertexColor.w = distanceFade * perInstanceFade;
 
-	vsout.TexCoord.xy = input.TexCoord.xy;
-	vsout.TexCoord.z = FogNearColor.w;
+vsout.TexCoord.xy = input.TexCoord.xy;
+vsout.TexCoord.z = FogNearColor.w;
 
-	vsout.ViewSpacePosition = mul(WorldView[eyeIndex], msPosition).xyz;
-	vsout.WorldPosition = mul(World[eyeIndex], msPosition);
+vsout.ViewSpacePosition = mul(WorldView[eyeIndex], msPosition).xyz;
+vsout.WorldPosition = mul(World[eyeIndex], msPosition);
 
-	vsout.ViewSpacePosition = mul(WorldView[0], msPosition).xyz;
-	vsout.WorldPosition = mul(World[0], msPosition);
+vsout.ViewSpacePosition = mul(WorldView[0], msPosition).xyz;
+vsout.WorldPosition = mul(World[0], msPosition);
 
 #	ifdef GRASS_COLLISION
-	previousMsPosition.xyz += displacement;
+previousMsPosition.xyz += displacement;
 #	endif  // GRASS_COLLISION
 
-	vsout.PreviousWorldPosition = mul(PreviousWorld[0], previousMsPosition);
+vsout.PreviousWorldPosition = mul(PreviousWorld[0], previousMsPosition);
 
-	return vsout;
+return vsout;
 }
 
-#	endif
+#endif
 
 #endif  // VSHADER
 
@@ -415,11 +415,11 @@ cbuffer PerMaterial : register(b1)
 #			include "Common/PBR.hlsli"
 #		endif
 
-#	if defined(SNOW_COVER)
-#		undef SNOW
-#		undef PROJECTED_UV
-#		include "SnowCover/SnowCover.hlsli"
-#	endif
+#		if defined(SNOW_COVER)
+#			undef SNOW
+#			undef PROJECTED_UV
+#			include "SnowCover/SnowCover.hlsli"
+#		endif
 
 PS_OUTPUT main(PS_INPUT input, bool frontFace
 			   : SV_IsFrontFace)
@@ -765,19 +765,19 @@ PS_OUTPUT main(PS_INPUT input)
 	if (!complex || grassLightingSettings.OverrideComplexGrassSettings)
 		baseColor.xyz *= grassLightingSettings.BasicGrassBrightness;
 
-#		if defined(SNOW_COVER)
+#			if defined(SNOW_COVER)
 	float3 pos = input.WorldPosition.xyz + CameraPosAdjust[eyeIndex];
 	//float3 pos = float3(input.TexCoord.x, input.TexCoord.y, 0) * 16;
 	float glossiness = 0;
 	if (snowCoverSettings.EnableSnowCover)
 		ApplySnowFoliage(baseColor.xyz, normal, glossiness, shininess, pos);
-#		endif
-#		if defined(WETNESS_EFFECTS)
+#			endif
+#			if defined(WETNESS_EFFECTS)
 	float minWetnessAngle = saturate(max(wetnessEffects.MinRainWetness, normal.z));
 	float rainWetness = wetnessEffects.Wetness * minWetnessAngle * wetnessEffects.MaxRainWetness;
 	shininess = lerp(shininess, 1.0, rainWetness);
 	baseColor.xyz = lerp(baseColor.xyz, baseColor.xyz / 5, rainWetness);
-#		endif
+#			endif
 
 	float3 dirLightColor = DirLightColorShared.xyz;
 	dirLightColor *= shadowColor.x;
@@ -789,25 +789,25 @@ PS_OUTPUT main(PS_INPUT input)
 
 	if (shadowColor.x > 0.0) {
 		if (dirLightAngle > 0.0) {
-#		if defined(SCREEN_SPACE_SHADOWS)
+#			if defined(SCREEN_SPACE_SHADOWS)
 			dirDetailShadow = GetScreenSpaceShadow(screenUV, screenNoise, viewPosition, eyeIndex);
-#		endif
+#			endif
 		}
 
-#		if defined(TERRA_OCC)
+#			if defined(TERRA_OCC)
 		if (dirShadow > 0.0) {
 			float terrainShadow = 1;
 			float terrainAo = 1;
 			GetTerrainOcclusion(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex], length(input.WorldPosition.xyz), SampBaseSampler, terrainShadow, terrainAo);
 			dirShadow *= terrainShadow;
 		}
-#		endif
+#			endif
 
-#		if defined(CLOUD_SHADOWS)
+#			if defined(CLOUD_SHADOWS)
 		if (dirShadow != 0.0) {
 			dirShadow *= GetCloudShadowMult(input.WorldPosition, SampBaseSampler);
 		}
-#		endif
+#			endif
 	}
 
 	float3 diffuseColor = 0;
@@ -825,7 +825,7 @@ PS_OUTPUT main(PS_INPUT input)
 	if (complex)
 		lightsSpecularColor += GetLightSpecularInput(DirLightDirection, viewDirection, normal, dirLightColor, shininess);
 
-#		if defined(LIGHT_LIMIT_FIX)
+#			if defined(LIGHT_LIMIT_FIX)
 	uint clusterIndex = 0;
 	uint lightCount = 0;
 
@@ -870,7 +870,7 @@ PS_OUTPUT main(PS_INPUT input)
 			}
 		}
 	}
-#		endif
+#			endif
 
 	diffuseColor += lightsDiffuseColor;
 
@@ -880,7 +880,7 @@ PS_OUTPUT main(PS_INPUT input)
 	specularColor += lightsSpecularColor;
 	specularColor *= specColor.w * grassLightingSettings.SpecularStrength;
 
-#		if defined(LIGHT_LIMIT_FIX) && defined(LLFDEBUG)
+#			if defined(LIGHT_LIMIT_FIX) && defined(LLFDEBUG)
 	if (lightLimitFixSettings.EnableLightsVisualisation) {
 		if (lightLimitFixSettings.LightsVisualisationMode == 0) {
 			diffuseColor.xyz = TurboColormap(0);
@@ -892,9 +892,9 @@ PS_OUTPUT main(PS_INPUT input)
 	} else {
 		psout.Diffuse = float4(diffuseColor, 1);
 	}
-#		else
+#			else
 	psout.Diffuse.xyz = float4(diffuseColor, 1);
-#		endif
+#			endif
 
 	psout.Specular = float4(specularColor, 1);
 	psout.Albedo = float4(albedo, 1);
@@ -904,8 +904,8 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 normalVS = normalize(WorldToView(normal, false, eyeIndex));
 	psout.NormalGlossiness = float4(EncodeNormal(normalVS), specColor.w, 1);
 #	endif  // RENDER_DEPTH
-	return psout;
+return psout;
 }
-#	endif
+#endif
 
 #endif  // PSHADER
