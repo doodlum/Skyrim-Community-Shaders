@@ -254,10 +254,6 @@ PS_OUTPUT main(PS_INPUT input)
 
 	psout.MotionVector = GetSSMotionVector(input.WorldPosition, input.PreviousWorldPosition, eyeIndex);
 
-	float3 ddx = ddx_coarse(input.ViewPosition);
-	float3 ddy = ddy_coarse(input.ViewPosition);
-	float3 normal = normalize(cross(ddx, ddy));
-
 #			if defined(SNOW_COVER)
 	float3 worldPos = (input.WorldPosition).xyz + CameraPosAdjust[eyeIndex];
 	float glossiness = 0;
