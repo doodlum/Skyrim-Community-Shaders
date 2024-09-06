@@ -1696,7 +1696,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 	float skylightingDiffuse = shFuncProductIntegral(skylightingSH, shEvaluateCosineLobe(skylightingSettings.DirectionalDiffuse ? worldSpaceNormal : float3(0, 0, 1))) / shPI;
 	skylightingDiffuse = Skylighting::mixDiffuse(skylightingSettings, skylightingDiffuse);
-	float occlusion = inWorld ? pow(saturate(shUnproject(skylightingSH, float3(0,0,1))), 2) : 0;
+	float occlusion = inWorld ? pow(saturate(shUnproject(skylightingSH, float3(0, 0, 1))), 2) : 0;
 #	else
 	float occlusion = 1.0;
 #	endif  // SKYLIGHTING
