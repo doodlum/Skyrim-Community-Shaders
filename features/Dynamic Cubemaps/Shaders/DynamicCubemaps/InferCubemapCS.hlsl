@@ -1,3 +1,5 @@
+#include "../Common/Color.hlsli"
+
 TextureCube<float4> EnvCaptureTexture : register(t0);
 TextureCube<float4> ReflectionsTexture : register(t1);
 TextureCube<float4> DefaultCubemap : register(t2);
@@ -44,16 +46,6 @@ float3 GetSamplingVector(uint3 ThreadID, in RWTexture2DArray<float4> OutputTextu
 	return normalize(result);
 }
 
-float3 sRGB2Lin(float3 color)
-{
-	return color > 0.04045 ? pow(color / 1.055 + 0.055 / 1.055, 2.4) : color / 12.92;
-}
-
-float3 Lin2sRGB(float3 color)
-{
-	return color > 0.0031308 ? 1.055 * pow(color, 1.0 / 2.4) - 0.055 : 12.92 * color;
-}
-
 [numthreads(8, 8, 1)] void main(uint3 ThreadID
 								: SV_DispatchThreadID) {
 	float3 uv = GetSamplingVector(ThreadID, EnvInferredTexture);
@@ -66,11 +58,11 @@ float3 Lin2sRGB(float3 color)
 	float brightness = k;
 #endif
 
-	while (color.w < 1.0 && mipLevel <= 10) {
+	while (color.w < 1.0 && mipLevel <= 8) {
 		mipLevel++;
 
 		float4 tempColor = 0.0;
-		if (mipLevel < 10) {
+		if (mipLevel < 8) {
 			tempColor = EnvCaptureTexture.SampleLevel(LinearSampler, uv, mipLevel);
 		} else {
 			tempColor += EnvCaptureTexture.SampleLevel(LinearSampler, float3(-1.0, 0.0, 0.0), 9);
@@ -98,11 +90,11 @@ float3 Lin2sRGB(float3 color)
 	}
 
 #if defined(REFLECTIONS)
-	color.rgb = lerp(color.rgb, sRGB2Lin(ReflectionsTexture.SampleLevel(LinearSampler, uv, 0)), saturate(mipLevel * (1.0 / 10.0)));
+	color.rgb = lerp(color.rgb, GammaToLinear(ReflectionsTexture.SampleLevel(LinearSampler, uv, 0)), saturate(mipLevel / 8.0));
 #else
-	color.rgb = lerp(color.rgb, color.rgb * sRGB2Lin(DefaultCubemap.SampleLevel(LinearSampler, uv, 0).x), saturate(mipLevel * (1.0 / 10.0)));
+	color.rgb = lerp(color.rgb, color.rgb * GammaToLinear(DefaultCubemap.SampleLevel(LinearSampler, uv, 0).x) * 2, saturate(mipLevel / 8.0));
 #endif
 
-	color.rgb = Lin2sRGB(color.rgb);
+	color.rgb = LinearToGamma(color.rgb);
 	EnvInferredTexture[ThreadID] = max(0, color);
 }

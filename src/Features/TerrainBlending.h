@@ -13,17 +13,12 @@ public:
 		return &singleton;
 	}
 
-	virtual inline std::string GetName() { return "Terrain Blending"; }
-	virtual inline std::string GetShortName() { return "TerrainBlending"; }
-	virtual inline std::string_view GetShaderDefineName() { return "TERRAIN_BLENDING"; }
-	virtual inline bool HasShaderDefine(RE::BSShader::Type) { return true; }
+	virtual inline std::string GetName() override { return "Terrain Blending"; }
+	virtual inline std::string GetShortName() override { return "TerrainBlending"; }
+	virtual inline std::string_view GetShaderDefineName() override { return "TERRAIN_BLENDING"; }
+	virtual inline bool HasShaderDefine(RE::BSShader::Type) override { return true; }
 
-	virtual void SetupResources();
-	virtual void Reset();
-
-	virtual void DrawSettings();
-
-	virtual void Draw(const RE::BSShader* shader, const uint32_t descriptor);
+	virtual void SetupResources() override;
 
 	ID3D11VertexShader* GetTerrainVertexShader();
 	ID3D11VertexShader* GetTerrainOffsetVertexShader();
@@ -34,10 +29,6 @@ public:
 	ID3D11ComputeShader* GetDepthBlendShader();
 	ID3D11ComputeShader* GetDepthFixShader();
 
-	virtual void Load(json& o_json);
-	virtual void Save(json& o_json);
-
-	virtual void RestoreDefaultSettings();
 	virtual void PostPostLoad() override;
 
 	bool renderDepth = false;
@@ -59,6 +50,8 @@ public:
 	Texture2D* terrainDepthTexture = nullptr;
 
 	Texture2D* blendedDepthTexture = nullptr;
+	Texture2D* blendedDepthTexture16 = nullptr;
+
 	Texture2D* terrainOffsetTexture = nullptr;
 
 	RE::BSGraphics::DepthStencilData terrainDepth;
@@ -71,7 +64,7 @@ public:
 	ID3D11ComputeShader* depthBlendShader = nullptr;
 	ID3D11ComputeShader* depthFixShader = nullptr;
 
-	virtual void ClearShaderCache();
+	virtual void ClearShaderCache() override;
 
 	struct Hooks
 	{
@@ -187,5 +180,5 @@ public:
 			logger::info("[Terrain Blending] Installed hooks");
 		}
 	};
-	bool SupportsVR() override { return true; };
+	virtual bool SupportsVR() override { return true; };
 };

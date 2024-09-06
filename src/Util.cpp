@@ -29,7 +29,7 @@ namespace Util
 		Dest.m[2][3] = Source.translate.z;
 	}
 
-	ID3D11ShaderResourceView* GetSRVFromRTV(ID3D11RenderTargetView* a_rtv)
+	ID3D11ShaderResourceView* GetSRVFromRTV(const ID3D11RenderTargetView* a_rtv)
 	{
 		if (a_rtv) {
 			if (auto r = RE::BSGraphics::Renderer::GetSingleton()) {
@@ -44,7 +44,7 @@ namespace Util
 		return nullptr;
 	}
 
-	ID3D11RenderTargetView* GetRTVFromSRV(ID3D11ShaderResourceView* a_srv)
+	ID3D11RenderTargetView* GetRTVFromSRV(const ID3D11ShaderResourceView* a_srv)
 	{
 		if (a_srv) {
 			if (auto r = RE::BSGraphics::Renderer::GetSingleton()) {
@@ -59,7 +59,7 @@ namespace Util
 		return nullptr;
 	}
 
-	std::string GetNameFromSRV(ID3D11ShaderResourceView* a_srv)
+	std::string GetNameFromSRV(const ID3D11ShaderResourceView* a_srv)
 	{
 		using RENDER_TARGET = RE::RENDER_TARGETS::RENDER_TARGET;
 
@@ -76,7 +76,7 @@ namespace Util
 		return "NONE";
 	}
 
-	std::string GetNameFromRTV(ID3D11RenderTargetView* a_rtv)
+	std::string GetNameFromRTV(const ID3D11RenderTargetView* a_rtv)
 	{
 		using RENDER_TARGET = RE::RENDER_TARGETS::RENDER_TARGET;
 		if (a_rtv) {
@@ -203,7 +203,7 @@ namespace Util
 		return nullptr;
 	}
 
-	std::string DefinesToString(std::vector<std::pair<const char*, const char*>>& defines)
+	std::string DefinesToString(const std::vector<std::pair<const char*, const char*>>& defines)
 	{
 		std::string result;
 		for (const auto& def : defines) {
@@ -220,7 +220,7 @@ namespace Util
 		}
 		return result;
 	}
-	std::string DefinesToString(std::vector<D3D_SHADER_MACRO>& defines)
+	std::string DefinesToString(const std::vector<D3D_SHADER_MACRO>& defines)
 	{
 		std::string result;
 		for (const auto& def : defines) {
@@ -288,7 +288,7 @@ namespace Util
 					}
 
 					if (auto sky = RE::Sky::GetSingleton()) {
-						auto& color = sky->skyColor[RE::TESWeather::ColorTypes::kWaterMultiplier];
+						const auto& color = sky->skyColor[RE::TESWeather::ColorTypes::kWaterMultiplier];
 						data.x *= color.red;
 						data.y *= color.green;
 						data.z *= color.blue;
@@ -320,6 +320,7 @@ namespace Util
 			logger::info("Game Setting {} {}", set.first, set.second->GetName());
 		}
 	}
+
 	float4 GetCameraData()
 	{
 		float4 cameraData{};
@@ -350,6 +351,12 @@ namespace Util
 		uint dispatchY = (uint)std::ceil(resolution.y / 8.0f);
 
 		return { dispatchX, dispatchY };
+	}
+
+	bool GetTemporal()
+	{
+		auto imageSpaceManager = RE::ImageSpaceManager::GetSingleton();
+		return (!REL::Module::IsVR() ? imageSpaceManager->GetRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled : imageSpaceManager->GetVRRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled) || State::GetSingleton()->upscalerLoaded;
 	}
 
 	HoverTooltipWrapper::HoverTooltipWrapper()

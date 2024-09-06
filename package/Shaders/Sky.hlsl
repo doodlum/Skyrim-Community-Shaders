@@ -1,5 +1,5 @@
 #include "Common/Constants.hlsli"
-#include "Common/FrameBuffer.hlsl"
+#include "Common/FrameBuffer.hlsli"
 #include "Common/VR.hlsli"
 
 struct VS_INPUT
@@ -181,7 +181,7 @@ cbuffer AlphaTestRefCB : register(b11)
 }
 #	endif
 
-#	include "Common/MotionBlur.hlsl"
+#	include "Common/MotionBlur.hlsli"
 #	include "Common/SharedData.hlsli"
 
 #	if defined(CLOUD_SHADOWS)

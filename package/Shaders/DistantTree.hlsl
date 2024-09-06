@@ -1,7 +1,8 @@
 #include "Common/Constants.hlsli"
-#include "Common/FrameBuffer.hlsl"
+#include "Common/FrameBuffer.hlsli"
 #include "Common/GBuffer.hlsli"
-#include "Common/MotionBlur.hlsl"
+#include "Common/MotionBlur.hlsli"
+#include "Common/Random.hlsli"
 #include "Common/SharedData.hlsli"
 #include "Common/VR.hlsli"
 
@@ -214,31 +215,41 @@ PS_OUTPUT main(PS_INPUT input)
 #		if defined(DEFERRED)
 	float3 viewPosition = mul(CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
 	float2 screenUV = ViewToUV(viewPosition, true, eyeIndex);
-	float screenNoise = InterleavedGradientNoise(screenUV * BufferDim);
+	float screenNoise = InterleavedGradientNoise(input.Position.xy, FrameCount);
 
 	float dirShadow = 1;
 
 #			if defined(SCREEN_SPACE_SHADOWS)
-	dirShadow = GetScreenSpaceShadow(screenUV, screenNoise, viewPosition, eyeIndex);
+	dirShadow = lerp(0.5, 1.0, ScreenSpaceShadows::GetScreenSpaceShadow(input.Position, screenUV, screenNoise, viewPosition, eyeIndex));
 #			endif
 
 #			if defined(TERRA_OCC)
 	if (dirShadow > 0.0) {
 		float terrainShadow = 1;
 		float terrainAo = 1;
-		GetTerrainOcclusion(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex], length(input.WorldPosition.xyz), SampDiffuse, terrainShadow, terrainAo);
+		TerrainOcclusion::GetTerrainOcclusion(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex], length(input.WorldPosition.xyz), SampDiffuse, terrainShadow, terrainAo);
 		dirShadow = min(dirShadow, terrainShadow);
 	}
 #			endif
 
 #			if defined(CLOUD_SHADOWS)
 	if (dirShadow > 0.0) {
-		dirShadow *= GetCloudShadowMult(input.WorldPosition, SampDiffuse);
+		dirShadow *= CloudShadows::GetCloudShadowMult(input.WorldPosition, SampDiffuse);
 	}
 #			endif
 
-	psout.Diffuse.xyz = DirLightColorShared.xyz * baseColor.xyz * 0.5 * lerp(1.0, dirShadow, 0.8);
+	float3 diffuseColor = DirLightColorShared.xyz * dirShadow;
 
+	float3 ddx = ddx_coarse(input.WorldPosition);
+	float3 ddy = ddy_coarse(input.WorldPosition);
+	float3 normal = normalize(cross(ddx, ddy));
+
+#			if !defined(SSGI)
+	float3 directionalAmbientColor = mul(DirectionalAmbientShared, float4(normal, 1.0));
+	diffuseColor += directionalAmbientColor;
+#			endif
+
+	psout.Diffuse.xyz = diffuseColor * baseColor.xyz * 0.5;
 	psout.Diffuse.w = 1;
 
 	psout.MotionVector = GetSSMotionVector(input.WorldPosition, input.PreviousWorldPosition, eyeIndex);
@@ -257,7 +268,7 @@ PS_OUTPUT main(PS_INPUT input)
 	normal = mul(CameraView[eyeIndex], float4(worldNormal, 0)).xyz;
 #			endif
 
-	psout.Normal.xy = EncodeNormal(normal);
+	psout.Normal.xy = EncodeNormal(WorldToView(normal, false, eyeIndex));
 	psout.Normal.zw = 0;
 
 	psout.Albedo = float4(baseColor.xyz * 0.5, 1);
@@ -277,8 +288,8 @@ PS_OUTPUT main(PS_INPUT input)
 
 	float3 directionalAmbientColor = mul(DirectionalAmbientShared, float4(normal, 1.0));
 
-	float3 color = DirLightColorShared.xyz * baseColor.xyz * 0.5;
-	color += baseColor.xyz * 0.5 * directionalAmbientColor;
+	float3 color = baseColor.xyz * (DiffuseColor.xyz + AmbientColor.xyz);
+
 	psout.Diffuse = float4(color, 1.0);
 #		endif  // DEFERRED
 #	endif      // RENDER_DEPTH

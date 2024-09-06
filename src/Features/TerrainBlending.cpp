@@ -3,14 +3,6 @@
 #include "State.h"
 #include "Util.h"
 
-void TerrainBlending::DrawSettings()
-{
-}
-
-void TerrainBlending::Draw(const RE::BSShader*, const uint32_t)
-{
-}
-
 ID3D11VertexShader* TerrainBlending::GetTerrainVertexShader()
 {
 	if (!terrainVertexShader) {
@@ -111,6 +103,16 @@ void TerrainBlending::SetupResources()
 		blendedDepthTexture->CreateUAV(uavDesc);
 		terrainOffsetTexture->CreateUAV(uavDesc);
 
+		texDesc.Format = DXGI_FORMAT_R16_UNORM;
+		srvDesc.Format = texDesc.Format;
+		rtvDesc.Format = texDesc.Format;
+		uavDesc.Format = texDesc.Format;
+
+		blendedDepthTexture16 = new Texture2D(texDesc);
+		blendedDepthTexture16->CreateSRV(srvDesc);
+		blendedDepthTexture16->CreateRTV(rtvDesc);
+		blendedDepthTexture16->CreateUAV(uavDesc);
+
 		auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 		depthSRVBackup = mainDepth.depthSRV;
 
@@ -126,23 +128,6 @@ void TerrainBlending::SetupResources()
 		depthStencilDesc.StencilEnable = false;
 		DX::ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, &terrainDepthStencilState));
 	}
-}
-
-void TerrainBlending::Reset()
-{
-}
-
-void TerrainBlending::Load(json& o_json)
-{
-	Feature::Load(o_json);
-}
-
-void TerrainBlending::Save(json&)
-{
-}
-
-void TerrainBlending::RestoreDefaultSettings()
-{
 }
 
 void TerrainBlending::PostPostLoad()
@@ -256,10 +241,10 @@ void TerrainBlending::BlendPrepassDepths()
 
 	{
 		ID3D11ShaderResourceView* views[2] = { depthSRVBackup, terrainDepth.depthSRV };
-		context->CSSetShaderResources(0, 2, views);
+		context->CSSetShaderResources(0, ARRAYSIZE(views), views);
 
-		ID3D11UnorderedAccessView* uav = blendedDepthTexture->uav.get();
-		context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+		ID3D11UnorderedAccessView* uavs[2] = { blendedDepthTexture->uav.get(), blendedDepthTexture16->uav.get() };
+		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
 
 		context->CSSetShader(GetDepthBlendShader(), nullptr, 0);
 
@@ -268,10 +253,10 @@ void TerrainBlending::BlendPrepassDepths()
 
 	{
 		ID3D11ShaderResourceView* views[2] = { depthSRVBackup, terrainDepthTexture->srv.get() };
-		context->CSSetShaderResources(0, 2, views);
+		context->CSSetShaderResources(0, ARRAYSIZE(views), views);
 
-		ID3D11UnorderedAccessView* uav = terrainOffsetTexture->uav.get();
-		context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+		ID3D11UnorderedAccessView* uavs[2] = { terrainOffsetTexture->uav.get(), nullptr };
+		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
 
 		context->CSSetShader(GetDepthFixShader(), nullptr, 0);
 
@@ -279,10 +264,10 @@ void TerrainBlending::BlendPrepassDepths()
 	}
 
 	ID3D11ShaderResourceView* views[2] = { nullptr, nullptr };
-	context->CSSetShaderResources(0, 2, views);
+	context->CSSetShaderResources(0, ARRAYSIZE(views), views);
 
-	ID3D11UnorderedAccessView* uav = nullptr;
-	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+	ID3D11UnorderedAccessView* uavs[2] = { nullptr, nullptr };
+	context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
 
 	ID3D11ComputeShader* shader = nullptr;
 	context->CSSetShader(shader, nullptr, 0);

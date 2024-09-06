@@ -20,7 +20,7 @@ ID3D11ComputeShader* VariableRateShading::GetComputeNASData()
 {
 	if (!computeNASDataCS) {
 		logger::debug("Compiling ComputeNASData");
-		computeNASDataCS = (ID3D11ComputeShader*)Util::CompileShader(L"Data\\Shaders\\VariableRateShading\\ComputeNASData.hlsl", {}, "cs_5_0");
+		computeNASDataCS = static_cast<ID3D11ComputeShader*>(Util::CompileShader(L"Data\\Shaders\\VariableRateShading\\ComputeNASData.hlsl", {}, "cs_5_0"));
 	}
 	return computeNASDataCS;
 }
@@ -29,7 +29,7 @@ ID3D11ComputeShader* VariableRateShading::GetComputeShadingRate()
 {
 	if (!computeShadingRateCS) {
 		logger::debug("Compiling ComputeShadingRate");
-		computeShadingRateCS = (ID3D11ComputeShader*)Util::CompileShader(L"Data\\Shaders\\VariableRateShading\\ComputeShadingRate.hlsl", {}, "cs_5_0");
+		computeShadingRateCS = static_cast<ID3D11ComputeShader*>(Util::CompileShader(L"Data\\Shaders\\VariableRateShading\\ComputeShadingRate.hlsl", {}, "cs_5_0"));
 	}
 	return computeShadingRateCS;
 }
@@ -64,8 +64,8 @@ void VariableRateShading::UpdateVRS()
 		ID3D11DepthStencilView* nullDsv = nullptr;
 		context->OMSetRenderTargets(8, nullViews, nullDsv);
 
-		auto& main = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGET::kMAIN];
-		auto& motionVectors = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGET::kMOTION_VECTOR];
+		const auto& main = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGET::kMAIN];
+		const auto& motionVectors = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGET::kMOTION_VECTOR];
 
 		ID3D11ShaderResourceView* srvs[2]{
 			main.SRV,

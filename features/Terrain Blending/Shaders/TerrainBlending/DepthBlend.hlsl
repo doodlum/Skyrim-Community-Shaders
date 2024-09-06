@@ -1,4 +1,6 @@
 RWTexture2D<float> BlendedDepthTexture : register(u0);
+RWTexture2D<unorm half> BlendedDepthTexture16 : register(u1);
+
 Texture2D<unorm float> MainDepthTexture : register(t0);
 Texture2D<unorm float> TerrainDepthTexture : register(t1);
 
@@ -6,4 +8,5 @@ Texture2D<unorm float> TerrainDepthTexture : register(t1);
 								: SV_DispatchThreadID) {
 	float mixedDepth = min(MainDepthTexture[DTid.xy], TerrainDepthTexture[DTid.xy]);
 	BlendedDepthTexture[DTid.xy] = mixedDepth;
+	BlendedDepthTexture16[DTid.xy] = mixedDepth;
 }

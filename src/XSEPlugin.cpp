@@ -4,6 +4,7 @@
 #include "Menu.h"
 #include "ShaderCache.h"
 #include "State.h"
+#include "TruePBR.h"
 
 #include "ENB/ENBSeriesAPI.h"
 #include "Features/ExtendedMaterials.h"
@@ -129,6 +130,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* message)
 					shaderCache.WriteDiskCacheInfo();
 				}
 
+				TruePBR::GetSingleton()->DataLoaded();
 				for (auto* feature : Feature::GetFeatureList()) {
 					if (feature->loaded) {
 						feature->DataLoaded();
@@ -149,7 +151,7 @@ bool Load()
 	}
 
 	if (REL::Module::IsVR()) {
-		REL::IDDatabase::get().IsVRAddressLibraryAtLeastVersion("0.140.0", true);
+		REL::IDDatabase::get().IsVRAddressLibraryAtLeastVersion("0.146.0", true);
 	}
 
 	auto messaging = SKSE::GetMessagingInterface();

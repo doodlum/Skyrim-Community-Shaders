@@ -9,9 +9,6 @@ on:
 permissions:
   contents: write
 
-env:
-  VCPKG_COMMIT_ID: 34742e119fb2aae42f10c03a98e475eb1934f7c9
-
 jobs:
   compile:
     name: build plugin and addons
@@ -19,19 +16,19 @@ jobs:
     steps:
         - uses: actions/checkout@v3
           with:
-            submodules: 'true'
+            submodules: recursive
 
         - uses: ilammy/msvc-dev-cmd@v1.10.0
 
-        - uses: lukka/run-vcpkg@v11
+        - uses: lukka/run-vcpkg@v11.5
           with:
-              vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+            vcpkgJsonGlob: vcpkg.json
 
         - name: cmake configure
           run: cmake -S . --preset=ALL --check-stamp-file "build\CMakeFiles\generate.stamp"
 
         - name: cmake build
-          run: cmake --build build --config Release
+          run: cmake --build build/ALL --config Release
 
         - name: create a tagged release and upload the archive
           uses: ncipollo/release-action@v1

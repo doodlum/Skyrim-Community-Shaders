@@ -1,8 +1,9 @@
-#include "Common/Color.hlsl"
-#include "Common/FrameBuffer.hlsl"
+#include "Common/Color.hlsli"
+#include "Common/FrameBuffer.hlsli"
 #include "Common/GBuffer.hlsli"
-#include "Common/MotionBlur.hlsl"
-#include "Common/Permutation.hlsl"
+#include "Common/MotionBlur.hlsli"
+#include "Common/Permutation.hlsli"
+#include "Common/Random.hlsli"
 #include "Common/SharedData.hlsli"
 #include "Common/Skinned.hlsli"
 #include "Common/VR.hlsli"
@@ -498,21 +499,41 @@ cbuffer PerGeometry : register(b2)
 #	endif
 };
 
-#	if defined(MEMBRANE) || !defined(LIGHTING)
-#		undef LIGHT_LIMIT_FIX
-#	endif
-
 #	if defined(LIGHT_LIMIT_FIX)
 #		include "LightLimitFix/LightLimitFix.hlsli"
 #	endif
 
+#	define LinearSampler SampBaseSampler
+
+#	if defined(TERRA_OCC)
+#		include "TerrainOcclusion/TerrainOcclusion.hlsli"
+#	endif
+
+#	if defined(CLOUD_SHADOWS)
+#		include "CloudShadows/CloudShadows.hlsli"
+#	endif
+
+#	include "Common/ShadowSampling.hlsli"
+
 #	if defined(LIGHTING)
-float3 GetLightingColor(float3 msPosition, uint a_eyeIndex = 0)
+float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPosition, uint eyeIndex)
 {
-	float4 lightDistanceSquared = (PLightPositionX[a_eyeIndex] - msPosition.xxxx) * (PLightPositionX[a_eyeIndex] - msPosition.xxxx) + (PLightPositionY[a_eyeIndex] - msPosition.yyyy) * (PLightPositionY[a_eyeIndex] - msPosition.yyyy) + (PLightPositionZ[a_eyeIndex] - msPosition.zzzz) * (PLightPositionZ[a_eyeIndex] - msPosition.zzzz);
+	float4 lightDistanceSquared = (PLightPositionX[eyeIndex] - msPosition.xxxx) * (PLightPositionX[eyeIndex] - msPosition.xxxx) + (PLightPositionY[eyeIndex] - msPosition.yyyy) * (PLightPositionY[eyeIndex] - msPosition.yyyy) + (PLightPositionZ[eyeIndex] - msPosition.zzzz) * (PLightPositionZ[eyeIndex] - msPosition.zzzz);
 	float4 lightFadeMul = 1.0.xxxx - saturate(PLightingRadiusInverseSquared * lightDistanceSquared);
 
 	float3 color = DLightColor.xyz;
+	if (!InInterior && !InMapMenu && (ExtraShaderDescriptor & _InWorld)) {
+		float3 viewDirection = normalize(worldPosition);
+		color = DirLightColorShared * GetEffectShadow(worldPosition, viewDirection, screenPosition, eyeIndex);
+
+		float3 directionalAmbientColor = DirectionalAmbientShared._14_24_34;
+		color += directionalAmbientColor;
+	} else {
+		color = DirLightColorShared;
+
+		float3 directionalAmbientColor = DirectionalAmbientShared._14_24_34;
+		color += directionalAmbientColor;
+	}
 	color.x += dot(PLightColorR * lightFadeMul, 1.0.xxxx);
 	color.y += dot(PLightColorG * lightFadeMul, 1.0.xxxx);
 	color.z += dot(PLightColorB * lightFadeMul, 1.0.xxxx);
@@ -578,16 +599,17 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 propertyColor = PropertyColor.xyz;
 
 #	if defined(LIGHTING)
-	propertyColor = GetLightingColor(input.MSPosition, eyeIndex);
+	propertyColor = GetLightingColor(input.MSPosition, input.WorldPosition, input.Position, eyeIndex);
 
 #		if defined(LIGHT_LIMIT_FIX)
 	uint lightCount = 0;
 	if (LightingInfluence.x > 0.0) {
 		float3 viewPosition = mul(CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
 		float2 screenUV = ViewToUV(viewPosition, true, eyeIndex);
+		bool inWorld = ExtraShaderDescriptor & _InWorld;
 
 		uint clusterIndex = 0;
-		if (strictLights[0].EnableGlobalLights && GetClusterIndex(screenUV, viewPosition.z, clusterIndex)) {
+		if (inWorld && LightLimitFix::GetClusterIndex(screenUV, viewPosition.z, clusterIndex)) {
 			lightCount = lightGrid[clusterIndex].lightCount;
 			uint lightOffset = lightGrid[clusterIndex].offset;
 			[loop] for (uint i = 0; i < lightCount; i++)
@@ -622,7 +644,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float4 baseColorMul = float4(1, 1, 1, 1);
 #	else
 	float4 baseColorMul = BaseColor;
-#		if defined(VC)
+#		if defined(VC) && !defined(PROJECTED_UV)
 	baseColorMul *= input.Color;
 #		endif
 #	endif
@@ -676,7 +698,7 @@ PS_OUTPUT main(PS_INPUT input)
 #	if defined(MEMBRANE)
 		grayscaleToColorUv.y = PropertyColor.x;
 #	endif
-		baseColor.xyz = BaseColorScale.x * TexGrayscaleSampler.Sample(SampGrayscaleSampler, grayscaleToColorUv).xyz;
+		baseColor.xyz = baseColorScale * TexGrayscaleSampler.Sample(SampGrayscaleSampler, grayscaleToColorUv).xyz;
 	}
 
 	float3 lightColor = lerp(baseColor.xyz, propertyColor * baseColor.xyz, lightingInfluence.xxx);
@@ -709,11 +731,11 @@ PS_OUTPUT main(PS_INPUT input)
 #	if defined(LIGHT_LIMIT_FIX) && defined(LLFDEBUG)
 	if (lightLimitFixSettings.EnableLightsVisualisation) {
 		if (lightLimitFixSettings.LightsVisualisationMode == 0) {
-			psout.Diffuse.xyz = TurboColormap(0.0);
+			psout.Diffuse.xyz = LightLimitFix::TurboColormap(0.0);
 		} else if (lightLimitFixSettings.LightsVisualisationMode == 1) {
-			psout.Diffuse.xyz = TurboColormap(0.0);
+			psout.Diffuse.xyz = LightLimitFix::TurboColormap(0.0);
 		} else {
-			psout.Diffuse.xyz = TurboColormap((float)lightCount / 128.0);
+			psout.Diffuse.xyz = LightLimitFix::TurboColormap((float)lightCount / 128.0);
 		}
 	}
 #	endif

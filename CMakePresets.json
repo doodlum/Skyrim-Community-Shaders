@@ -12,20 +12,14 @@
 			"cacheVariables": {
 				"SKSE_SUPPORT_XBYAK": "ON"
 			},
-			"binaryDir": "${sourceDir}/build"
+			"binaryDir": "${sourceDir}/build/${presetName}"
 		},
 		{
 			"name": "vcpkg",
 			"hidden": true,
 			"cacheVariables": {
-				"CMAKE_TOOLCHAIN_FILE": {
-					"type": "STRING",
-					"value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-				},
-				"VCPKG_OVERLAY_PORTS": {
-					"type": "STRING",
-					"value": "${sourceDir}/cmake/ports/"
-				  },
+				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+				"VCPKG_OVERLAY_PORTS": "${sourceDir}/cmake/ports/",
 				"VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
 			}
 		},
@@ -53,95 +47,75 @@
 			}
 		},
 		{
-			"name": "AE",
-			"cacheVariables": {
-				"BUILD_SKYRIM": true,
-				"ENABLE_SKYRIM_AE": "ON",
-				"ENABLE_SKYRIM_SE": "OFF",
-				"ENABLE_SKYRIM_VR": "OFF"
-			},
+			"name": "skyrim",
+			"hidden": true,
 			"inherits": [
 				"common",
 				"vcpkg",
 				"win64",
 				"msvc"
 			]
+		},
+		{
+			"name": "AE",
+			"cacheVariables": {
+				"ENABLE_SKYRIM_AE": "ON",
+				"ENABLE_SKYRIM_SE": "OFF",
+				"ENABLE_SKYRIM_VR": "OFF"
+			},
+			"inherits": "skyrim"
 		},
 		{
 			"name": "SE",
 			"cacheVariables": {
-				"BUILD_SKYRIM": true,
 				"ENABLE_SKYRIM_AE": "OFF",
 				"ENABLE_SKYRIM_SE": "ON",
 				"ENABLE_SKYRIM_VR": "OFF"
 			},
-			"inherits": [
-				"common",
-				"vcpkg",
-				"win64",
-				"msvc"
-			]
+			"inherits": "skyrim"
 		},
 		{
 			"name": "VR",
 			"cacheVariables": {
-				"BUILD_SKYRIM": true,
 				"ENABLE_SKYRIM_AE": "OFF",
 				"ENABLE_SKYRIM_SE": "OFF",
 				"ENABLE_SKYRIM_VR": "ON"
 			},
-			"inherits": [
-				"common",
-				"vcpkg",
-				"win64",
-				"msvc"
-			]
+			"inherits": "skyrim"
 		},
 		{
 			"name": "ALL",
 			"cacheVariables": {
-				"BUILD_SKYRIM": true,
 				"ENABLE_SKYRIM_AE": "ON",
 				"ENABLE_SKYRIM_SE": "ON",
 				"ENABLE_SKYRIM_VR": "ON"
 			},
-			"inherits": [
-				"common",
-				"vcpkg",
-				"win64",
-				"msvc"
-			]
+			"inherits": "skyrim"
 		},
 		{
 			"name": "PRE-AE",
 			"cacheVariables": {
-				"BUILD_SKYRIM": true,
 				"ENABLE_SKYRIM_AE": "OFF",
 				"ENABLE_SKYRIM_SE": "ON",
 				"ENABLE_SKYRIM_VR": "ON"
 			},
-			"inherits": [
-				"common",
-				"vcpkg",
-				"win64",
-				"msvc"
-			]
+			"inherits": "skyrim"
 		},
 		{
 			"name": "FLATRIM",
 			"cacheVariables": {
-				"BUILD_SKYRIM": true,
 				"ENABLE_SKYRIM_AE": "ON",
 				"ENABLE_SKYRIM_SE": "ON",
-				"ENABLE_SKYRIM_VR": "OFF",
-				"Build Tests": "OFF"
+				"ENABLE_SKYRIM_VR": "OFF"
 			},
-			"inherits": [
-				"common",
-				"vcpkg",
-				"win64",
-				"msvc"
-			]
+			"inherits": "skyrim"
+		},
+		{
+			"name": "ALL-TRACY",
+			"cacheVariables": {
+				"TRACY_SUPPORT": "ON"
+			},
+			"inherits": "ALL"
 		}
 	]
 }

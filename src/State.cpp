@@ -10,54 +10,78 @@
 #include "Util.h"
 
 #include "Deferred.h"
+#include "Features/Skylighting.h"
 #include "Features/TerrainBlending.h"
+#include "TruePBR.h"
 
 #include "VariableRateShading.h"
 
 void State::Draw()
 {
-	auto terrainBlending = TerrainBlending::GetSingleton();
-	if (terrainBlending->loaded)
-		terrainBlending->TerrainShaderHacks();
+	const auto& shaderCache = SIE::ShaderCache::Instance();
+	if (shaderCache.IsEnabled()) {
+		auto terrainBlending = TerrainBlending::GetSingleton();
+		if (terrainBlending->loaded)
+			terrainBlending->TerrainShaderHacks();
 
-	if (currentShader && updateShader) {
-		auto type = currentShader->shaderType.get();
-		if (type == RE::BSShader::Type::Utility) {
-			if (currentPixelDescriptor & static_cast<uint32_t>(SIE::ShaderCache::UtilityShaderFlags::RenderShadowmask)) {
-				Deferred::GetSingleton()->CopyShadowData();
+		TruePBR::GetSingleton()->SetShaderResouces();
+
+		auto skylighting = Skylighting::GetSingleton();
+		if (skylighting->loaded)
+			skylighting->SkylightingShaderHacks();
+
+		if (currentShader && updateShader) {
+			auto type = currentShader->shaderType.get();
+			if (type == RE::BSShader::Type::Utility) {
+				if (currentPixelDescriptor & static_cast<uint32_t>(SIE::ShaderCache::UtilityShaderFlags::RenderShadowmask)) {
+					Deferred::GetSingleton()->CopyShadowData();
+				}
 			}
-		}
-		auto& shaderCache = SIE::ShaderCache::Instance();
-		if (shaderCache.IsEnabled()) {
+
 			VariableRateShading::GetSingleton()->UpdateViews(type != RE::BSShader::Type::ImageSpace && type != RE::BSShader::Type::Sky && type != RE::BSShader::Type::Water);
 			if (type > 0 && type < RE::BSShader::Type::Total) {
 				if (enabledClasses[type - 1]) {
 					// Only check against non-shader bits
 					currentPixelDescriptor &= ~modifiedPixelDescriptor;
-					if (currentPixelDescriptor != lastPixelDescriptor) {
+
+					if (auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator()) {
+						// Set an unused bit to indicate if we are rendering an object in the main rendering pass
+						if (accumulator->GetRuntimeData().activeShadowSceneNode == RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0]) {
+							currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
+						}
+					}
+
+					if (currentPixelDescriptor != lastPixelDescriptor || currentExtraDescriptor != lastExtraDescriptor) {
 						PermutationCB data{};
 						data.VertexShaderDescriptor = currentVertexDescriptor;
 						data.PixelShaderDescriptor = currentPixelDescriptor;
+						data.ExtraShaderDescriptor = currentExtraDescriptor;
 
 						permutationCB->Update(data);
 
 						lastVertexDescriptor = currentVertexDescriptor;
 						lastPixelDescriptor = currentPixelDescriptor;
+						lastExtraDescriptor = currentExtraDescriptor;
+					}
 
+					currentExtraDescriptor = 0;
+
+					static Util::FrameChecker frameChecker;
+					if (frameChecker.isNewFrame()) {
 						ID3D11Buffer* buffers[3] = { permutationCB->CB(), sharedDataCB->CB(), featureDataCB->CB() };
 						context->PSSetConstantBuffers(4, 3, buffers);
 					}
 
 					if (IsDeveloperMode()) {
 						BeginPerfEvent(std::format("Draw: CS {}::{:x}", magic_enum::enum_name(currentShader->shaderType.get()), currentPixelDescriptor));
-						SetPerfMarker(std::format("Defines: {}", SIE::ShaderCache::GetDefinesString(currentShader->shaderType.get(), currentPixelDescriptor)));
+						SetPerfMarker(std::format("Defines: {}", SIE::ShaderCache::GetDefinesString(*currentShader, currentPixelDescriptor)));
 						EndPerfEvent();
 					}
 				}
 			}
 		}
+		updateShader = false;
 	}
-	updateShader = false;
 }
 
 void State::Reset()
@@ -77,6 +101,7 @@ void State::Reset()
 
 void State::Setup()
 {
+	TruePBR::GetSingleton()->SetupResources();
 	SetupResources();
 	for (auto* feature : Feature::GetFeatureList())
 		if (feature->loaded)
@@ -116,8 +141,6 @@ void State::Load(ConfigMode a_configMode)
 		if (!i.is_open()) {
 			logger::info("No default config ({}), generating new one", configPath);
 			std::fill(enabledClasses, enabledClasses + RE::BSShader::Type::Total - 1, true);
-			enabledClasses[RE::BSShader::Type::ImageSpace - 1] = false;
-			enabledClasses[RE::BSShader::Type::Utility - 1] = false;
 			Save(configMode);
 			i.open(configPath);
 			if (!i.is_open()) {
@@ -182,6 +205,11 @@ void State::Load(ConfigMode a_configMode)
 		}
 	}
 
+	auto truePBR = TruePBR::GetSingleton();
+	auto& pbrJson = settings[truePBR->GetShortName()];
+	if (pbrJson.is_object())
+		truePBR->LoadSettings(pbrJson);
+
 	for (auto* feature : Feature::GetFeatureList())
 		feature->Load(settings);
 	i.close();
@@ -193,7 +221,7 @@ void State::Load(ConfigMode a_configMode)
 
 void State::Save(ConfigMode a_configMode)
 {
-	auto& shaderCache = SIE::ShaderCache::Instance();
+	const auto& shaderCache = SIE::ShaderCache::Instance();
 	std::string configPath = GetConfigPath(a_configMode);
 	std::ofstream o{ configPath };
 	json settings;
@@ -216,6 +244,10 @@ void State::Save(ConfigMode a_configMode)
 	general["Enable Async"] = shaderCache.IsAsync();
 
 	settings["General"] = general;
+
+	auto truePBR = TruePBR::GetSingleton();
+	auto& pbrJson = settings[truePBR->GetShortName()];
+	truePBR->SaveSettings(pbrJson);
 
 	json originalShaders;
 	for (int classIndex = 0; classIndex < RE::BSShader::Type::Total - 1; ++classIndex) {
@@ -240,6 +272,7 @@ void State::PostPostLoad()
 	else
 		logger::info("Skyrim Upscaler not detected");
 	Deferred::Hooks::Install();
+	TruePBR::GetSingleton()->PostPostLoad();
 }
 
 bool State::ValidateCache(CSimpleIniA& a_ini)
@@ -304,7 +337,7 @@ std::vector<std::pair<std::string, std::string>>* State::GetDefines()
 bool State::ShaderEnabled(const RE::BSShader::Type a_type)
 {
 	auto index = static_cast<uint32_t>(a_type) + 1;
-	if (index && index < sizeof(enabledClasses)) {
+	if (index < sizeof(enabledClasses)) {
 		return enabledClasses[index];
 	}
 	return false;
@@ -347,6 +380,8 @@ void State::SetupResources()
 	context = reinterpret_cast<ID3D11DeviceContext*>(renderer->GetRuntimeData().context);
 	device = reinterpret_cast<ID3D11Device*>(renderer->GetRuntimeData().forwarder);
 	context->QueryInterface(__uuidof(pPerf), reinterpret_cast<void**>(&pPerf));
+
+	tracyCtx = TracyD3D11Context(device, context);
 }
 
 void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescriptor, uint& a_pixelDescriptor, bool a_forceDeferred)
@@ -405,25 +440,20 @@ void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescr
 			break;
 		case RE::BSShader::Type::Water:
 			{
-				a_vertexDescriptor &= ~((uint32_t)SIE::ShaderCache::WaterShaderFlags::Reflections |
-										(uint32_t)SIE::ShaderCache::WaterShaderFlags::Cubemap |
-										(uint32_t)SIE::ShaderCache::WaterShaderFlags::Interior |
-										(uint32_t)SIE::ShaderCache::WaterShaderFlags::Reflections);
-
-				a_pixelDescriptor &= ~((uint32_t)SIE::ShaderCache::WaterShaderFlags::Reflections |
-									   (uint32_t)SIE::ShaderCache::WaterShaderFlags::Cubemap |
-									   (uint32_t)SIE::ShaderCache::WaterShaderFlags::Interior);
+				auto flags = ~((uint32_t)SIE::ShaderCache::WaterShaderFlags::Reflections |
+							   (uint32_t)SIE::ShaderCache::WaterShaderFlags::Cubemap |
+							   (uint32_t)SIE::ShaderCache::WaterShaderFlags::Interior);
+				a_vertexDescriptor &= flags;
+				a_pixelDescriptor &= flags;
 			}
 			break;
 		case RE::BSShader::Type::Effect:
 			{
-				a_vertexDescriptor &= ~((uint32_t)SIE::ShaderCache::EffectShaderFlags::GrayscaleToColor |
-										(uint32_t)SIE::ShaderCache::EffectShaderFlags::GrayscaleToAlpha |
-										(uint32_t)SIE::ShaderCache::EffectShaderFlags::IgnoreTexAlpha);
-
-				a_pixelDescriptor &= ~((uint32_t)SIE::ShaderCache::EffectShaderFlags::GrayscaleToColor |
-									   (uint32_t)SIE::ShaderCache::EffectShaderFlags::GrayscaleToAlpha |
-									   (uint32_t)SIE::ShaderCache::EffectShaderFlags::IgnoreTexAlpha);
+				auto flags = ~((uint32_t)SIE::ShaderCache::EffectShaderFlags::GrayscaleToColor |
+							   (uint32_t)SIE::ShaderCache::EffectShaderFlags::GrayscaleToAlpha |
+							   (uint32_t)SIE::ShaderCache::EffectShaderFlags::IgnoreTexAlpha);
+				a_vertexDescriptor &= flags;
+				a_pixelDescriptor &= flags;
 
 				if (Deferred::GetSingleton()->deferredPass || a_forceDeferred)
 					a_pixelDescriptor |= (uint32_t)SIE::ShaderCache::EffectShaderFlags::Deferred;
@@ -465,8 +495,8 @@ void State::UpdateSharedData()
 	{
 		SharedDataCB data{};
 
-		auto& shaderManager = RE::BSShaderManager::State::GetSingleton();
-		RE::NiTransform& dalcTransform = shaderManager.directionalAmbientTransform;
+		const auto& shaderManager = RE::BSShaderManager::State::GetSingleton();
+		const RE::NiTransform& dalcTransform = shaderManager.directionalAmbientTransform;
 		Util::StoreTransform3x4NoScale(data.DirectionalAmbient, dalcTransform);
 
 		auto shadowSceneNode = RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0];
@@ -477,7 +507,7 @@ void State::UpdateSharedData()
 		auto imageSpaceManager = RE::ImageSpaceManager::GetSingleton();
 		data.DirLightColor *= !isVR ? imageSpaceManager->GetRuntimeData().data.baseData.hdr.sunlightScale : imageSpaceManager->GetVRRuntimeData().data.baseData.hdr.sunlightScale;
 
-		auto& direction = dirLight->GetWorldDirection();
+		const auto& direction = dirLight->GetWorldDirection();
 		data.DirLightDirection = { -direction.x, -direction.y, -direction.z, 0.0f };
 		data.DirLightDirection.Normalize();
 
@@ -499,6 +529,16 @@ void State::UpdateSharedData()
 			}
 		}
 
+		if (auto sky = RE::Sky::GetSingleton())
+			data.InInterior = sky->mode.get() != RE::Sky::Mode::kFull;
+		else
+			data.InInterior = true;
+
+		if (auto ui = RE::UI::GetSingleton())
+			data.InMapMenu = ui->IsMenuOpen(RE::MapMenu::MENU_NAME);
+		else
+			data.InMapMenu = true;
+
 		sharedDataCB->Update(data);
 	}
 
@@ -510,6 +550,9 @@ void State::UpdateSharedData()
 		delete[] data;
 	}
 
-	auto depth = RE::BSGraphics::Renderer::GetSingleton()->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY].depthSRV;
-	context->PSSetShaderResources(20, 1, &depth);
+	const auto& depth = RE::BSGraphics::Renderer::GetSingleton()->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
+	auto terrainBlending = TerrainBlending::GetSingleton();
+	auto srv = (terrainBlending->loaded ? terrainBlending->blendedDepthTexture16->srv.get() : depth.depthSRV);
+
+	context->PSSetShaderResources(20, 1, &srv);
 }

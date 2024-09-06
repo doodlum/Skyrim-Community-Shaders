@@ -5,6 +5,7 @@
 #include "Menu.h"
 #include "ShaderCache.h"
 #include "State.h"
+#include "TruePBR.h"
 #include "Util.h"
 
 #include "ShaderTools/BSShaderHooks.h"
@@ -26,42 +27,22 @@ const std::pair<std::unique_ptr<uint8_t[]>, size_t>& GetShaderBytecode(void* Sha
 	return ShaderBytecodeMap.at(Shader);
 }
 
-void DumpShader(const REX::BSShader* thisClass, const RE::BSGraphics::VertexShader* shader, const std::pair<std::unique_ptr<uint8_t[]>, size_t>& bytecode)
+template <class ShaderType>
+void DumpShader(const REX::BSShader* thisClass, const ShaderType* shader, const std::pair<std::unique_ptr<uint8_t[]>, size_t>& bytecode)
 {
+	static_assert(std::is_same_v<ShaderType, RE::BSGraphics::VertexShader> || std::is_same_v<ShaderType, RE::BSGraphics::PixelShader>);
+
 	uint8_t* dxbcData = new uint8_t[bytecode.second];
 	size_t dxbcLen = bytecode.second;
 	memcpy(dxbcData, bytecode.first.get(), bytecode.second);
 
-	std::string dumpDir = std::format("Data\\ShaderDump\\{}\\{}.vs.bin", thisClass->m_LoaderType, shader->id);
+	constexpr auto shaderExtStr = std::is_same_v<ShaderType, RE::BSGraphics::VertexShader> ? "vs" : "ps";
+	constexpr auto shaderTypeStr = std::is_same_v<ShaderType, RE::BSGraphics::VertexShader> ? "vertex" : "pixel";
+
+	std::string dumpDir = std::format("Data\\ShaderDump\\{}\\{:X}.{}.bin", thisClass->m_LoaderType, shader->id, shaderExtStr);
 	auto directoryPath = std::format("Data\\ShaderDump\\{}", thisClass->m_LoaderType);
-	logger::debug(fmt::runtime("Dumping vertex shader {} with id {:x} at {}"), thisClass->m_LoaderType, shader->id, dumpDir);
+	logger::debug(fmt::runtime("Dumping {} shader {} with id {:x} at {}"), shaderTypeStr, thisClass->m_LoaderType, shader->id, dumpDir);
 
-	if (!std::filesystem::is_directory(directoryPath)) {
-		try {
-			std::filesystem::create_directories(directoryPath);
-		} catch (std::filesystem::filesystem_error const& ex) {
-			logger::error("Failed to create folder: {}", ex.what());
-		}
-	}
-
-	if (FILE * file; fopen_s(&file, dumpDir.c_str(), "wb") == 0) {
-		fwrite(dxbcData, 1, dxbcLen, file);
-		fclose(file);
-	}
-
-	delete[] dxbcData;
-}
-
-void DumpShader(const REX::BSShader* thisClass, const RE::BSGraphics::PixelShader* shader, const std::pair<std::unique_ptr<uint8_t[]>, size_t>& bytecode)
-{
-	uint8_t* dxbcData = new uint8_t[bytecode.second];
-	size_t dxbcLen = bytecode.second;
-	memcpy(dxbcData, bytecode.first.get(), bytecode.second);
-
-	std::string dumpDir = std::format("Data\\ShaderDump\\{}\\{:X}.ps.bin", thisClass->m_LoaderType, shader->id);
-
-	auto directoryPath = std::format("Data\\ShaderDump\\{}", thisClass->m_LoaderType);
-	logger::debug(fmt::runtime("Dumping pixel shader {} with id {:x} at {}"), thisClass->m_LoaderType, shader->id, dumpDir);
 	if (!std::filesystem::is_directory(directoryPath)) {
 		try {
 			std::filesystem::create_directories(directoryPath);
@@ -88,9 +69,13 @@ void hk_BSShader_LoadShaders(RE::BSShader* shader, std::uintptr_t stream)
 	auto& shaderCache = SIE::ShaderCache::Instance();
 
 	if (shaderCache.IsDiskCache() || shaderCache.IsDump()) {
+		if (shaderCache.IsDiskCache()) {
+			TruePBR::GetSingleton()->GenerateShaderPermutations(shader);
+		}
+
 		for (const auto& entry : shader->vertexShaders) {
 			if (entry->shader && shaderCache.IsDump()) {
-				auto& bytecode = GetShaderBytecode(entry->shader);
+				const auto& bytecode = GetShaderBytecode(entry->shader);
 				DumpShader((REX::BSShader*)shader, entry, bytecode);
 			}
 			auto vertexShaderDesriptor = entry->id;
@@ -100,7 +85,7 @@ void hk_BSShader_LoadShaders(RE::BSShader* shader, std::uintptr_t stream)
 		}
 		for (const auto& entry : shader->pixelShaders) {
 			if (entry->shader && shaderCache.IsDump()) {
-				auto& bytecode = GetShaderBytecode(entry->shader);
+				const auto& bytecode = GetShaderBytecode(entry->shader);
 				DumpShader((REX::BSShader*)shader, entry, bytecode);
 			}
 			auto vertexShaderDesriptor = entry->id;
@@ -114,11 +99,9 @@ void hk_BSShader_LoadShaders(RE::BSShader* shader, std::uintptr_t stream)
 	BSShaderHooks::hk_LoadShaders((REX::BSShader*)shader, stream);
 };
 
-bool hk_BSShader_BeginTechnique(RE::BSShader* shader, uint32_t vertexDescriptor, uint32_t pixelDescriptor, bool skipPixelShader);
+decltype(&Hooks::hk_BSShader_BeginTechnique) ptr_BSShader_BeginTechnique;
 
-decltype(&hk_BSShader_BeginTechnique) ptr_BSShader_BeginTechnique;
-
-bool hk_BSShader_BeginTechnique(RE::BSShader* shader, uint32_t vertexDescriptor, uint32_t pixelDescriptor, bool skipPixelShader)
+bool Hooks::hk_BSShader_BeginTechnique(RE::BSShader* shader, uint32_t vertexDescriptor, uint32_t pixelDescriptor, bool skipPixelShader)
 {
 	auto state = State::GetSingleton();
 
@@ -133,12 +116,30 @@ bool hk_BSShader_BeginTechnique(RE::BSShader* shader, uint32_t vertexDescriptor,
 
 	state->ModifyShaderLookup(*shader, state->modifiedVertexDescriptor, state->modifiedPixelDescriptor);
 
-	auto ret = (ptr_BSShader_BeginTechnique)(shader, vertexDescriptor, pixelDescriptor, skipPixelShader);
+	bool shaderFound = (ptr_BSShader_BeginTechnique)(shader, vertexDescriptor, pixelDescriptor, skipPixelShader);
+
+	if (!shaderFound) {
+		auto& shaderCache = SIE::ShaderCache::Instance();
+		RE::BSGraphics::VertexShader* vertexShader = shaderCache.GetVertexShader(*shader, state->modifiedVertexDescriptor);
+		RE::BSGraphics::PixelShader* pixelShader = shaderCache.GetPixelShader(*shader, state->modifiedPixelDescriptor);
+		if (vertexShader == nullptr || (!skipPixelShader && pixelShader == nullptr)) {
+			shaderFound = false;
+		} else {
+			state->settingCustomShader = true;
+			RE::BSGraphics::RendererShadowState::GetSingleton()->SetVertexShader(vertexShader);
+			if (skipPixelShader) {
+				pixelShader = nullptr;
+			}
+			RE::BSGraphics::RendererShadowState::GetSingleton()->SetPixelShader(pixelShader);
+			state->settingCustomShader = false;
+			shaderFound = true;
+		}
+	}
 
 	state->lastModifiedVertexDescriptor = state->modifiedVertexDescriptor;
 	state->lastModifiedPixelDescriptor = state->modifiedPixelDescriptor;
 
-	return ret;
+	return shaderFound;
 }
 
 decltype(&IDXGISwapChain::Present) ptr_IDXGISwapChain_Present;
@@ -147,7 +148,9 @@ HRESULT WINAPI hk_IDXGISwapChain_Present(IDXGISwapChain* This, UINT SyncInterval
 {
 	State::GetSingleton()->Reset();
 	Menu::GetSingleton()->DrawOverlay();
-	return (This->*ptr_IDXGISwapChain_Present)(SyncInterval, Flags);
+	auto retval = (This->*ptr_IDXGISwapChain_Present)(SyncInterval, Flags);
+	TracyD3D11Collect(State::GetSingleton()->tracyCtx);
+	return retval;
 }
 
 void hk_BSGraphics_SetDirtyStates(bool isCompute);
@@ -230,9 +233,6 @@ decltype(&hk_BSShaderRenderTargets_Create) ptr_BSShaderRenderTargets_Create;
 
 void hk_BSShaderRenderTargets_Create()
 {
-	RE::GetINISetting("bUse64bitsHDRRenderTarget:Display")->data.b = false;
-	logger::info("bUse64bitsHDRRenderTarget was disabled");
-
 	(ptr_BSShaderRenderTargets_Create)();
 	State::GetSingleton()->Setup();
 }
@@ -251,12 +251,15 @@ void hk_PollInputDevices(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher, RE::
 		if (*a_events) {
 			if (auto device = (*a_events)->GetDevice()) {
 				// Check that the device is not a Gamepad or VR controller. If it is, unblock input.
-				auto vrDevice = (REL::Module::IsVR() && ((device == RE::INPUT_DEVICES::INPUT_DEVICE::kVivePrimary) ||
-															(device == RE::INPUT_DEVICES::INPUT_DEVICE::kViveSecondary) ||
-															(device == RE::INPUT_DEVICES::INPUT_DEVICE::kOculusPrimary) ||
-															(device == RE::INPUT_DEVICES::INPUT_DEVICE::kOculusSecondary) ||
-															(device == RE::INPUT_DEVICES::INPUT_DEVICE::kWMRPrimary) ||
-															(device == RE::INPUT_DEVICES::INPUT_DEVICE::kWMRSecondary)));
+				bool vrDevice = false;
+#ifdef ENABLE_SKYRIM_VR
+				vrDevice = (REL::Module::IsVR() && ((device == RE::INPUT_DEVICES::INPUT_DEVICE::kVivePrimary) ||
+													   (device == RE::INPUT_DEVICES::INPUT_DEVICE::kViveSecondary) ||
+													   (device == RE::INPUT_DEVICES::INPUT_DEVICE::kOculusPrimary) ||
+													   (device == RE::INPUT_DEVICES::INPUT_DEVICE::kOculusSecondary) ||
+													   (device == RE::INPUT_DEVICES::INPUT_DEVICE::kWMRPrimary) ||
+													   (device == RE::INPUT_DEVICES::INPUT_DEVICE::kWMRSecondary)));
+#endif
 				blockedDevice = !((device == RE::INPUT_DEVICES::INPUT_DEVICE::kGamepad) || vrDevice);
 			}
 		}
@@ -370,35 +373,27 @@ namespace Hooks
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	struct CreateRenderTarget_ShadowMask
-	{
-		static void thunk(RE::BSGraphics::Renderer* This, RE::RENDER_TARGETS::RENDER_TARGET a_target, RE::BSGraphics::RenderTargetProperties* a_properties)
-		{
-			State::GetSingleton()->ModifyRenderTarget(a_target, a_properties);
-			func(This, a_target, a_properties);
-		}
-		static inline REL::Relocation<decltype(thunk)> func;
-	};
-
 	struct BSShader__BeginTechnique_SetVertexShader
 	{
 		static void thunk(RE::BSGraphics::Renderer* This, RE::BSGraphics::VertexShader* a_vertexShader)
 		{
 			func(This, a_vertexShader);  // TODO: Remove original call
-			auto& shaderCache = SIE::ShaderCache::Instance();
-			if (shaderCache.IsEnabled()) {
-				auto state = State::GetSingleton();
-				auto currentShader = state->currentShader;
-				auto type = currentShader->shaderType.get();
-				if (type > 0 && type < RE::BSShader::Type::Total) {
-					if (state->enabledClasses[type - 1]) {
-						RE::BSGraphics::VertexShader* vertexShader = shaderCache.GetVertexShader(*currentShader, state->modifiedVertexDescriptor);
-						if (vertexShader) {
-							state->context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(vertexShader->shader), NULL, NULL);
-							auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
-							GET_INSTANCE_MEMBER(currentVertexShader, shadowState)
-							currentVertexShader = a_vertexShader;
-							return;
+			auto state = State::GetSingleton();
+			if (!state->settingCustomShader) {
+				auto& shaderCache = SIE::ShaderCache::Instance();
+				if (shaderCache.IsEnabled()) {
+					auto currentShader = state->currentShader;
+					auto type = currentShader->shaderType.get();
+					if (type > 0 && type < RE::BSShader::Type::Total) {
+						if (state->enabledClasses[type - 1]) {
+							RE::BSGraphics::VertexShader* vertexShader = shaderCache.GetVertexShader(*currentShader, state->modifiedVertexDescriptor);
+							if (vertexShader) {
+								state->context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(vertexShader->shader), NULL, NULL);
+								auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
+								GET_INSTANCE_MEMBER(currentVertexShader, shadowState)
+								currentVertexShader = a_vertexShader;
+								return;
+							}
 						}
 					}
 				}
@@ -411,14 +406,14 @@ namespace Hooks
 	{
 		static void thunk(RE::BSGraphics::Renderer* This, RE::BSGraphics::PixelShader* a_pixelShader)
 		{
-			auto& shaderCache = SIE::ShaderCache::Instance();
-			if (shaderCache.IsEnabled()) {
-				auto state = State::GetSingleton();
-				auto currentShader = state->currentShader;
-				auto type = currentShader->shaderType.get();
-				if (type > 0 && type < RE::BSShader::Type::Total) {
-					if (state->enabledClasses[type - 1]) {
-						if (state->lastModifiedPixelDescriptor != state->modifiedPixelDescriptor) {
+			auto state = State::GetSingleton();
+			if (!state->settingCustomShader) {
+				auto& shaderCache = SIE::ShaderCache::Instance();
+				if (shaderCache.IsEnabled()) {
+					auto currentShader = state->currentShader;
+					auto type = currentShader->shaderType.get();
+					if (type > 0 && type < RE::BSShader::Type::Total) {
+						if (state->enabledClasses[type - 1]) {
 							RE::BSGraphics::PixelShader* pixelShader = shaderCache.GetPixelShader(*currentShader, state->modifiedPixelDescriptor);
 							if (pixelShader) {
 								state->context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(pixelShader->shader), NULL, NULL);
@@ -427,11 +422,6 @@ namespace Hooks
 								currentPixelShader = a_pixelShader;
 								return;
 							}
-						} else {
-							auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
-							GET_INSTANCE_MEMBER(currentPixelShader, shadowState)
-							currentPixelShader = a_pixelShader;
-							return;
 						}
 					}
 				}
@@ -445,14 +435,121 @@ namespace Hooks
 	{
 		static void thunk(RE::BSGraphics::Renderer* This, uint32_t a_target, RE::BSGraphics::DepthStencilTargetProperties* a_properties)
 		{
-			a_properties->height = 256;
-			a_properties->width = 256;
 			a_properties->use16BitsDepth = true;
 			a_properties->stencil = false;
 			func(This, a_target, a_properties);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
+
+	struct CreateCubemapRenderTarget_Reflections
+	{
+		static void thunk(RE::BSGraphics::Renderer* This, uint32_t a_target, RE::BSGraphics::CubeMapRenderTargetProperties* a_properties)
+		{
+			a_properties->height = 128;
+			a_properties->width = 128;
+			func(This, a_target, a_properties);
+		}
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
+#ifdef TRACY_ENABLE
+	struct Main_Update
+	{
+		static void thunk(RE::Main* a_this, float a2)
+		{
+			func(a_this, a2);
+			FrameMark;
+		}
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+#endif
+
+	namespace CSShadersSupport
+	{
+		RE::BSImagespaceShader* CurrentlyDispatchedShader = nullptr;
+		RE::BSComputeShader* CurrentlyDispatchedComputeShader = nullptr;
+		uint32_t CurrentComputeShaderTechniqueId = 0;
+
+		RE::BSImagespaceShader* vlGenerateShader = nullptr;
+		RE::BSImagespaceShader* vlRaymarchShader = nullptr;
+
+		RE::BSImagespaceShader* CreateVLShader(const std::string_view& name, const std::string_view& fileName, RE::BSComputeShader* computeShader)
+		{
+			auto shader = RE::BSImagespaceShader::Create();
+			shader->shaderType = RE::BSShader::Type::ImageSpace;
+			shader->fxpFilename = fileName.data();
+			shader->name = name.data();
+			shader->originalShaderName = fileName.data();
+			shader->computeShader = computeShader;
+			shader->isComputeShader = true;
+			return shader;
+		}
+
+		RE::BSImagespaceShader* GetOrCreateVLGenerateShader(RE::BSComputeShader* computeShader)
+		{
+			if (vlGenerateShader == nullptr) {
+				vlGenerateShader = CreateVLShader("BSImagespaceShaderVolumetricLightingGenerateCS", "ISVolumetricLightingGenerateCS", computeShader);
+			}
+			return vlGenerateShader;
+		}
+
+		RE::BSImagespaceShader* GetOrCreateVLRaymarchShader(RE::BSComputeShader* computeShader)
+		{
+			if (vlRaymarchShader == nullptr) {
+				vlRaymarchShader = CreateVLShader("BSImagespaceShaderVolumetricLightingRaymarchCS", "ISVolumetricLightingRaymarchCS", computeShader);
+			}
+			return vlRaymarchShader;
+		}
+
+		void hk_BSImagespaceShader_DispatchComputeShader(RE::BSImagespaceShader* shader, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ);
+		decltype(&hk_BSImagespaceShader_DispatchComputeShader) ptr_BSImagespaceShader_DispatchComputeShader;
+		void hk_BSImagespaceShader_DispatchComputeShader(RE::BSImagespaceShader* shader, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ)
+		{
+			CurrentlyDispatchedShader = shader;
+			(ptr_BSImagespaceShader_DispatchComputeShader)(shader, threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+			CurrentlyDispatchedShader = nullptr;
+		}
+
+		struct BSComputeShader_Dispatch
+		{
+			static void thunk(RE::BSComputeShader* shader, uint32_t techniqueId, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ)
+			{
+				CurrentlyDispatchedComputeShader = shader;
+				CurrentComputeShaderTechniqueId = techniqueId;
+				func(shader, techniqueId, threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+				CurrentlyDispatchedComputeShader = nullptr;
+				CurrentComputeShaderTechniqueId = 0;
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+		};
+
+		void hk_Renderer_DispatchCSShader(RE::BSGraphics::Renderer* renderer, RE::BSGraphics::ComputeShader* shader, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ);
+		decltype(&hk_Renderer_DispatchCSShader) ptr_Renderer_DispatchCSShader;
+		void hk_Renderer_DispatchCSShader(RE::BSGraphics::Renderer* renderer, RE::BSGraphics::ComputeShader* shader, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ)
+		{
+			auto state = State::GetSingleton();
+			if (state->enabledClasses[RE::BSShader::Type::ImageSpace]) {
+				auto& shaderCache = SIE::ShaderCache::Instance();
+				RE::BSImagespaceShader* isShader = CurrentlyDispatchedShader;
+				uint32_t techniqueId = CurrentComputeShaderTechniqueId;
+				if (CurrentlyDispatchedShader == nullptr) {
+					techniqueId = 0;
+					if (CurrentlyDispatchedComputeShader->name == std::string_view("ISVolumetricLightingGenerateCS")) {
+						isShader = GetOrCreateVLGenerateShader(CurrentlyDispatchedComputeShader);
+					} else if (CurrentlyDispatchedComputeShader->name == std::string_view("ISVolumetricLightingRaymarchCS")) {
+						isShader = GetOrCreateVLRaymarchShader(CurrentlyDispatchedComputeShader);
+					}
+				}
+				if (isShader != nullptr) {
+					if (auto* computeShader = shaderCache.GetComputeShader(*isShader, techniqueId)) {
+						shader = computeShader;
+					}
+				}
+			}
+			(ptr_Renderer_DispatchCSShader)(renderer, shader, threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+		}
+	}
 
 	void Install()
 	{
@@ -464,7 +561,7 @@ namespace Hooks
 		logger::info("Hooking BSShader::LoadShaders");
 		*(uintptr_t*)&ptr_BSShader_LoadShaders = Detours::X64::DetourFunction(REL::RelocationID(101339, 108326).address(), (uintptr_t)&hk_BSShader_LoadShaders);
 		logger::info("Hooking BSShader::BeginTechnique");
-		*(uintptr_t*)&ptr_BSShader_BeginTechnique = Detours::X64::DetourFunction(REL::RelocationID(101341, 108328).address(), (uintptr_t)&hk_BSShader_BeginTechnique);
+		*(uintptr_t*)&ptr_BSShader_BeginTechnique = Detours::X64::DetourFunction(REL::RelocationID(101341, 108328).address(), (uintptr_t)&Hooks::hk_BSShader_BeginTechnique);
 
 		stl::write_thunk_call<BSShader__BeginTechnique_SetVertexShader>(REL::RelocationID(101341, 108328).address() + REL::Relocate(0xC3, 0xD5));
 		stl::write_thunk_call<BSShader__BeginTechnique_SetPixelShader>(REL::RelocationID(101341, 108328).address() + REL::Relocate(0xD7, 0xEB));
@@ -489,10 +586,21 @@ namespace Hooks
 		stl::write_thunk_call<CreateRenderTarget_Main>(REL::RelocationID(100458, 107175).address() + REL::Relocate(0x3F0, 0x3F3, 0x548));
 		stl::write_thunk_call<CreateRenderTarget_Normals>(REL::RelocationID(100458, 107175).address() + REL::Relocate(0x458, 0x45B, 0x5B0));
 		stl::write_thunk_call<CreateRenderTarget_NormalsSwap>(REL::RelocationID(100458, 107175).address() + REL::Relocate(0x46B, 0x46E, 0x5C3));
-		if (!REL::Module::IsVR())
-			stl::write_thunk_call<CreateRenderTarget_Snow>(REL::RelocationID(100458, 107175).address() + REL::Relocate(0x406, 0x409));
-		stl::write_thunk_call<CreateRenderTarget_ShadowMask>(REL::RelocationID(100458, 107175).address() + REL::Relocate(0x555, 0x554, 0x6b9));
-
+		stl::write_thunk_call<CreateRenderTarget_Snow>(REL::RelocationID(100458, 107175).address() + REL::Relocate(0x406, 0x409, 0x55e));
 		stl::write_thunk_call<CreateDepthStencil_PrecipitationMask>(REL::RelocationID(100458, 107175).address() + REL::Relocate(0x1245, 0x123B, 0x1917));
+		stl::write_thunk_call<CreateCubemapRenderTarget_Reflections>(REL::RelocationID(100458, 107175).address() + REL::Relocate(0xA25, 0xA25, 0xCD2));
+
+#ifdef TRACY_ENABLE
+		stl::write_thunk_call<Main_Update>(REL::RelocationID(35551, 36544).address() + REL::Relocate(0x11F, 0x160));
+#endif
+
+		logger::info("Hooking BSImagespaceShader");
+		*(uintptr_t*)&CSShadersSupport::ptr_BSImagespaceShader_DispatchComputeShader = Detours::X64::DetourFunction(REL::RelocationID(100952, 107734).address(), (uintptr_t)&CSShadersSupport::hk_BSImagespaceShader_DispatchComputeShader);
+
+		logger::info("Hooking BSComputeShader");
+		stl::write_vfunc<0x02, CSShadersSupport::BSComputeShader_Dispatch>(RE::VTABLE_BSComputeShader[0]);
+
+		logger::info("Hooking Renderer::DispatchCSShader");
+		*(uintptr_t*)&CSShadersSupport::ptr_Renderer_DispatchCSShader = Detours::X64::DetourFunction(REL::RelocationID(75532, 77329).address(), (uintptr_t)&CSShadersSupport::hk_Renderer_DispatchCSShader);
 	}
 }

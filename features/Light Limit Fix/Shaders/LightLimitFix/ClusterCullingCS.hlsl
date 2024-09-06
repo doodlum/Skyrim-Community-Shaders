@@ -11,9 +11,9 @@ cbuffer PerFrame : register(b0)
 StructuredBuffer<ClusterAABB> clusters : register(t0);
 StructuredBuffer<StructuredLight> lights : register(t1);
 
-RWStructuredBuffer<uint> lightIndexCounter : register(u0);  //1
-RWStructuredBuffer<uint> lightIndexList : register(u1);     //MAX_CLUSTER_LIGHTS * 16^3
-RWStructuredBuffer<LightGrid> lightGrid : register(u2);     //16^3
+RWStructuredBuffer<uint> lightIndexCounter : register(u0);
+RWStructuredBuffer<uint> lightIndexList : register(u1);
+RWStructuredBuffer<LightGrid> lightGrid : register(u2);
 
 groupshared StructuredLight sharedLights[GROUP_SIZE];
 
@@ -25,14 +25,15 @@ bool LightIntersectsCluster(StructuredLight light, ClusterAABB cluster, int eyeI
 	return dot(dist, dist) <= (light.radius * light.radius);
 }
 
-[numthreads(16, 8, 8)] void main(uint3 groupId
-								 : SV_GroupID,
-								 uint3 dispatchThreadId
-								 : SV_DispatchThreadID,
-								 uint3 groupThreadId
-								 : SV_GroupThreadID,
-								 uint groupIndex
-								 : SV_GroupIndex) {
+[numthreads(NUMTHREAD_X, NUMTHREAD_Y, NUMTHREAD_Z)] void main(
+	uint3 groupId
+	: SV_GroupID, uint3 dispatchThreadId
+	: SV_DispatchThreadID, uint3 groupThreadId
+	: SV_GroupThreadID, uint groupIndex
+	: SV_GroupIndex) {
+	if (any(dispatchThreadId >= uint3(CLUSTER_BUILDING_DISPATCH_SIZE_X, CLUSTER_BUILDING_DISPATCH_SIZE_Y, CLUSTER_BUILDING_DISPATCH_SIZE_Z)))
+		return;
+
 	if (all(dispatchThreadId == 0)) {
 		lightIndexCounter[0] = 0;
 	}
@@ -40,7 +41,9 @@ bool LightIntersectsCluster(StructuredLight light, ClusterAABB cluster, int eyeI
 	uint visibleLightCount = 0;
 	uint visibleLightIndices[MAX_CLUSTER_LIGHTS];
 
-	uint clusterIndex = groupIndex + GROUP_SIZE * groupId.z;
+	uint clusterIndex = dispatchThreadId.x +
+	                    dispatchThreadId.y * CLUSTER_BUILDING_DISPATCH_SIZE_X +
+	                    dispatchThreadId.z * (CLUSTER_BUILDING_DISPATCH_SIZE_X * CLUSTER_BUILDING_DISPATCH_SIZE_Y);
 
 	ClusterAABB cluster = clusters[clusterIndex];
 
@@ -61,11 +64,13 @@ bool LightIntersectsCluster(StructuredLight light, ClusterAABB cluster, int eyeI
 		for (uint i = 0; i < batchSize; i++) {
 			StructuredLight light = lights[i];
 
-			if (visibleLightCount < MAX_CLUSTER_LIGHTS && (LightIntersectsCluster(light, cluster)
+			bool updateCluster = LightIntersectsCluster(light, cluster);
 #ifdef VR
-															  || LightIntersectsCluster(light, cluster, 1)
+			updateCluster = updateCluster || LightIntersectsCluster(light, cluster, 1);
 #endif  // VR
-																  )) {
+			updateCluster = updateCluster && (visibleLightCount < MAX_CLUSTER_LIGHTS);
+
+			if (updateCluster) {
 				visibleLightIndices[visibleLightCount] = lightOffset + i;
 				visibleLightCount++;
 			}
@@ -83,8 +88,11 @@ bool LightIntersectsCluster(StructuredLight light, ClusterAABB cluster, int eyeI
 		lightIndexList[offset + i] = visibleLightIndices[i];
 	}
 
-	lightGrid[clusterIndex].offset = offset;
-	lightGrid[clusterIndex].lightCount = visibleLightCount;
+	LightGrid output = {
+		offset, visibleLightCount, 0, 0
+	};
+
+	lightGrid[clusterIndex] = output;
 }
 
 //https://www.3dgep.com/forward-plus/#Grid_Frustums_Compute_Shader

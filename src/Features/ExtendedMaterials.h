@@ -10,9 +10,9 @@ struct ExtendedMaterials : Feature
 		return &singleton;
 	}
 
-	virtual inline std::string GetName() { return "Extended Materials"; }
-	virtual inline std::string GetShortName() { return "ExtendedMaterials"; }
-	inline std::string_view GetShaderDefineName() override { return "EXTENDED_MATERIALS"; }
+	virtual inline std::string GetName() override { return "Extended Materials"; }
+	virtual inline std::string GetShortName() override { return "ExtendedMaterials"; }
+	virtual inline std::string_view GetShaderDefineName() override { return "EXTENDED_MATERIALS"; }
 
 	bool HasShaderDefine(RE::BSShader::Type shaderType) override;
 
@@ -28,19 +28,14 @@ struct ExtendedMaterials : Feature
 
 	Settings settings;
 
-	virtual void SetupResources(){};
-	virtual inline void Reset() {}
-
 	virtual void DataLoaded() override;
 
-	virtual void DrawSettings();
+	virtual void DrawSettings() override;
 
-	virtual void Draw(const RE::BSShader*, const uint32_t){};
+	virtual void LoadSettings(json& o_json) override;
+	virtual void SaveSettings(json& o_json) override;
 
-	virtual void Load(json& o_json);
-	virtual void Save(json& o_json);
+	virtual void RestoreDefaultSettings() override;
 
-	virtual void RestoreDefaultSettings();
-
-	bool SupportsVR() override { return true; };
+	virtual bool SupportsVR() override { return true; };
 };

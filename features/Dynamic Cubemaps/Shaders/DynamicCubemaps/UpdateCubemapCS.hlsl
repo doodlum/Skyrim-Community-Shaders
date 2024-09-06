@@ -1,5 +1,9 @@
+#include "../Common/Color.hlsli"
 #include "../Common/Constants.hlsli"
+#include "../Common/DeferredShared.hlsli"
+#include "../Common/FrameBuffer.hlsli"
 #include "../Common/VR.hlsli"
+
 RWTexture2DArray<float4> DynamicCubemap : register(u0);
 RWTexture2DArray<float4> DynamicCubemapRaw : register(u1);
 RWTexture2DArray<float4> DynamicCubemapPosition : register(u2);
@@ -47,95 +51,14 @@ float3 GetSamplingVector(uint3 ThreadID, in RWTexture2DArray<float4> OutputTextu
 	return normalize(result);
 }
 
-cbuffer PerFrame : register(b0)
-{
-#if !defined(VR)
-	row_major float4x4 CameraView[1] : packoffset(c0);
-	row_major float4x4 CameraProj[1] : packoffset(c4);
-	row_major float4x4 CameraViewProj[1] : packoffset(c8);
-	row_major float4x4 CameraViewProjUnjittered[1] : packoffset(c12);
-	row_major float4x4 CameraPreviousViewProjUnjittered[1] : packoffset(c16);
-	row_major float4x4 CameraProjUnjittered[1] : packoffset(c20);
-	row_major float4x4 CameraProjUnjitteredInverse[1] : packoffset(c24);
-	row_major float4x4 CameraViewInverse[1] : packoffset(c28);
-	row_major float4x4 CameraViewProjInverse[1] : packoffset(c32);
-	row_major float4x4 CameraProjInverse[1] : packoffset(c36);
-	float4 CameraPosAdjust[1] : packoffset(c40);
-	float4 CameraPreviousPosAdjust[1] : packoffset(c41);  // fDRClampOffset in w
-	float4 FrameParams : packoffset(c42);                 // inverse fGamma in x, some flags in yzw
-	float4 DynamicResolutionParams1 : packoffset(c43);    // fDynamicResolutionWidthRatio in x,
-														  // fDynamicResolutionHeightRatio in y,
-														  // fDynamicResolutionPreviousWidthRatio in z,
-														  // fDynamicResolutionPreviousHeightRatio in w
-	float4 DynamicResolutionParams2 : packoffset(c44);    // inverse fDynamicResolutionWidthRatio in x, inverse
-														  // fDynamicResolutionHeightRatio in y,
-														  // fDynamicResolutionWidthRatio - fDRClampOffset in z,
-														  // fDynamicResolutionPreviousWidthRatio - fDRClampOffset in w
-#else
-	row_major float4x4 CameraView[2] : packoffset(c0);
-	row_major float4x4 CameraProj[2] : packoffset(c8);
-	row_major float4x4 CameraViewProj[2] : packoffset(c16);
-	row_major float4x4 CameraViewProjUnjittered[2] : packoffset(c24);
-	row_major float4x4 CameraPreviousViewProjUnjittered[2] : packoffset(c32);
-	row_major float4x4 CameraProjUnjittered[2] : packoffset(c40);
-	row_major float4x4 CameraProjUnjitteredInverse[2] : packoffset(c48);
-	row_major float4x4 CameraViewInverse[2] : packoffset(c56);
-	row_major float4x4 CameraViewProjInverse[2] : packoffset(c64);
-	row_major float4x4 CameraProjInverse[2] : packoffset(c72);
-	float4 CameraPosAdjust[2] : packoffset(c80);
-	float4 CameraPreviousPosAdjust[2] : packoffset(c82);  // fDRClampOffset in w
-	float4 FrameParams : packoffset(c84);                 // inverse fGamma in x, some flags in yzw
-	float4 DynamicResolutionParams1 : packoffset(c85);    // fDynamicResolutionWidthRatio in x,
-														  // fDynamicResolutionHeightRatio in y,
-														  // fDynamicResolutionPreviousWidthRatio in z,
-														  // fDynamicResolutionPreviousHeightRatio in w
-	float4 DynamicResolutionParams2 : packoffset(c86);    // inverse fDynamicResolutionWidthRatio in x, inverse
-														  // fDynamicResolutionHeightRatio in y,
-														  // fDynamicResolutionWidthRatio - fDRClampOffset in z,
-														  // fDynamicResolutionPreviousWidthRatio - fDRClampOffset in w
-#endif  // !VR
-}
-
 cbuffer UpdateData : register(b1)
 {
-	float4 CameraData;
 	uint Reset;
 	float3 CameraPreviousPosAdjust2;
 }
 
-float3 WorldToView(float3 x, bool is_position = true, uint a_eyeIndex = 0)
-{
-	float4 newPosition = float4(x, (float)is_position);
-	return mul(CameraView[a_eyeIndex], newPosition).xyz;
-}
-
-float2 ViewToUV(float3 x, bool is_position = true, uint a_eyeIndex = 0)
-{
-	float4 newPosition = float4(x, (float)is_position);
-	float4 uv = mul(CameraProj[a_eyeIndex], newPosition);
-	return (uv.xy / uv.w) * float2(0.5f, -0.5f) + 0.5f;
-}
-
-float GetScreenDepth(float depth)
-{
-	return (CameraData.w / (-depth * CameraData.z + CameraData.x));
-}
-
-float2 GetDynamicResolutionAdjustedScreenPosition(float2 screenPosition)
-{
-	float2 adjustedScreenPosition =
-		max(0.0.xx, DynamicResolutionParams1.xy * screenPosition);
-	return min(float2(DynamicResolutionParams2.z, DynamicResolutionParams1.y),
-		adjustedScreenPosition);
-}
-
 bool IsSaturated(float value) { return value == saturate(value); }
 bool IsSaturated(float2 value) { return IsSaturated(value.x) && IsSaturated(value.y); }
-
-float3 sRGB2Lin(float3 color)
-{
-	return color > 0.04045 ? pow(color / 1.055 + 0.055 / 1.055, 2.4) : color / 12.92;
-}
 
 // Inverse project UV + raw depth into world space.
 float3 InverseProjectUVZ(float2 uv, float z)
@@ -166,6 +89,77 @@ float smoothbumpstep(float edge0, float edge1, float x)
 	}
 
 	if (IsSaturated(uv) && viewDirection.z < 0.0) {  // Check that the view direction exists in screenspace and that it is in front of the camera
+		float2 PoissonDisc[64] = {
+			float2(0.403302f, 0.139622f),
+			float2(0.578204f, 0.624683f),
+			float2(0.942412f, 0.973693f),
+			float2(0.0789209f, 0.902676f),
+			float2(0.904355f, 0.158025f),
+			float2(0.0505387f, 0.403394f),
+			float2(0.99176f, 0.587085f),
+			float2(0.0210273f, 0.00875881f),
+			float2(0.329905f, 0.460005f),
+			float2(0.386853f, 0.985321f),
+			float2(0.625721f, 0.34431f),
+			float2(0.346782f, 0.687551f),
+			float2(0.659139f, 0.843989f),
+			float2(0.798029f, 0.469008f),
+			float2(0.14127f, 0.19602f),
+			float2(0.684011f, 0.0732444f),
+			float2(0.0515458f, 0.672048f),
+			float2(0.239662f, 0.00369274f),
+			float2(0.985076f, 0.363414f),
+			float2(0.191229f, 0.594928f),
+			float2(0.820887f, 0.720725f),
+			float2(0.508103f, 0.0209967f),
+			float2(0.783654f, 0.302744f),
+			float2(0.467269f, 0.82757f),
+			float2(0.214911f, 0.809259f),
+			float2(0.747703f, 0.986847f),
+			float2(0.966033f, 0.00357067f),
+			float2(0.447432f, 0.292367f),
+			float2(0.954253f, 0.813837f),
+			float2(0.209815f, 0.356304f),
+			float2(0.561663f, 0.970794f),
+			float2(0.334544f, 0.340678f),
+			float2(0.461013f, 0.419691f),
+			float2(0.229865f, 0.993164f),
+			float2(0.797327f, 0.838832f),
+			float2(0.578478f, 0.128452f),
+			float2(0.265358f, 0.135685f),
+			float2(0.495621f, 0.710837f),
+			float2(0.71102f, 0.643971f),
+			float2(0.0191046f, 0.2219f),
+			float2(0.990265f, 0.240516f),
+			float2(0.85403f, 0.589709f),
+			float2(0.369488f, 0.0120548f),
+			float2(0.478378f, 0.551805f),
+			float2(0.664815f, 0.519913f),
+			float2(0.843684f, 0.0224006f),
+			float2(0.0827357f, 0.530961f),
+			float2(0.116398f, 0.0798364f),
+			float2(0.676931f, 0.221381f),
+			float2(0.917447f, 0.472091f),
+			float2(0.334819f, 0.836451f),
+			float2(0.00308237f, 0.800134f),
+			float2(0.565752f, 0.823206f),
+			float2(0.874783f, 0.33668f),
+			float2(0.336772f, 0.592364f),
+			float2(0.151402f, 0.729484f),
+			float2(0.706656f, 0.748802f),
+			float2(0.723411f, 0.379315f),
+			float2(0.805109f, 0.16715f),
+			float2(0.853877f, 0.243294f),
+			float2(0.91464f, 0.693289f),
+			float2(0.846828f, 0.918821f),
+			float2(0.188513f, 0.501236f),
+			float2(0.0812708f, 0.993774f)
+		};
+
+		// Assume projection maps to one cubemap face, and randomly sample an area within the mapped resolution
+		uv += (PoissonDisc[FrameCountAlwaysActive % 64] * 2.0 - 1.0) * BufferDim.zw * max(1.0, float2(BufferDim.x / 128.0, BufferDim.y / 128.0)) * 0.5;
+		uv = saturate(uv);
+
 		uv = GetDynamicResolutionAdjustedScreenPosition(uv);
 		uv = ConvertToStereoUV(uv, 0);
 
@@ -174,20 +168,16 @@ float smoothbumpstep(float edge0, float edge1, float x)
 
 		if (linearDepth > 16.5) {  // Ignore objects which are too close
 			float3 color = ColorTexture.SampleLevel(LinearSampler, uv, 0);
-			float4 output = float4(sRGB2Lin(color), 1.0);
-			float lerpFactor = 0.5;
+			float4 output = float4(GammaToLinear(color), 1.0);
+			float lerpFactor = 1.0 / 64.0;
 
-			float4 position = float4(InverseProjectUVZ(uv, depth) * 0.001, 1.0);
+			half4 positionCS = half4(2 * half2(uv.x, -uv.y + 1) - 1, depth, 1);
+			positionCS = mul(CameraViewProjInverse[0], positionCS);
+			positionCS.xyz = positionCS.xyz / positionCS.w;
 
-			float distance = length(position.xyz);
-
-			position.w = smoothstep(1.0, 4096.0 * 0.001, distance);  // Objects which are far away from the perspective of the camera do not fade out
-
-			if (linearDepth > (4096.0 * 5.0))
-				position.w = 0;
+			float4 position = float4(positionCS.xyz * 0.001, linearDepth < (4096.0 * 2.5));
 
 			DynamicCubemapPosition[ThreadID] = lerp(DynamicCubemapPosition[ThreadID], position, lerpFactor);
-
 			DynamicCubemapRaw[ThreadID] = max(0, lerp(DynamicCubemapRaw[ThreadID], output, lerpFactor));
 
 			output *= sqrt(saturate(0.5 * length(position.xyz)));
@@ -204,8 +194,8 @@ float smoothbumpstep(float edge0, float edge1, float x)
 
 	float4 color = DynamicCubemapRaw[ThreadID];
 
-	float distanceFactor = sqrt(smoothbumpstep(0.0, 1.0, length(position.xyz)));
-	color *= max(0.001, max(distanceFactor, position.w));
+	float distanceFactor = sqrt(smoothbumpstep(0.0, 2.0, length(position.xyz)));
+	color *= distanceFactor;
 
 	DynamicCubemap[ThreadID] = max(0, color);
 }

@@ -1,6 +1,9 @@
 #include "Menu.h"
 #include "Util.h"
 
+#ifndef DIRECTINPUT_VERSION
+#	define DIRECTINPUT_VERSION 0x0800
+#endif
 #include <dinput.h>
 #include <imgui_stdlib.h>
 #include <magic_enum.hpp>
@@ -12,6 +15,7 @@
 #include "Features/LightLimitFix/ParticleLights.h"
 
 #include "Deferred.h"
+#include "TruePBR.h"
 
 #include "VariableRateShading.h"
 
@@ -137,7 +141,6 @@ void Menu::DrawSettings()
 {
 	ImGuiStyle oldStyle = ImGui::GetStyle();
 	SetupImGuiStyle();
-	static bool visible = false;
 
 	ImGui::DockSpaceOverViewport(NULL, ImGuiDockNodeFlags_PassthruCentralNode);
 
@@ -347,12 +350,12 @@ void Menu::DrawSettings()
 					"The more threads the faster compilation will finish but may make the system unresponsive. ");
 			}
 
-			if (ImGui::SliderInt("Test Interval", (int*)&testInterval, 0, 10)) {
+			if (ImGui::SliderInt("Test Interval", reinterpret_cast<int*>(&testInterval), 0, 10)) {
 				if (testInterval == 0) {
 					inTestMode = false;
 					logger::info("Disabling test mode.");
 					State::GetSingleton()->Load(State::ConfigMode::TEST);  // restore last settings before entering test mode
-				} else if (testInterval && !inTestMode) {
+				} else if (!inTestMode) {
 					logger::info("Saving current settings for test mode and starting test with interval {}.", testInterval);
 					State::GetSingleton()->Save(State::ConfigMode::TEST);
 					inTestMode = true;
@@ -408,6 +411,7 @@ void Menu::DrawSettings()
 				ImGui::TreePop();
 			}
 			ImGui::Checkbox("Extended Frame Annotations", &State::GetSingleton()->extendedFrameAnnotations);
+			TruePBR::GetSingleton()->DrawSettings();
 		}
 
 		if (ImGui::CollapsingHeader("Replace Original Shaders", ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
@@ -439,14 +443,19 @@ void Menu::DrawSettings()
 							"When false, will disable the custom Pixel Shaders for the types above. "
 							"For developers to test whether CS shaders match vanilla behavior. ");
 					}
+					ImGui::Checkbox("Compute", &state->enableCShaders);
+					if (auto _tt = Util::HoverTooltipWrapper()) {
+						ImGui::Text(
+							"Replace Compute Shaders. "
+							"When false, will disable the custom Compute Shaders for the types above. "
+							"For developers to test whether CS shaders match vanilla behavior. ");
+					}
 				}
 				ImGui::EndTable();
 			}
 		}
 
 		ImGui::Separator();
-
-		VariableRateShading::GetSingleton()->DrawSettings();
 
 		if (ImGui::BeginTable("Feature Table", 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_Resizable)) {
 			ImGui::TableSetupColumn("##ListOfFeatures", 0, 3);
@@ -891,6 +900,7 @@ void Menu::ProcessInputEventQueue()
 	for (auto& event : _keyEventQueue) {
 		if (event.eventType == RE::INPUT_EVENT_TYPE::kChar) {
 			io.AddInputCharacter(event.keyCode);
+			continue;
 		}
 
 		if (event.device == RE::INPUT_DEVICE::kMouse) {
@@ -968,8 +978,8 @@ void Menu::ProcessInputEvents(RE::InputEvent* const* a_events)
 		if (it->GetEventType() != RE::INPUT_EVENT_TYPE::kButton && it->GetEventType() != RE::INPUT_EVENT_TYPE::kChar)  // we do not care about non button or char events
 			continue;
 
-		auto event = it->GetEventType() == RE::INPUT_EVENT_TYPE::kButton ? KeyEvent(static_cast<RE::ButtonEvent*>(it)) : it->GetEventType() == RE::INPUT_EVENT_TYPE::kChar ? KeyEvent(static_cast<CharEvent*>(it)) :
-		                                                                                                                                                                     KeyEvent(nullptr);  // last ternary operation should never be taken
+		auto event = it->GetEventType() == RE::INPUT_EVENT_TYPE::kButton ? KeyEvent(static_cast<RE::ButtonEvent*>(it)) : KeyEvent(static_cast<CharEvent*>(it));
+
 		addToEventQueue(event);
 	}
 }

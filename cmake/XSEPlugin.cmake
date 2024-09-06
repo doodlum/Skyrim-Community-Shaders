@@ -1,22 +1,6 @@
-option(BUILD_SKYRIM "Build for Skyrim" OFF)
-option(BUILD_FALLOUT4 "Build for Fallout 4" OFF)
-
-if(BUILD_SKYRIM)
-	add_compile_definitions(SKYRIM)
-	set(CommonLibPath "extern/CommonLibSSE-NG")
-	set(CommonLibName "CommonLibSSE")
-	set(GameVersion "Skyrim")
-elseif(BUILD_FALLOUT4)
-	add_compile_definitions(FALLOUT4)
-	set(CommonLibPath "extern/CommonLibF4/CommonLibF4")
-	set(CommonLibName "CommonLibF4")
-	set(GameVersion "Fallout 4")
-else()
-	message(
-		FATAL_ERROR
-		"A game must be selected."
-	)
-endif()
+add_compile_definitions(SKYRIM)
+set(CommonLibPath "extern/CommonLibSSE-NG")
+set(CommonLibName "CommonLibSSE")
 
 add_library("${PROJECT_NAME}" SHARED)
 
@@ -62,11 +46,14 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
 
+set(BUILD_TESTS OFF)
+
 if(CMAKE_GENERATOR MATCHES "Visual Studio")
 	add_compile_definitions(_UNICODE)
 
 	target_compile_definitions(${PROJECT_NAME} PRIVATE "$<$<CONFIG:DEBUG>:DEBUG>")
 
+	set(SC_DEBUG_OPTS "/fp:strict;/ZI;/Od;/Gy")
 	set(SC_RELEASE_OPTS "/Zi;/fp:fast;/GL;/Gy-;/Gm-;/Gw;/sdl-;/GS-;/guard:cf-;/O2;/Ob2;/Oi;/Ot;/Oy;/fp:except-")
 
 	target_compile_options(
@@ -99,10 +86,7 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio")
 		/arch:AVX
 	)
 
-	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:DEBUG>:/fp:strict>")
-	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:DEBUG>:/ZI>")
-	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:DEBUG>:/Od>")
-	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:DEBUG>:/Gy>")
+	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:DEBUG>:${SC_DEBUG_OPTS}>")
 	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:RELEASE>:${SC_RELEASE_OPTS}>")
 
 	target_link_options(

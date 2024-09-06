@@ -7,9 +7,9 @@ if NOT "%1" == "" (
 
 echo Running preset %preset%
 
-cmake -S . --preset=%preset% --check-stamp-file "build\CMakeFiles\generate.stamp"
+cmake -S . --preset=%preset% --check-stamp-file "build\%preset%\CMakeFiles\generate.stamp"
 if %ERRORLEVEL% NEQ 0 exit 1
-cmake --build build --config Release
+cmake --build build/%preset% --config Release
 if %ERRORLEVEL% NEQ 0 exit 1
 
 pause

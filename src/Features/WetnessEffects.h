@@ -13,9 +13,9 @@ public:
 		return &singleton;
 	}
 
-	virtual inline std::string GetName() { return "Wetness Effects"; }
-	virtual inline std::string GetShortName() { return "WetnessEffects"; }
-	inline std::string_view GetShaderDefineName() override { return "WETNESS_EFFECTS"; }
+	virtual inline std::string GetName() override { return "Wetness Effects"; }
+	virtual inline std::string GetShortName() override { return "WetnessEffects"; }
+	virtual inline std::string_view GetShaderDefineName() override { return "WETNESS_EFFECTS"; }
 
 	bool HasShaderDefine(RE::BSShader::Type) override { return true; };
 
@@ -77,28 +77,16 @@ public:
 	uint32_t lastWeatherID = 0;
 	float previousWeatherTransitionPercentage = 0.0f;
 
-	virtual void SetupResources();
-	virtual void Reset();
+	virtual void Reset() override;
 
-	virtual void DrawSettings();
+	virtual void DrawSettings() override;
 
-	virtual void Draw(const RE::BSShader* shader, const uint32_t descriptor);
+	virtual void LoadSettings(json& o_json) override;
+	virtual void SaveSettings(json& o_json) override;
 
-	virtual void Load(json& o_json);
-	virtual void Save(json& o_json);
-
-	virtual void RestoreDefaultSettings();
+	virtual void RestoreDefaultSettings() override;
 	float CalculateWeatherTransitionPercentage(float skyCurrentWeatherPct, float beginFade, bool fadeIn);
 	void CalculateWetness(RE::TESWeather* weather, RE::Sky* sky, float seconds, float& wetness, float& puddleWetness);
 
-	virtual inline void PostPostLoad() override { Hooks::Install(); }
-
-	struct Hooks
-	{
-		static void Install()
-		{
-		}
-	};
-
-	bool SupportsVR() override { return true; };
+	virtual bool SupportsVR() override { return true; };
 };

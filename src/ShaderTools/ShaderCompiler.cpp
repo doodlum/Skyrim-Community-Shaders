@@ -4,9 +4,9 @@
 
 namespace ShaderCompiler
 {
-	ID3D11PixelShader* RegisterPixelShader(const std::wstring a_filePath)
+	ID3D11PixelShader* RegisterPixelShader(const std::wstring& a_filePath)
 	{
-		REL::Relocation<ID3D11Device**> g_ID3D11Device{ RELOCATION_ID(524729, 411348) };
+		static REL::Relocation<ID3D11Device**> g_ID3D11Device{ RELOCATION_ID(524729, 411348) };
 
 		ID3DBlob* shaderBlob = nullptr;
 
@@ -28,8 +28,7 @@ namespace ShaderCompiler
 		if (FAILED((*g_ID3D11Device)->CreatePixelShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, &regShader))) {
 			logger::error("pixel shader registration failed");
 
-			if (shaderBlob)
-				shaderBlob->Release();
+			shaderBlob->Release();
 
 			return nullptr;
 		}
@@ -39,7 +38,7 @@ namespace ShaderCompiler
 		return regShader;
 	}
 
-	ID3D11PixelShader* CompileAndRegisterPixelShader(const std::wstring a_filePath)
+	ID3D11PixelShader* CompileAndRegisterPixelShader(const std::wstring& a_filePath)
 	{
 		return static_cast<ID3D11PixelShader*>(Util::CompileShader(a_filePath.data(), {}, "ps_5_0"));
 	}

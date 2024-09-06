@@ -87,6 +87,9 @@ ID3D11ComputeShader* ScreenSpaceShadows::GetComputeRaymarchRight()
 
 void ScreenSpaceShadows::DrawShadows()
 {
+	ZoneScoped;
+	TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Screen Space Shadows");
+
 	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 	auto context = State::GetSingleton()->context;
 
@@ -105,15 +108,14 @@ void ScreenSpaceShadows::DrawShadows()
 	lightProjection = DirectX::SimpleMath::Vector4::Transform(lightProjection, viewProjMat);
 	float lightProjectionF[4] = { lightProjection.x, lightProjection.y, lightProjection.z, lightProjection.w };
 
-	int viewportSize[2] = { (int)state->screenSize.x, (int)state->screenSize.y };
+	float2 size = Util::ConvertToDynamic(state->screenSize);
+	int viewportSize[2] = { (int)size.x, (int)size.y };
 
 	if (REL::Module::IsVR())
 		viewportSize[0] /= 2;
 
-	float2 size = Util::ConvertToDynamic({ (float)viewportSize[0], (float)viewportSize[1] });
-
 	int minRenderBounds[2] = { 0, 0 };
-	int maxRenderBounds[2] = { (int)size.x, (int)size.y };
+	int maxRenderBounds[2] = { viewportSize[0], viewportSize[1] };
 
 	auto depth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 	context->CSSetShaderResources(0, 1, &depth.depthSRV);
@@ -130,7 +132,13 @@ void ScreenSpaceShadows::DrawShadows()
 
 	auto dispatchList = Bend::BuildDispatchList(lightProjectionF, viewportSize, minRenderBounds, maxRenderBounds);
 
+	auto viewport = RE::BSGraphics::State::GetSingleton();
+
+	float2 dynamicRes = { viewport->GetRuntimeData().dynamicResolutionWidthRatio, viewport->GetRuntimeData().dynamicResolutionHeightRatio };
+
 	for (int i = 0; i < dispatchList.DispatchCount; i++) {
+		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSS - Ray March");
+
 		auto dispatchData = dispatchList.Dispatch[i];
 
 		RaymarchCB data{};
@@ -147,6 +155,8 @@ void ScreenSpaceShadows::DrawShadows()
 
 		data.InvDepthTextureSize[0] = 1.0f / (float)viewportSize[0];
 		data.InvDepthTextureSize[1] = 1.0f / (float)viewportSize[1];
+
+		data.DynamicRes = dynamicRes;
 
 		data.settings = bendSettings;
 
@@ -169,6 +179,8 @@ void ScreenSpaceShadows::DrawShadows()
 		dispatchList = Bend::BuildDispatchList(lightProjectionRightF, viewportSize, minRenderBounds, maxRenderBounds);
 
 		for (int i = 0; i < dispatchList.DispatchCount; i++) {
+			TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSS - Ray March (VR Right Eye)");
+
 			auto dispatchData = dispatchList.Dispatch[i];
 
 			RaymarchCB data{};
@@ -185,6 +197,8 @@ void ScreenSpaceShadows::DrawShadows()
 
 			data.InvDepthTextureSize[0] = 1.0f / (float)viewportSize[0];
 			data.InvDepthTextureSize[1] = 1.0f / (float)viewportSize[1];
+
+			data.DynamicRes = dynamicRes;
 
 			data.settings = bendSettings;
 
@@ -216,24 +230,22 @@ void ScreenSpaceShadows::Prepass()
 	float white[4] = { 1, 1, 1, 1 };
 	context->ClearUnorderedAccessViewFloat(screenSpaceShadowsTexture->uav.get(), white);
 
-	if (bendSettings.Enable)
-		DrawShadows();
+	if (auto sky = RE::Sky::GetSingleton())
+		if (bendSettings.Enable && sky->mode.get() == RE::Sky::Mode::kFull)
+			DrawShadows();
 
 	auto view = screenSpaceShadowsTexture->srv.get();
 	context->PSSetShaderResources(17, 1, &view);
 }
 
-void ScreenSpaceShadows::Load(json& o_json)
+void ScreenSpaceShadows::LoadSettings(json& o_json)
 {
-	if (o_json[GetName()].is_object())
-		bendSettings = o_json[GetName()];
-
-	Feature::Load(o_json);
+	bendSettings = o_json;
 }
 
-void ScreenSpaceShadows::Save(json& o_json)
+void ScreenSpaceShadows::SaveSettings(json& o_json)
 {
-	o_json[GetName()] = bendSettings;
+	o_json = bendSettings;
 }
 
 void ScreenSpaceShadows::RestoreDefaultSettings()
@@ -274,18 +286,20 @@ void ScreenSpaceShadows::SetupResources()
 
 		D3D11_TEXTURE2D_DESC texDesc{};
 		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 
 		shadowMask.texture->GetDesc(&texDesc);
 		shadowMask.SRV->GetDesc(&srvDesc);
-		shadowMask.UAV->GetDesc(&uavDesc);
 
 		texDesc.Format = DXGI_FORMAT_R8_UNORM;
 		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 
 		srvDesc.Format = texDesc.Format;
-		uavDesc.Format = texDesc.Format;
 
+		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {
+			.Format = texDesc.Format,
+			.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D,
+			.Texture2D = { .MipSlice = 0 }
+		};
 		screenSpaceShadowsTexture = new Texture2D(texDesc);
 		screenSpaceShadowsTexture->CreateSRV(srvDesc);
 		screenSpaceShadowsTexture->CreateUAV(uavDesc);

@@ -12,7 +12,7 @@ public:
 		return &singleton;
 	}
 
-	bool enableVRS = true;
+	bool enableVRS = false;
 
 	bool nvapiLoaded = false;
 	bool vrsActive = false;

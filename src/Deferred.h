@@ -2,8 +2,7 @@
 
 #include "Buffer.h"
 #include "State.h"
-#include <State.h>
-#include <Util.h>
+#include "Util.h"
 
 #define ALBEDO RE::RENDER_TARGETS::kINDIRECT
 #define SPECULAR RE::RENDER_TARGETS::kINDIRECT_DOWNSCALED
@@ -60,7 +59,8 @@ public:
 		float4 CameraData;
 		DirectX::XMFLOAT3X4 DirectionalAmbient;
 		uint FrameCount;
-		uint pad0[3];
+		uint FrameCountAlwaysActive;
+		uint pad0[2];
 	};
 
 	ConstantBuffer* deferredCB = nullptr;
@@ -87,18 +87,6 @@ public:
 	ID3D11ComputeShader* copyShadowCS = nullptr;
 	Buffer* perShadow = nullptr;
 	ID3D11ShaderResourceView* shadowView = nullptr;
-
-	struct alignas(16) WaterCB
-	{
-		float3 ShallowColor;
-		uint pad0;
-		float3 DeepColor;
-		uint pad1;
-	};
-
-	ConstantBuffer* waterCB = nullptr;
-
-	void UpdateWaterMaterial(RE::BSWaterShaderMaterial* a_material);
 
 	struct Hooks
 	{
@@ -150,23 +138,12 @@ public:
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
-		struct BSWaterShader_SetupMaterial
-		{
-			static void thunk(RE::BSShader* This, RE::BSWaterShaderMaterial* a_material)
-			{
-				GetSingleton()->UpdateWaterMaterial(a_material);
-				func(This, a_material);
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
 		static void Install()
 		{
 			stl::write_thunk_call<Main_RenderWorld>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x831, 0x841, 0x791));
 			stl::write_thunk_call<Main_RenderWorld_Start>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x8E, 0x84));
 			stl::write_thunk_call<Main_RenderWorld_End>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x319, 0x308, 0x321));
 			//stl::write_thunk_call<Main_RenderWorld_End>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x2F2, 0x2E1, 0x321));
-			stl::write_vfunc<0x4, BSWaterShader_SetupMaterial>(RE::VTABLE_BSWaterShader[0]);
 
 			logger::info("[Deferred] Installed hooks");
 		}

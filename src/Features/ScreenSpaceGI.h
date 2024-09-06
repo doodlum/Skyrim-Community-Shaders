@@ -11,22 +11,28 @@ struct ScreenSpaceGI : Feature
 		return &singleton;
 	}
 
+	bool inline SupportsVR() override { return true; }
+
 	virtual inline std::string GetName() override { return "Screen Space GI"; }
 	virtual inline std::string GetShortName() override { return "ScreenSpaceGI"; }
+	virtual inline std::string_view GetShaderDefineName() override { return "SSGI"; }
+	virtual inline bool HasShaderDefine(RE::BSShader::Type t) override
+	{
+		return t == RE::BSShader::Type::Lighting ||
+		       t == RE::BSShader::Type::Grass ||
+		       t == RE::BSShader::Type::DistantTree;
+	};
 
 	virtual void RestoreDefaultSettings() override;
 	virtual void DrawSettings() override;
 
-	virtual void Load(json& o_json) override;
-	virtual void Save(json& o_json) override;
+	virtual void LoadSettings(json& o_json) override;
+	virtual void SaveSettings(json& o_json) override;
 
-	virtual inline void Reset() override{};
 	virtual void SetupResources() override;
 	virtual void ClearShaderCache() override;
 	void CompileComputeShaders();
 	bool ShadersOK();
-
-	virtual inline void Draw(const RE::BSShader*, const uint32_t) override{};
 
 	void DrawSSGI(Texture2D* srcPrevAmbient);
 	void UpdateSB();
@@ -41,9 +47,11 @@ struct ScreenSpaceGI : Feature
 		bool Enabled = true;
 		bool UseBitmask = true;
 		bool EnableGI = true;
+		bool EnableSpecularGI = false;
 		// performance/quality
 		uint NumSlices = 2;
 		uint NumSteps = 4;
+		bool HalfRes = true;
 		bool HalfRate = true;
 		float DepthMIPSamplingOffset = 3.3f;
 		// visual
@@ -53,24 +61,22 @@ struct ScreenSpaceGI : Feature
 		float Thickness = 75.f;
 		float2 DepthFadeRange = { 2e4, 3e4 };
 		// gi
-		bool CheckBackface = true;
 		float BackfaceStrength = 0.f;
 		bool EnableGIBounce = true;
 		float GIBounceFade = 1.f;
-		float GIDistanceCompensation = 1.f;
-		float GICompensationMaxDist = 500;
+		float GIDistanceCompensation = 0.f;
 		// mix
-		float AOPower = 1.f;
-		float GIStrength = 6.f;
+		float AOPower = 2.f;
+		float GIStrength = 3.f;
 		// denoise
 		bool EnableTemporalDenoiser = true;
 		bool EnableBlur = true;
-		float DepthDisocclusion = .1f;
+		float DepthDisocclusion = .03f;
 		float NormalDisocclusion = .1f;
 		uint MaxAccumFrames = 16;
-		float BlurRadius = 6.f;
+		float BlurRadius = 15.f;
 		uint BlurPasses = 1;
-		float DistanceNormalisation = 1.f;
+		float DistanceNormalisation = 2.f;
 	} settings;
 
 	struct alignas(16) SSGICB
@@ -122,6 +128,7 @@ struct ScreenSpaceGI : Feature
 	eastl::unique_ptr<Texture2D> texRadiance = nullptr;
 	eastl::unique_ptr<Texture2D> texAccumFrames[2] = { nullptr };
 	eastl::unique_ptr<Texture2D> texGI[2] = { nullptr };
+	eastl::unique_ptr<Texture2D> texGISpecular[2] = { nullptr };
 
 	winrt::com_ptr<ID3D11SamplerState> linearClampSampler = nullptr;
 	winrt::com_ptr<ID3D11SamplerState> pointClampSampler = nullptr;
@@ -130,4 +137,6 @@ struct ScreenSpaceGI : Feature
 	winrt::com_ptr<ID3D11ComputeShader> radianceDisoccCompute = nullptr;
 	winrt::com_ptr<ID3D11ComputeShader> giCompute = nullptr;
 	winrt::com_ptr<ID3D11ComputeShader> blurCompute = nullptr;
+	winrt::com_ptr<ID3D11ComputeShader> blurSpecularCompute = nullptr;
+	winrt::com_ptr<ID3D11ComputeShader> upsampleCompute = nullptr;
 };

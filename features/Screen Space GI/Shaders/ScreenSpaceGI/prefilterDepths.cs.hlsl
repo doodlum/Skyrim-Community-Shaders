@@ -67,7 +67,7 @@ groupshared float g_scratchDepths[8][8];
 	const uint2 pixCoord = baseCoord * 2;
 	const float2 uv = (pixCoord + .5) * RcpFrameDim;
 
-	float4 depths4 = srcNDCDepth.GatherRed(samplerPointClamp, uv * frameScale, int2(1, 1));
+	float4 depths4 = srcNDCDepth.GatherRed(samplerPointClamp, uv * frameScale);
 	float depth0 = ClampDepth(ScreenToViewDepth(depths4.w));
 	float depth1 = ClampDepth(ScreenToViewDepth(depths4.z));
 	float depth2 = ClampDepth(ScreenToViewDepth(depths4.x));

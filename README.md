@@ -47,13 +47,17 @@ If you want an example CMakeUserPreset to start off with you can copy the `CMake
 * Make sure `"AUTO_PLUGIN_DEPLOYMENT"` is set to `"ON"` in `CMakeUserPresets.json`
 * Change the `"CommunityShadersOutputDir"` value to match your desired outputs, if you want multiple folders you can separate them by `;` is shown in the template example
 #### AIO_ZIP_TO_DIST
-* This option is default `"OFF"`
+* This option is default `"ON"`
 * Make sure `"AIO_ZIP_TO_DIST"` is set to `"ON"` in `CMakeUserPresets.json`
 * This will create a `CommunityShaders_AIO.7z` archive in /dist containing all features and base mod
 #### ZIP_TO_DIST
 * This option is default `"ON"`
 * Make sure `"ZIP_TO_DIST"` is set to `"ON"` in `CMakeUserPresets.json`
 * This will create a zip for each feature and one for the base Community shaders in /dist containing
+#### TRACY_SUPPORT
+* This option is default `"OFF"`
+* This will enable tracy support, might need to delete build folder when this option is changed
+
 
 When using custom preset you can call BuildRelease.bat with an parameter to specify which preset to configure eg:
 `.\BuildRelease.bat ALL-WITH-AUTO-DEPLOYMENT`

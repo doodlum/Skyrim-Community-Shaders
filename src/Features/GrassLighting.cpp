@@ -66,17 +66,14 @@ void GrassLighting::DrawSettings()
 	}
 }
 
-void GrassLighting::Load(json& o_json)
+void GrassLighting::LoadSettings(json& o_json)
 {
-	if (o_json[GetName()].is_object())
-		settings = o_json[GetName()];
-
-	Feature::Load(o_json);
+	settings = o_json;
 }
 
-void GrassLighting::Save(json& o_json)
+void GrassLighting::SaveSettings(json& o_json)
 {
-	o_json[GetName()] = settings;
+	o_json = settings;
 }
 
 void GrassLighting::RestoreDefaultSettings()

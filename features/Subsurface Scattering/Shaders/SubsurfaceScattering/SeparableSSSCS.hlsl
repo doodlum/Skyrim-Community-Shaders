@@ -14,9 +14,10 @@ cbuffer PerFrameSSS : register(b1)
 	float SSSS_FOVY;
 };
 
-#include "../Common/Color.hlsl"
+#include "../Common/Color.hlsli"
 #include "../Common/Constants.hlsli"
 #include "../Common/DeferredShared.hlsli"
+#include "../Common/Random.hlsli"
 
 #include "SeparableSSS.hlsli"
 
@@ -38,7 +39,7 @@ cbuffer PerFrameSSS : register(b1)
 	bool humanProfile = MaskTexture[DTid.xy].y == sssAmount;
 
 	float4 color = SSSSBlurCS(DTid.xy, texCoord, float2(0.0, 1.0), sssAmount, humanProfile);
-	color.rgb = Lin2sRGB(color.rgb);
+	color.rgb = LinearToGamma(color.rgb);
 	SSSRW[DTid.xy] = float4(color.rgb, 1.0);
 
 #endif

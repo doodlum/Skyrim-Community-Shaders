@@ -245,10 +245,6 @@ void WetnessEffects::CalculateWetness(RE::TESWeather* weather, RE::Sky* sky, flo
 	weatherPuddleDepth = puddleDepthDelta > 0 ? std::min(weatherPuddleDepth + puddleDepthDelta, MAX_PUDDLE_DEPTH) : std::max(weatherPuddleDepth + puddleDepthDelta, 0.0f);
 }
 
-void WetnessEffects::Draw(const RE::BSShader*, const uint32_t)
-{
-}
-
 WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 {
 	PerFrame data{};
@@ -348,26 +344,19 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 	return data;
 }
 
-void WetnessEffects::SetupResources()
-{
-}
-
 void WetnessEffects::Reset()
 {
 	requiresUpdate = true;
 }
 
-void WetnessEffects::Load(json& o_json)
+void WetnessEffects::LoadSettings(json& o_json)
 {
-	if (o_json[GetName()].is_object())
-		settings = o_json[GetName()];
-
-	Feature::Load(o_json);
+	settings = o_json;
 }
 
-void WetnessEffects::Save(json& o_json)
+void WetnessEffects::SaveSettings(json& o_json)
 {
-	o_json[GetName()] = settings;
+	o_json = settings;
 }
 
 void WetnessEffects::RestoreDefaultSettings()

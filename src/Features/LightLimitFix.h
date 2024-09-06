@@ -19,9 +19,9 @@ public:
 		return &render;
 	}
 
-	virtual inline std::string GetName() { return "Light Limit Fix"; }
-	virtual inline std::string GetShortName() { return "LightLimitFix"; }
-	inline std::string_view GetShaderDefineName() override { return "LIGHT_LIMIT_FIX"; }
+	virtual inline std::string GetName() override { return "Light Limit Fix"; }
+	virtual inline std::string GetShortName() override { return "LightLimitFix"; }
+	virtual inline std::string_view GetShaderDefineName() override { return "LIGHT_LIMIT_FIX"; }
 
 	bool HasShaderDefine(RE::BSShader::Type) override { return true; };
 
@@ -37,8 +37,6 @@ public:
 		float radius;
 		PositionOpt positionWS[2];
 		PositionOpt positionVS[2];
-		uint firstPersonShadow;
-		float pad0[3];
 	};
 
 	struct ClusterAABB
@@ -74,6 +72,8 @@ public:
 		uint EnableLightsVisualisation;
 		uint LightsVisualisationMode;
 		uint pad0;
+
+		uint ClusterSize[4];
 	};
 
 	PerFrame GetCommonBufferData();
@@ -82,9 +82,9 @@ public:
 	{
 		LightData StrictLights[15];
 		uint NumStrictLights;
-		uint EnableGlobalLights;
 		float LightsNear;
 		float LightsFar;
+		uint pad0;
 	};
 
 	StrictLightData strictLightDataTemp;
@@ -127,22 +127,21 @@ public:
 	Matrix viewMatrixCached[2]{};
 	Matrix viewMatrixInverseCached[2]{};
 
-	virtual void SetupResources();
-	virtual void Reset();
+	virtual void SetupResources() override;
+	virtual void Reset() override;
 
-	virtual void Load(json& o_json);
-	virtual void Save(json& o_json);
+	virtual void LoadSettings(json& o_json) override;
+	virtual void SaveSettings(json& o_json) override;
 
-	virtual void RestoreDefaultSettings();
+	virtual void RestoreDefaultSettings() override;
 
-	virtual void DrawSettings();
-	virtual void Draw(const RE::BSShader* shader, const uint32_t descriptor);
+	virtual void DrawSettings() override;
 
 	virtual void PostPostLoad() override;
 	virtual void DataLoaded() override;
 
 	float CalculateLightDistance(float3 a_lightPosition, float a_radius);
-	void AddCachedParticleLights(eastl::vector<LightData>& lightsData, LightLimitFix::LightData& light, ParticleLights::Config* a_config = nullptr, RE::BSGeometry* a_geometry = nullptr, double timer = 0.0f);
+	void AddCachedParticleLights(eastl::vector<LightData>& lightsData, LightLimitFix::LightData& light);
 	void SetLightPosition(LightLimitFix::LightData& a_light, RE::NiPoint3 a_initialPosition, bool a_cached = true);
 	void UpdateLights();
 	virtual void Prepass() override;
@@ -154,7 +153,6 @@ public:
 	struct Settings
 	{
 		bool EnableContactShadows = false;
-		bool EnableFirstPersonShadows = false;
 		bool EnableLightsVisualisation = false;
 		uint LightsVisualisationMode = 0;
 		bool EnableParticleLights = true;
@@ -171,6 +169,8 @@ public:
 
 	float lightsNear = 0.0f;
 	float lightsFar = 16384.0f;
+
+	uint clusterSize[3] = { 16 };
 
 	Settings settings;
 
@@ -309,7 +309,7 @@ public:
 		}
 	};
 
-	bool SupportsVR() override { return true; };
+	virtual bool SupportsVR() override { return true; };
 };
 
 template <>
@@ -338,12 +338,11 @@ struct fmt::formatter<LightLimitFix::LightData>
 	auto format(const LightLimitFix::LightData& l, format_context& ctx) const -> format_context::iterator
 	{
 		// ctx.out() is an output iterator to write to.
-		return fmt::format_to(ctx.out(), "{{address {:x} color {} radius {} posWS {} {} posVS {} {} first-person shadow {}}}",
+		return fmt::format_to(ctx.out(), "{{address {:x} color {} radius {} posWS {} {} posVS {} {}}}",
 			reinterpret_cast<uintptr_t>(&l),
 			(Vector3)l.color,
 			l.radius,
 			(Vector3)l.positionWS[0].data, (Vector3)l.positionWS[1].data,
-			(Vector3)l.positionVS[0].data, (Vector3)l.positionVS[1].data,
-			l.firstPersonShadow);
+			(Vector3)l.positionVS[0].data, (Vector3)l.positionVS[1].data);
 	}
 };

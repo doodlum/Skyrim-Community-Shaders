@@ -37,10 +37,6 @@ void ParticleLights::GetConfigs()
 			data.colorMult.blue = (float)ini.GetDoubleValue("Light", "ColorMultBlue", 1.0);
 			data.radiusMult = (float)ini.GetDoubleValue("Light", "RadiusMult", 1.0);
 			data.saturationMult = (float)ini.GetDoubleValue("Light", "SaturationMult", 1.0);
-			data.flicker = ini.GetBoolValue("Light", "Flicker", false);
-			data.flickerSpeed = (float)ini.GetDoubleValue("Light", "FlickerSpeed", 1.0);
-			data.flickerIntensity = (float)ini.GetDoubleValue("Light", "FlickerIntensity", 0.0);
-			data.flickerMovement = (float)ini.GetDoubleValue("Light", "FlickerMovement", 0.0) / std::numbers::pi_v<float>;
 
 			auto lastSeparatorPos = path.find_last_of("\\/");
 			if (lastSeparatorPos != std::string::npos) {

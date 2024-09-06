@@ -50,7 +50,7 @@ float2 GetInterpolatedHeightRW(float2 pxCoord, bool isVertical)
 		return heightA;
 }
 
-#define NTHREADS 64
+#define NTHREADS 128
 groupshared float2 g_shadowHeight[NTHREADS];
 
 [numthreads(NTHREADS, 1, 1)] void main(const uint gtid

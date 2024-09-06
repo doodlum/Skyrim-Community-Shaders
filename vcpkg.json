@@ -1,37 +1,46 @@
 {
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "communityshaders",
-  "version-semver": "0.7.4",
-  "description": "",
   "license": "GPL-3.0",
+  "features": {
+    "commonlibsse-ng": {
+      "description": "Dependencies of clib-ng",
+      "dependencies": ["catch2", "fmt", "directxtk", "rapidcsv", "spdlog"]
+    }
+  },
+  "default-features": ["commonlibsse-ng"],
   "dependencies": [
     "bshoshany-thread-pool",
+    "clib-util",
     "cppwinrt",
-    "fmt",
-    "directxtk",
-    "rapidcsv",
-    "spdlog",
+    "directxtex",
+    "eastl",
+    "efsw",
+    {
+      "name": "imgui",
+      "features": ["dx11-binding", "win32-binding", "docking-experimental"]
+    },
     "magic-enum",
-    "xbyak",
-    "catch2",
     "magic-enum",
     "nlohmann-json",
     "pystring",
-    "directxtex",
-    {
-      "name": "imgui",
-      "features": ["dx11-binding", "win32-binding", "docking-experimental"],
-      "version>=": "1.88"
-    },
-    "eastl",
-    "clib-util",
+    "tracy",
     "unordered-dense",
-    "efsw"
+    "xbyak"
   ],
   "overrides": [
     {
       "name": "bshoshany-thread-pool",
-      "version-string": "3.5.0"
+      "version": "3.5.0"
+    },
+    {
+      "name": "imgui",
+      "version": "1.90"
+    },
+    {
+      "name": "tracy",
+      "version": "0.11.0"
     }
   ],
-  "builtin-baseline": "83972272512ce4ede5fc3b2ba98f6468b179f192"
+  "builtin-baseline": "1dc5ee30eb1032221d29f281f4a94b73f06b4284"
 }

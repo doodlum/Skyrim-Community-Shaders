@@ -1,5 +1,8 @@
 #pragma once
 
+#include <Tracy/Tracy.hpp>
+#include <Tracy/TracyD3D11.hpp>
+
 #include <Buffer.h>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -18,8 +21,10 @@ public:
 	bool enabledClasses[RE::BSShader::Type::Total - 1];
 	bool enablePShaders = true;
 	bool enableVShaders = true;
+	bool enableCShaders = true;
 
 	bool updateShader = true;
+	bool settingCustomShader = false;
 	RE::BSShader* currentShader = nullptr;
 
 	uint32_t currentVertexDescriptor = 0;
@@ -104,6 +109,14 @@ public:
 	uint modifiedPixelDescriptor = 0;
 	uint lastModifiedVertexDescriptor = 0;
 	uint lastModifiedPixelDescriptor = 0;
+	uint currentExtraDescriptor = 0;
+	uint lastExtraDescriptor = 0;
+
+	enum class ExtraShaderDescriptors : uint32_t
+	{
+		InWorld = 1 << 0,
+		IsBeastRace = 1 << 1,
+	};
 
 	void UpdateSharedData();
 
@@ -111,7 +124,8 @@ public:
 	{
 		uint VertexShaderDescriptor;
 		uint PixelShaderDescriptor;
-		uint pad0[2];
+		uint ExtraShaderDescriptor;
+		uint pad0[1];
 	};
 
 	ConstantBuffer* permutationCB = nullptr;
@@ -126,7 +140,8 @@ public:
 		float4 BufferDim;
 		float Timer;
 		uint FrameCount;
-		uint pad0[2];
+		uint InInterior;
+		uint InMapMenu;
 	};
 
 	ConstantBuffer* sharedDataCB = nullptr;
@@ -137,6 +152,16 @@ public:
 	float2 screenSize = {};
 	ID3D11DeviceContext* context = nullptr;
 	ID3D11Device* device = nullptr;
+
+	TracyD3D11Ctx tracyCtx = nullptr;  // Tracy context
+
+	inline ~State()
+	{
+#ifdef TRACY_ENABLE
+		if (tracyCtx)
+			TracyD3D11Destroy(tracyCtx);
+#endif
+	}
 
 private:
 	std::shared_ptr<REX::W32::ID3DUserDefinedAnnotation> pPerf;

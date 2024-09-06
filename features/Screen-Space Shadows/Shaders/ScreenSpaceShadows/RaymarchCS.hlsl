@@ -21,6 +21,9 @@ cbuffer PerFrame : register(b1)
 	float2 InvDepthTextureSize;  // Inverse of the texture dimensions for 'DepthTexture' (used to convert from pixel coordinates to UVs)
 								 // If 'PointBorderSampler' is an Unnormalized sampler, then this value can be hard-coded to 1.
 								 // The 'USE_HALF_PIXEL_OFFSET' macro might need to be defined if sampling at exact pixel coordinates isn't precise (e.g., if odd patterns appear in the shadow).
+
+	float2 DynamicRes;
+
 	float SurfaceThickness;
 	float BilinearThreshold;
 	float ShadowContrast;
@@ -46,6 +49,8 @@ cbuffer PerFrame : register(b1)
 	parameters.SurfaceThickness = SurfaceThickness;
 	parameters.BilinearThreshold = BilinearThreshold;
 	parameters.ShadowContrast = ShadowContrast;
+
+	parameters.DynamicRes = DynamicRes;
 
 	WriteScreenSpaceShadow(parameters, groupID, groupThreadID);
 }

@@ -79,6 +79,8 @@ struct DispatchParameters
 	half ShadowContrast;  // A contrast boost is applied to the transition in/out of shadow.
 						  // Recommended starting value: 2 or 4. Values >= 1 are valid.
 
+	float2 DynamicRes;
+
 	bool IgnoreEdgePixels;  // If an edge is detected, the edge pixel will not contribute to the shadow.
 							// If a very flat surface is being lit and rendered at an grazing angles, the edge detect may incorrectly detect multiple 'edge' pixels along that flat surface.
 							// In these cases, the grazing angle of the light may subsequently produce aliasing artefacts in the shadow where these incorrect edges were detected.
@@ -259,16 +261,6 @@ void WriteScreenSpaceShadow(DispatchParameters inParameters, int3 inGroupID, int
 
 	half2 write_xy = floor(pixel_xy);
 
-#	if !defined(RIGHT)
-	half2 minUV = half2(0.0, 0.0);
-	half2 maxUV = half2(0.5, 1.0);
-#	else
-	half2 minUV = half2(0.5, 0.0);
-	half2 maxUV = half2(1.0, 1.0);
-#	endif
-
-	half2 uv = pixel_xy * inParameters.InvDepthTextureSize * half2(0.5, 1.0);
-
 	[unroll] for (i = 0; i < READ_COUNT; i++)
 	{
 		// We sample depth twice per pixel per sample, and interpolate with an edge detect filter
@@ -291,14 +283,17 @@ void WriteScreenSpaceShadow(DispatchParameters inParameters, int3 inGroupID, int
 
 		// HLSL enforces that a pixel offset is a compile-time constant, which isn't strictly required (and can sometimes be a bit faster)
 		// So this fallback will use a manual uv offset instead
+		half2 coord = read_xy * inParameters.InvDepthTextureSize * inParameters.DynamicRes;
+		half2 coord_with_offset = (read_xy + offset_xy) * inParameters.InvDepthTextureSize * inParameters.DynamicRes;
 #	if defined(VR)
-		depths.x = inParameters.DepthTexture.SampleLevel(inParameters.PointBorderSampler, read_xy * inParameters.InvDepthTextureSize * half2(0.5, 1.0), 0);
-		depths.y = inParameters.DepthTexture.SampleLevel(inParameters.PointBorderSampler, (read_xy + offset_xy) * inParameters.InvDepthTextureSize * half2(0.5, 1.0), 0);
+		coord *= half2(0.5, 1.0);
+		coord_with_offset *= half2(0.5, 1.0);
+#	endif
+		depths.x = inParameters.DepthTexture.SampleLevel(inParameters.PointBorderSampler, coord, 0);
+		depths.y = inParameters.DepthTexture.SampleLevel(inParameters.PointBorderSampler, coord_with_offset, 0);
+#	if defined(VR)
 		depths.x = lerp(depths.x, 1.0, (float)(depths.x == 0));  // Stencil area
 		depths.y = lerp(depths.y, 1.0, (float)(depths.y == 0));  // Stencil area
-#	else
-		depths.x = inParameters.DepthTexture.SampleLevel(inParameters.PointBorderSampler, read_xy * inParameters.InvDepthTextureSize, 0);
-		depths.y = inParameters.DepthTexture.SampleLevel(inParameters.PointBorderSampler, (read_xy + offset_xy) * inParameters.InvDepthTextureSize, 0);
 #	endif
 
 		// Depth thresholds (bilinear/shadow thickness) are based on a fractional ratio of the difference between sampled depth and the far clip depth

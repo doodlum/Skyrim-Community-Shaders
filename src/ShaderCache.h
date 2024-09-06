@@ -13,6 +13,153 @@ static constexpr REL::Version SHADER_CACHE_VERSION = { 0, 0, 0, 20 };
 
 using namespace std::chrono;
 
+namespace ShaderConstants
+{
+	struct LightingPS
+	{
+		static const LightingPS& Get()
+		{
+			static LightingPS instance = REL::Module::IsVR() ? GetVR() : GetFlat();
+			return instance;
+		}
+
+		static LightingPS GetFlat()
+		{
+			return LightingPS{};
+		}
+
+		static LightingPS GetVR()
+		{
+			return LightingPS{
+				.AmbientColor = 24,
+				.FogColor = 25,
+				.ColourOutputClamp = 26,
+				.EnvmapData = 27,
+				.ParallaxOccData = 28,
+				.TintColor = 29,
+				.LODTexParams = 30,
+				.SpecularColor = 31,
+				.SparkleParams = 32,
+				.MultiLayerParallaxData = 33,
+				.LightingEffectParams = 34,
+				.IBLParams = 35,
+				.LandscapeTexture1to4IsSnow = 36,
+				.LandscapeTexture5to6IsSnow = 37,
+				.LandscapeTexture1to4IsSpecPower = 38,
+				.LandscapeTexture5to6IsSpecPower = 39,
+				.SnowRimLightParameters = 40,
+				.CharacterLightParams = 41,
+				.PBRFlags = 44,
+				.PBRParams1 = 45,
+				.LandscapeTexture2PBRParams = 46,
+				.LandscapeTexture3PBRParams = 47,
+				.LandscapeTexture4PBRParams = 48,
+				.LandscapeTexture5PBRParams = 49,
+				.LandscapeTexture6PBRParams = 50,
+				.PBRParams2 = 51,
+				.LandscapeTexture1GlintParameters = 52,
+				.LandscapeTexture2GlintParameters = 53,
+				.LandscapeTexture3GlintParameters = 54,
+				.LandscapeTexture4GlintParameters = 55,
+				.LandscapeTexture5GlintParameters = 56,
+				.LandscapeTexture6GlintParameters = 57,
+
+				.ShadowSampleParam = 18,
+				.EndSplitDistances = 19,
+				.StartSplitDistances = 20,
+				.DephBiasParam = 21,
+				.ShadowLightParam = 22,
+				.ShadowMapProj = 23,
+				.InvWorldMat = 42,
+				.PreviousWorldMat = 43,
+			};
+		}
+
+		const int32_t NumLightNumShadowLight = 0;
+		const int32_t PointLightPosition = 1;
+		const int32_t PointLightColor = 2;
+		const int32_t DirLightDirection = 3;
+		const int32_t DirLightColor = 4;
+		const int32_t DirectionalAmbient = 5;
+		const int32_t AmbientSpecularTintAndFresnelPower = 6;
+		const int32_t MaterialData = 7;
+		const int32_t EmitColor = 8;
+		const int32_t AlphaTestRef = 9;
+		const int32_t ShadowLightMaskSelect = 10;
+		const int32_t VPOSOffset = 11;
+		const int32_t ProjectedUVParams = 12;
+		const int32_t ProjectedUVParams2 = 13;
+		const int32_t ProjectedUVParams3 = 14;
+		const int32_t SplitDistance = 15;
+		const int32_t SSRParams = 16;
+		const int32_t WorldMapOverlayParametersPS = 17;
+		const int32_t AmbientColor = 18;
+		const int32_t FogColor = 19;
+		const int32_t ColourOutputClamp = 20;
+		const int32_t EnvmapData = 21;
+		const int32_t ParallaxOccData = 22;
+		const int32_t TintColor = 23;
+		const int32_t LODTexParams = 24;
+		const int32_t SpecularColor = 25;
+		const int32_t SparkleParams = 26;
+		const int32_t MultiLayerParallaxData = 27;
+		const int32_t LightingEffectParams = 28;
+		const int32_t IBLParams = 29;
+		const int32_t LandscapeTexture1to4IsSnow = 30;
+		const int32_t LandscapeTexture5to6IsSnow = 31;
+		const int32_t LandscapeTexture1to4IsSpecPower = 32;
+		const int32_t LandscapeTexture5to6IsSpecPower = 33;
+		const int32_t SnowRimLightParameters = 34;
+		const int32_t CharacterLightParams = 35;
+		const int32_t PBRFlags = 36;
+		const int32_t PBRParams1 = 37;
+		const int32_t LandscapeTexture2PBRParams = 38;
+		const int32_t LandscapeTexture3PBRParams = 39;
+		const int32_t LandscapeTexture4PBRParams = 40;
+		const int32_t LandscapeTexture5PBRParams = 41;
+		const int32_t LandscapeTexture6PBRParams = 42;
+		const int32_t PBRParams2 = 43;
+		const int32_t LandscapeTexture1GlintParameters = 44;
+		const int32_t LandscapeTexture2GlintParameters = 45;
+		const int32_t LandscapeTexture3GlintParameters = 46;
+		const int32_t LandscapeTexture4GlintParameters = 47;
+		const int32_t LandscapeTexture5GlintParameters = 48;
+		const int32_t LandscapeTexture6GlintParameters = 49;
+
+		const int32_t ShadowSampleParam = -1;
+		const int32_t EndSplitDistances = -1;
+		const int32_t StartSplitDistances = -1;
+		const int32_t DephBiasParam = -1;
+		const int32_t ShadowLightParam = -1;
+		const int32_t ShadowMapProj = -1;
+		const int32_t InvWorldMat = -1;
+		const int32_t PreviousWorldMat = -1;
+	};
+
+	struct GrassPS
+	{
+		static const GrassPS& Get()
+		{
+			static GrassPS instance = REL::Module::IsVR() ? GetVR() : GetFlat();
+			return instance;
+		}
+
+		static GrassPS GetFlat()
+		{
+			return GrassPS{};
+		}
+
+		static GrassPS GetVR()
+		{
+			return GrassPS{};
+		}
+
+		const int32_t PBRFlags = 0;
+		const int32_t PBRParams1 = 1;
+		const int32_t PBRParams2 = 2;
+	};
+}
+
 namespace SIE
 {
 	enum class ShaderClass
@@ -114,7 +261,8 @@ namespace SIE
 				       type == RE::BSShader::Type::Particle ||
 				       type == RE::BSShader::Type::Water ||
 				       type == RE::BSShader::Type::Effect ||
-				       type == RE::BSShader::Type::Utility;
+				       type == RE::BSShader::Type::Utility ||
+				       type == RE::BSShader::Type::ImageSpace;
 			return type == RE::BSShader::Type::Lighting ||
 			       type == RE::BSShader::Type::BloodSplatter ||
 			       type == RE::BSShader::Type::DistantTree ||
@@ -123,7 +271,8 @@ namespace SIE
 			       type == RE::BSShader::Type::Particle ||
 			       type == RE::BSShader::Type::Water ||
 			       type == RE::BSShader::Type::Effect ||
-			       type == RE::BSShader::Type::Utility;
+			       type == RE::BSShader::Type::Utility ||
+			       type == RE::BSShader::Type::ImageSpace;
 		}
 
 		inline static bool IsSupportedShader(const RE::BSShader& shader)
@@ -168,22 +317,26 @@ namespace SIE
 		void Clear(RE::BSShader::Type a_type);
 
 		bool AddCompletedShader(ShaderClass shaderClass, const RE::BSShader& shader, uint32_t descriptor, ID3DBlob* a_blob);
-		ID3DBlob* GetCompletedShader(const std::string a_key);
+		ID3DBlob* GetCompletedShader(const std::string& a_key);
 		ID3DBlob* GetCompletedShader(const SIE::ShaderCompilationTask& a_task);
 		ID3DBlob* GetCompletedShader(ShaderClass shaderClass, const RE::BSShader& shader, uint32_t descriptor);
-		ShaderCompilationTask::Status GetShaderStatus(const std::string a_key);
+		ShaderCompilationTask::Status GetShaderStatus(const std::string& a_key);
 		std::string GetShaderStatsString(bool a_timeOnly = false);
 
 		RE::BSGraphics::VertexShader* GetVertexShader(const RE::BSShader& shader, uint32_t descriptor);
 		RE::BSGraphics::PixelShader* GetPixelShader(const RE::BSShader& shader,
+			uint32_t descriptor);
+		RE::BSGraphics::ComputeShader* GetComputeShader(const RE::BSShader& shader,
 			uint32_t descriptor);
 
 		RE::BSGraphics::VertexShader* MakeAndAddVertexShader(const RE::BSShader& shader,
 			uint32_t descriptor);
 		RE::BSGraphics::PixelShader* MakeAndAddPixelShader(const RE::BSShader& shader,
 			uint32_t descriptor);
+		RE::BSGraphics::ComputeShader* MakeAndAddComputeShader(const RE::BSShader& shader,
+			uint32_t descriptor);
 
-		static std::string GetDefinesString(RE::BSShader::Type enumType, uint32_t descriptor);
+		static std::string GetDefinesString(const RE::BSShader& shader, uint32_t descriptor);
 
 		uint64_t GetCachedHitTasks();
 		uint64_t GetCompletedTasks();
@@ -196,9 +349,9 @@ namespace SIE
 		bool IsHideErrors();
 
 		void InsertModifiedShaderMap(std::string a_shader, std::chrono::time_point<std::chrono::system_clock> a_time);
-		std::chrono::time_point<std::chrono::system_clock> GetModifiedShaderMapTime(std::string a_shader);
+		std::chrono::time_point<std::chrono::system_clock> GetModifiedShaderMapTime(const std::string& a_shader);
 
-		int32_t compilationThreadCount = std::max(static_cast<int32_t>(std::thread::hardware_concurrency()) - 1, 1);
+		int32_t compilationThreadCount = std::max({ static_cast<int32_t>(std::thread::hardware_concurrency()) - 4, static_cast<int32_t>(std::thread::hardware_concurrency()) * 3 / 4, 1 });
 		int32_t backgroundCompilationThreadCount = std::max(static_cast<int32_t>(std::thread::hardware_concurrency()) / 2, 1);
 		BS::thread_pool compilationPool{};
 		bool backgroundCompilation = false;
@@ -226,7 +379,6 @@ namespace SIE
 			Cloud = 17,  // unused
 			LODLandNoise = 18,
 			MTLandLODBlend = 19,
-			Outline = 20,
 		};
 
 		enum class LightingShaderFlags
@@ -236,6 +388,7 @@ namespace SIE
 			ModelSpaceNormals = 1 << 2,
 			// flags 3 to 8 are unused by vanilla
 			// Community Shaders start
+			TruePbr = 1 << 3,
 			Deferred = 1 << 4,
 			// Community Shaders end
 			Specular = 1 << 9,
@@ -245,7 +398,7 @@ namespace SIE
 			ShadowDir = 1 << 13,
 			DefShadow = 1 << 14,
 			ProjectedUV = 1 << 15,
-			AnisoLighting = 1 << 16,
+			AnisoLighting = 1 << 16,  // Reused for glint with PBR
 			AmbientSpecular = 1 << 17,
 			WorldMap = 1 << 18,
 			BaseObjectIsSnow = 1 << 19,
@@ -289,6 +442,7 @@ namespace SIE
 		enum class GrassShaderTechniques
 		{
 			RenderDepth = 8,
+			TruePbr = 9,
 		};
 
 		enum class GrassShaderFlags
@@ -397,6 +551,7 @@ namespace SIE
 		uint blockedKeyIndex = (uint)-1;  // index in shaderMap; negative value indicates disabled
 		std::string blockedKey = "";
 		std::vector<uint32_t> blockedIDs;  // more than one descriptor could be blocked based on shader hash
+		HANDLE managementThread = nullptr;
 
 	private:
 		ShaderCache();
@@ -411,6 +566,9 @@ namespace SIE
 		std::array<eastl::unordered_map<uint32_t, std::unique_ptr<RE::BSGraphics::PixelShader>>,
 			static_cast<size_t>(RE::BSShader::Type::Total)>
 			pixelShaders;
+		std::array<eastl::unordered_map<uint32_t, std::unique_ptr<RE::BSGraphics::ComputeShader>>,
+			static_cast<size_t>(RE::BSShader::Type::Total)>
+			computeShaders;
 
 		bool isEnabled = true;
 		bool isDiskCache = true;
@@ -422,6 +580,7 @@ namespace SIE
 		std::stop_source ssource;
 		std::mutex vertexShadersMutex;
 		std::mutex pixelShadersMutex;
+		std::mutex computeShadersMutex;
 		CompilationSet compilationSet;
 		std::unordered_map<std::string, ShaderCacheResult> shaderMap{};
 		std::mutex mapMutex;

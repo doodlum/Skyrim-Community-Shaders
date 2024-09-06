@@ -14,14 +14,16 @@
 #include "Features/SubsurfaceScattering.h"
 #include "Features/TerrainBlending.h"
 #include "Features/TerrainOcclusion.h"
-#include "Features/WaterCaustics.h"
-#include "Features/WaterParallax.h"
+#include "Features/WaterLighting.h"
 #include "Features/WetnessEffects.h"
 
 #include "State.h"
 
-void Feature::Load(json&)
+void Feature::Load(json& o_json)
 {
+	if (o_json[GetName()].is_structured())
+		LoadSettings(o_json[GetName()]);
+
 	// Convert string to wstring
 	auto ini_filename = std::format("{}.ini", GetShortName());
 	std::wstring ini_filename_w;
@@ -62,6 +64,11 @@ void Feature::Load(json&)
 		failedLoadedMessage = std::format("{} missing version info; not successfully loaded", ini_filename);
 		logger::warn("{}", failedLoadedMessage);
 	}
+}
+
+void Feature::Save(json& o_json)
+{
+	SaveSettings(o_json[GetName()]);
 }
 
 bool Feature::ValidateCache(CSimpleIniA& a_ini)
@@ -113,8 +120,7 @@ const std::vector<Feature*>& Feature::GetFeatureList()
 		LightLimitFix::GetSingleton(),
 		DynamicCubemaps::GetSingleton(),
 		CloudShadows::GetSingleton(),
-		WaterParallax::GetSingleton(),
-		WaterCaustics::GetSingleton(),
+		WaterLighting::GetSingleton(),
 		SubsurfaceScattering::GetSingleton(),
 		TerrainOcclusion::GetSingleton(),
 		ScreenSpaceGI::GetSingleton(),

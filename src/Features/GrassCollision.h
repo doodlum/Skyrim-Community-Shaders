@@ -11,9 +11,9 @@ struct GrassCollision : Feature
 		return &singleton;
 	}
 
-	virtual inline std::string GetName() { return "Grass Collision"; }
-	virtual inline std::string GetShortName() { return "GrassCollision"; }
-	inline std::string_view GetShaderDefineName() override { return "GRASS_COLLISION"; }
+	virtual inline std::string GetName() override { return "Grass Collision"; }
+	virtual inline std::string GetShortName() override { return "GrassCollision"; }
+	virtual inline std::string_view GetShaderDefineName() override { return "GRASS_COLLISION"; }
 
 	bool HasShaderDefine(RE::BSShader::Type shaderType) override;
 
@@ -46,22 +46,21 @@ struct GrassCollision : Feature
 	ConstantBuffer* perFrame = nullptr;
 	int eyeCount = !REL::Module::IsVR() ? 1 : 2;
 
-	virtual void SetupResources();
-	virtual void Reset();
+	virtual void SetupResources() override;
+	virtual void Reset() override;
 
-	virtual void DrawSettings();
+	virtual void DrawSettings() override;
 	void UpdateCollisions(PerFrame& perFrame);
 	void Update();
-	virtual void Draw(const RE::BSShader*, const uint32_t){};
 
-	virtual void Load(json& o_json);
-	virtual void Save(json& o_json);
+	virtual void LoadSettings(json& o_json) override;
+	virtual void SaveSettings(json& o_json) override;
 
-	virtual void RestoreDefaultSettings();
+	virtual void RestoreDefaultSettings() override;
 
 	virtual void PostPostLoad() override;
 
-	bool SupportsVR() override { return true; };
+	virtual bool SupportsVR() override { return true; };
 
 	struct Hooks
 	{

@@ -49,9 +49,9 @@ D3D11_BUFFER_DESC ConstantBufferDesc(bool dynamic = false)
 class ConstantBuffer
 {
 public:
-	ConstantBuffer(D3D11_BUFFER_DESC const& a_desc)
+	explicit ConstantBuffer(D3D11_BUFFER_DESC const& a_desc) :
+		desc(a_desc)
 	{
-		desc = a_desc;
 		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, nullptr, resource.ReleaseAndGetAddressOf()));
 	}
@@ -83,12 +83,14 @@ private:
 };
 
 template <typename T>
-D3D11_BUFFER_DESC StructuredBufferDesc(UINT a_count = 1)
+D3D11_BUFFER_DESC StructuredBufferDesc(UINT a_count = 1, bool cpu_access = true)
 {
 	D3D11_BUFFER_DESC desc{};
 	ZeroMemory(&desc, sizeof(desc));
-	desc.Usage = D3D11_USAGE_DYNAMIC;
+	desc.Usage = cpu_access ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	if (!cpu_access)
+		desc.BindFlags = desc.BindFlags | D3D11_BIND_UNORDERED_ACCESS;
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 	desc.StructureByteStride = sizeof(T);
@@ -99,10 +101,9 @@ D3D11_BUFFER_DESC StructuredBufferDesc(UINT a_count = 1)
 class StructuredBuffer
 {
 public:
-	StructuredBuffer(D3D11_BUFFER_DESC const& a_desc, UINT a_count)
+	StructuredBuffer(D3D11_BUFFER_DESC const& a_desc, UINT a_count) :
+		desc(a_desc), count(a_count)
 	{
-		desc = a_desc;
-		count = a_count;
 		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, nullptr, resource.ReleaseAndGetAddressOf()));
 	}
@@ -163,9 +164,9 @@ private:
 class Buffer
 {
 public:
-	Buffer(D3D11_BUFFER_DESC const& a_desc, D3D11_SUBRESOURCE_DATA* a_init = nullptr)
+	explicit Buffer(D3D11_BUFFER_DESC const& a_desc, D3D11_SUBRESOURCE_DATA* a_init = nullptr) :
+		desc(a_desc)
 	{
-		desc = a_desc;
 		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, a_init, resource.put()));
 	}
@@ -190,9 +191,9 @@ public:
 class Texture1D
 {
 public:
-	Texture1D(D3D11_TEXTURE1D_DESC const& a_desc)
+	explicit Texture1D(D3D11_TEXTURE1D_DESC const& a_desc) :
+		desc(a_desc)
 	{
-		desc = a_desc;
 		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
 		DX::ThrowIfFailed(device->CreateTexture1D(&desc, nullptr, resource.put()));
 	}
@@ -224,14 +225,14 @@ public:
 class Texture2D
 {
 public:
-	Texture2D(D3D11_TEXTURE2D_DESC const& a_desc)
+	explicit Texture2D(D3D11_TEXTURE2D_DESC const& a_desc) :
+		desc(a_desc)
 	{
-		desc = a_desc;
 		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
 		DX::ThrowIfFailed(device->CreateTexture2D(&desc, nullptr, resource.put()));
 	}
 
-	Texture2D(ID3D11Texture2D* a_resource)
+	explicit Texture2D(ID3D11Texture2D* a_resource)
 	{
 		a_resource->GetDesc(&desc);
 		resource.attach(a_resource);
@@ -271,9 +272,9 @@ public:
 class Texture3D
 {
 public:
-	Texture3D(D3D11_TEXTURE3D_DESC const& a_desc)
+	explicit Texture3D(D3D11_TEXTURE3D_DESC const& a_desc) :
+		desc(a_desc)
 	{
-		desc = a_desc;
 		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
 		DX::ThrowIfFailed(device->CreateTexture3D(&desc, nullptr, resource.put()));
 	}

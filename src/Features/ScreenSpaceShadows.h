@@ -11,9 +11,9 @@ struct ScreenSpaceShadows : Feature
 		return &singleton;
 	}
 
-	virtual inline std::string GetName() { return "Screen-Space Shadows"; }
-	virtual inline std::string GetShortName() { return "ScreenSpaceShadows"; }
-	inline std::string_view GetShaderDefineName() override { return "SCREEN_SPACE_SHADOWS"; }
+	virtual inline std::string GetName() override { return "Screen-Space Shadows"; }
+	virtual inline std::string GetShortName() override { return "ScreenSpaceShadows"; }
+	virtual inline std::string_view GetShaderDefineName() override { return "SCREEN_SPACE_SHADOWS"; }
 	bool HasShaderDefine(RE::BSShader::Type shaderType) override;
 
 	struct BendSettings
@@ -23,7 +23,7 @@ struct ScreenSpaceShadows : Feature
 		float ShadowContrast = 4.0f;
 		uint Enable = 1;
 		uint SampleCount = 1;
-		uint pad0[1];
+		uint pad0[3];
 	};
 
 	BendSettings bendSettings;
@@ -43,6 +43,8 @@ struct ScreenSpaceShadows : Feature
 									   // If 'PointBorderSampler' is an Unnormalized sampler, then this value can be hard-coded to 1.
 									   // The 'USE_HALF_PIXEL_OFFSET' macro might need to be defined if sampling at exact pixel coordinates isn't precise (e.g., if odd patterns appear in the shadow).
 
+		float2 DynamicRes;
+
 		BendSettings settings;
 	};
 
@@ -54,25 +56,22 @@ struct ScreenSpaceShadows : Feature
 
 	Texture2D* screenSpaceShadowsTexture = nullptr;
 
-	virtual void SetupResources();
-	virtual void Reset(){};
+	virtual void SetupResources() override;
 
-	virtual void DrawSettings();
+	virtual void DrawSettings() override;
 
 	virtual void ClearShaderCache() override;
 	ID3D11ComputeShader* GetComputeRaymarch();
 	ID3D11ComputeShader* GetComputeRaymarchRight();
 
-	virtual void Draw(const RE::BSShader*, const uint32_t){};
-
 	virtual void Prepass() override;
 
-	virtual void Load(json& o_json);
-	virtual void Save(json& o_json);
+	virtual void LoadSettings(json& o_json) override;
+	virtual void SaveSettings(json& o_json) override;
 
 	void DrawShadows();
 
-	virtual void RestoreDefaultSettings();
+	virtual void RestoreDefaultSettings() override;
 
-	bool SupportsVR() override { return true; };
+	virtual bool SupportsVR() override { return true; };
 };

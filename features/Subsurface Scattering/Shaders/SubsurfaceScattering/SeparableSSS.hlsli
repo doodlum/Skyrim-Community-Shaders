@@ -100,7 +100,7 @@ float4 SSSSBlurCS(
 	float4 colorM = ColorTexture[DTid.xy];
 
 #if defined(HORIZONTAL)
-	colorM.rgb = sRGB2Lin(colorM.rgb);
+	colorM.rgb = GammaToLinear(colorM.rgb);
 #endif
 
 	if (sssAmount == 0)
@@ -138,7 +138,7 @@ float4 SSSSBlurCS(
 	uint2 maxCoord = uint2(BufferDim.x, BufferDim.y);
 #endif
 
-	float jitter = InterleavedGradientNoise(DTid.xy) * M_2PI;
+	float jitter = InterleavedGradientNoise(DTid.xy, FrameCount) * M_2PI;
 	float2x2 rotationMatrix = float2x2((jitter), sin(jitter), -sin(jitter), cos(jitter));
 	float2x2 identityMatrix = float2x2(1.0, 0.0, 0.0, 1.0);
 
@@ -157,7 +157,7 @@ float4 SSSSBlurCS(
 		float3 color = ColorTexture[coords].rgb;
 
 #if defined(HORIZONTAL)
-		color.rgb = sRGB2Lin(color.rgb);
+		color.rgb = GammaToLinear(color.rgb);
 #endif
 
 		float depth = DepthTexture[coords].r;

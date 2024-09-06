@@ -1,41 +1,54 @@
 Texture2D<unorm half> ScreenSpaceShadowsTexture : register(t17);
 
-float GetScreenSpaceShadow(float2 a_uv, float a_noise, float3 a_viewPosition, uint a_eyeIndex)
+namespace ScreenSpaceShadows
 {
-	a_noise *= 2.0 * M_PI;
-
-	half2x2 rotationMatrix = half2x2(cos(a_noise), sin(a_noise), -sin(a_noise), cos(a_noise));
-
-	float weight = 0;
-	float shadow = 0;
-
-	static const float2 BlurOffsets[4] = {
-		float2(0.381664f, 0.89172f),
-		float2(0.491409f, 0.216926f),
-		float2(0.937803f, 0.734825f),
-		float2(0.00921659f, 0.0562151f),
-	};
-
-	for (uint i = 0; i < 4; i++) {
-		float2 offset = mul(BlurOffsets[i], rotationMatrix) * 0.0025;
-
-		float2 sampleUV = a_uv + offset;
-		int3 sampleCoord = ConvertUVToSampleCoord(sampleUV, a_eyeIndex);
-
-		float rawDepth = TexDepthSampler.Load(sampleCoord).x;
-		float linearDepth = GetScreenDepth(rawDepth);
-
-		float attenuation = 1.0 - saturate(100.0 * abs(linearDepth - a_viewPosition.z) / a_viewPosition.z);
-		if (attenuation > 0.0) {
-			shadow += ScreenSpaceShadowsTexture.Load(sampleCoord).x * attenuation;
-			weight += attenuation;
-		}
+	float4 GetBlurWeights(float4 depths, float centerDepth)
+	{
+		static const float depthSharpness = 0.01;
+		float4 depthDifference = (depths - centerDepth) * depthSharpness;
+		return exp2(-depthDifference * depthDifference);
 	}
 
-	if (weight > 0.0)
-		shadow /= weight;
-	else
-		shadow = ScreenSpaceShadowsTexture.Load(ConvertUVToSampleCoord(a_uv, a_eyeIndex)).x;
+	float GetScreenSpaceShadow(float3 screenPosition, float2 uv, float noise, float3 viewPosition, uint eyeIndex)
+	{
+		noise *= 2.0 * M_PI;
 
-	return shadow;
+		half2x2 rotationMatrix = half2x2(cos(noise), sin(noise), -sin(noise), cos(noise));
+
+		float4 shadowSamples = 0;
+		float4 depthSamples = 0;
+
+		depthSamples[0] = screenPosition.z;
+		shadowSamples[0] = ScreenSpaceShadowsTexture.Load(int3(screenPosition.xy, 0));
+
+		static const float2 BlurOffsets[3] = {
+			float2(0.555528, 0.869625) * 2.0 - 1.0,
+			float2(0.939970, 0.362499) * 2.0 - 1.0,
+			float2(0.347453, 0.065981) * 2.0 - 1.0
+		};
+
+		[unroll] for (uint i = 1; i < 4; i++)
+		{
+			float2 offset = mul(BlurOffsets[i - 1], rotationMatrix) * 0.0025;
+
+			float2 sampleUV = uv + offset;
+			sampleUV = saturate(sampleUV);
+
+			int3 sampleCoord = ConvertUVToSampleCoord(sampleUV, eyeIndex);
+
+			depthSamples[i] = TexDepthSampler.Load(sampleCoord).x;
+			shadowSamples[i] = ScreenSpaceShadowsTexture.Load(sampleCoord);
+		}
+
+		depthSamples = GetScreenDepths(depthSamples);
+
+		float4 blurWeights = GetBlurWeights(depthSamples, viewPosition.z);
+		float shadow = dot(shadowSamples, blurWeights);
+
+		float blurWeightsTotal = dot(blurWeights, 1.0);
+		[flatten] if (blurWeightsTotal > 0.0)
+			shadow = shadow / blurWeightsTotal;
+
+		return shadow;
+	}
 }

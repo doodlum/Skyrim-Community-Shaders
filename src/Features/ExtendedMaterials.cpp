@@ -73,17 +73,14 @@ void ExtendedMaterials::DrawSettings()
 	}
 }
 
-void ExtendedMaterials::Load(json& o_json)
+void ExtendedMaterials::LoadSettings(json& o_json)
 {
-	if (o_json[GetName()].is_object())
-		settings = o_json[GetName()];
-
-	Feature::Load(o_json);
+	settings = o_json;
 }
 
-void ExtendedMaterials::Save(json& o_json)
+void ExtendedMaterials::SaveSettings(json& o_json)
 {
-	o_json[GetName()] = settings;
+	o_json = settings;
 }
 
 void ExtendedMaterials::RestoreDefaultSettings()

@@ -16,7 +16,8 @@ cbuffer SharedData : register(b5)
 	float4 BufferDim;
 	float Timer;
 	uint FrameCount;
-	uint pad0b4[2];
+	bool InInterior;  // If the area lacks a directional shadow light e.g. the sun or moon
+	bool InMapMenu;   // If the world/local map is open (note that the renderer is still deferred here)
 };
 
 struct GrassLightingSettings
@@ -27,7 +28,7 @@ struct GrassLightingSettings
 	bool OverrideComplexGrassSettings;
 
 	float BasicGrassBrightness;
-	float3 pad;
+	float3 pad0;
 };
 
 struct CPMSettings
@@ -44,10 +45,6 @@ struct CubemapCreatorSettings
 	float3 pad0;
 
 	float4 CubemapColor;
-
-	float scatterCoeffMult;
-	float absorpCoeffMult;
-	float2 pad1;
 };
 
 struct TerraOccSettings
@@ -70,7 +67,7 @@ struct TerraOccSettings
 	float3 Offset;
 };
 
-struct WetnessEffects
+struct WetnessEffectsSettings
 {
 	float Time;
 	float Raining;
@@ -116,6 +113,32 @@ struct LightLimitFixSettings
 	uint EnableLightsVisualisation;
 	uint LightsVisualisationMode;
 	uint pad0;
+
+	uint4 ClusterSize;
+};
+
+struct SkylightingSettings
+{
+	row_major float4x4 OcclusionViewProj;
+	float4 OcclusionDir;
+
+	float3 PosOffset;  // xyz: cell origin in camera model space
+	uint pad0;
+	uint3 ArrayOrigin;  // xyz: array origin, w: max accum frames
+	uint pad1;
+	int4 ValidMargin;
+
+	float4 MixParams;  // x: min diffuse visibility, y: diffuse mult, z: min specular visibility, w: specular mult
+
+	uint DirectionalDiffuse;
+	uint3 pad2;
+};
+
+struct PBRSettings
+{
+	uint UseMultipleScattering;
+	uint UseMultiBounceAO;
+	uint2 pad0;
 };
 
 struct SnowCoverSettings
@@ -141,9 +164,11 @@ cbuffer FeatureData : register(b6)
 	CPMSettings extendedMaterialSettings;
 	CubemapCreatorSettings cubemapCreatorSettings;
 	TerraOccSettings terraOccSettings;
-	WetnessEffects wetnessEffects;
+	WetnessEffectsSettings wetnessEffectsSettings;
 	LightLimitFixSettings lightLimitFixSettings;
 	SnowCoverSettings snowCoverSettings;
+	SkylightingSettings skylightingSettings;
+	PBRSettings pbrSettings;
 };
 
 Texture2D<float4> TexDepthSampler : register(t20);
@@ -165,6 +190,11 @@ float GetDepth(float2 uv, uint a_eyeIndex = 0)
 float GetScreenDepth(float depth)
 {
 	return (CameraData.w / (-depth * CameraData.z + CameraData.x));
+}
+
+float4 GetScreenDepths(float4 depths)
+{
+	return (CameraData.w / (-depths * CameraData.z + CameraData.x));
 }
 
 float GetScreenDepth(float2 uv, uint a_eyeIndex = 0)
@@ -191,18 +221,6 @@ float4 GetWaterData(float3 worldPosition)
 	[flatten] if (cellInt.x < 5 && cellInt.x >= 0 && cellInt.y < 5 && cellInt.y >= 0)
 		waterData = WaterData[waterTile];
 	return waterData;
-}
-
-// Derived from the interleaved gradient function from Jimenez 2014 http://goo.gl/eomGso
-float InterleavedGradientNoise(float2 uv)
-{
-	// Temporal factor
-	float frameStep = float(FrameCount % 16) * 0.0625f;
-	uv.x += frameStep * 4.7526;
-	uv.y += frameStep * 3.1914;
-
-	float3 magic = float3(0.06711056f, 0.00583715f, 52.9829189f);
-	return frac(magic.z * frac(dot(uv, magic.xy)));
 }
 
 #endif

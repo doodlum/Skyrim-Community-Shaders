@@ -75,16 +75,14 @@ private:
 
 	struct KeyEvent
 	{
-		KeyEvent(const nullptr_t) {}
-
-		KeyEvent(const RE::ButtonEvent* a_event) :
+		explicit KeyEvent(const RE::ButtonEvent* a_event) :
 			keyCode(a_event->GetIDCode()),
 			device(a_event->GetDevice()),
 			eventType(a_event->GetEventType()),
 			value(a_event->Value()),
 			heldDownSecs(a_event->HeldDuration()) {}
 
-		KeyEvent(const CharEvent* a_event) :
+		explicit KeyEvent(const CharEvent* a_event) :
 			keyCode(a_event->keyCode),
 			device(a_event->GetDevice()),
 			eventType(a_event->GetEventType()) {}
@@ -98,8 +96,8 @@ private:
 		uint32_t keyCode;
 		RE::INPUT_DEVICE device;
 		RE::INPUT_EVENT_TYPE eventType;
-		float value;
-		float heldDownSecs;
+		float value = 0;
+		float heldDownSecs = 0;
 	};
 	const uint32_t DIKToVK(uint32_t DIK);
 	mutable std::shared_mutex _inputEventMutex;
