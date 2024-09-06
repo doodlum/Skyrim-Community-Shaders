@@ -4,8 +4,8 @@
 #include "Features/ExtendedMaterials.h"
 #include "Features/GrassLighting.h"
 #include "Features/LightLimitFix.h"
-#include "Features/SnowCover.h"
 #include "Features/Skylighting.h"
+#include "Features/SnowCover.h"
 #include "Features/TerrainOcclusion.h"
 #include "Features/WetnessEffects.h"
 
