@@ -397,11 +397,6 @@ cbuffer PerMaterial : register(b1)
 #		if defined(TRUE_PBR)
 #			include "Common/PBR.hlsli"
 #		endif
-#		if defined(SNOW_COVER)
-#			undef SNOW
-#			undef PROJECTED_UV
-#			include "SnowCover/SnowCover.hlsli"
-#		endif
 
 PS_OUTPUT main(PS_INPUT input, bool frontFace
 			   : SV_IsFrontFace)
@@ -478,15 +473,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (!complex || grassLightingSettings.OverrideComplexGrassSettings)
 		baseColor.xyz *= grassLightingSettings.BasicGrassBrightness;
 #			endif  // !TRUE_PBR
-
-#			if defined(SNOW_COVER)
-	float3 pos = input.WorldPosition.xyz + CameraPosAdjust[eyeIndex];
-	//float3 pos = float3(input.TexCoord.x, input.TexCoord.y, 0) * 16;
-	float glossiness = 0;
-	float shininess = grassLightingSettings.Glossiness;
-	if (snowCoverSettings.EnableSnowCover)
-		ApplySnowFoliage(baseColor.xyz, normal, glossiness, shininess, pos);
-#			endif
 
 #			if defined(TRUE_PBR)
 	float4 rawRMAOS = TexRMAOSSampler.Sample(SampRMAOSSampler, input.TexCoord.xy) * float4(PBRParams1.x, 1, 1, PBRParams1.y);

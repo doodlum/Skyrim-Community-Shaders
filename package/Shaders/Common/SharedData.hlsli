@@ -141,23 +141,6 @@ struct PBRSettings
 	uint2 pad0;
 };
 
-struct SnowCoverSettings
-{
-	uint Month;
-	float Time;
-	float Snowing;
-	float SnowAmount;
-	float SnowpileAmount;
-
-	uint EnableSnowCover;
-	uint AffectFoliageColor;
-	float SnowHeightOffset;
-	float FoliageHeightOffset;
-	uint MaxSummerMonth;
-	uint MaxWinterMonth;
-	float pad[1];
-};
-
 cbuffer FeatureData : register(b6)
 {
 	GrassLightingSettings grassLightingSettings;
@@ -166,7 +149,6 @@ cbuffer FeatureData : register(b6)
 	TerraOccSettings terraOccSettings;
 	WetnessEffectsSettings wetnessEffectsSettings;
 	LightLimitFixSettings lightLimitFixSettings;
-	SnowCoverSettings snowCoverSettings;
 	SkylightingSettings skylightingSettings;
 	PBRSettings pbrSettings;
 };

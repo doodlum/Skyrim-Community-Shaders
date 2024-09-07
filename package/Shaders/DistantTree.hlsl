@@ -170,11 +170,6 @@ const static float DepthOffsets[16] = {
 #	if defined(CLOUD_SHADOWS)
 #		include "CloudShadows/CloudShadows.hlsli"
 #	endif
-#	if defined(SNOW_COVER)
-#		undef SNOW
-#		undef PROJECTED_UV
-#		include "SnowCover/SnowCover.hlsli"
-#	endif
 
 PS_OUTPUT main(PS_INPUT input)
 {
@@ -254,16 +249,6 @@ PS_OUTPUT main(PS_INPUT input)
 
 	psout.MotionVector = GetSSMotionVector(input.WorldPosition, input.PreviousWorldPosition, eyeIndex);
 
-#			if defined(SNOW_COVER)
-	float3 worldPos = (input.WorldPosition).xyz + CameraPosAdjust[eyeIndex];
-	float glossiness = 0;
-	float shininess = 1000;
-	float3 worldNormal = mul(transpose(CameraView[eyeIndex]), float4(normal, 0)).xyz;
-	if (snowCoverSettings.EnableSnowCover)
-		ApplySnowFoliage(baseColor.xyz, worldNormal, glossiness, shininess, worldPos);
-	normal = mul(CameraView[eyeIndex], float4(worldNormal, 0)).xyz;
-#			endif
-
 	psout.Normal.xy = EncodeNormal(WorldToView(normal, false, eyeIndex));
 	psout.Normal.zw = 0;
 
@@ -274,18 +259,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 ddy = ddy_coarse(input.WorldPosition);
 	float3 normal = normalize(cross(ddx, ddy));
 
-#			if defined(SNOW_COVER)
-	float3 worldPos = (input.WorldPosition).xyz;
-	float glossiness = 0;
-	float shininess = 1000;
-	if (snowCoverSettings.EnableSnowCover)
-		ApplySnowFoliage(baseColor.xyz, normal, glossiness, shininess, worldPos);
-#			endif
-
-	float3 directionalAmbientColor = mul(DirectionalAmbientShared, float4(normal, 1.0));
-
 	float3 color = baseColor.xyz * (DiffuseColor.xyz + AmbientColor.xyz);
-
 	psout.Diffuse = float4(color, 1.0);
 #		endif  // DEFERRED
 #	endif      // RENDER_DEPTH

@@ -26,12 +26,6 @@
 #	define LOD
 #endif
 
-#if defined(SNOW_COVER)
-#	undef SNOW
-#	undef PROJECTED_UV
-#	include "SnowCover/SnowCover.hlsli"
-#endif
-
 struct VS_INPUT
 {
 	float4 Position : POSITION0;
@@ -1007,38 +1001,6 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		include "Skylighting/Skylighting.hlsli"
 #	endif
 
-#	if defined(TERRA_OCC)
-void GetTerrainOcclusionAO(
-	const float3 worldPos, const float viewDistance, SamplerState samp,
-	out float terrainShadow, out float terrainAo)
-{
-	terrainShadow = 1;
-	terrainAo = 1;
-
-	float2 terraOccUV = TerrainOcclusion::GetTerrainOcclusionUV(worldPos.xy);
-
-	if (any(terraOccUV < 0) && any(terraOccUV > 1))
-		return;
-
-	[flatten] if (terraOccSettings.EnableTerrainShadow && (viewDistance > terraOccSettings.ShadowFadeDistance.x))
-	{
-		float fadeFactor = saturate((viewDistance - terraOccSettings.ShadowFadeDistance.x) / (terraOccSettings.ShadowFadeDistance.y - terraOccSettings.ShadowFadeDistance.x));
-		float2 shadowHeight = TerrainOcclusion::GetTerrainZ(TexShadowHeight.SampleLevel(samp, terraOccUV, 0));
-		float shadowFraction = saturate((worldPos.z - shadowHeight.y) / (shadowHeight.x - shadowHeight.y));
-		terrainShadow = lerp(1, shadowFraction, fadeFactor);
-	}
-
-	{
-		float terrainHeight = TerrainOcclusion::GetTerrainZ(TexNormalisedHeight.SampleLevel(samp, terraOccUV, 0).x);
-		terrainAo = TexTerraOcc.SampleLevel(samp, terraOccUV, 0).x;
-
-		// height fadeout (1/2000)
-		float fadeOut = saturate((worldPos.z - terrainHeight) * terraOccSettings.AOFadeOutHeightRcp);
-		terrainAo = lerp(terrainAo, 1, fadeOut);
-	}
-}
-#	endif
-
 #	define LinearSampler SampColorSampler
 
 #	include "Common/ShadowSampling.hlsli"
@@ -1067,8 +1029,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		else
 	float shininess = SpecularColor.w;
 #		endif  // defined (LANDSCAPE)
-#	else
-	float shininess = 1;
 #	endif
 
 	float3 viewPosition = mul(CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
@@ -1669,10 +1629,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	baseColor.xyz = GetWorldMapBaseColor(rawBaseColor.xyz, baseColor.xyz, projWeight);
 #	endif  // WORLD_MAP
 
-#	if !defined(HAIR)
-	baseColor.xyz *= input.Color.xyz;
-#	endif
-
 	float3 worldSpaceNormal = modelNormal;
 
 #	if !defined(DRAW_IN_WORLDSPACE)
@@ -1681,51 +1637,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif
 
 	float3 screenSpaceNormal = normalize(WorldToView(worldSpaceNormal, false, eyeIndex));
-
-#	if defined(SKYLIGHTING)
-#		if defined(VR)
-	float3 positionMSSkylight = input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
-#		else
-	float3 positionMSSkylight = input.WorldPosition.xyz;
-#		endif
-
-#		if defined(DEFERRED)
-	sh2 skylightingSH = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMSSkylight, worldSpaceNormal);
-#		else
-	sh2 skylightingSH = inWorld ? Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMSSkylight, worldSpaceNormal) : float4(sqrt(4.0 * shPI), 0, 0, 0);
-#		endif
-	float skylightingDiffuse = shFuncProductIntegral(skylightingSH, shEvaluateCosineLobe(skylightingSettings.DirectionalDiffuse ? worldSpaceNormal : float3(0, 0, 1))) / shPI;
-	skylightingDiffuse = Skylighting::mixDiffuse(skylightingSettings, skylightingDiffuse);
-	float occlusion = inWorld ? pow(saturate(shUnproject(skylightingSH, float3(0, 0, 1))), 2) : 0;
-#	else
-	float occlusion = 1.0;
-#	endif  // SKYLIGHTING
-
-	float terrainShadow = 1;
-	float terrainAo = 0;
-#	if defined(TERRA_OCC)
-	GetTerrainOcclusionAO(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex], length(input.WorldPosition.xyz), SampColorSampler, terrainShadow, terrainAo);
-#	endif
-
-#	if defined(SNOW_COVER)
-	//float3 pos = float3(diffuseUv.x, diffuseUv.y, 0);
-	float3 pos = (input.WorldPosition + CameraPosAdjust[eyeIndex]).xyz;
-	if (snowCoverSettings.EnableSnowCover)
-#		if defined(TREE_ANIM)
-		ApplySnowFoliage(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos);
-#		else
-		ApplySnow(baseColor.xyz, worldSpaceNormal, glossiness.x, shininess, pos, 1, viewPosition.z);  // TODO put skylighting back later
-#		endif
-	glossiness = glossiness.xxxx;
-
-#		if !defined(DRAW_IN_WORLDSPACE)  // && (defined(SKINNED) || !defined(MODELSPACENORMALS))
-	[flatten] if (!input.WorldSpace)
-		modelNormal.xyz = mul(transpose(input.World[eyeIndex]), float4(worldSpaceNormal, 0));
-	else
-#		endif
-		modelNormal.xyz = worldSpaceNormal;
-	modelNormal.xyz = normalize(modelNormal.xyz);
-#	endif
 
 #	if defined(TRUE_PBR)
 	PBR::SurfaceProperties pbrSurfaceProperties = PBR::InitSurfaceProperties();
@@ -1833,6 +1744,21 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float porosity = 1.0;
 
 	float nearFactor = smoothstep(4096.0 * 2.5, 0.0, viewPosition.z);
+
+#	if defined(SKYLIGHTING)
+#		if defined(VR)
+	float3 positionMSSkylight = input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
+#		else
+	float3 positionMSSkylight = input.WorldPosition.xyz;
+#		endif
+
+#		if defined(DEFERRED)
+	sh2 skylightingSH = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMSSkylight, worldSpaceNormal);
+#		else
+	sh2 skylightingSH = inWorld ? Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMSSkylight, worldSpaceNormal) : float4(sqrt(4.0 * shPI), 0, 0, 0);
+#		endif
+
+#	endif
 
 	float4 waterData = GetWaterData(input.WorldPosition.xyz);
 	float waterHeight = waterData.w;
@@ -2014,6 +1940,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				// (MODELSPACENORMALS))
 
 #	if defined(TERRA_OCC)
+		float terrainShadow = 1;
+		float terrainAo = 1;
+		TerrainOcclusion::GetTerrainOcclusion(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz, length(input.WorldPosition.xyz), SampColorSampler, terrainShadow, terrainAo);
 		dirShadow *= terrainShadow;
 		inDirShadow = inDirShadow || dirShadow == 0.0;
 #	endif
@@ -2332,7 +2261,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 reflectionDiffuseColor = diffuseColor + directionalAmbientColor;
 
 #	if defined(SKYLIGHTING)
-
+	float skylightingDiffuse = shFuncProductIntegral(skylightingSH, shEvaluateCosineLobe(skylightingSettings.DirectionalDiffuse ? worldSpaceNormal : float3(0, 0, 1))) / shPI;
+	skylightingDiffuse = Skylighting::mixDiffuse(skylightingSettings, skylightingDiffuse);
 #		if !defined(TRUE_PBR)
 	directionalAmbientColor = GammaToLinear(directionalAmbientColor);
 #		endif
@@ -2722,7 +2652,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	outputAlbedo = LinearToGamma(indirectDiffuseLobeWeight);
 #		endif
 	psout.Albedo = float4(outputAlbedo, psout.Diffuse.w);
-	//psout.Albedo.xyz = occlusion;
 
 	float outGlossiness = saturate(glossiness * SSRParams.w);
 
