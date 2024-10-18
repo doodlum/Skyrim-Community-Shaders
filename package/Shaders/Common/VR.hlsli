@@ -6,7 +6,7 @@
 #		include "Common/Math.hlsli"
 #	endif  // VSHADER
 
-#	if !defined(COMPUTESHADER) && !defined(CSHADER)
+#	if (!defined(COMPUTESHADER) && !defined(CSHADER)) || defined(FRAMEBUFFER)
 #		include "Common/FrameBuffer.hlsli"
 #	endif
 cbuffer VRValues : register(b13)
@@ -150,7 +150,8 @@ namespace Stereo
 		return normalizedCoord;
 	}
 
-#ifdef PSHADER
+#if defined(PSHADER) || defined(FRAMEBUFFER)
+	// These functions require the framebuffer which is typically provided with the PSHADER
 	/**
 	Gets the eyeIndex for PSHADER
 	@returns eyeIndex (0 left, 1 right)
@@ -212,6 +213,12 @@ namespace Stereo
 		// Convert Clip Space to View Space for the current eye
 		float4 viewPosCurrentEye = mul(CameraProjInverse[eyeIndex], clipPos);
 		viewPosCurrentEye /= viewPosCurrentEye.w;
+
+		// Adjust for eye position offset
+		const float2 eyeOffsetScale = float2(-0.50, 0.50);
+		float eyeOffset = dot(eyeOffsetScale, M_IdentityMatrix[eyeIndex].xy);
+		float adjustment = eyeOffset * viewPosCurrentEye.w * 8.8;  // based on q3 adjustments, may need better conversion
+		viewPosCurrentEye.x += adjustment;
 
 		// Convert View Space to World Space
 		float4 worldPos = mul(CameraViewInverse[eyeIndex], viewPosCurrentEye);
