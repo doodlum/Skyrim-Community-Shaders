@@ -15,6 +15,10 @@ Texture2D<unorm float> DepthTexture : register(t2);
 Texture3D<sh2> SkylightingProbeArray : register(t3);
 #endif
 
+#if !defined(SKYLIGHTING) && defined(VR)  // VR also needs a depthbuffer
+Texture2D<unorm float> DepthTexture : register(t2);
+#endif
+
 #if defined(SSGI)
 Texture2D<half4> SSGITexture : register(t4);
 #endif
@@ -28,8 +32,9 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 
 [numthreads(8, 8, 1)] void main(uint3 dispatchID
 								: SV_DispatchThreadID) {
-	half2 uv = half2(dispatchID.xy + 0.5) * BufferDim.zw * DynamicResolutionParams2.xy;
+	half2 uv = half2(dispatchID.xy + 0.5) * BufferDim.zw;
 	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
+	uv *= DynamicResolutionParams2.xy;  // adjust for dynamic res
 	uv = Stereo::ConvertFromStereoUV(uv, eyeIndex);
 
 	half3 normalGlossiness = NormalRoughnessTexture[dispatchID.xy];
@@ -58,7 +63,7 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 	float4 positionMS = mul(CameraViewProjInverse[eyeIndex], positionCS);
 	positionMS.xyz = positionMS.xyz / positionMS.w;
 #	if defined(VR)
-	positionMS.xyz += CameraPosAdjust[eyeIndex] - CameraPosAdjust[0];
+	positionMS.xyz += CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
 #	endif
 
 	sh2 skylighting = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
@@ -69,7 +74,19 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 #endif
 
 #if defined(SSGI)
+#	if defined(VR)
+	float3 uvF = float3((dispatchID.xy + 0.5) * BufferDim.zw, DepthTexture[dispatchID.xy]);  // calculate high precision uv of initial eye
+	float3 uv2 = Stereo::ConvertStereoUVToOtherEyeStereoUV(uvF, eyeIndex, false);            // calculate other eye uv
+	float3 uv1Mono = Stereo::ConvertFromStereoUV(uvF, eyeIndex);
+	float3 uv2Mono = Stereo::ConvertFromStereoUV(uv2, (1 - eyeIndex));
+	uint2 pixCoord2 = (uint2)(uv2.xy / BufferDim.zw - 0.5);
+#	endif
+
 	half4 ssgiDiffuse = SSGITexture[dispatchID.xy];
+#	if defined(VR)
+	half4 ssgiDiffuse2 = SSGITexture[pixCoord2];
+	ssgiDiffuse = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiDiffuse, uv2Mono, (float4)ssgiDiffuse2);
+#	endif
 	ssgiDiffuse.rgb *= linAlbedo;
 	ssgiDiffuse.a = 1 - ssgiDiffuse.a;
 

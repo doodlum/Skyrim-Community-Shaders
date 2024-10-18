@@ -24,6 +24,10 @@ TextureCube<half3> EnvReflectionsTexture : register(t8);
 SamplerState LinearSampler : register(s0);
 #endif
 
+#if !defined(DYNAMIC_CUBEMAPS) && defined(VR)  // VR also needs a depthbuffer
+Texture2D<float> DepthTexture : register(t5);
+#endif
+
 #if defined(SKYLIGHTING)
 #	include "Skylighting/Skylighting.hlsli"
 
@@ -36,8 +40,9 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 
 [numthreads(8, 8, 1)] void main(uint3 dispatchID
 								: SV_DispatchThreadID) {
-	half2 uv = half2(dispatchID.xy + 0.5) * BufferDim.zw * DynamicResolutionParams2.xy;
+	half2 uv = half2(dispatchID.xy + 0.5) * BufferDim.zw;
 	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
+	uv *= DynamicResolutionParams2.xy;  // adjust for dynamic res
 	uv = Stereo::ConvertFromStereoUV(uv, eyeIndex);
 
 	half3 normalGlossiness = NormalRoughnessTexture[dispatchID.xy];
@@ -91,7 +96,7 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 		finalIrradiance += specularIrradiance;
 #	elif defined(SKYLIGHTING)
 #		if defined(VR)
-		float3 positionMS = positionWS + CameraPosAdjust[eyeIndex] - CameraPosAdjust[0];
+		float3 positionMS = positionWS + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
 #		else
 		float3 positionMS = positionWS;
 #		endif
@@ -124,7 +129,19 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 #	endif
 
 #	if defined(SSGI)
+#		if defined(VR)
+		float3 uvF = float3((dispatchID.xy + 0.5) * BufferDim.zw, DepthTexture[dispatchID.xy]);  // calculate high precision uv of initial eye
+		float3 uv2 = Stereo::ConvertStereoUVToOtherEyeStereoUV(uvF, eyeIndex, false);            // calculate other eye uv
+		float3 uv1Mono = Stereo::ConvertFromStereoUV(uvF, eyeIndex);
+		float3 uv2Mono = Stereo::ConvertFromStereoUV(uv2, (1 - eyeIndex));
+		uint2 pixCoord2 = (uint2)(uv2.xy / BufferDim.zw - 0.5);
+#		endif
+
 		half4 ssgiSpecular = SpecularSSGITexture[dispatchID.xy];
+#		if defined(VR)
+		half4 ssgiSpecular2 = SpecularSSGITexture[pixCoord2];
+		ssgiSpecular = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiSpecular, uv2Mono, (float4)ssgiSpecular2);
+#		endif
 		finalIrradiance = finalIrradiance * (1 - ssgiSpecular.a) + ssgiSpecular.rgb;
 #	endif
 
