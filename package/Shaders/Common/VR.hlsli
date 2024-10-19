@@ -193,11 +193,15 @@ namespace Stereo
 	* @brief Converts mono UV coordinates from one eye to the corresponding mono UV coordinates of the other eye.
 	*
 	* This function is used to transition UV coordinates from one eye's perspective to the other eye in a stereo rendering setup.
-	* It works by converting the mono UV to clip space, transforming it into view space, and then reprojecting it into the other eye's
-	* clip space before converting back to UV coordinates. It also supports dynamic resolution.
+	* It operates by converting the mono UV to clip space, transforming it into world space, and then reprojecting it 
+	* into the other eye's clip space before converting back to UV coordinates. It supports dynamic resolution adjustments 
+	* and applies eye offset adjustments for correct stereo separation.
+	*
+	* The function considers the aspect of VR by modifying the NDC to view space conversion based on the stereo setup, 
+	* ensuring accurate rendering across both eyes.
 	*
 	* @param[in] monoUV The UV coordinates and depth value (Z component) for the current eye, in the range [0,1].
-	* @param[in] eyeIndex Index of the source/current eye (0 or 1).
+	* @param[in] eyeIndex Index of the source/current eye (0 for left, 1 for right).
 	* @param[in] dynamicres Optional flag indicating whether dynamic resolution is applied. Default is false.
 	* @return UV coordinates adjusted to the other eye, with depth.
 	*/
@@ -210,24 +214,28 @@ namespace Stereo
 		// Convert UV to Clip Space
 		float4 clipPos = float4(monoUV.xy * float2(2, -2) - float2(1, -1), monoUV.z, 1);
 
-		// Convert Clip Space to View Space for the current eye
-		float4 viewPosCurrentEye = mul(CameraProjInverse[eyeIndex], clipPos);
-		viewPosCurrentEye /= viewPosCurrentEye.w;
+		// Calculate NDCToViewMul for the current eye
+		float4x4 projMat = CameraProj[eyeIndex];
+		float2 ndcToViewMul = float2(2.0 / projMat[0][0], -2.0 / projMat[1][1]);
 
-		// Adjust for eye position offset
-		const float2 eyeOffsetScale = float2(-0.50, 0.50);
-		float eyeOffset = dot(eyeOffsetScale, M_IdentityMatrix[eyeIndex].xy);
-		float adjustment = eyeOffset * viewPosCurrentEye.w * 8.8;  // based on q3 adjustments, may need better conversion
-		viewPosCurrentEye.x += adjustment;
+		// Adjust NDCToViewMul for VR
+		// We multiply by 4 here:
+		// - 2x to convert from NDC to view space in VR (each eye covers half the total horizontal FOV)
+		// - Another 2x to account for the full stereo separation between both eyes
+		ndcToViewMul.x *= 4.0;
 
-		// Convert View Space to World Space
-		float4 worldPos = mul(CameraViewInverse[eyeIndex], viewPosCurrentEye);
+		// Convert Clip Space to World Space for the current eye
+		float4 worldPos = mul(CameraViewProjInverse[eyeIndex], clipPos);
+		worldPos /= worldPos.w;
 
-		// Convert World Space back to View Space for the other eye
-		float4 viewPosOtherEye = mul(CameraView[1 - eyeIndex], worldPos);
+		// Apply eye offset adjustment in world space
+		// The eye offset is scaled by ndcToViewMul.x to ensure correct stereo separation
+		float eyeOffset = dot(EyeOffsetScale, M_IdentityMatrix[eyeIndex].xy);
+		float3 eyeOffsetVector = mul(CameraViewInverse[eyeIndex], float4(eyeOffset, 0, 0, 0)).xyz;
+		worldPos.xyz += eyeOffsetVector * worldPos.w * ndcToViewMul.x;
 
-		// Convert View Space to Clip Space for the other eye
-		float4 clipPosOtherEye = mul(CameraProj[1 - eyeIndex], viewPosOtherEye);
+		// Convert World Space to Clip Space for the other eye
+		float4 clipPosOtherEye = mul(CameraViewProj[1 - eyeIndex], worldPos);
 		clipPosOtherEye /= clipPosOtherEye.w;
 
 		// Convert Clip Space to UV
