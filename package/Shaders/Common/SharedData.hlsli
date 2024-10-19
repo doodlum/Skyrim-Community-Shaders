@@ -135,6 +135,14 @@ struct PBRSettings
 	uint pad0[2];
 };
 
+struct TransclucencySettings
+{
+	uint TransclucencyMethod;
+	float AlphaFactor;
+	float AlphaMax;
+	uint pad0;
+}
+
 cbuffer FeatureData : register(b6)
 {
 	GrassLightingSettings grassLightingSettings;
@@ -145,6 +153,7 @@ cbuffer FeatureData : register(b6)
 	WetnessEffectsSettings wetnessEffectsSettings;
 	SkylightingSettings skylightingSettings;
 	PBRSettings pbrSettings;
+	TransclucencySettings transclucencySettings;
 };
 
 Texture2D<float4> TexDepthSampler : register(t20);

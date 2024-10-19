@@ -401,12 +401,12 @@ struct PS_OUTPUT
 #else
 struct PS_OUTPUT
 {
-	float4 Diffuse : SV_Target0;
-	float4 MotionVectors : SV_Target1;
-	float4 ScreenSpaceNormals : SV_Target2;
-#	if defined(SNOW)
+    float4 Diffuse : SV_Target0;
+    float4 MotionVectors : SV_Target1;
+    float4 ScreenSpaceNormals : SV_Target2;
+#if defined(SNOW)
 	float4 Parameters : SV_Target3;
-#	endif
+#endif
 };
 #endif
 
@@ -997,6 +997,10 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 
 #	if defined(SKYLIGHTING)
 #		include "Skylighting/Skylighting.hlsli"
+#	endif
+
+#	if defined(EXTENDED_TRANSCLUCENCY)
+		#include "ExtendedTransclucency/ExtendedTransclucency.hlsli"
 #	endif
 
 #	define LinearSampler SampColorSampler
@@ -2612,6 +2616,31 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		discard;
 	}
 #		endif      // DO_ALPHA_TEST
+#if defined(EXTENDED_TRANSCLUCENCY) && (defined(SKINNED) || !defined(MODELSPACENORMALS)) && !(defined(SKIN) || defined(HAIR) || defined(EYE) || defined(TREE_ANIM) || defined(LODOBJECTSHD) || defined(LODOBJECTS))
+	// if (alpha >= 0.0156862754 && alpha < 1.0)
+	{
+		float limit = max(2*alpha, transclucencySettings.AlphaMax);
+		alpha = alpha < 1.0 ? alpha * transclucencySettings.AlphaFactor : 1.0;
+
+		switch (transclucencySettings.TransclucencyMethod)
+		{
+			case 1:
+				alpha = ExtendedTransclucency::GetViewDependentAlphaNaive(alpha, viewDirection, modelNormal);
+			break;
+			case 2:
+				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal);
+			break;
+			case 3:
+				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, tbnTr);
+			break;
+			default:
+			break;
+		}
+
+		alpha = ExtendedTransclucency::SoftClamp(alpha, limit);
+		alpha = saturate(alpha);
+	}
+#endif
 	psout.Diffuse.w = alpha;
 
 #	endif
