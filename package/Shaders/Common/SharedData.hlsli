@@ -112,7 +112,6 @@ struct WetnessEffectsSettings
 
 	float ChaoticRippleScaleRcp;
 	float ChaoticRippleSpeed;
-	uint pad0[2];
 };
 
 struct SkylightingSettings
