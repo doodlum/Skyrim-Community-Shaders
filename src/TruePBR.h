@@ -34,17 +34,17 @@ public:
 	void GenerateShaderPermutations(RE::BSShader* shader);
 
 	void SetupGlintsTexture();
-	eastl::unique_ptr<Texture2D> glintsNoiseTexture = nullptr;
-
-	std::unordered_map<uint32_t, std::string> editorIDs;
-
-	struct Settings
+	struct alignas(16) Settings
 	{
 		uint32_t useMultipleScattering = true;
 		uint32_t useMultiBounceAO = true;
 		uint32_t pad[2];
 	} settings{};
 	static_assert(sizeof(Settings) % 16 == 0);
+
+	eastl::unique_ptr<Texture2D> glintsNoiseTexture = nullptr;
+
+	std::unordered_map<uint32_t, std::string> editorIDs;
 
 	struct PBRTextureSetData
 	{

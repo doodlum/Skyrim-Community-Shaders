@@ -47,7 +47,7 @@ struct Skylighting : Feature
 		uint pad0;
 	} settings;
 
-	struct SkylightingCB
+	struct alignas(16) SkylightingCB
 	{
 		REX::W32::XMFLOAT4X4 OcclusionViewProj;
 		float4 OcclusionDir;
