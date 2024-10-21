@@ -17,17 +17,17 @@ struct ExtendedTransclucency : Feature
 
 	enum class TranscluencyMethod : uint
 	{
-		Disable = 0,			// Disable view dependent transcluency
-		RimEdge = 1,			// Naive rim edge model
-		FabricIsotropic = 2,	// 1D fabric model
-		FabricAnisotropic = 3	// 2D fabric model
+		AnisotropicFabric = 0,  // 2D fabric model alone tangent and binormal, ignores normal map
+		IsotropicFabric = 1,    // 1D fabric model, respect normal map
+		RimLight = 2,           // Similar effect like rim light
+		None = 3,				// Disable view dependent transcluency
 	};
 
 	struct alignas(16) Settings
 	{
-		uint	TransclucencyMethod;
-		float	AlphaFactor = 0.85f;
-		float	AlphaMax = 1.6f;
+		uint	ViewDependentAlphaMode = 0;
+		float	AlphaReduction = 0.f;
+		float	AlphaSoftness = 0.f;
 		uint	pad;
 	};
 

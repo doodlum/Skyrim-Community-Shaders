@@ -476,7 +476,6 @@ void State::SetupResources()
 
 	auto [data, size] = GetFeatureBufferData();
 	featureDataCB = new ConstantBuffer(ConstantBufferDesc((uint32_t)size));
-	delete[] data;
 
 	// Grab main texture to get resolution
 	// VR cannot use viewport->screenWidth/Height as it's the desktop preview window's resolution and not HMD
@@ -661,8 +660,6 @@ void State::UpdateSharedData()
 		auto [data, size] = GetFeatureBufferData();
 
 		featureDataCB->Update(data, size);
-
-		delete[] data;
 	}
 
 	const auto& depth = RE::BSGraphics::Renderer::GetSingleton()->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];

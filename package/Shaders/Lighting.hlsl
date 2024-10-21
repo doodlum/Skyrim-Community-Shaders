@@ -2617,28 +2617,21 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 #		endif      // DO_ALPHA_TEST
 #if defined(EXTENDED_TRANSCLUCENCY) && (defined(SKINNED) || !defined(MODELSPACENORMALS)) && !(defined(SKIN) || defined(HAIR) || defined(EYE) || defined(TREE_ANIM) || defined(LODOBJECTSHD) || defined(LODOBJECTS))
-	// if (alpha >= 0.0156862754 && alpha < 1.0)
+	if (transclucencySettings.AlphaMode < 3)
 	{
-		float limit = max(2*alpha, transclucencySettings.AlphaMax);
-		alpha = alpha < 1.0 ? alpha * transclucencySettings.AlphaFactor : 1.0;
-
-		switch (transclucencySettings.TransclucencyMethod)
+		if (alpha >= 0.0156862754 && alpha < 1.0)
 		{
-			case 1:
-				alpha = ExtendedTransclucency::GetViewDependentAlphaNaive(alpha, viewDirection, modelNormal);
-			break;
-			case 2:
-				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal);
-			break;
-			case 3:
-				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, tbnTr);
-			break;
-			default:
-			break;
+			alpha = alpha * (1.0-transclucencySettings.AlphaReduction);
+			float limit = 2.0-transclucencySettings.AlphaSoftness;
+			if (transclucencySettings.AlphaMode == 0) {
+				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
+			} else if (transclucencySettings.AlphaMode == 1) {
+				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric2D(alpha, viewDirection, tbnTr);
+			} else {
+				alpha = ExtendedTransclucency::GetViewDependentAlphaNaive(alpha, viewDirection, modelNormal.xyz);
+			}
+			alpha = saturate(ExtendedTransclucency::SoftClamp(alpha, limit));
 		}
-
-		alpha = ExtendedTransclucency::SoftClamp(alpha, limit);
-		alpha = saturate(alpha);
 	}
 #endif
 	psout.Diffuse.w = alpha;
