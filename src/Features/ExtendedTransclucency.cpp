@@ -19,11 +19,12 @@ void ExtendedTransclucency::DrawSettings()
 		};
 		ImGui::Combo("Material Model", (int*)&settings.ViewDependentAlphaMode, AlphaModeNames, 4);
 		if (auto _tt = Util::HoverTooltipWrapper()) {
-			ImGui::Text("View dependent transparency will make a transcluent surface more opaque when you view it parallel to the surface.\n"
-			"  - Anisotropic Fabric: Common fabric weaved from tangent and birnormal direction, ignores normal map.\n"
-			"  - Isotropic Fabric: Imaginary fabric weaved from threads in one direction, respect normal map.\n"
-			"  - Rim Light: Naive rim light effect\n"
-			"  - Disabled: No view dependent transparency");
+			ImGui::Text(
+				"View dependent transparency will make a transcluent surface more opaque when you view it parallel to the surface.\n"
+				"  - Anisotropic Fabric: Common fabric weaved from tangent and birnormal direction, ignores normal map.\n"
+				"  - Isotropic Fabric: Imaginary fabric weaved from threads in one direction, respect normal map.\n"
+				"  - Rim Light: Naive rim light effect\n"
+				"  - Disabled: No view dependent transparency");
 		}
 
 		ImGui::SliderFloat("Increase Transparency", &settings.AlphaReduction, 0.f, 1.f);
