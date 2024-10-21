@@ -18,7 +18,6 @@
 #include "Features/WaterLighting.h"
 #include "Features/WetnessEffects.h"
 
-
 #include "State.h"
 
 void Feature::Load(json& o_json)

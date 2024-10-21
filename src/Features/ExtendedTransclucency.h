@@ -20,15 +20,15 @@ struct ExtendedTransclucency : Feature
 		AnisotropicFabric = 0,  // 2D fabric model alone tangent and binormal, ignores normal map
 		IsotropicFabric = 1,    // 1D fabric model, respect normal map
 		RimLight = 2,           // Similar effect like rim light
-		None = 3,				// Disable view dependent transcluency
+		None = 3,               // Disable view dependent transcluency
 	};
 
 	struct alignas(16) Settings
 	{
-		uint	ViewDependentAlphaMode = 0;
-		float	AlphaReduction = 0.f;
-		float	AlphaSoftness = 0.f;
-		uint	pad;
+		uint ViewDependentAlphaMode = 0;
+		float AlphaReduction = 0.f;
+		float AlphaSoftness = 0.f;
+		uint pad;
 	};
 
 	Settings settings;

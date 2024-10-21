@@ -2,12 +2,12 @@
 
 #include "Features/DynamicCubemaps.h"
 #include "Features/ExtendedMaterials.h"
+#include "Features/ExtendedTransclucency.h"
 #include "Features/GrassLighting.h"
 #include "Features/LightLimitFix.h"
 #include "Features/Skylighting.h"
 #include "Features/TerrainShadows.h"
 #include "Features/WetnessEffects.h"
-#include "Features/ExtendedTransclucency.h"
 
 #include "TruePBR.h"
 
