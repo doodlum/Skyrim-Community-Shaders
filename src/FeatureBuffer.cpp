@@ -11,43 +11,32 @@
 
 #include "TruePBR.h"
 
-template <typename Feature>
-auto GetFeatureBuffer() { return Feature::GetSingleton()->settings; }
-template <> auto GetFeatureBuffer<TerrainShadows>() { return TerrainShadows::GetSingleton()->GetCommonBufferData(); }
-template <> auto GetFeatureBuffer<LightLimitFix>() { return LightLimitFix::GetSingleton()->GetCommonBufferData(); }
-template <> auto GetFeatureBuffer<WetnessEffects>() { return WetnessEffects::GetSingleton()->GetCommonBufferData(); }
-template <> auto GetFeatureBuffer<Skylighting>() { return Skylighting::GetSingleton()->GetCommonBufferData(); }
-
-template <typename Feature>
-using FeatureBufferType = decltype(GetFeatureBuffer<Feature>());
-
-struct alignas(16) FeatureBuffer
+template <class... Ts>
+std::pair<unsigned char*, size_t> _GetFeatureBufferData(Ts... feat_datas)
 {
-	FeatureBufferType<GrassLighting> GrassLightingSettings;
-	FeatureBufferType<ExtendedMaterials> ExtendedMaterialsSettings;
-	FeatureBufferType<DynamicCubemaps> DynamicCubemapsSettings;
-	FeatureBufferType<TerrainShadows> TerrainShadowsSettings;
-	FeatureBufferType<LightLimitFix> LightLimitFixSettings;
-	FeatureBufferType<ExtendedTransclucency> ExtendedTransclucencySettings;
-	FeatureBufferType<WetnessEffects> WetnessEffectsSettings;
-	FeatureBufferType<Skylighting> SkylightingSettings;
-	FeatureBufferType<TruePBR> TruePBRSettings;
-};
+	size_t totalSize = (... + sizeof(Ts));
+	auto data = new unsigned char[totalSize];
+	size_t offset = 0;
+
+	([&] {
+		*((decltype(feat_datas)*)(data + offset)) = feat_datas;
+		offset += sizeof(decltype(feat_datas));
+	}(),
+		...);
+
+	return std::make_pair(data, totalSize);
+}
 
 std::pair<unsigned char*, size_t> GetFeatureBufferData()
 {
-	static /*thread_local*/ FeatureBuffer Buffer;
-	Buffer = 
-	{
-		GetFeatureBuffer<GrassLighting>(),
-		GetFeatureBuffer<ExtendedMaterials>(),
-		GetFeatureBuffer<DynamicCubemaps>(),
-		GetFeatureBuffer<TerrainShadows>(),
-		GetFeatureBuffer<LightLimitFix>(),
-		GetFeatureBuffer<ExtendedTransclucency>(),
-		GetFeatureBuffer<WetnessEffects>(),
-		GetFeatureBuffer<Skylighting>(),
-		GetFeatureBuffer<TruePBR>(),
-	};
-	return { reinterpret_cast<unsigned char*>(&Buffer), sizeof(FeatureBuffer) };
+	return _GetFeatureBufferData(
+		GrassLighting::GetSingleton()->settings,
+		ExtendedMaterials::GetSingleton()->settings,
+		DynamicCubemaps::GetSingleton()->settings,
+		TerrainShadows::GetSingleton()->GetCommonBufferData(),
+		LightLimitFix::GetSingleton()->GetCommonBufferData(),
+		ExtendedTransclucency::GetSingleton()->settings,
+		WetnessEffects::GetSingleton()->GetCommonBufferData(),
+		Skylighting::GetSingleton()->GetCommonBufferData(),
+		TruePBR::GetSingleton()->settings);
 }
