@@ -129,7 +129,7 @@ PS_OUTPUT main(PS_INPUT input)
 	}
 
 	// HDR tonemapping
-	float3 srgbColor = RangeCompress(ppColor, 0.25);
+	float3 srgbColor = RangeCompress(ppColor, 0.5);
 
 #		if defined(FADE)
 	srgbColor = lerp(srgbColor, Fade.xyz, Fade.w);
