@@ -554,7 +554,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 albedo = max(0, baseColor.xyz * input.VertexColor.xyz);
 
 	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * input.SphereNormal.w;
-	
+
 	float dirLightBacklighting = 1.0 + saturate(dot(viewDirection, -DirLightDirectionShared.xyz));
 	float3 sss = dirLightColor * saturate(-dirLightAngle) * dirLightBacklighting;
 
@@ -599,7 +599,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				}
 #				else
 				float3 lightDiffuseColor = lightColor * saturate(lightAngle.xxx);
-				
+
 				float lightBacklighting = 1.0 + saturate(dot(viewDirection, -normalizedLightDirection.xyz));
 				sss += lightColor * saturate(-lightAngle) * lightBacklighting;
 
