@@ -29,7 +29,6 @@ void LightLimitFix::DrawSettings()
 	ImGui::Checkbox("checkRoomNodes", &checkRoomNodes);
 	ImGui::Checkbox("cullingShader", &cullingShader);
 
-
 	if (ImGui::TreeNodeEx("Particle Lights", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::Checkbox("Enable Particle Lights", &settings.EnableParticleLights);
 		if (auto _tt = Util::HoverTooltipWrapper()) {
@@ -385,7 +384,6 @@ void LightLimitFix::BSLightingShader_SetupGeometry_After(RE::BSRenderPass*)
 	const int roomIndex = strictLightDataTemp.RoomIndex;
 
 	if (!isEmpty || (isEmpty && !wasEmpty) || isWorld != wasWorld || previousRoomIndex != roomIndex) {
-
 		if (copyStrictLightsData) {
 			D3D11_MAPPED_SUBRESOURCE mapped;
 			DX::ThrowIfFailed(context->Map(strictLightData->resource.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
@@ -539,7 +537,6 @@ LightLimitFix::ParticleLightReference LightLimitFix::GetParticleLightConfigs(RE:
 			if (!shaderProperty->lightData) {
 				if (auto material = shaderProperty->GetMaterial()) {
 					if (!material->sourceTexturePath.empty()) {
-
 						std::string textureName = ExtractTextureStem(material->sourceTexturePath.c_str());
 						if (textureName.size() < 1) {
 							particleLightsReferences.insert({ (RE::NiNode*)a_pass->geometry, { false } });
