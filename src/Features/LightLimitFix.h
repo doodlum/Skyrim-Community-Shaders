@@ -211,33 +211,6 @@ public:
 
 	struct Hooks
 	{
-		struct ValidLight1
-		{
-			static bool thunk(RE::BSShaderProperty* a_property, RE::BSLight* a_light)
-			{
-				return func(a_property, a_light) && ((REL::Module::IsVR() && !netimmerse_cast<RE::BSLightingShaderProperty*>(a_property)) || (a_light->portalStrict || !a_light->portalGraph || skyrim_cast<RE::BSShadowLight*>(a_light)));
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
-		struct ValidLight2
-		{
-			static bool thunk(RE::BSShaderProperty* a_property, RE::BSLight* a_light)
-			{
-				return func(a_property, a_light) && ((REL::Module::IsVR() && !netimmerse_cast<RE::BSLightingShaderProperty*>(a_property)) || (a_light->portalStrict || !a_light->portalGraph || skyrim_cast<RE::BSShadowLight*>(a_light)));
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
-		struct ValidLight3
-		{
-			static bool thunk(RE::BSShaderProperty* a_property, RE::BSLight* a_light)
-			{
-				return func(a_property, a_light) && ((REL::Module::IsVR() && !netimmerse_cast<RE::BSLightingShaderProperty*>(a_property)) || (a_light->portalStrict || !a_light->portalGraph || skyrim_cast<RE::BSShadowLight*>(a_light)));
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
 		struct BSBatchRenderer__RenderPassImmediately1
 		{
 			static void thunk(RE::BSRenderPass* Pass, uint32_t Technique, bool AlphaTest, uint32_t RenderFlags)
@@ -348,10 +321,6 @@ public:
 
 		static void Install()
 		{
-			stl::write_thunk_call<ValidLight1>(REL::RelocationID(100994, 107781).address() + 0x92);
-			stl::write_thunk_call<ValidLight2>(REL::RelocationID(100997, 107784).address() + REL::Relocate(0x139, 0x12A));
-			stl::write_thunk_call<ValidLight3>(REL::RelocationID(101296, 108283).address() + REL::Relocate(0xB7, 0x7E));
-
 			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately1>(REL::RelocationID(100877, 107673).address() + REL::Relocate(0x1E5, 0x1EE));
 			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately2>(REL::RelocationID(100852, 107642).address() + REL::Relocate(0x29E, 0x28F));
 			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately3>(REL::RelocationID(100871, 107667).address() + REL::Relocate(0xEE, 0xED));
