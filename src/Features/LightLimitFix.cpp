@@ -294,6 +294,11 @@ RE::NiNode* GetParentRoomNode(RE::NiAVObject* object)
 
 void LightLimitFix::BSLightingShader_SetupGeometry_Before(RE::BSRenderPass* a_pass)
 {
+	auto& shaderCache = SIE::ShaderCache::Instance();
+
+	if (!shaderCache.IsEnabled())
+		return;
+
 	strictLightDataTemp.NumStrictLights = 0;
 
 	strictLightDataTemp.RoomIndex = -1;
@@ -308,6 +313,11 @@ void LightLimitFix::BSLightingShader_SetupGeometry_Before(RE::BSRenderPass* a_pa
 
 void LightLimitFix::BSLightingShader_SetupGeometry_GeometrySetupConstantPointLights(RE::BSRenderPass* a_pass, DirectX::XMMATRIX&, uint32_t, uint32_t, float, Space)
 {
+	auto& shaderCache = SIE::ShaderCache::Instance();
+
+	if (!shaderCache.IsEnabled())
+		return;
+
 	auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator();
 	bool inWorld = accumulator->GetRuntimeData().activeShadowSceneNode == RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0];
 
@@ -341,15 +351,22 @@ void LightLimitFix::BSLightingShader_SetupGeometry_GeometrySetupConstantPointLig
 
 void LightLimitFix::BSLightingShader_SetupGeometry_After(RE::BSRenderPass*)
 {
-	auto& context = State::GetSingleton()->context;
+	auto& shaderCache = SIE::ShaderCache::Instance();
+
+	if (!shaderCache.IsEnabled())
+		return;
+
+	static auto& context = State::GetSingleton()->context;
 	auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator();
 
 	static bool wasEmpty = false;
 	static bool wasWorld = false;
 	static int previousRoomIndex = -1;
 
+	static auto shadowSceneNode = RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0];
+
 	const bool isEmpty = strictLightDataTemp.NumStrictLights == 0;
-	const bool isWorld = accumulator->GetRuntimeData().activeShadowSceneNode == RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0];
+	const bool isWorld = accumulator->GetRuntimeData().activeShadowSceneNode == shadowSceneNode;
 	const int roomIndex = strictLightDataTemp.RoomIndex;
 
 	if (!isEmpty || (isEmpty && !wasEmpty) || isWorld != wasWorld || previousRoomIndex != roomIndex) {
@@ -364,8 +381,11 @@ void LightLimitFix::BSLightingShader_SetupGeometry_After(RE::BSRenderPass*)
 		previousRoomIndex = roomIndex;
 	}
 
-	ID3D11ShaderResourceView* view = strictLightData->srv.get();
-	context->PSSetShaderResources(53, 1, &view);
+	static Util::FrameChecker frameChecker;
+	if (frameChecker.IsNewFrame()) {
+		ID3D11ShaderResourceView* view = strictLightData->srv.get();
+		context->PSSetShaderResources(53, 1, &view);
+	}
 }
 
 void LightLimitFix::SetLightPosition(LightLimitFix::LightData& a_light, RE::NiPoint3 a_initialPosition, bool a_cached)
@@ -405,6 +425,11 @@ float LightLimitFix::CalculateLuminance(CachedParticleLight& light, RE::NiPoint3
 
 void LightLimitFix::AddParticleLightLuminance(RE::NiPoint3& targetPosition, int& numHits, float& lightLevel)
 {
+	auto& shaderCache = SIE::ShaderCache::Instance();
+
+	if (!shaderCache.IsEnabled())
+		return;
+
 	std::lock_guard<std::shared_mutex> lk{ cachedParticleLightsMutex };
 	particleLightsDetectionHits = 0;
 	if (settings.EnableParticleLightsDetection) {
@@ -420,7 +445,7 @@ void LightLimitFix::AddParticleLightLuminance(RE::NiPoint3& targetPosition, int&
 
 void LightLimitFix::Prepass()
 {
-	auto& context = State::GetSingleton()->context;
+	static auto& context = State::GetSingleton()->context;
 
 	UpdateLights();
 
@@ -510,6 +535,11 @@ std::optional<LightLimitFix::ConfigPair> LightLimitFix::GetParticleLightConfigs(
 
 bool LightLimitFix::CheckParticleLights(RE::BSRenderPass* a_pass, uint32_t)
 {
+	auto& shaderCache = SIE::ShaderCache::Instance();
+
+	if (!shaderCache.IsEnabled())
+		return true;
+
 	auto configs = GetParticleLightConfigs(a_pass);
 	if (configs.has_value()) {
 		if (AddParticleLight(a_pass, configs.value())) {
@@ -665,7 +695,7 @@ void LightLimitFix::UpdateLights()
 	lightsNear = cameraNear;
 	lightsFar = cameraFar;
 
-	auto shadowSceneNode = RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0];
+	static auto shadowSceneNode = RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0];
 
 	// Cache data since cameraData can become invalid in first-person
 
