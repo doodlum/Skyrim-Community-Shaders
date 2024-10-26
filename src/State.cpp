@@ -71,7 +71,7 @@ void State::Draw()
 					currentExtraDescriptor = 0;
 
 					static Util::FrameChecker frameChecker;
-					if (frameChecker.isNewFrame()) {
+					if (frameChecker.IsNewFrame()) {
 						ID3D11Buffer* buffers[3] = { permutationCB->CB(), sharedDataCB->CB(), featureDataCB->CB() };
 						context->PSSetConstantBuffers(4, 3, buffers);
 						context->CSSetConstantBuffers(5, 2, buffers + 1);

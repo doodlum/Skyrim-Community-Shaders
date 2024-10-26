@@ -183,7 +183,7 @@ void GrassCollision::Update()
 	auto& context = State::GetSingleton()->context;
 
 	static Util::FrameChecker frameChecker;
-	if (frameChecker.isNewFrame()) {
+	if (frameChecker.IsNewFrame()) {
 		ID3D11Buffer* buffers[1];
 		buffers[0] = perFrame->CB();
 		context->VSSetConstantBuffers(5, ARRAYSIZE(buffers), buffers);

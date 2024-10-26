@@ -8,7 +8,7 @@
 void CloudShadows::CheckResourcesSide(int side)
 {
 	static Util::FrameChecker frame_checker[6];
-	if (!frame_checker[side].isNewFrame())
+	if (!frame_checker[side].IsNewFrame())
 		return;
 
 	auto& context = State::GetSingleton()->context;

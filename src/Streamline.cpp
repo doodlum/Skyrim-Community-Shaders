@@ -503,7 +503,7 @@ void Streamline::Upscale(Texture2D* a_upscaleTexture, Texture2D* a_alphaMask, sl
 void Streamline::UpdateConstants()
 {
 	static Util::FrameChecker frameChecker;
-	if (!frameChecker.isNewFrame())
+	if (!frameChecker.IsNewFrame())
 		return;
 
 	auto state = State::GetSingleton();
