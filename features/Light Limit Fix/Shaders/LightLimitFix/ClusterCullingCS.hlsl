@@ -47,36 +47,27 @@ bool LightIntersectsCluster(StructuredLight light, ClusterAABB cluster, int eyeI
 
 	ClusterAABB cluster = clusters[clusterIndex];
 
-	uint lightOffset = 0;
-	uint lightCount = LightCount;
+	if (groupIndex < LightCount) {
+		uint lightIndex = groupIndex;
+		StructuredLight light = lights[lightIndex];
+		sharedLights[groupIndex] = light;
+	}
 
-	while (lightOffset < lightCount) {
-		uint batchSize = min(GROUP_SIZE, lightCount - lightOffset);
+	GroupMemoryBarrierWithGroupSync();
 
-		if (groupIndex < batchSize) {
-			uint lightIndex = lightOffset + groupIndex;
-			StructuredLight light = lights[lightIndex];
-			sharedLights[groupIndex] = light;
-		}
+	for (uint i = 0; i < LightCount; i++) {
+		StructuredLight light = lights[i];
 
-		GroupMemoryBarrierWithGroupSync();
-
-		for (uint i = 0; i < batchSize; i++) {
-			StructuredLight light = lights[i];
-
-			bool updateCluster = LightIntersectsCluster(light, cluster);
+		bool updateCluster = LightIntersectsCluster(light, cluster);
 #ifdef VR
-			updateCluster = updateCluster || LightIntersectsCluster(light, cluster, 1);
+		updateCluster = updateCluster || LightIntersectsCluster(light, cluster, 1);
 #endif  // VR
-			updateCluster = updateCluster && (visibleLightCount < MAX_CLUSTER_LIGHTS);
+		updateCluster = updateCluster && (visibleLightCount < MAX_CLUSTER_LIGHTS);
 
-			if (updateCluster) {
-				visibleLightIndices[visibleLightCount] = lightOffset + i;
-				visibleLightCount++;
-			}
+		if (updateCluster) {
+			visibleLightIndices[visibleLightCount] = i;
+			visibleLightCount++;
 		}
-
-		lightOffset += batchSize;
 	}
 
 	GroupMemoryBarrierWithGroupSync();
