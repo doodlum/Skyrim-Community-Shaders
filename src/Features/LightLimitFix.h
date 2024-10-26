@@ -25,6 +25,12 @@ public:
 
 	bool HasShaderDefine(RE::BSShader::Type) override { return true; };
 
+	bool cullingShader = true;
+	bool checkParticleLights = true;
+	bool copyStrictLightsData = true;
+	bool copyData = true;
+	bool checkRoomNodes = true;
+
 	enum class LightFlags : std::uint32_t
 	{
 		PortalStrict = (1 << 0),
@@ -132,8 +138,21 @@ public:
 		ParticleLights::Config& config;
 	};
 
+	using ConfigPair = std::pair<ParticleLights::Config*, ParticleLights::GradientConfig*>;
+
+	struct ParticleLightReference
+	{
+		bool valid;
+		ParticleLights::Config* config;
+		ParticleLights::GradientConfig* gradientConfig;
+		RE::NiColorA baseColor;
+	};
+
+	eastl::hash_map<RE::NiNode*, ParticleLightReference> particleLightsReferences;
 	eastl::hash_map<RE::BSGeometry*, ParticleLightInfo> queuedParticleLights;
 	eastl::hash_map<RE::BSGeometry*, ParticleLightInfo> particleLights;
+
+	void CleanupParticleLights(RE::NiNode* a_node);
 
 	RE::NiPoint3 eyePositionCached[2]{};
 	Matrix viewMatrixCached[2]{};
@@ -183,9 +202,8 @@ public:
 
 	Settings settings;
 
-	using ConfigPair = std::pair<ParticleLights::Config*, ParticleLights::GradientConfig*>;
-	std::optional<ConfigPair> GetParticleLightConfigs(RE::BSRenderPass* a_pass);
-	bool AddParticleLight(RE::BSRenderPass* a_pass, ConfigPair a_config);
+	ParticleLightReference GetParticleLightConfigs(RE::BSRenderPass* a_pass);
+	bool AddParticleLight(RE::BSRenderPass* a_pass, ParticleLightReference a_reference);
 	bool CheckParticleLights(RE::BSRenderPass* a_pass, uint32_t a_technique);
 
 	void BSLightingShader_SetupGeometry_Before(RE::BSRenderPass* a_pass);
@@ -202,7 +220,6 @@ public:
 
 	std::shared_mutex cachedParticleLightsMutex;
 	eastl::vector<CachedParticleLight> cachedParticleLights;
-	std::uint32_t particleLightsDetectionHits = 0;
 
 	eastl::hash_map<RE::NiNode*, uint8_t> roomNodes;
 
@@ -319,6 +336,16 @@ public:
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
+		struct NiNode_Destroy
+		{
+			static void thunk(RE::NiNode* This)
+			{
+				GetSingleton()->CleanupParticleLights(This);
+				func(This);
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+		};
+
 		static void Install()
 		{
 			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately1>(REL::RelocationID(100877, 107673).address() + REL::Relocate(0x1E5, 0x1EE));
@@ -327,7 +354,7 @@ public:
 
 			stl::write_thunk_call<AIProcess_CalculateLightValue_GetLuminance>(REL::RelocationID(38900, 39946).address() + REL::Relocate(0x1C9, 0x1D3));
 
-			//stl::write_vfunc<0x2A, BSLightingShaderProperty_GetRenderPasses>(RE::VTABLE_BSLightingShaderProperty[0]);
+			stl::write_vfunc<0x2A, BSLightingShaderProperty_GetRenderPasses>(RE::VTABLE_BSLightingShaderProperty[0]);
 
 			stl::write_vfunc<0x6, BSLightingShader_SetupGeometry>(RE::VTABLE_BSLightingShader[0]);
 			stl::write_vfunc<0x6, BSEffectShader_SetupGeometry>(RE::VTABLE_BSEffectShader[0]);
@@ -336,6 +363,8 @@ public:
 			logger::info("[LLF] Installed hooks");
 
 			stl::write_thunk_call<BSLightingShader_SetupGeometry_GeometrySetupConstantPointLights>(REL::RelocationID(100565, 107300).address() + REL::Relocate(0x523, 0xB0E, 0x5fe));
+	
+			stl::detour_thunk<NiNode_Destroy>(REL::RelocationID(68937, 70288));
 		}
 	};
 
