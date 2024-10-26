@@ -13,7 +13,6 @@
 #include "State.h"
 
 #include "Feature.h"
-#include "Features/LightLimitFix/ParticleLights.h"
 
 #include "Deferred.h"
 #include "TruePBR.h"
@@ -270,7 +269,6 @@ void Menu::DrawSettings()
 			ImGui::TableNextColumn();
 			if (ImGui::Button("Load Settings", { -1, 0 })) {
 				State::GetSingleton()->Load();
-				ParticleLights::GetSingleton()->GetConfigs();
 			}
 
 			ImGui::TableNextColumn();

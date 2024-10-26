@@ -8,7 +8,6 @@
 
 #include "Feature.h"
 #include "ShaderCache.h"
-#include <Features/LightLimitFix/ParticleLights.h>
 
 struct LightLimitFix : Feature
 {
@@ -24,12 +23,6 @@ public:
 	virtual inline std::string_view GetShaderDefineName() override { return "LIGHT_LIMIT_FIX"; }
 
 	bool HasShaderDefine(RE::BSShader::Type) override { return true; };
-
-	bool cullingShader = true;
-	bool checkParticleLights = true;
-	bool copyStrictLightsData = true;
-	bool copyData = true;
-	bool checkRoomNodes = true;
 
 	enum class LightFlags : std::uint32_t
 	{
@@ -103,13 +96,6 @@ public:
 
 	StrictLightData strictLightDataTemp;
 
-	struct CachedParticleLight
-	{
-		float grey;
-		RE::NiPoint3 position;
-		float radius;
-	};
-
 	std::unique_ptr<Buffer> strictLightData = nullptr;
 
 	int eyeCount = !REL::Module::IsVR() ? 1 : 2;
@@ -132,28 +118,6 @@ public:
 	float lightsNear = 1;
 	float lightsFar = 16384;
 
-	struct ParticleLightInfo
-	{
-		RE::NiColorA color;
-		ParticleLights::Config& config;
-	};
-
-	using ConfigPair = std::pair<ParticleLights::Config*, ParticleLights::GradientConfig*>;
-
-	struct ParticleLightReference
-	{
-		bool valid;
-		ParticleLights::Config* config;
-		ParticleLights::GradientConfig* gradientConfig;
-		RE::NiColorA baseColor;
-	};
-
-	eastl::hash_map<RE::NiNode*, ParticleLightReference> particleLightsReferences;
-	eastl::hash_map<RE::BSGeometry*, ParticleLightInfo> queuedParticleLights;
-	eastl::hash_map<RE::BSGeometry*, ParticleLightInfo> particleLights;
-
-	void CleanupParticleLights(RE::NiNode* a_node);
-
 	RE::NiPoint3 eyePositionCached[2]{};
 	Matrix viewMatrixCached[2]{};
 	Matrix viewMatrixInverseCached[2]{};
@@ -172,7 +136,6 @@ public:
 	virtual void DataLoaded() override;
 
 	float CalculateLightDistance(float3 a_lightPosition, float a_radius);
-	void AddCachedParticleLights(eastl::vector<LightData>& lightsData, LightLimitFix::LightData& light);
 	void SetLightPosition(LightLimitFix::LightData& a_light, RE::NiPoint3 a_initialPosition, bool a_cached = true);
 	void UpdateLights();
 	virtual void Prepass() override;
@@ -186,25 +149,11 @@ public:
 		bool EnableContactShadows = false;
 		bool EnableLightsVisualisation = false;
 		uint LightsVisualisationMode = 0;
-		bool EnableParticleLights = true;
-		bool EnableParticleLightsCulling = true;
-		bool EnableParticleLightsDetection = true;
-		float ParticleLightsSaturation = 1.0f;
-		float ParticleBrightness = 1.0f;
-		float ParticleRadius = 1.0f;
-		float BillboardBrightness = 1.0f;
-		float BillboardRadius = 1.0f;
-		bool EnableParticleLightsOptimization = true;
-		uint ParticleLightsOptimisationClusterRadius = 32;
 	};
 
 	uint clusterSize[3] = { 16 };
 
 	Settings settings;
-
-	ParticleLightReference GetParticleLightConfigs(RE::BSRenderPass* a_pass);
-	bool AddParticleLight(RE::BSRenderPass* a_pass, ParticleLightReference a_reference);
-	bool CheckParticleLights(RE::BSRenderPass* a_pass, uint32_t a_technique);
 
 	void BSLightingShader_SetupGeometry_Before(RE::BSRenderPass* a_pass);
 
@@ -215,49 +164,12 @@ public:
 	};
 
 	void BSLightingShader_SetupGeometry_GeometrySetupConstantPointLights(RE::BSRenderPass* a_pass, DirectX::XMMATRIX& Transform, uint32_t, uint32_t, float WorldScale, Space RenderSpace);
-
 	void BSLightingShader_SetupGeometry_After(RE::BSRenderPass* a_pass);
-
-	std::shared_mutex cachedParticleLightsMutex;
-	eastl::vector<CachedParticleLight> cachedParticleLights;
 
 	eastl::hash_map<RE::NiNode*, uint8_t> roomNodes;
 
-	float CalculateLuminance(CachedParticleLight& light, RE::NiPoint3& point);
-	void AddParticleLightLuminance(RE::NiPoint3& targetPosition, int& numHits, float& lightLevel);
-
 	struct Hooks
 	{
-		struct BSBatchRenderer__RenderPassImmediately1
-		{
-			static void thunk(RE::BSRenderPass* Pass, uint32_t Technique, bool AlphaTest, uint32_t RenderFlags)
-			{
-				if (GetSingleton()->CheckParticleLights(Pass, Technique))
-					func(Pass, Technique, AlphaTest, RenderFlags);
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
-		struct BSBatchRenderer__RenderPassImmediately2
-		{
-			static void thunk(RE::BSRenderPass* Pass, uint32_t Technique, bool AlphaTest, uint32_t RenderFlags)
-			{
-				if (GetSingleton()->CheckParticleLights(Pass, Technique))
-					func(Pass, Technique, AlphaTest, RenderFlags);
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
-		struct BSBatchRenderer__RenderPassImmediately3
-		{
-			static void thunk(RE::BSRenderPass* Pass, uint32_t Technique, bool AlphaTest, uint32_t RenderFlags)
-			{
-				if (GetSingleton()->CheckParticleLights(Pass, Technique))
-					func(Pass, Technique, AlphaTest, RenderFlags);
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
 		struct BSLightingShader_SetupGeometry
 		{
 			static void thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
@@ -287,17 +199,6 @@ public:
 				func(This, Pass, RenderFlags);
 				GetSingleton()->BSLightingShader_SetupGeometry_Before(Pass);
 				GetSingleton()->BSLightingShader_SetupGeometry_After(Pass);
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
-		struct AIProcess_CalculateLightValue_GetLuminance
-		{
-			static float thunk(RE::ShadowSceneNode* shadowSceneNode, RE::NiPoint3& targetPosition, int& numHits, float& sunLightLevel, float& lightLevel, RE::NiLight& refLight, int32_t shadowBitMask)
-			{
-				auto ret = func(shadowSceneNode, targetPosition, numHits, sunLightLevel, lightLevel, refLight, shadowBitMask);
-				GetSingleton()->AddParticleLightLuminance(targetPosition, numHits, ret);
-				return ret;
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
@@ -336,35 +237,17 @@ public:
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
-		struct NiNode_Destroy
-		{
-			static void thunk(RE::NiNode* This)
-			{
-				GetSingleton()->CleanupParticleLights(This);
-				func(This);
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
 		static void Install()
 		{
-			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately1>(REL::RelocationID(100877, 107673).address() + REL::Relocate(0x1E5, 0x1EE));
-			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately2>(REL::RelocationID(100852, 107642).address() + REL::Relocate(0x29E, 0x28F));
-			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately3>(REL::RelocationID(100871, 107667).address() + REL::Relocate(0xEE, 0xED));
-
-			stl::write_thunk_call<AIProcess_CalculateLightValue_GetLuminance>(REL::RelocationID(38900, 39946).address() + REL::Relocate(0x1C9, 0x1D3));
-
-			stl::write_vfunc<0x2A, BSLightingShaderProperty_GetRenderPasses>(RE::VTABLE_BSLightingShaderProperty[0]);
+			//stl::write_vfunc<0x2A, BSLightingShaderProperty_GetRenderPasses>(RE::VTABLE_BSLightingShaderProperty[0]);
 
 			stl::write_vfunc<0x6, BSLightingShader_SetupGeometry>(RE::VTABLE_BSLightingShader[0]);
 			stl::write_vfunc<0x6, BSEffectShader_SetupGeometry>(RE::VTABLE_BSEffectShader[0]);
 			stl::write_vfunc<0x6, BSWaterShader_SetupGeometry>(RE::VTABLE_BSWaterShader[0]);
 
-			logger::info("[LLF] Installed hooks");
-
 			stl::write_thunk_call<BSLightingShader_SetupGeometry_GeometrySetupConstantPointLights>(REL::RelocationID(100565, 107300).address() + REL::Relocate(0x523, 0xB0E, 0x5fe));
-	
-			stl::detour_thunk<NiNode_Destroy>(REL::RelocationID(68937, 70288));
+			
+			logger::info("[LLF] Installed hooks");
 		}
 	};
 

@@ -9,9 +9,8 @@
 #include "Upscaling.h"
 
 #include "ENB/ENBSeriesAPI.h"
-#include "Features/ExtendedMaterials.h"
-#include "Features/LightLimitFIx/ParticleLights.h"
-#include "Features/LightLimitFix.h"
+#include <Feature.h>
+
 #define DLLEXPORT __declspec(dllexport)
 
 std::list<std::string> errors;
