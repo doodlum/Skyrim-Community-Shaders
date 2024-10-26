@@ -2307,34 +2307,36 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	TexEnvSampler.GetDimensions(envSize.x, envSize.y);
 
 	bool dynamicCubemap = false;
-	if (envMask != 0 && envSize.x == 1) {
+	if (envMask > 0.0 && envSize.x < 5) {
 		dynamicCubemap = true;
-		envColorBase = TexEnvSampler.SampleLevel(SampEnvSampler, float3(1.0, 0.0, 0.0), 0);
+		envColorBase = TexEnvSampler.SampleLevel(SampEnvSampler, float3(1.0, 0.0, 0.0), 15);
 		if (envColorBase.a < 1.0) {
-			F0 = (Color::GammaToLinear(envColorBase.rgb) + Color::GammaToLinear(baseColor.rgb)) / Color::AlbedoPreMult;
+			F0 = (Color::GammaToLinear(envColorBase.rgb) + Color::GammaToLinear(baseColor.rgb));
 			envRoughness = envColorBase.a;
 		} else {
 			F0 = 1.0;
-			envRoughness = 1.0 / 9.0;
+			envRoughness = 1.0 / 5.0;
 		}
 	}
 
 #			if defined(CREATOR)
 	if (cubemapCreatorSettings.Enabled) {
 		dynamicCubemap = true;
-		F0 = (Color::GammaToLinear(cubemapCreatorSettings.CubemapColor.rgb) + Color::GammaToLinear(baseColor.xyz)) / Color::AlbedoPreMult;
+		F0 = (Color::GammaToLinear(cubemapCreatorSettings.CubemapColor.rgb) + Color::GammaToLinear(baseColor.xyz));
 		envRoughness = cubemapCreatorSettings.CubemapColor.a;
 	}
 #			endif
 
 	if (dynamicCubemap) {
 #			if defined(EMAT)
-		envRoughness = lerp(envRoughness, 1.0 - complexMaterialColor.y, (float)complexMaterial);
-		envRoughness *= envRoughness;
+		envRoughness = lerp(envRoughness, Color::GammaToLinear(1.0 - complexMaterialColor.y), (float)complexMaterial);
 		F0 = lerp(F0, Color::GammaToLinear(complexSpecular), (float)complexMaterial);
 #			endif
 
-		envColor = DynamicCubemaps::GetDynamicCubemap(screenUV, worldSpaceNormal, worldSpaceVertexNormal, worldSpaceViewDirection, envRoughness, F0, diffuseColor, viewPosition.z) * envMask;
+		if (any(F0 > 0.0))
+			envColor = DynamicCubemaps::GetDynamicCubemap(screenUV, worldSpaceNormal, worldSpaceVertexNormal, worldSpaceViewDirection, envRoughness, F0, diffuseColor, viewPosition.z) * envMask;
+		else
+			envColor = 0.0;
 	}
 #		endif
 #	endif  // defined (ENVMAP) || defined (MULTI_LAYER_PARALLAX) || defined(EYE)
