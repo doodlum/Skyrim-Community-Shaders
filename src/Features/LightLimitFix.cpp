@@ -9,11 +9,10 @@ static constexpr uint MAX_LIGHTS = 1024;
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	LightLimitFix::Settings,
-	EnableContactShadows
-)
+	EnableContactShadows)
 
 void LightLimitFix::DrawSettings()
-{		
+{
 	if (ImGui::TreeNodeEx("Shadows", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::Checkbox("Enable Contact Shadows", &settings.EnableContactShadows);
 		if (auto _tt = Util::HoverTooltipWrapper()) {
