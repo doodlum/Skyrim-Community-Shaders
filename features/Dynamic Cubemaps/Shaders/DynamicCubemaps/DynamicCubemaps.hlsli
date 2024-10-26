@@ -19,7 +19,7 @@ namespace DynamicCubemaps
 	float3 GetDynamicCubemapSpecularIrradiance(float2 uv, float3 N, float3 VN, float3 V, float roughness, float distance)
 	{
 		float3 R = reflect(-V, N);
-		float level = roughness * 9.0;
+		float level = roughness * 7.0;
 
 		// Horizon specular occlusion
 		// https://marmosetco.tumblr.com/post/81245981087

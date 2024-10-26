@@ -2315,7 +2315,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			envRoughness = envColorBase.a;
 		} else {
 			F0 = 1.0;
-			envRoughness = 1.0 / 5.0;
+			envRoughness = 1.0 / 7.0;
 		}
 	}
 
