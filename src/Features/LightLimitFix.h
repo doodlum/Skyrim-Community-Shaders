@@ -213,34 +213,8 @@ public:
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
-		struct BSLightingShaderProperty_GetRenderPasses
-		{
-			static RE::BSShaderProperty::RenderPassArray* thunk(RE::BSLightingShaderProperty* property, RE::BSGeometry* geometry, std::uint32_t renderFlags, RE::BSShaderAccumulator* accumulator)
-			{
-				auto renderPasses = func(property, geometry, renderFlags, accumulator);
-				if (renderPasses == nullptr) {
-					return renderPasses;
-				}
-
-				auto currentPass = renderPasses->head;
-				while (currentPass != nullptr) {
-					if (currentPass->shader->shaderType == RE::BSShader::Type::Lighting) {
-						constexpr uint32_t LightingTechniqueStart = 0x4800002D;
-						// So that we always have shadow mask bound.
-						currentPass->passEnum = ((currentPass->passEnum - LightingTechniqueStart) | static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::DefShadow)) + LightingTechniqueStart;
-					}
-					currentPass = currentPass->next;
-				}
-
-				return renderPasses;
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
 		static void Install()
 		{
-			//stl::write_vfunc<0x2A, BSLightingShaderProperty_GetRenderPasses>(RE::VTABLE_BSLightingShaderProperty[0]);
-
 			stl::write_vfunc<0x6, BSLightingShader_SetupGeometry>(RE::VTABLE_BSLightingShader[0]);
 			stl::write_vfunc<0x6, BSEffectShader_SetupGeometry>(RE::VTABLE_BSEffectShader[0]);
 			stl::write_vfunc<0x6, BSWaterShader_SetupGeometry>(RE::VTABLE_BSWaterShader[0]);
