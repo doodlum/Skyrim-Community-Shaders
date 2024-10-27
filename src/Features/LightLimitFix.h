@@ -198,7 +198,6 @@ public:
 		float BillboardBrightness = 1.0f;
 		float BillboardRadius = 1.0f;
 		bool EnableParticleLightsOptimization = true;
-		uint ParticleLightsOptimisationClusterRadius = 32;
 	};
 
 	uint clusterSize[3] = { 16 };

@@ -15,7 +15,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	EnableParticleLightsDetection,
 	ParticleLightsSaturation,
 	EnableParticleLightsOptimization,
-	ParticleLightsOptimisationClusterRadius,
 	ParticleBrightness,
 	ParticleRadius,
 	BillboardBrightness,
@@ -47,12 +46,9 @@ void LightLimitFix::DrawSettings()
 
 		ImGui::Checkbox("Enable Optimization", &settings.EnableParticleLightsOptimization);
 		if (auto _tt = Util::HoverTooltipWrapper()) {
-			ImGui::Text("Merges vertices which are close enough to each other to significantly improve performance.");
+			ImGui::Text("Merges vertices which are close enough to each other to improve performance.");
 		}
-		ImGui::SliderInt("Optimisation Cluster Radius", (int*)&settings.ParticleLightsOptimisationClusterRadius, 1, 64);
-		if (auto _tt = Util::HoverTooltipWrapper()) {
-			ImGui::Text("Radius to use for clustering lights.");
-		}
+
 		ImGui::Spacing();
 		ImGui::Spacing();
 
@@ -865,7 +861,7 @@ void LightLimitFix::UpdateLights()
 						auto averagePosition = clusteredLight.positionWS[0].data / (float)clusteredLights;
 						float positionDiff = positionWS.GetDistance({ averagePosition.x, averagePosition.y, averagePosition.z });
 
-						if ((radiusDiff + positionDiff) > settings.ParticleLightsOptimisationClusterRadius || !settings.EnableParticleLightsOptimization) {
+						if ((radiusDiff + positionDiff) > 32.0f || !settings.EnableParticleLightsOptimization) {
 							clusteredLight.radius /= (float)clusteredLights;
 							clusteredLight.positionWS[0].data /= (float)clusteredLights;
 							clusteredLight.positionWS[1].data = clusteredLight.positionWS[0].data;
