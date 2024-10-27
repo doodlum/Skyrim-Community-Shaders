@@ -515,7 +515,6 @@ LightLimitFix::ParticleLightReference LightLimitFix::GetParticleLightConfigs(RE:
 		if (auto shaderProperty = netimmerse_cast<RE::BSEffectShaderProperty*>(a_pass->shaderProperty)) {
 			if (!shaderProperty->lightData) {
 				if (auto material = shaderProperty->GetMaterial()) {
-
 					// Check if it's a valid particle light
 					bool billboard = false;
 					if (!netimmerse_cast<RE::NiParticleSystem*>(a_pass->geometry)) {
