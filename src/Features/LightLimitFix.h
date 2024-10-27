@@ -337,7 +337,7 @@ public:
 			stl::write_thunk_call<BSLightingShader_SetupGeometry_GeometrySetupConstantPointLights>(REL::RelocationID(100565, 107300).address() + REL::Relocate(0x523, 0xB0E, 0x5fe));
 
 			stl::detour_thunk<NiNode_Destroy>(REL::RelocationID(68937, 70288));
-			
+
 			logger::info("[LLF] Installed hooks");
 		}
 	};
