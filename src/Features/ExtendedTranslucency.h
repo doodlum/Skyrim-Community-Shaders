@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Feature.h"
 #include "../Buffer.h"
+#include "../Feature.h"
 
 struct ExtendedTranslucency final : Feature
 {
@@ -10,7 +10,7 @@ struct ExtendedTranslucency final : Feature
 	virtual inline std::string GetName() override { return "Extended Translucency"; }
 	virtual inline std::string GetShortName() override { return "ExtendedTranslucency"; }
 	virtual inline std::string_view GetShaderDefineName() override { return "EXTENDED_TRANSLUCENCY"; }
-	virtual bool HasShaderDefine(RE::BSShader::Type shaderType) override { return RE::BSShader::Type::Lighting == shaderType;};
+	virtual bool HasShaderDefine(RE::BSShader::Type shaderType) override { return RE::BSShader::Type::Lighting == shaderType; };
 	virtual void SetupResources() override;
 	virtual void PostPostLoad() override;
 	virtual void DrawSettings() override;
@@ -34,10 +34,10 @@ struct ExtendedTranslucency final : Feature
 
 	struct alignas(16) MaterialParams
 	{
-		uint32_t	AlphaMode = std::to_underlying(MaterialModel::Default);
-		float		AlphaReduction = 0.15f;
-		float		AlphaSoftness = 0.f;
-		float		AlphaStrength = 0.f;
+		uint32_t AlphaMode = std::to_underlying(MaterialModel::Default);
+		float AlphaReduction = 0.15f;
+		float AlphaSoftness = 0.f;
+		float AlphaStrength = 0.f;
 	};
 
 	MaterialParams settings;

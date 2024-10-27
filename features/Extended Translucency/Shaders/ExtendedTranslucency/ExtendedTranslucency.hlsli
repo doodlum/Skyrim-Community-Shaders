@@ -1,9 +1,9 @@
 cbuffer ExtendedTranslucencyPerGeometry : register(b7)
 {
-    uint AnisotropicAlphaFlags;
-    float AnisotropicAlphaReduction;
-    float AnisotropicAlphaSoftness;
-    float AnisotropicAlphaStrength;
+	uint AnisotropicAlphaFlags;
+	float AnisotropicAlphaReduction;
+	float AnisotropicAlphaSoftness;
+	float AnisotropicAlphaStrength;
 };
 
 namespace ExtendedTransclucency

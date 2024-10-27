@@ -6,8 +6,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	ExtendedTranslucency::MaterialParams,
 	AlphaMode,
 	AlphaReduction,
-	AlphaSoftness
-);
+	AlphaSoftness);
 
 const RE::BSFixedString ExtendedTranslucency::NiExtraDataName = "AnisotropicAlphaMaterial";
 
@@ -54,9 +53,9 @@ void ExtendedTranslucency::BSLightingShader_SetupGeometry(RE::BSRenderPass* pass
 	} else {
 		//if (!isDefaultCB)
 		//{
-			//isDefaultCB = true;
-			buffers[0] = materialDefaultCB->CB();
-			context->PSSetConstantBuffers(materialCBIndex, 1, buffers);
+		//isDefaultCB = true;
+		buffers[0] = materialDefaultCB->CB();
+		context->PSSetConstantBuffers(materialCBIndex, 1, buffers);
 		//}
 	}
 }
@@ -96,29 +95,26 @@ void ExtendedTranslucency::DrawSettings()
 		};
 
 		bool changed = false;
-		if (ImGui::Combo("Default Material Model", (int*)&settings.AlphaMode, AlphaModeNames, 4))
-		{
+		if (ImGui::Combo("Default Material Model", (int*)&settings.AlphaMode, AlphaModeNames, 4)) {
 			changed = true;
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
-			ImGui::Text("Anisotropic transluency will make the surface more opaque when you view it parallel to the surface.\n"
-			"  - Disabled: No anisotropic transluency\n"
-			"  - Rim Light: Naive rim light effect\n"
-			"  - Isotropic Fabric: Imaginary fabric weaved from threads in one direction, respect normal map.\n"
-			"  - Anisotropic Fabric: Common fabric weaved from tangent and birnormal direction, ignores normal map.\n"
-			);
+			ImGui::Text(
+				"Anisotropic transluency will make the surface more opaque when you view it parallel to the surface.\n"
+				"  - Disabled: No anisotropic transluency\n"
+				"  - Rim Light: Naive rim light effect\n"
+				"  - Isotropic Fabric: Imaginary fabric weaved from threads in one direction, respect normal map.\n"
+				"  - Anisotropic Fabric: Common fabric weaved from tangent and birnormal direction, ignores normal map.\n");
 		}
 
-		if (ImGui::SliderFloat("Default Material Transparency Increase", &settings.AlphaReduction, 0.f, 1.f))
-		{
+		if (ImGui::SliderFloat("Default Material Transparency Increase", &settings.AlphaReduction, 0.f, 1.f)) {
 			changed = true;
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
 			ImGui::Text("Anisotropic transluency will make the material more opaque on average, which could be different from the intent, reduce the alpha to counter this effect and increase the dynamic range of the output.");
 		}
 
-		if (ImGui::SliderFloat("Softness", &settings.AlphaSoftness, 0.0f, 1.0f))
-		{
+		if (ImGui::SliderFloat("Softness", &settings.AlphaSoftness, 0.0f, 1.0f)) {
 			changed = true;
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
@@ -132,8 +128,7 @@ void ExtendedTranslucency::DrawSettings()
 			ImGui::Text("Control the blend weight of the effect applied to the final result.");
 		}
 
-		if (changed && materialDefaultCB)
-		{
+		if (changed && materialDefaultCB) {
 			materialDefaultCB->Update(settings);
 		}
 
@@ -146,8 +141,7 @@ void ExtendedTranslucency::DrawSettings()
 void ExtendedTranslucency::LoadSettings(json& o_json)
 {
 	settings = o_json;
-	if (materialDefaultCB)
-	{
+	if (materialDefaultCB) {
 		materialDefaultCB->Update(settings);
 	}
 }
@@ -160,8 +154,7 @@ void ExtendedTranslucency::SaveSettings(json& o_json)
 void ExtendedTranslucency::RestoreDefaultSettings()
 {
 	settings = {};
-	if (materialDefaultCB)
-	{
+	if (materialDefaultCB) {
 		materialDefaultCB->Update(settings);
 	}
 }
