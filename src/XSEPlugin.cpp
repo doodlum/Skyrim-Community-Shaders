@@ -1,13 +1,13 @@
 #include "Hooks.h"
 
 #include "Deferred.h"
+#include "Feature.h"
 #include "FrameAnnotations.h"
 #include "Menu.h"
 #include "ShaderCache.h"
 #include "State.h"
 #include "TruePBR.h"
 #include "Upscaling.h"
-#include "Feature.h"
 
 #include "ENB/ENBSeriesAPI.h"
 
