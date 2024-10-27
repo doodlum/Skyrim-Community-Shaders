@@ -401,12 +401,12 @@ struct PS_OUTPUT
 #else
 struct PS_OUTPUT
 {
-	float4 Diffuse : SV_Target0;
-	float4 MotionVectors : SV_Target1;
-	float4 ScreenSpaceNormals : SV_Target2;
-#	if defined(SNOW)
+    float4 Diffuse : SV_Target0;
+    float4 MotionVectors : SV_Target1;
+    float4 ScreenSpaceNormals : SV_Target2;
+#if defined(SNOW)
 	float4 Parameters : SV_Target3;
-#	endif
+#endif
 };
 #endif
 
@@ -999,8 +999,8 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		include "Skylighting/Skylighting.hlsli"
 #	endif
 
-#	if defined(EXTENDED_TRANSCLUCENCY)
-#		include "ExtendedTransclucency/ExtendedTransclucency.hlsli"
+#	if defined(EXTENDED_TRANSLUCENCY)
+#		include "ExtendedTranslucency/ExtendedTranslucency.hlsli"
 #	endif
 
 #	define LinearSampler SampColorSampler
@@ -2616,22 +2616,29 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		discard;
 	}
 #		endif      // DO_ALPHA_TEST
-#		if defined(EXTENDED_TRANSCLUCENCY) && (defined(SKINNED) || !defined(MODELSPACENORMALS)) && !(defined(SKIN) || defined(HAIR) || defined(EYE) || defined(TREE_ANIM) || defined(LODOBJECTSHD) || defined(LODOBJECTS))
-	if (transclucencySettings.AlphaMode < 3) {
+
+#	if defined(EXTENDED_TRANSLUCENCY) && !(defined(SKIN) || defined(HAIR) || defined(EYE) || defined(TREE_ANIM) || defined(LODOBJECTSHD) || defined(LODOBJECTS))
+	if (AnisotropicAlphaFlags > 0) {
 		if (alpha >= 0.0156862754 && alpha < 1.0) {
-			alpha = alpha * (1.0 - transclucencySettings.AlphaReduction);
-			float limit = 2.0 - transclucencySettings.AlphaSoftness;
-			if (transclucencySettings.AlphaMode == 0) {
-				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
-			} else if (transclucencySettings.AlphaMode == 1) {
+			float originalAlpha = alpha;
+			alpha = alpha * (1.0 - AnisotropicAlphaReduction);
+			if (AnisotropicAlphaFlags == 3) {
+#if defined(SKINNED) || !defined(MODELSPACENORMALS)
 				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric2D(alpha, viewDirection, tbnTr);
+#		else
+				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
+#		endif
+			} else if (AnisotropicAlphaFlags == 2) {
+				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
 			} else {
 				alpha = ExtendedTransclucency::GetViewDependentAlphaNaive(alpha, viewDirection, modelNormal.xyz);
 			}
-			alpha = saturate(ExtendedTransclucency::SoftClamp(alpha, limit));
+			alpha = saturate(ExtendedTransclucency::SoftClamp(alpha, 2.0f - AnisotropicAlphaSoftness));
+			alpha = lerp(alpha, originalAlpha, AnisotropicAlphaStrength);
 		}
 	}
-#		endif
+#endif // EXTENDED_TRANSLUCENCY
+
 	psout.Diffuse.w = alpha;
 
 #	endif

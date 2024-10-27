@@ -4,7 +4,7 @@
 #include "Features/CloudShadows.h"
 #include "Features/DynamicCubemaps.h"
 #include "Features/ExtendedMaterials.h"
-#include "Features/ExtendedTransclucency.h"
+#include "Features/ExtendedTranslucency.h"
 #include "Features/GrassCollision.h"
 #include "Features/GrassLighting.h"
 #include "Features/LightLimitFix.h"
@@ -128,7 +128,7 @@ const std::vector<Feature*>& Feature::GetFeatureList()
 		Skylighting::GetSingleton(),
 		TerrainBlending::GetSingleton(),
 		VolumetricLighting::GetSingleton(),
-		ExtendedTransclucency::GetSingleton()
+		ExtendedTranslucency::GetSingleton()
 	};
 
 	static std::vector<Feature*> featuresVR(features);

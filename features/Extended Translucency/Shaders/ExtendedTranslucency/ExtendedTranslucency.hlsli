@@ -1,3 +1,11 @@
+cbuffer ExtendedTranslucencyPerGeometry : register(b7)
+{
+    uint AnisotropicAlphaFlags;
+    float AnisotropicAlphaReduction;
+    float AnisotropicAlphaSoftness;
+    float AnisotropicAlphaStrength;
+};
+
 namespace ExtendedTransclucency
 {
 	float GetViewDependentAlphaNaive(float alpha, float3 view, float3 normal)
