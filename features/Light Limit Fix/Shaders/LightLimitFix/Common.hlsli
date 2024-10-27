@@ -7,8 +7,14 @@
 #define GROUP_SIZE (NUMTHREAD_X * NUMTHREAD_Y * NUMTHREAD_Z)
 #define MAX_CLUSTER_LIGHTS 128
 
-#define Llf_PortalStrictLight (1 << 0)
-#define Llf_ShadowLight (1 << 1)
+namespace LightFlags
+{
+	static const uint PortalStrict = (1 << 0);
+	static const uint Shadow = (1 << 1);
+	static const uint Simple = (1 << 2);
+	static const uint Particle = (1 << 3);
+	static const uint Billboard = (1 << 4);
+}
 
 struct ClusterAABB
 {

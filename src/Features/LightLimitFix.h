@@ -35,6 +35,9 @@ public:
 	{
 		PortalStrict = (1 << 0),
 		Shadow = (1 << 1),
+		Simple = (1 << 2),
+		Particle = (1 << 3),
+		Billboard = (1 << 4)
 	};
 
 	struct PositionOpt

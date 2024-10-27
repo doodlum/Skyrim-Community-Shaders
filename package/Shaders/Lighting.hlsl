@@ -2116,7 +2116,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			uint clusteredLightIndex = lightList[lightOffset + (lightIndex - strictLights[0].NumStrictLights)];
 			light = lights[clusteredLightIndex];
 
-			if (LightLimitFix::IsLightIgnored(light) || (!(PixelShaderDescriptor & _DefShadow) && light.lightFlags & Llf_ShadowLight)) {
+			if (LightLimitFix::IsLightIgnored(light) || (!(PixelShaderDescriptor & _DefShadow) && light.lightFlags & LightFlags::Shadow)) {
 				continue;
 			}
 		}
@@ -2129,10 +2129,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		float intensityMultiplier = 1 - intensityFactor * intensityFactor;
 		float3 lightColor = light.color.xyz * intensityMultiplier;
-		float lightShadow = 1.f;
+		float lightShadow = 1.0;
 
 		float shadowComponent = 1.0;
-		if (light.lightFlags & Llf_ShadowLight) {
+		if (light.lightFlags & LightFlags::Shadow) {
 			shadowComponent = shadowColor[light.shadowLightIndex];
 			lightShadow *= shadowComponent;
 		}
@@ -2140,8 +2140,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		float3 normalizedLightDirection = normalize(lightDirection);
 		float lightAngle = dot(worldSpaceNormal.xyz, normalizedLightDirection.xyz);
 
-		float contactShadow = 1;
-		[branch] if (inWorld && !FrameParams.z && lightLimitFixSettings.EnableContactShadows && shadowComponent != 0.0 && lightAngle > 0.0)
+		float contactShadow = 1.0;
+		[branch] if (
+			inWorld && !FrameParams.z && 
+			lightLimitFixSettings.EnableContactShadows && 
+			!(light.lightFlags & LightFlags::Simple) && 
+			shadowComponent != 0.0 && 
+			lightAngle > 0.0)
 		{
 			float3 normalizedLightDirectionVS = normalize(light.positionVS[eyeIndex].xyz - viewPosition.xyz);
 			contactShadow = LightLimitFix::ContactShadows(viewPosition, screenNoise, normalizedLightDirectionVS, contactShadowSteps, eyeIndex);
@@ -2158,7 +2163,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		float parallaxShadow = 1;
 
 #			if defined(EMAT)
-		[branch] if (extendedMaterialSettings.EnableShadows && lightAngle > 0.0 && shadowComponent != 0.0 && contactShadow != 0.0)
+		[branch] if (
+			extendedMaterialSettings.EnableShadows && 
+			!(light.lightFlags & LightFlags::Simple) &&
+			lightAngle > 0.0 && 
+			shadowComponent != 0.0 && 
+			contactShadow != 0.0
+		)
 		{
 			float3 lightDirectionTS = normalize(mul(refractedLightDirection, tbn).xyz);
 #				if defined(PARALLAX)
@@ -2192,9 +2203,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #				endif
 		}
 #			else
-		lightColor *= parallaxShadow * lightShadow;
+		lightColor *= lightShadow;
 
-		float3 lightDiffuseColor = lightColor * contactShadow * saturate(lightAngle.xxx);
+		float3 lightDiffuseColor = lightColor * contactShadow * parallaxShadow * saturate(lightAngle.xxx);
 
 #				if defined(SOFT_LIGHTING) || defined(RIM_LIGHTING) || defined(BACK_LIGHTING)
 		float lightBacklighting = 1.0 + saturate(dot(worldSpaceViewDirection, -normalizedLightDirection.xyz));
