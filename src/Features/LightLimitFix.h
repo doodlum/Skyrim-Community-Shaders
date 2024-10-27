@@ -25,12 +25,6 @@ public:
 
 	bool HasShaderDefine(RE::BSShader::Type) override { return true; };
 
-	bool cullingShader = true;
-	bool checkParticleLights = true;
-	bool copyStrictLightsData = true;
-	bool copyData = true;
-	bool checkRoomNodes = true;
-
 	enum class LightFlags : std::uint32_t
 	{
 		PortalStrict = (1 << 0),

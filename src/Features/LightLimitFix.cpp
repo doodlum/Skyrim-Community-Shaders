@@ -22,12 +22,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 
 void LightLimitFix::DrawSettings()
 {
-	ImGui::Checkbox("copyStrictLightsData", &copyStrictLightsData);
-	ImGui::Checkbox("copyData", &copyData);
-	ImGui::Checkbox("checkParticleLights", &checkParticleLights);
-	ImGui::Checkbox("checkRoomNodes", &checkRoomNodes);
-	ImGui::Checkbox("cullingShader", &cullingShader);
-
 	if (ImGui::TreeNodeEx("Particle Lights", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::Checkbox("Enable Particle Lights", &settings.EnableParticleLights);
 		if (auto _tt = Util::HoverTooltipWrapper()) {
@@ -308,9 +302,6 @@ void LightLimitFix::BSLightingShader_SetupGeometry_Before(RE::BSRenderPass* a_pa
 	if (!shaderCache.IsEnabled())
 		return;
 
-	if (!checkRoomNodes)
-		return;
-
 	strictLightDataTemp.NumStrictLights = 0;
 
 	strictLightDataTemp.RoomIndex = -1;
@@ -382,17 +373,15 @@ void LightLimitFix::BSLightingShader_SetupGeometry_After(RE::BSRenderPass*)
 	const int roomIndex = strictLightDataTemp.RoomIndex;
 
 	if (!isEmpty || (isEmpty && !wasEmpty) || isWorld != wasWorld || previousRoomIndex != roomIndex) {
-		if (copyStrictLightsData) {
-			D3D11_MAPPED_SUBRESOURCE mapped;
-			DX::ThrowIfFailed(context->Map(strictLightData->resource.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
-			size_t bytes = sizeof(StrictLightData);
-			memcpy_s(mapped.pData, bytes, &strictLightDataTemp, bytes);
-			context->Unmap(strictLightData->resource.get(), 0);
+		D3D11_MAPPED_SUBRESOURCE mapped;
+		DX::ThrowIfFailed(context->Map(strictLightData->resource.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
+		size_t bytes = sizeof(StrictLightData);
+		memcpy_s(mapped.pData, bytes, &strictLightDataTemp, bytes);
+		context->Unmap(strictLightData->resource.get(), 0);
 
-			wasEmpty = isEmpty;
-			wasWorld = isWorld;
-			previousRoomIndex = roomIndex;
-		}
+		wasEmpty = isEmpty;
+		wasWorld = isWorld;
+		previousRoomIndex = roomIndex;
 	}
 
 	static Util::FrameChecker frameChecker;
@@ -625,9 +614,6 @@ bool LightLimitFix::CheckParticleLights(RE::BSRenderPass* a_pass, uint32_t)
 	auto& shaderCache = SIE::ShaderCache::Instance();
 
 	if (!shaderCache.IsEnabled())
-		return true;
-
-	if (!checkParticleLights)
 		return true;
 
 	auto reference = GetParticleLightConfigs(a_pass);
@@ -996,31 +982,28 @@ void LightLimitFix::UpdateLights()
 	{
 		lightCount = std::min((uint)lightsData.size(), MAX_LIGHTS);
 
-		if (copyData) {
-			D3D11_MAPPED_SUBRESOURCE mapped;
-			DX::ThrowIfFailed(context->Map(lights->resource.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
-			size_t bytes = sizeof(LightData) * lightCount;
-			memcpy_s(mapped.pData, bytes, lightsData.data(), bytes);
-			context->Unmap(lights->resource.get(), 0);
+		D3D11_MAPPED_SUBRESOURCE mapped;
+		DX::ThrowIfFailed(context->Map(lights->resource.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
+		size_t bytes = sizeof(LightData) * lightCount;
+		memcpy_s(mapped.pData, bytes, lightsData.data(), bytes);
+		context->Unmap(lights->resource.get(), 0);
 
-			LightCullingCB updateData{};
-			updateData.LightCount = lightCount;
-			lightCullingCB->Update(updateData);
-		}
+		LightCullingCB updateData{};
+		updateData.LightCount = lightCount;
+		lightCullingCB->Update(updateData);
+		
 
-		if (cullingShader) {
-			ID3D11Buffer* buffer = lightCullingCB->CB();
-			context->CSSetConstantBuffers(0, 1, &buffer);
+		ID3D11Buffer* buffer = lightCullingCB->CB();
+		context->CSSetConstantBuffers(0, 1, &buffer);
 
-			ID3D11ShaderResourceView* srvs[] = { clusters->srv.get(), lights->srv.get() };
-			context->CSSetShaderResources(0, 2, srvs);
+		ID3D11ShaderResourceView* srvs[] = { clusters->srv.get(), lights->srv.get() };
+		context->CSSetShaderResources(0, 2, srvs);
 
-			ID3D11UnorderedAccessView* uavs[] = { lightCounter->uav.get(), lightList->uav.get(), lightGrid->uav.get() };
-			context->CSSetUnorderedAccessViews(0, 3, uavs, nullptr);
+		ID3D11UnorderedAccessView* uavs[] = { lightCounter->uav.get(), lightList->uav.get(), lightGrid->uav.get() };
+		context->CSSetUnorderedAccessViews(0, 3, uavs, nullptr);
 
-			context->CSSetShader(clusterCullingCS, nullptr, 0);
-			context->Dispatch((clusterSize[0] + 15) / 16, (clusterSize[1] + 15) / 16, (clusterSize[2] + 3) / 4);
-		}
+		context->CSSetShader(clusterCullingCS, nullptr, 0);
+		context->Dispatch((clusterSize[0] + 15) / 16, (clusterSize[1] + 15) / 16, (clusterSize[2] + 3) / 4);	
 	}
 
 	context->CSSetShader(nullptr, nullptr, 0);
