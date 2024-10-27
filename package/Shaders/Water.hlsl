@@ -868,7 +868,7 @@ PS_OUTPUT main(PS_INPUT input)
 		{
 			uint light_index = lightList[lightOffset + i];
 			StructuredLight light = lights[light_index];
-			if (LightLimitFix::IsLightIgnored(light)) {
+			if (LightLimitFix::IsLightIgnored(light) || light.lightFlags & Llf_ShadowLight) {
 				continue;
 			}
 
