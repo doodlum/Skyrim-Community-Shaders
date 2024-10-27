@@ -687,6 +687,12 @@ float3 LightLimitFix::Saturation(float3 color, float saturation)
 	return color;
 }
 
+namespace RE
+{
+	class BSMultiBoundRoom : public NiNode
+	{};
+}
+
 void LightLimitFix::UpdateLights()
 {
 	static float& cameraNear = (*(float*)(REL::RelocationID(517032, 403540).address() + 0x40));
@@ -712,9 +718,8 @@ void LightLimitFix::UpdateLights()
 
 	roomNodes.empty();
 
-	auto addRoom = [&](void* nodePtr, LightData& light) {
+	auto addRoom = [&](RE::NiNode* node, LightData& light) {
 		uint8_t roomIndex = 0;
-		auto* node = static_cast<RE::NiNode*>(nodePtr);
 		if (auto it = roomNodes.find(node); it == roomNodes.cend()) {
 			roomIndex = static_cast<uint8_t>(roomNodes.size());
 			roomNodes.insert_or_assign(node, roomIndex);
@@ -739,17 +744,12 @@ void LightLimitFix::UpdateLights()
 
 					if (!IsGlobalLight(bsLight)) {
 						// List of BSMultiBoundRooms affected by a light
-						for (const auto& roomPtr : bsLight->unk0D8) {
+						for (const auto& roomPtr : bsLight->rooms) {
 							addRoom(roomPtr, light);
 						}
 						// List of BSPortals affected by a light
-						for (const auto& portalPtr : bsLight->unk0F0) {
-							struct BSPortal
-							{
-								uint8_t data[0x128];
-								void* portalSharedNode;
-							};
-							addRoom(static_cast<BSPortal*>(portalPtr)->portalSharedNode, light);
+						for (const auto& portalPtr : bsLight->portals) {
+							addRoom(portalPtr->portalSharedNode.get(), light);
 						}
 						light.lightFlags.set(LightFlags::PortalStrict);
 					}
