@@ -646,10 +646,10 @@ bool LightLimitFix::AddParticleLight(RE::BSRenderPass* a_pass, ParticleLightRefe
 	}
 
 	RE::NiColorA color = a_reference.baseColor;
-	color.red = material->baseColor.red * material->baseColorScale;
-	color.green = material->baseColor.green * material->baseColorScale;
-	color.blue = material->baseColor.blue * material->baseColorScale;
-	color.alpha = material->baseColor.alpha * shaderProperty->alpha;
+	color.red *= material->baseColor.red * material->baseColorScale;
+	color.green *= material->baseColor.green * material->baseColorScale;
+	color.blue *= material->baseColor.blue * material->baseColorScale;
+	color.alpha *= material->baseColor.alpha * shaderProperty->alpha;
 
 	if (auto emittance = shaderProperty->unk88) {
 		color.red *= emittance->red;
