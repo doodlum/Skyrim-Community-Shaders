@@ -918,7 +918,7 @@ void LightLimitFix::UpdateLights()
 				auto position = particleLight.first->world.translate;
 
 				SetLightPosition(light, position);  // Light is complete for both eyes by now
-				
+
 				light.lightFlags.set(LightFlags::Simple);
 				light.lightFlags.set(LightFlags::Billboard);
 

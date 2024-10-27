@@ -2142,10 +2142,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		float contactShadow = 1.0;
 		[branch] if (
-			inWorld && !FrameParams.z && 
-			lightLimitFixSettings.EnableContactShadows && 
-			!(light.lightFlags & LightFlags::Simple) && 
-			shadowComponent != 0.0 && 
+			inWorld && !FrameParams.z &&
+			lightLimitFixSettings.EnableContactShadows &&
+			!(light.lightFlags & LightFlags::Simple) &&
+			shadowComponent != 0.0 &&
 			lightAngle > 0.0)
 		{
 			float3 normalizedLightDirectionVS = normalize(light.positionVS[eyeIndex].xyz - viewPosition.xyz);
@@ -2164,12 +2164,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #			if defined(EMAT)
 		[branch] if (
-			extendedMaterialSettings.EnableShadows && 
+			extendedMaterialSettings.EnableShadows &&
 			!(light.lightFlags & LightFlags::Simple) &&
-			lightAngle > 0.0 && 
-			shadowComponent != 0.0 && 
-			contactShadow != 0.0
-		)
+			lightAngle > 0.0 &&
+			shadowComponent != 0.0 &&
+			contactShadow != 0.0)
 		{
 			float3 lightDirectionTS = normalize(mul(refractedLightDirection, tbn).xyz);
 #				if defined(PARALLAX)
