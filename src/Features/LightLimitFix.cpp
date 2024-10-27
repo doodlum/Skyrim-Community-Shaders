@@ -990,7 +990,6 @@ void LightLimitFix::UpdateLights()
 		LightCullingCB updateData{};
 		updateData.LightCount = lightCount;
 		lightCullingCB->Update(updateData);
-		
 
 		ID3D11Buffer* buffer = lightCullingCB->CB();
 		context->CSSetConstantBuffers(0, 1, &buffer);
@@ -1002,7 +1001,7 @@ void LightLimitFix::UpdateLights()
 		context->CSSetUnorderedAccessViews(0, 3, uavs, nullptr);
 
 		context->CSSetShader(clusterCullingCS, nullptr, 0);
-		context->Dispatch((clusterSize[0] + 15) / 16, (clusterSize[1] + 15) / 16, (clusterSize[2] + 3) / 4);	
+		context->Dispatch((clusterSize[0] + 15) / 16, (clusterSize[1] + 15) / 16, (clusterSize[2] + 3) / 4);
 	}
 
 	context->CSSetShader(nullptr, nullptr, 0);
