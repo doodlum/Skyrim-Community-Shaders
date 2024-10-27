@@ -256,12 +256,14 @@ void LightLimitFix::SetupResources()
 void LightLimitFix::Reset()
 {
 	for (auto& particleLight : particleLights) {
-		if (const auto particleSystem = netimmerse_cast<RE::NiParticleSystem*>(particleLight.first)) {
-			if (auto particleData = particleSystem->GetParticleRuntimeData().particleData.get()) {
-				particleData->DecRefCount();
+		if (!particleLight.billboard) {
+			if (const auto particleSystem = static_cast<RE::NiParticleSystem*>(particleLight.node)) {
+				if (auto particleData = particleSystem->GetParticleRuntimeData().particleData.get()) {
+					particleData->DecRefCount();
+				}
 			}
 		}
-		particleLight.first->DecRefCount();
+		particleLight.node->DecRefCount();
 	}
 	particleLights.clear();
 	std::swap(particleLights, queuedParticleLights);
@@ -510,28 +512,33 @@ LightLimitFix::ParticleLightReference LightLimitFix::GetParticleLightConfigs(RE:
 {
 	// see https://www.nexusmods.com/skyrimspecialedition/articles/1391
 	if (settings.EnableParticleLights) {
-		{
-			auto it = particleLightsReferences.find((RE::NiNode*)a_pass->geometry);
-			if (it != particleLightsReferences.end())
-				return (*it).second;
-		}
-
-		bool billboardLight = false;
-		if (!netimmerse_cast<RE::NiParticleSystem*>(a_pass->geometry)) {
-			if (auto parent = a_pass->geometry->parent) {
-				if (auto billboardNode = netimmerse_cast<RE::NiBillboardNode*>(parent)) {
-					billboardLight = true;
-				} else {
-					return { false };
-				}
-			} else {
-				return { false };
-			}
-		}
-
 		if (auto shaderProperty = netimmerse_cast<RE::BSEffectShaderProperty*>(a_pass->shaderProperty)) {
 			if (!shaderProperty->lightData) {
 				if (auto material = shaderProperty->GetMaterial()) {
+
+					// Check if it's a valid particle light
+					bool billboard = false;
+					if (!netimmerse_cast<RE::NiParticleSystem*>(a_pass->geometry)) {
+						if (auto parent = a_pass->geometry->parent) {
+							if (auto billboardNode = netimmerse_cast<RE::NiBillboardNode*>(parent)) {
+								billboard = true;
+							} else {
+								return { false };
+							}
+						} else {
+							return { false };
+						}
+					}
+
+					// Already scanned
+					{
+						auto it = particleLightsReferences.find(reinterpret_cast<RE::NiNode*>(a_pass->geometry));
+						if (it != particleLightsReferences.end())
+							return (*it).second;
+					}
+
+					// Not scanned, scan now
+
 					if (!material->sourceTexturePath.empty()) {
 						std::string textureName = ExtractTextureStem(material->sourceTexturePath.c_str());
 						if (textureName.size() < 1) {
@@ -565,11 +572,12 @@ LightLimitFix::ParticleLightReference LightLimitFix::GetParticleLightConfigs(RE:
 						}
 
 						ParticleLightReference reference{ true };
+						reference.billboard = billboard;
 						reference.config = config;
 						reference.gradientConfig = gradientConfig;
 						reference.baseColor = { 1, 1, 1, 1 };
 
-						if (billboardLight) {
+						if (billboard) {
 							if (auto rendererData = a_pass->geometry->GetGeometryRuntimeData().rendererData) {
 								if (auto triShape = a_pass->geometry->AsTriShape()) {
 									uint32_t vertexSize = rendererData->vertexDesc.GetSize();
@@ -602,7 +610,7 @@ LightLimitFix::ParticleLightReference LightLimitFix::GetParticleLightConfigs(RE:
 							}
 						}
 
-						particleLightsReferences.insert({ (RE::NiNode*)a_pass->geometry, reference });
+						particleLightsReferences.insert({ reinterpret_cast<RE::NiNode*>(a_pass->geometry), reference });
 						return reference;
 					}
 				}
@@ -633,15 +641,18 @@ bool LightLimitFix::CheckParticleLights(RE::BSRenderPass* a_pass, uint32_t)
 
 bool LightLimitFix::AddParticleLight(RE::BSRenderPass* a_pass, ParticleLightReference a_reference)
 {
-	auto shaderProperty = netimmerse_cast<RE::BSEffectShaderProperty*>(a_pass->shaderProperty);
+	auto shaderProperty = static_cast<RE::BSEffectShaderProperty*>(a_pass->shaderProperty);
 	auto material = shaderProperty->GetMaterial();
 	auto config = a_reference.config;
 	auto gradientConfig = a_reference.gradientConfig;
 
 	a_pass->geometry->IncRefCount();
-	if (auto particleSystem = netimmerse_cast<RE::NiParticleSystem*>(a_pass->geometry)) {
-		if (auto particleData = particleSystem->GetParticleRuntimeData().particleData.get()) {
-			particleData->IncRefCount();
+
+	if (!a_reference.billboard) {
+		if (auto particleSystem = static_cast<RE::NiParticleSystem*>(a_pass->geometry)) {
+			if (auto particleData = particleSystem->GetParticleRuntimeData().particleData.get()) {
+				particleData->IncRefCount();
+			}
 		}
 	}
 
@@ -668,7 +679,14 @@ bool LightLimitFix::AddParticleLight(RE::BSRenderPass* a_pass, ParticleLightRefe
 		color.blue *= config->colorMult.blue;
 	}
 
-	queuedParticleLights.insert({ a_pass->geometry, { color, *config } });
+	color.alpha = config->radiusMult;
+
+	ParticleLightInfo info;
+	info.billboard = a_reference.billboard;
+	info.node = a_pass->geometry;
+	info.color = color;
+
+	queuedParticleLights.push_back(info);
 	return true;
 }
 
@@ -834,84 +852,85 @@ void LightLimitFix::UpdateLights()
 		auto eyePositionOffset = eyePositionCached[0] - eyePositionCached[1];
 
 		for (const auto& particleLight : particleLights) {
-			if (const auto particleSystem = netimmerse_cast<RE::NiParticleSystem*>(particleLight.first);
-				particleSystem && particleSystem->GetParticleRuntimeData().particleData.get()) {
-				// Process BSGeometry
-				auto particleData = particleSystem->GetParticleRuntimeData().particleData.get();
+			if (!particleLight.billboard) {
+				auto particleSystem = static_cast<RE::NiParticleSystem*>(particleLight.node);
+				if (particleSystem && particleSystem->GetParticleRuntimeData().particleData.get()) {
+					// Process BSGeometry
+					auto particleData = particleSystem->GetParticleRuntimeData().particleData.get();
 
-				auto numVertices = particleData->GetActiveVertexCount();
-				for (std::uint32_t p = 0; p < numVertices; p++) {
-					float radius = particleData->GetParticlesRuntimeData().sizes[p] * 70.0f;
+					auto numVertices = particleData->GetActiveVertexCount();
+					for (std::uint32_t p = 0; p < numVertices; p++) {
+						float radius = particleData->GetParticlesRuntimeData().sizes[p] * 70.0f;
 
-					auto initialPosition = particleData->GetParticlesRuntimeData().positions[p];
-					if (!particleSystem->GetParticleSystemRuntimeData().isWorldspace) {
-						// Detect first-person meshes
-						if ((particleLight.first->GetModelData().modelBound.radius * particleLight.first->world.scale) != particleLight.first->worldBound.radius)
-							initialPosition += particleLight.first->worldBound.center;
-						else
-							initialPosition += particleLight.first->world.translate;
-					}
-
-					RE::NiPoint3 positionWS = initialPosition - eyePositionCached[0];
-
-					if (clusteredLights) {
-						auto averageRadius = clusteredLight.radius / (float)clusteredLights;
-						float radiusDiff = abs(averageRadius - radius);
-
-						auto averagePosition = clusteredLight.positionWS[0].data / (float)clusteredLights;
-						float positionDiff = positionWS.GetDistance({ averagePosition.x, averagePosition.y, averagePosition.z });
-
-						if ((radiusDiff + positionDiff) > 32.0f || !settings.EnableParticleLightsOptimization) {
-							clusteredLight.radius /= (float)clusteredLights;
-							clusteredLight.positionWS[0].data /= (float)clusteredLights;
-							clusteredLight.positionWS[1].data = clusteredLight.positionWS[0].data;
-							if (eyeCount == 2) {
-								clusteredLight.positionWS[1].data.x += eyePositionOffset.x / (float)clusteredLights;
-								clusteredLight.positionWS[1].data.y += eyePositionOffset.y / (float)clusteredLights;
-								clusteredLight.positionWS[1].data.z += eyePositionOffset.z / (float)clusteredLights;
-							}
-
-							clusteredLight.lightFlags.set(LightFlags::Simple);
-							clusteredLight.lightFlags.set(LightFlags::Particle);
-
-							AddCachedParticleLights(lightsData, clusteredLight);
-
-							clusteredLights = 0;
-							clusteredLight.color = { 0, 0, 0 };
-							clusteredLight.radius = 0;
-							clusteredLight.positionWS[0].data = { 0, 0, 0 };
+						auto initialPosition = particleData->GetParticlesRuntimeData().positions[p];
+						if (!particleSystem->GetParticleSystemRuntimeData().isWorldspace) {
+							// Detect first-person meshes
+							if ((particleLight.node->GetModelData().modelBound.radius * particleLight.node->world.scale) != particleLight.node->worldBound.radius)
+								initialPosition += particleLight.node->worldBound.center;
+							else
+								initialPosition += particleLight.node->world.translate;
 						}
+
+						RE::NiPoint3 positionWS = initialPosition - eyePositionCached[0];
+
+						if (clusteredLights) {
+							auto averageRadius = clusteredLight.radius / (float)clusteredLights;
+							float radiusDiff = abs(averageRadius - radius);
+
+							auto averagePosition = clusteredLight.positionWS[0].data / (float)clusteredLights;
+							float positionDiff = positionWS.GetDistance({ averagePosition.x, averagePosition.y, averagePosition.z });
+
+							if ((radiusDiff + positionDiff) > 32.0f || !settings.EnableParticleLightsOptimization) {
+								clusteredLight.radius /= (float)clusteredLights;
+								clusteredLight.positionWS[0].data /= (float)clusteredLights;
+								clusteredLight.positionWS[1].data = clusteredLight.positionWS[0].data;
+								if (eyeCount == 2) {
+									clusteredLight.positionWS[1].data.x += eyePositionOffset.x / (float)clusteredLights;
+									clusteredLight.positionWS[1].data.y += eyePositionOffset.y / (float)clusteredLights;
+									clusteredLight.positionWS[1].data.z += eyePositionOffset.z / (float)clusteredLights;
+								}
+
+								clusteredLight.lightFlags.set(LightFlags::Simple);
+								clusteredLight.lightFlags.set(LightFlags::Particle);
+
+								AddCachedParticleLights(lightsData, clusteredLight);
+
+								clusteredLights = 0;
+								clusteredLight.color = { 0, 0, 0 };
+								clusteredLight.radius = 0;
+								clusteredLight.positionWS[0].data = { 0, 0, 0 };
+							}
+						}
+
+						float alpha = particleLight.color.alpha * particleData->GetParticlesRuntimeData().color[p].alpha;
+						float3 color;
+						color.x = particleLight.color.red * particleData->GetParticlesRuntimeData().color[p].red;
+						color.y = particleLight.color.green * particleData->GetParticlesRuntimeData().color[p].green;
+						color.z = particleLight.color.blue * particleData->GetParticlesRuntimeData().color[p].blue;
+						clusteredLight.color += Saturation(color, settings.ParticleLightsSaturation) * alpha * settings.ParticleBrightness;
+
+						clusteredLight.radius += radius * particleLight.color.alpha * settings.ParticleRadius;
+						clusteredLight.positionWS[0].data.x += positionWS.x;
+						clusteredLight.positionWS[0].data.y += positionWS.y;
+						clusteredLight.positionWS[0].data.z += positionWS.z;
+
+						clusteredLights++;
 					}
-
-					float alpha = particleLight.second.color.alpha * particleData->GetParticlesRuntimeData().color[p].alpha;
-					float3 color;
-					color.x = particleLight.second.color.red * particleData->GetParticlesRuntimeData().color[p].red;
-					color.y = particleLight.second.color.green * particleData->GetParticlesRuntimeData().color[p].green;
-					color.z = particleLight.second.color.blue * particleData->GetParticlesRuntimeData().color[p].blue;
-					clusteredLight.color += Saturation(color, settings.ParticleLightsSaturation) * alpha * settings.ParticleBrightness;
-
-					clusteredLight.radius += radius * settings.ParticleRadius * particleLight.second.config.radiusMult;
-					clusteredLight.positionWS[0].data.x += positionWS.x;
-					clusteredLight.positionWS[0].data.y += positionWS.y;
-					clusteredLight.positionWS[0].data.z += positionWS.z;
-
-					clusteredLights++;
 				}
-
 			} else {
 				// Process billboard
 				LightData light{};
 
-				light.color.x = particleLight.second.color.red;
-				light.color.y = particleLight.second.color.green;
-				light.color.z = particleLight.second.color.blue;
+				light.color.x = particleLight.color.red;
+				light.color.y = particleLight.color.green;
+				light.color.z = particleLight.color.blue;
 
 				light.color = Saturation(light.color, settings.ParticleLightsSaturation);
 
-				light.color *= particleLight.second.color.alpha * settings.BillboardBrightness;
-				light.radius = particleLight.first->worldBound.radius * settings.BillboardRadius * particleLight.second.config.radiusMult;
+				light.color *= particleLight.color.alpha * settings.BillboardBrightness;
+				light.radius = particleLight.node->worldBound.radius * particleLight.color.alpha * settings.BillboardRadius;
 
-				auto position = particleLight.first->world.translate;
+				auto position = particleLight.node->world.translate;
 
 				SetLightPosition(light, position);  // Light is complete for both eyes by now
 

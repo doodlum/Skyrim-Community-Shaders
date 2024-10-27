@@ -137,23 +137,23 @@ public:
 
 	struct ParticleLightInfo
 	{
+		bool billboard;
+		RE::BSGeometry* node;
 		RE::NiColorA color;
-		ParticleLights::Config& config;
 	};
-
-	using ConfigPair = std::pair<ParticleLights::Config*, ParticleLights::GradientConfig*>;
 
 	struct ParticleLightReference
 	{
 		bool valid;
+		bool billboard;
 		ParticleLights::Config* config;
 		ParticleLights::GradientConfig* gradientConfig;
 		RE::NiColorA baseColor;
 	};
 
 	eastl::hash_map<RE::NiNode*, ParticleLightReference> particleLightsReferences;
-	eastl::hash_map<RE::BSGeometry*, ParticleLightInfo> queuedParticleLights;
-	eastl::hash_map<RE::BSGeometry*, ParticleLightInfo> particleLights;
+	eastl::vector<ParticleLightInfo> queuedParticleLights;
+	eastl::vector<ParticleLightInfo> particleLights;
 
 	void CleanupParticleLights(RE::NiNode* a_node);
 
