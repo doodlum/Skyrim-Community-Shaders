@@ -1,6 +1,7 @@
 #include "ExtendedTranslucency.h"
 
 #include "../Util.h"
+#include "../State.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	ExtendedTranslucency::MaterialParams,
@@ -18,45 +19,40 @@ ExtendedTranslucency* ExtendedTranslucency::GetSingleton()
 
 void ExtendedTranslucency::SetupResources()
 {
+	// Per material model settings for geometries with explicit material model
+	MaterialParams params{ 0, 0.f, 0.f, 0 };
+	for (int material = 0; material < MaterialModel::Max; material++) 
+	{
+		params.AlphaMode = material;
+		materialCB[material].emplace(params);
+	}
 	// Default material model buffer only changes in settings UI
-	materialDisableCB.emplace(ConstantBufferDesc<MaterialParams>());
-	MaterialParams disabled{ 0, 0.f, 0.f, 0 };
-	materialDisableCB->Update(disabled);
-	// Default material model buffer only changes in settings UI
-	materialDefaultCB.emplace(ConstantBufferDesc<MaterialParams>());
-	materialDefaultCB->Update(settings);
-	// Dynamic material model buffer changes when we read materials
-	materialDynamicCB.emplace(ConstantBufferDesc<MaterialParams>(true));
+	materialDefaultCB.emplace(settings);
 }
 
 void ExtendedTranslucency::BSLightingShader_SetupGeometry(RE::BSRenderPass* pass)
 {
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 	auto* transcluency = ExtendedTranslucency::GetSingleton();
+	static const REL::Relocation<const RE::NiRTTI*> NiIntegerExtraDataRTTI { RE::NiIntegerExtraData::Ni_RTTI };
 
-	ID3D11DeviceContext* context = reinterpret_cast<ID3D11DeviceContext*>(renderer->GetRuntimeData().context);
+	// TODO: OPTIMIZATION: Use materialCB[MaterialModel::Disabled] for geometry without NiAlphaProperty or Alpha Blend not enabled
+	ID3D11DeviceContext* context = State::GetSingleton()->context;
 	ID3D11Buffer* buffers[1];
 	if (auto* data = pass->geometry->GetExtraData(NiExtraDataName)) {
-		auto params = transcluency->settings;
-		const RE::NiRTTI* integerDataRTTI = REL::Relocation<const RE::NiRTTI*>{ RE::NiIntegerExtraData::Ni_RTTI }.get();
-		if (data->GetRTTI() == integerDataRTTI) {
-			params.AlphaMode = static_cast<RE::NiIntegerExtraData*>(data)->value;
+		// Mods supporting this feature should adjust their alpha value in texture already
+		// And the texture should be adjusted based on full strength param
+		MaterialParams params = transcluency->settings;
+		if (data->GetRTTI() == NiIntegerExtraDataRTTI.get()) {
+			params.AlphaMode = std::clamp<int>(static_cast<RE::NiIntegerExtraData*>(data)->value ,0, MaterialModel::Max-1);
 		} else {
 			params.AlphaMode = std::to_underlying(ExtendedTranslucency::MaterialModel::Default);
 		}
-		params.AlphaReduction = 0.f;
 
-		buffers[0] = materialDynamicCB->CB();
-		materialDynamicCB->Update(&params, sizeof(params));
+		buffers[0] = materialCB[params.AlphaMode]->CB();
 		context->PSSetConstantBuffers(materialCBIndex, 1, buffers);
-		//isDefaultCB = false;
 	} else {
-		//if (!isDefaultCB)
-		//{
-		//isDefaultCB = true;
 		buffers[0] = materialDefaultCB->CB();
 		context->PSSetConstantBuffers(materialCBIndex, 1, buffers);
-		//}
 	}
 }
 

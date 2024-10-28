@@ -23,12 +23,13 @@ struct ExtendedTranslucency final : Feature
 
 	struct Hooks;
 
-	enum class MaterialModel : uint32_t
+	enum MaterialModel : uint32_t
 	{
 		Disabled = 0,
 		RimLight = 1,           // Similar effect like rim light
 		IsotropicFabric = 2,    // 1D fabric model, respect normal map
 		AnisotropicFabric = 3,  // 2D fabric model alone tangent and binormal, ignores normal map
+		Max = 4,
 		Default = AnisotropicFabric
 	};
 
@@ -45,7 +46,6 @@ struct ExtendedTranslucency final : Feature
 	static const RE::BSFixedString NiExtraDataName;
 	static constexpr int materialCBIndex = 7;
 
-	std::optional<ConstantBuffer> materialDisableCB;
 	std::optional<ConstantBuffer> materialDefaultCB;
-	std::optional<ConstantBuffer> materialDynamicCB;
+	std::optional<ConstantBuffer> materialCB[MaterialModel::Max];
 };

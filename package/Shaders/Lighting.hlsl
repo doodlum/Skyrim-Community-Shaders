@@ -999,7 +999,11 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		include "Skylighting/Skylighting.hlsli"
 #	endif
 
-#	if defined(EXTENDED_TRANSLUCENCY)
+#	if defined(EXTENDED_TRANSLUCENCY) && !(defined(LOD) || defined(DEFERRED) || defined(SKIN) || defined(HAIR) || defined(EYE) || defined(TREE_ANIM) || defined(LODOBJECTSHD) || defined(LODOBJECTS))
+#	define ANISOTROPIC_ALPHA
+#	endif
+
+#	if defined(ANISOTROPIC_ALPHA)
 #		include "ExtendedTranslucency/ExtendedTranslucency.hlsli"
 #	endif
 
@@ -2617,7 +2621,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 #		endif      // DO_ALPHA_TEST
 
-#		if defined(EXTENDED_TRANSLUCENCY) && !(defined(SKIN) || defined(HAIR) || defined(EYE) || defined(TREE_ANIM) || defined(LODOBJECTSHD) || defined(LODOBJECTS))
+#if defined(ANISOTROPIC_ALPHA)
 	if (AnisotropicAlphaFlags > 0) {
 		if (alpha >= 0.0156862754 && alpha < 1.0) {
 			float originalAlpha = alpha;
