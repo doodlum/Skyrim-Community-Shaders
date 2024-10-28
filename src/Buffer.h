@@ -62,7 +62,7 @@ public:
 	{
 		static_assert(alignof(T) >= 16);
 		D3D11_BUFFER_DESC desc = ConstantBufferDesc<T>();
-		D3D11_SUBRESOURCE_DATA subresource { .pSysMem = &data, .SysMemPitch = 0, .SysMemSlicePitch=0 };
+		D3D11_SUBRESOURCE_DATA subresource{ .pSysMem = &data, .SysMemPitch = 0, .SysMemSlicePitch = 0 };
 		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, &subresource, resource.put()));
 	}

@@ -1,7 +1,7 @@
 #include "ExtendedTranslucency.h"
 
-#include "../Util.h"
 #include "../State.h"
+#include "../Util.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	ExtendedTranslucency::MaterialParams,
@@ -21,8 +21,7 @@ void ExtendedTranslucency::SetupResources()
 {
 	// Per material model settings for geometries with explicit material model
 	MaterialParams params{ 0, 0.f, 0.f, 0 };
-	for (int material = 0; material < MaterialModel::Max; material++) 
-	{
+	for (int material = 0; material < MaterialModel::Max; material++) {
 		params.AlphaMode = material;
 		materialCB[material].emplace(params);
 	}
@@ -33,7 +32,7 @@ void ExtendedTranslucency::SetupResources()
 void ExtendedTranslucency::BSLightingShader_SetupGeometry(RE::BSRenderPass* pass)
 {
 	auto* transcluency = ExtendedTranslucency::GetSingleton();
-	static const REL::Relocation<const RE::NiRTTI*> NiIntegerExtraDataRTTI { RE::NiIntegerExtraData::Ni_RTTI };
+	static const REL::Relocation<const RE::NiRTTI*> NiIntegerExtraDataRTTI{ RE::NiIntegerExtraData::Ni_RTTI };
 
 	// TODO: OPTIMIZATION: Use materialCB[MaterialModel::Disabled] for geometry without NiAlphaProperty or Alpha Blend not enabled
 	ID3D11DeviceContext* context = State::GetSingleton()->context;
@@ -43,7 +42,7 @@ void ExtendedTranslucency::BSLightingShader_SetupGeometry(RE::BSRenderPass* pass
 		// And the texture should be adjusted based on full strength param
 		MaterialParams params = transcluency->settings;
 		if (data->GetRTTI() == NiIntegerExtraDataRTTI.get()) {
-			params.AlphaMode = std::clamp<int>(static_cast<RE::NiIntegerExtraData*>(data)->value ,0, MaterialModel::Max-1);
+			params.AlphaMode = std::clamp<int>(static_cast<RE::NiIntegerExtraData*>(data)->value, 0, MaterialModel::Max - 1);
 		} else {
 			params.AlphaMode = std::to_underlying(ExtendedTranslucency::MaterialModel::Default);
 		}
