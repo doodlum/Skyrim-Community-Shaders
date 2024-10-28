@@ -662,7 +662,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		} else if (lightLimitFixSettings.LightsVisualisationMode == 1) {
 			diffuseColor.xyz = LightLimitFix::TurboColormap(0);
 		} else {
-			diffuseColor.xyz = LightLimitFix::TurboColormap((float)lightCount / 128.0);
+			diffuseColor.xyz = LightLimitFix::TurboColormap((float)lightCount / MAX_CLUSTER_LIGHTS);
 		}
 	} else {
 		psout.Diffuse = float4(diffuseColor, 1);

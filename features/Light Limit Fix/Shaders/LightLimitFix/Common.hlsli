@@ -5,7 +5,7 @@
 #define NUMTHREAD_Y 16
 #define NUMTHREAD_Z 4
 #define GROUP_SIZE (NUMTHREAD_X * NUMTHREAD_Y * NUMTHREAD_Z)
-#define MAX_CLUSTER_LIGHTS 128
+#define MAX_CLUSTER_LIGHTS 256
 
 namespace LightFlags
 {

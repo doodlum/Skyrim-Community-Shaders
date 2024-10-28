@@ -755,7 +755,7 @@ PS_OUTPUT main(PS_INPUT input)
 		} else if (lightLimitFixSettings.LightsVisualisationMode == 1) {
 			psout.Diffuse.xyz = LightLimitFix::TurboColormap(0.0);
 		} else {
-			psout.Diffuse.xyz = LightLimitFix::TurboColormap((float)lightCount / 128.0);
+			psout.Diffuse.xyz = LightLimitFix::TurboColormap((float)lightCount / MAX_CLUSTER_LIGHTS);
 		}
 	}
 #	endif

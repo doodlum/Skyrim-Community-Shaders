@@ -4,7 +4,7 @@
 #include "State.h"
 #include "Util.h"
 
-static constexpr uint CLUSTER_MAX_LIGHTS = 128;
+static constexpr uint CLUSTER_MAX_LIGHTS = 256;
 static constexpr uint MAX_LIGHTS = 1024;
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
