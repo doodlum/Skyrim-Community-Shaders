@@ -387,6 +387,7 @@ void TerrainShadows::Prepass()
 		std::array<ID3D11ShaderResourceView*, 3> srvs = { nullptr };
 		if (texShadowHeight)
 			srvs.at(2) = texShadowHeight->srv.get();
+		context->VSSetShaderResources(40, (uint)srvs.size(), srvs.data());
 		context->PSSetShaderResources(40, (uint)srvs.size(), srvs.data());
 	}
 }

@@ -48,7 +48,7 @@ float Get3DFilteredShadow(float3 positionWS, float3 viewDirection, float2 screen
 	float shadow = 0.0;
 	if (sD.EndSplitDistances.z >= GetShadowDepth(positionWS, eyeIndex)) {
 		for (uint i = 0; i < sampleCount; i++) {
-			float3 rnd = Random::R3Modified(i + FrameCount * sampleCount, seed / 4294967295.f);
+			float3 rnd = Random::R3Modified(i + 0 * sampleCount, seed / 4294967295.f);
 
 			// https://stats.stackexchange.com/questions/8021/how-to-generate-uniformly-distributed-points-in-the-3-d-unit-ball
 			float phi = rnd.x * Math::TAU;
@@ -64,7 +64,7 @@ float Get3DFilteredShadow(float3 positionWS, float3 viewDirection, float2 screen
 			float3 positionLS = mul(transpose(sD.ShadowMapProj[eyeIndex][cascadeIndex]), float4(positionWS + sampleOffset, 1));
 
 			float4 depths = SharedTexShadowMapSampler.GatherRed(LinearSampler, float3(saturate(positionLS.xy), cascadeIndex), 0);
-			shadow += dot(depths > compareValue[cascadeIndex], 0.25);
+			shadow += dot(depths > (compareValue[cascadeIndex] - 0.1), 0.25);
 		}
 	} else {
 		shadow = 1.0;
@@ -153,71 +153,71 @@ float GetWorldShadow(float3 positionWS, float depth, float3 offset, uint eyeInde
 	return worldShadow;
 }
 
-float GetVL(float3 startPosWS, float3 endPosWS, float3 normal, float noise, inout float shadow, uint eyeIndex)
-{
-	float startDepth = length(startPosWS);
+// float GetVL(float3 startPosWS, float3 endPosWS, float3 normal, float noise, inout float shadow, uint eyeIndex)
+// {
+// 	float startDepth = length(startPosWS);
 
-	// Simulate blurring world shadows on the surface
-	normal *= 8.0;
+// 	// Simulate blurring world shadows on the surface
+// 	normal *= 8.0;
 
-	float worldShadow = GetWorldShadow(startPosWS, startDepth, normal, eyeIndex);
+// 	float worldShadow = GetWorldShadow(startPosWS, startDepth, normal, eyeIndex);
 
-	shadow = worldShadow;
+// 	shadow = worldShadow;
 
-	float phase = dot(normalize(startPosWS.xyz), DirLightDirectionShared.xyz) * 0.5 + 0.5;
+// 	float phase = dot(normalize(startPosWS.xyz), DirLightDirectionShared.xyz) * 0.5 + 0.5;
 
-	worldShadow *= phase;
+// 	worldShadow *= phase;
 
-	PerGeometry sD = SharedPerShadow[0];
+// 	PerGeometry sD = SharedPerShadow[0];
 
-	float fadeFactor = 1.0 - saturate(length(endPosWS) / 4096.0);
-	uint sampleCount = ceil(4.0 * fadeFactor);
+// 	float fadeFactor = 1.0 - saturate(length(endPosWS) / 4096.0);
+// 	uint sampleCount = ceil(4.0 * fadeFactor);
 
-	if (sampleCount == 0)
-		return worldShadow;
+// 	if (sampleCount == 0)
+// 		return worldShadow;
 
-	float2 rotation;
-	sincos(Math::TAU * noise, rotation.y, rotation.x);
-	float2x2 rotationMatrix = float2x2(rotation.x, rotation.y, -rotation.y, rotation.x);
+// 	float2 rotation;
+// 	sincos(Math::TAU * noise, rotation.y, rotation.x);
+// 	float2x2 rotationMatrix = float2x2(rotation.x, rotation.y, -rotation.y, rotation.x);
 
-	float stepSize = rcp(sampleCount);
+// 	float stepSize = rcp(sampleCount);
 
-	float3 worldDir = endPosWS - startPosWS;
+// 	float3 worldDir = endPosWS - startPosWS;
 
-	// Offset starting position
-	startPosWS += worldDir * stepSize * noise;
+// 	// Offset starting position
+// 	startPosWS += worldDir * stepSize * noise;
 
-	sD.EndSplitDistances.x = SharedData::GetScreenDepth(sD.EndSplitDistances.x);
-	sD.EndSplitDistances.y = SharedData::GetScreenDepth(sD.EndSplitDistances.y);
-	sD.StartSplitDistances.y = SharedData::GetScreenDepth(sD.StartSplitDistances.y);
+// 	sD.EndSplitDistances.x = SharedData::GetScreenDepth(sD.EndSplitDistances.x);
+// 	sD.EndSplitDistances.y = SharedData::GetScreenDepth(sD.EndSplitDistances.y);
+// 	sD.StartSplitDistances.y = SharedData::GetScreenDepth(sD.StartSplitDistances.y);
 
-	float vlShadow = 0;
+// 	float vlShadow = 0;
 
-	for (uint i = 0; i < sampleCount; i++) {
-		float3 samplePositionWS = startPosWS + worldDir * saturate(i * stepSize);
-		float2 sampleOffset = mul(Random::SpiralSampleOffsets8[(float(i * 2) + noise * 8) % 8].xy, rotationMatrix);
+// 	for (uint i = 0; i < sampleCount; i++) {
+// 		float3 samplePositionWS = startPosWS + worldDir * saturate(i * stepSize);
+// 		float2 sampleOffset = mul(Random::SpiralSampleOffsets8[(float(i * 2) + noise * 8) % 8].xy, rotationMatrix);
 
-		float cascadeIndex = 0;
-		float4x3 lightProjectionMatrix = sD.ShadowMapProj[eyeIndex][0];
-		float shadowRange = sD.EndSplitDistances.x;
+// 		float cascadeIndex = 0;
+// 		float4x3 lightProjectionMatrix = sD.ShadowMapProj[eyeIndex][0];
+// 		float shadowRange = sD.EndSplitDistances.x;
 
-		if (sD.EndSplitDistances.x < length(samplePositionWS) + 8.0 * dot(sampleOffset, float2(1, 1)))  // Stochastic cascade sampling
-		{
-			lightProjectionMatrix = sD.ShadowMapProj[eyeIndex][1];
-			cascadeIndex = 1;
-			shadowRange = sD.EndSplitDistances.y - sD.StartSplitDistances.y;
-		}
+// 		if (sD.EndSplitDistances.x < length(samplePositionWS) + 8.0 * dot(sampleOffset, float2(1, 1)))  // Stochastic cascade sampling
+// 		{
+// 			lightProjectionMatrix = sD.ShadowMapProj[eyeIndex][1];
+// 			cascadeIndex = 1;
+// 			shadowRange = sD.EndSplitDistances.y - sD.StartSplitDistances.y;
+// 		}
 
-		float3 samplePositionLS = mul(transpose(lightProjectionMatrix), float4(samplePositionWS.xyz, 1)).xyz;
+// 		float3 samplePositionLS = mul(transpose(lightProjectionMatrix), float4(samplePositionWS.xyz, 1)).xyz;
 
-		samplePositionLS.xy += 8.0 * sampleOffset * rcp(shadowRange);
+// 		samplePositionLS.xy += 8.0 * sampleOffset * rcp(shadowRange);
 
-		float4 depths = SharedTexShadowMapSampler.GatherRed(LinearSampler, float3(saturate(samplePositionLS.xy), cascadeIndex), 0);
+// 		float4 depths = SharedTexShadowMapSampler.GatherRed(LinearSampler, float3(saturate(samplePositionLS.xy), cascadeIndex), 0);
 
-		vlShadow += dot(depths > (samplePositionLS.z - 0.0005), 0.25);
-	}
-	return lerp(worldShadow, min(worldShadow, vlShadow * stepSize), fadeFactor);
-}
+// 		vlShadow += dot(depths > (samplePositionLS.z - 0.0005), 0.25);
+// 	}
+// 	return lerp(worldShadow, min(worldShadow, vlShadow * stepSize), fadeFactor);
+// }
 
 float GetEffectShadow(float3 worldPosition, float3 viewDirection, float2 screenPosition, uint eyeIndex)
 {

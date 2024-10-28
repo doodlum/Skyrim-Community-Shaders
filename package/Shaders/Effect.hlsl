@@ -1,8 +1,6 @@
 #include "Common/Color.hlsli"
-#include "Common/FrameBuffer.hlsli"
 #include "Common/GBuffer.hlsli"
 #include "Common/Math.hlsli"
-#include "Common/MotionBlur.hlsli"
 #include "Common/Permutation.hlsli"
 #include "Common/Random.hlsli"
 #include "Common/SharedData.hlsli"
@@ -45,6 +43,7 @@ struct VS_OUTPUT
 	float4 Position : SV_POSITION0;
 	float4 TexCoord0 : TEXCOORD0;
 	float4 WorldPosition : POSITION1;
+	float DirShadow : COLOR3;
 #if defined(VC)
 	float4 Color : COLOR0;
 #endif
@@ -91,11 +90,13 @@ struct VS_OUTPUT
 };
 
 #ifdef VSHADER
+
+
 cbuffer VS_PerFrame : register(b12)
 {
 #	if !defined(VR)
 	row_major float4x4 ScreenProj[1] : packoffset(c0);
-	row_major float4x4 ViewProj[1] : packoffset(c8);
+	row_major float4x4 CameraViewProj[1] : packoffset(c8);
 #		if defined(SKINNED)
 	float3 BonesPivot[1] : packoffset(c40);
 #			if defined(MOTIONVECTORS_NORMALS)
@@ -104,7 +105,7 @@ cbuffer VS_PerFrame : register(b12)
 #		endif      // SKINNED
 #	else
 	row_major float4x4 ScreenProj[2] : packoffset(c0);
-	row_major float4x4 ViewProj[2] : packoffset(c16);
+	row_major float4x4 CameraViewProj[2] : packoffset(c16);
 #		if defined(SKINNED)
 	float3 BonesPivot[2] : packoffset(c80);
 #			if defined(MOTIONVECTORS_NORMALS)
@@ -113,6 +114,10 @@ cbuffer VS_PerFrame : register(b12)
 #		endif      // SKINNED
 #	endif          // VR
 };
+
+SamplerState LinearSampler : register(s0);
+
+#	include "Common/ShadowSampling.hlsli"
 
 cbuffer PerTechnique : register(b0)
 {
@@ -207,9 +212,9 @@ VS_OUTPUT main(VS_INPUT input)
 		transpose(float3x3(transpose(World[eyeIndex])[0], transpose(World[eyeIndex])[1], transpose(World[eyeIndex])[2]));
 
 #	if defined(SKY_OBJECT)
-	float4x4 viewProj = float4x4(ViewProj[eyeIndex][0], ViewProj[eyeIndex][1], ViewProj[eyeIndex][3], ViewProj[eyeIndex][3]);
+	float4x4 viewProj = float4x4(CameraViewProj[eyeIndex][0], CameraViewProj[eyeIndex][1], CameraViewProj[eyeIndex][3], CameraViewProj[eyeIndex][3]);
 #	else
-	row_major float4x4 viewProj = ViewProj[eyeIndex];
+	row_major float4x4 viewProj = CameraViewProj[eyeIndex];
 #	endif
 
 #	if defined(SKINNED)
@@ -400,6 +405,8 @@ VS_OUTPUT main(VS_INPUT input)
 	vsout.ClipDistance.x = VRout.ClipDistance;
 	vsout.CullDistance.x = VRout.CullDistance;
 #	endif  // VR
+
+ 	vsout.DirShadow = GetEffectShadow(worldPosition, normalize(worldPosition), 0, eyeIndex);
 	return vsout;
 }
 #endif
@@ -447,6 +454,8 @@ struct PS_OUTPUT
 #endif
 
 #ifdef PSHADER
+#include "Common/FrameBuffer.hlsli"
+#include "Common/MotionBlur.hlsli"
 
 #	if !defined(VR)
 cbuffer AlphaTestRefCB : register(b11)
@@ -521,7 +530,7 @@ static const uint Effect_Shadows = 1 << 0;
 #	include "Common/ShadowSampling.hlsli"
 
 #	if defined(LIGHTING)
-float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPosition, uint eyeIndex)
+float3 GetLightingColor(PS_INPUT input, float3 msPosition, float3 worldPosition, float4 screenPosition, uint eyeIndex)
 {
 	float4 lightDistanceSquared = (PLightPositionX[eyeIndex] - msPosition.xxxx) * (PLightPositionX[eyeIndex] - msPosition.xxxx) + (PLightPositionY[eyeIndex] - msPosition.yyyy) * (PLightPositionY[eyeIndex] - msPosition.yyyy) + (PLightPositionZ[eyeIndex] - msPosition.zzzz) * (PLightPositionZ[eyeIndex] - msPosition.zzzz);
 	float4 lightFadeMul = 1.0.xxxx - saturate(PLightingRadiusInverseSquared * lightDistanceSquared);
@@ -533,7 +542,7 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 		if (InMapMenu)
 			color = DirLightColorShared * angleShadow;
 		else if (!InInterior && (ExtraShaderDescriptor & ExtraFlags::InWorld))
-			color = DirLightColorShared * GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
+			color = DirLightColorShared * input.DirShadow;
 		else
 			color = DirLightColorShared * 0.5;
 	} else {
@@ -612,7 +621,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 propertyColor = PropertyColor.xyz;
 
 #	if defined(LIGHTING)
-	propertyColor = GetLightingColor(input.MSPosition.xyz, input.WorldPosition.xyz, input.Position.xyzw, eyeIndex);
+	propertyColor = GetLightingColor(input, input.MSPosition.xyz, input.WorldPosition.xyz, input.Position.xyzw, eyeIndex);
 
 #		if defined(LIGHT_LIMIT_FIX)
 	uint lightCount = 0;

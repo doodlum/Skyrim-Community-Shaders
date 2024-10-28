@@ -153,6 +153,8 @@ public:
 	ConstantBuffer* sharedDataCB = nullptr;
 	ConstantBuffer* featureDataCB = nullptr;
 
+	ID3D11SamplerState* linearSampler = nullptr;
+
 	// Skyrim constants
 	bool isVR = false;
 	float2 screenSize = {};

@@ -73,8 +73,13 @@ void State::Draw()
 					static Util::FrameChecker frameChecker;
 					if (frameChecker.IsNewFrame()) {
 						ID3D11Buffer* buffers[3] = { permutationCB->CB(), sharedDataCB->CB(), featureDataCB->CB() };
+						context->VSSetConstantBuffers(4, 3, buffers);
 						context->PSSetConstantBuffers(4, 3, buffers);
 						context->CSSetConstantBuffers(5, 2, buffers + 1);
+					}
+
+					{
+						context->VSSetSamplers(0, 1, &linearSampler);
 					}
 
 					if (IsDeveloperMode()) {
@@ -490,6 +495,18 @@ void State::SetupResources()
 	context->QueryInterface(__uuidof(pPerf), reinterpret_cast<void**>(&pPerf));
 
 	tracyCtx = TracyD3D11Context(device, context);
+
+	{
+		D3D11_SAMPLER_DESC samplerDesc = {};
+		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.MaxAnisotropy = 1;
+		samplerDesc.MinLOD = 0;
+		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+		DX::ThrowIfFailed(device->CreateSamplerState(&samplerDesc, &linearSampler));
+	}
 }
 
 void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescriptor, uint& a_pixelDescriptor, bool a_forceDeferred)

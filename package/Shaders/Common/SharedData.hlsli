@@ -1,10 +1,12 @@
 #ifndef SHARED_DATA
 #define SHARED_DATA
 
+#if !defined(VSHADER)
 #include "Common/FrameBuffer.hlsli"
+#endif
+
 #include "Common/VR.hlsli"
 
-#if defined(PSHADER) || defined(COMPUTESHADER)
 cbuffer SharedData : register(b5)
 {
 	float4 WaterData[25];
@@ -152,6 +154,7 @@ Texture2D<float4> TexDepthSampler : register(t20);
 namespace SharedData
 {
 
+#if !defined(VSHADER)
 	// Get a int3 to be used as texture sample coord. [0,1] in uv space
 	int3 ConvertUVToSampleCoord(float2 uv, uint a_eyeIndex)
 	{
@@ -159,13 +162,12 @@ namespace SharedData
 		uv = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(uv);
 		return int3(uv * BufferDim.xy, 0);
 	}
-
 	// Get a raw depth from the depth buffer. [0,1] in uv space
 	float GetDepth(float2 uv, uint a_eyeIndex = 0)
 	{
 		return TexDepthSampler.Load(ConvertUVToSampleCoord(uv, a_eyeIndex)).x;
 	}
-
+	
 	float GetScreenDepth(float depth)
 	{
 		return (CameraData.w / (-depth * CameraData.z + CameraData.x));
@@ -181,8 +183,7 @@ namespace SharedData
 		float depth = GetDepth(uv, a_eyeIndex);
 		return GetScreenDepth(depth);
 	}
-
-	float4 GetWaterData(float3 worldPosition)
+		float4 GetWaterData(float3 worldPosition)
 	{
 		float2 cellF = (((worldPosition.xy + CameraPosAdjust[0].xy)) / 4096.0) + 64.0;  // always positive
 		int2 cellInt;
@@ -201,9 +202,8 @@ namespace SharedData
 			waterData = WaterData[waterTile];
 		return waterData;
 	}
+#endif
 
 }
-
-#endif  // PSHADER
 
 #endif  // SHARED_DATA
