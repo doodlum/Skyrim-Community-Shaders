@@ -532,14 +532,14 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 	if ((ExtendedFlags & Effect_Shadows) != 0) {
 		if (InMapMenu)
 			color = DirLightColorShared * angleShadow;
-		else if (!InInterior && (ExtraShaderDescriptor & _InWorld))
+		else if (!InInterior && (ExtraShaderDescriptor & ExtraFlags::InWorld))
 			color = DirLightColorShared * GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
 		else
 			color = DirLightColorShared * 0.5;
 	} else {
 		if (InMapMenu)
 			color = DirLightColorShared * angleShadow;
-		else if (!InInterior && (ExtraShaderDescriptor & _InWorld))
+		else if (!InInterior && (ExtraShaderDescriptor & ExtraFlags::InWorld))
 			color = DirLightColorShared * GetWorldShadow(worldPosition, length(worldPosition), 0.0, eyeIndex) * angleShadow * 0.5;
 		else
 			color = DirLightColorShared * 0.5;
@@ -619,7 +619,7 @@ PS_OUTPUT main(PS_INPUT input)
 	if (LightingInfluence.x > 0.0) {
 		float3 viewPosition = mul(CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
 		float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
-		bool inWorld = ExtraShaderDescriptor & _InWorld;
+		bool inWorld = ExtraShaderDescriptor & ExtraFlags::InWorld;
 
 		uint clusterIndex = 0;
 		if (inWorld && LightLimitFix::GetClusterIndex(screenUV, viewPosition.z, clusterIndex)) {
@@ -650,12 +650,12 @@ PS_OUTPUT main(PS_INPUT input)
 	float4 baseTexColor = float4(1, 1, 1, 1);
 	float4 baseColor = float4(1, 1, 1, 1);
 #	if !defined(TEXTURE)
-	[branch] if (PixelShaderDescriptor & _GrayscaleToColor || PixelShaderDescriptor & _GrayscaleToAlpha)
+	[branch] if (PixelShaderDescriptor & EffectFlags::GrayscaleToColor || PixelShaderDescriptor & EffectFlags::GrayscaleToAlpha)
 #	endif
 	{
 		baseTexColor = TexBaseSampler.Sample(SampBaseSampler, input.TexCoord0.xy);
 		baseColor *= baseTexColor;
-		if (PixelShaderDescriptor & _IgnoreTexAlpha || PixelShaderDescriptor & _GrayscaleToAlpha) {
+		if (PixelShaderDescriptor & EffectFlags::IgnoreTexAlpha || PixelShaderDescriptor & EffectFlags::GrayscaleToAlpha) {
 			baseColor.w = 1;
 		}
 	}
@@ -709,10 +709,10 @@ PS_OUTPUT main(PS_INPUT input)
 	baseColorScale = MembraneVars.z;
 #	endif
 
-	if (PixelShaderDescriptor & _GrayscaleToAlpha)
+	if (PixelShaderDescriptor & EffectFlags::GrayscaleToAlpha)
 		alpha = TexGrayscaleSampler.Sample(SampGrayscaleSampler, float2(baseTexColor.w, alpha)).w;
 
-	[branch] if (PixelShaderDescriptor & _GrayscaleToColor)
+	[branch] if (PixelShaderDescriptor & EffectFlags::GrayscaleToColor)
 	{
 		float2 grayscaleToColorUv = float2(baseTexColor.y, baseColorMul.x);
 #	if defined(MEMBRANE)

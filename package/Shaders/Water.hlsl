@@ -536,12 +536,12 @@ float3 GetWaterNormal(PS_INPUT input, float distanceFactor, float normalsDepthFa
 float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection,
 	float distanceFactor, float refractionsDepthFactor, uint a_eyeIndex = 0)
 {
-	if (PixelShaderDescriptor & _Reflections) {
+	if (PixelShaderDescriptor & WaterFlags::Reflections) {
 		float3 finalSsrReflectionColor = 0.0.xxx;
 		float ssrFraction = 0;
 		float3 reflectionColor = 0;
 
-		if (PixelShaderDescriptor & _Cubemap) {
+		if (PixelShaderDescriptor & WaterFlags::Cubemap) {
 			float3 R = reflect(viewDirection, normal);
 #			if defined(DYNAMIC_CUBEMAPS)
 #				if defined(SKYLIGHTING)
@@ -597,7 +597,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 		}
 
 #			if !defined(LOD) && NUM_SPECULAR_LIGHTS == 0
-		if (PixelShaderDescriptor & _Cubemap) {
+		if (PixelShaderDescriptor & WaterFlags::Cubemap) {
 			float2 ssrReflectionUv = (DynamicResolutionParams2.xy * input.HPosition.xy) * SSRParams.zw + SSRParams2.x * normal.xy;
 			float2 ssrReflectionUvDR = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(ssrReflectionUv);
 			float4 ssrReflectionColorBlurred = SSRReflectionTex.Sample(SSRReflectionSampler, ssrReflectionUvDR);
@@ -650,7 +650,7 @@ float3 GetLdotN(float3 normal)
 #			if defined(UNDERWATER)
 	return 1;
 #			else
-	if (PixelShaderDescriptor & _Interior)
+	if (PixelShaderDescriptor & WaterFlags::Interior)
 		return 1;
 	return saturate(dot(SunDir.xyz, normal));
 #			endif
@@ -715,7 +715,7 @@ float3 GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDirection,
 	float3 refractionColor = RefractionTex.Sample(RefractionSampler, refractionUV).xyz;
 	float3 refractionDiffuseColor = lerp(ShallowColor.xyz, DeepColor.xyz, distanceMul.y);
 
-	if (!(PixelShaderDescriptor & _Interior)) {
+	if (!(PixelShaderDescriptor & WaterFlags::Interior)) {
 #				if defined(SKYLIGHTING)
 		float3 skylightingPosition = lerp(input.WPosition.xyz, refractionWorldPosition.xyz, noise);
 
@@ -752,7 +752,7 @@ float3 GetSunColor(float3 normal, float3 viewDirection)
 #			if defined(UNDERWATER)
 	return 0.0.xxx;
 #			else
-	if (PixelShaderDescriptor & _Interior)
+	if (PixelShaderDescriptor & WaterFlags::Interior)
 		return 0.0.xxx;
 
 	float3 reflectionDirection = reflect(viewDirection, normal);
@@ -896,7 +896,7 @@ PS_OUTPUT main(PS_INPUT input)
 #				else
 	float3 sunColor = GetSunColor(normal, viewDirection);
 
-	if (!(PixelShaderDescriptor & _Interior)) {
+	if (!(PixelShaderDescriptor & WaterFlags::Interior)) {
 		sunColor *= GetWaterShadow(screenNoise, input.WPosition.xyz, eyeIndex);
 	}
 

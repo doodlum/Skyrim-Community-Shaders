@@ -1013,7 +1013,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
 	float screenNoise = Random::InterleavedGradientNoise(input.Position.xy, FrameCount);
 
-	bool inWorld = ExtraShaderDescriptor & _InWorld;
+	bool inWorld = ExtraShaderDescriptor & ExtraFlags::InWorld;
 
 	float nearFactor = smoothstep(4096.0 * 2.5, 0.0, viewPosition.z);
 
@@ -1536,7 +1536,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float2 baseShadowUV = 1.0.xx;
 	float4 shadowColor = 1.0;
-	if ((PixelShaderDescriptor & _DefShadow) && ((PixelShaderDescriptor & _ShadowDir) || inWorld) || numShadowLights > 0) {
+	if ((PixelShaderDescriptor & LightingFlags::DefShadow) && ((PixelShaderDescriptor & LightingFlags::ShadowDir) || inWorld) || numShadowLights > 0) {
 		baseShadowUV = input.Position.xy * DynamicResolutionParams2.xy;
 		float2 adjustedShadowUV = baseShadowUV * VPOSOffset.xy + VPOSOffset.zw;
 		float2 shadowUV = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(adjustedShadowUV);
@@ -1865,7 +1865,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float dirLightAngle = dot(modelNormal.xyz, DirLightDirection.xyz);
 
-	if ((PixelShaderDescriptor & _DefShadow) && (PixelShaderDescriptor & _ShadowDir)) {
+	if ((PixelShaderDescriptor & LightingFlags::DefShadow) && (PixelShaderDescriptor & LightingFlags::ShadowDir)) {
 		dirLightColorMultiplier *= shadowColor.x;
 	}
 #	if !defined(DEFERRED)
@@ -1875,9 +1875,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif
 
 #	if defined(SOFT_LIGHTING) || defined(BACK_LIGHTING) || defined(RIM_LIGHTING)
-	bool inDirShadow = ((PixelShaderDescriptor & _DefShadow) && (PixelShaderDescriptor & _ShadowDir) && shadowColor.x == 0);
+	bool inDirShadow = ((PixelShaderDescriptor & LightingFlags::DefShadow) && (PixelShaderDescriptor & LightingFlags::ShadowDir) && shadowColor.x == 0);
 #	else
-	bool inDirShadow = ((PixelShaderDescriptor & _DefShadow) && (PixelShaderDescriptor & _ShadowDir) && shadowColor.x == 0) && dirLightAngle > 0.0;
+	bool inDirShadow = ((PixelShaderDescriptor & LightingFlags::DefShadow) && (PixelShaderDescriptor & LightingFlags::ShadowDir) && shadowColor.x == 0) && dirLightAngle > 0.0;
 #	endif
 
 	float3 refractedDirLightDirection = DirLightDirection;
@@ -2035,7 +2035,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		float intensityMultiplier = 1 - intensityFactor * intensityFactor;
 		float3 lightColor = PointLightColor[lightIndex].xyz * intensityMultiplier;
 		float lightShadow = 1.f;
-		if (PixelShaderDescriptor & _DefShadow) {
+		if (PixelShaderDescriptor LightingFlags::DefShadow) {
 			if (lightIndex < numShadowLights) {
 				lightShadow *= shadowColor[ShadowLightMaskSelect[lightIndex]];
 			}
@@ -2116,7 +2116,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			uint clusteredLightIndex = lightList[lightOffset + (lightIndex - strictLights[0].NumStrictLights)];
 			light = lights[clusteredLightIndex];
 
-			if (LightLimitFix::IsLightIgnored(light) || (!(PixelShaderDescriptor & _DefShadow) && light.lightFlags & LightFlags::Shadow)) {
+			if (LightLimitFix::IsLightIgnored(light) || (!(PixelShaderDescriptor & LightingFlags::DefShadow) && light.lightFlags & LightFlags::Shadow)) {
 				continue;
 			}
 		}
@@ -2241,7 +2241,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	specularColor += lightsSpecularColor;
 
 #	if !defined(LANDSCAPE)
-	if (PixelShaderDescriptor & _CharacterLight) {
+	if (PixelShaderDescriptor & LightingFlags::CharacterLight) {
 		float charLightMul =
 			saturate(dot(viewDirection, modelNormal.xyz)) * CharacterLightParams.x +
 			CharacterLightParams.y * saturate(dot(float2(0.164398998, -0.986393988), modelNormal.yz));
@@ -2259,7 +2259,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 emitColor = EmitColor;
 #	if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
-	bool hasEmissive = (0x3F & (PixelShaderDescriptor >> 24)) == _Glowmap;
+	bool hasEmissive = (0x3F & (PixelShaderDescriptor >> 24)) == LightingTechnique::Glowmap;
 #		if defined(TRUE_PBR)
 	hasEmissive = hasEmissive || (PBRFlags & TruePBR_HasEmissive != 0);
 #		endif
@@ -2719,7 +2719,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 
 #		if defined(SSS) && defined(SKIN)
-	psout.Masks = float4(saturate(baseColor.a), !(ExtraShaderDescriptor & _IsBeastRace), 0, psout.Diffuse.w);
+	psout.Masks = float4(saturate(baseColor.a), !(ExtraShaderDescriptor & ExtraFlags::IsBeastRace), 0, psout.Diffuse.w);
 #		elif defined(WETNESS_EFFECTS)
 	float wetnessNormalAmount = saturate(dot(float3(0, 0, 1), wetnessNormal) * saturate(flatnessAmount));
 	psout.Masks = float4(0, 0, wetnessNormalAmount, psout.Diffuse.w);
