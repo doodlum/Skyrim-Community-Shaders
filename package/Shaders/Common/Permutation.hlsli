@@ -17,7 +17,7 @@ namespace LightingFlags
 	static const uint ShadowDir = (1 << 13);
 	static const uint DefShadow = (1 << 14);
 	static const uint ProjectedUV = (1 << 15);
-	static const uint DepthWriteDecals = (1 << 15); // (HAIR technique only)
+	static const uint DepthWriteDecals = (1 << 15);  // (HAIR technique only)
 	static const uint AnisoLighting = (1 << 16);
 	static const uint AmbientSpecular = (1 << 17);
 	static const uint WorldMap = (1 << 18);

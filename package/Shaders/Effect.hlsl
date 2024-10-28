@@ -91,7 +91,6 @@ struct VS_OUTPUT
 
 #ifdef VSHADER
 
-
 cbuffer VS_PerFrame : register(b12)
 {
 #	if !defined(VR)
@@ -406,7 +405,7 @@ VS_OUTPUT main(VS_INPUT input)
 	vsout.CullDistance.x = VRout.CullDistance;
 #	endif  // VR
 
- 	vsout.DirShadow = GetEffectShadow(worldPosition, normalize(worldPosition), 0, eyeIndex);
+	vsout.DirShadow = GetEffectShadow(worldPosition, normalize(worldPosition), 0, eyeIndex);
 	return vsout;
 }
 #endif
@@ -454,8 +453,8 @@ struct PS_OUTPUT
 #endif
 
 #ifdef PSHADER
-#include "Common/FrameBuffer.hlsli"
-#include "Common/MotionBlur.hlsli"
+#	include "Common/FrameBuffer.hlsli"
+#	include "Common/MotionBlur.hlsli"
 
 #	if !defined(VR)
 cbuffer AlphaTestRefCB : register(b11)

@@ -2,7 +2,7 @@
 #define SHARED_DATA
 
 #if !defined(VSHADER)
-#include "Common/FrameBuffer.hlsli"
+#	include "Common/FrameBuffer.hlsli"
 #endif
 
 #include "Common/VR.hlsli"
@@ -167,7 +167,7 @@ namespace SharedData
 	{
 		return TexDepthSampler.Load(ConvertUVToSampleCoord(uv, a_eyeIndex)).x;
 	}
-	
+
 	float GetScreenDepth(float depth)
 	{
 		return (CameraData.w / (-depth * CameraData.z + CameraData.x));
@@ -183,7 +183,7 @@ namespace SharedData
 		float depth = GetDepth(uv, a_eyeIndex);
 		return GetScreenDepth(depth);
 	}
-		float4 GetWaterData(float3 worldPosition)
+	float4 GetWaterData(float3 worldPosition)
 	{
 		float2 cellF = (((worldPosition.xy + CameraPosAdjust[0].xy)) / 4096.0) + 64.0;  // always positive
 		int2 cellInt;
