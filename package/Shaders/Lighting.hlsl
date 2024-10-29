@@ -2622,17 +2622,17 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif      // DO_ALPHA_TEST
 
 #		if defined(ANISOTROPIC_ALPHA)
-	if (AnisotropicAlphaFlags > 0) {
+	if (AnisotropicAlphaFlags > _ExtendedTranslucency_MaterialModel_Disabled) {
 		if (alpha >= 0.0156862754 && alpha < 1.0) {
 			float originalAlpha = alpha;
 			alpha = alpha * (1.0 - AnisotropicAlphaReduction);
-			if (AnisotropicAlphaFlags == 3) {
-#			if defined(SKINNED) || !defined(MODELSPACENORMALS)
+			if (AnisotropicAlphaFlags == _ExtendedTranslucency_MaterialModel_AnisotropicFabric) {
+#if defined(SKINNED) || !defined(MODELSPACENORMALS)
 				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric2D(alpha, viewDirection, tbnTr);
 #			else
 				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
 #			endif
-			} else if (AnisotropicAlphaFlags == 2) {
+			} else if (AnisotropicAlphaFlags == _ExtendedTranslucency_MaterialModel_IsotropicFabric) {
 				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
 			} else {
 				alpha = ExtendedTransclucency::GetViewDependentAlphaNaive(alpha, viewDirection, modelNormal.xyz);
@@ -2641,7 +2641,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			alpha = lerp(alpha, originalAlpha, AnisotropicAlphaStrength);
 		}
 	}
-#		endif  // EXTENDED_TRANSLUCENCY
+#endif  // EXTENDED_TRANSLUCENCY
 
 	psout.Diffuse.w = alpha;
 

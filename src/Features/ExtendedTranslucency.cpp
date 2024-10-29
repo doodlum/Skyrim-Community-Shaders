@@ -102,7 +102,7 @@ void ExtendedTranslucency::DrawSettings()
 				"  - Anisotropic Fabric: Common fabric weaved from tangent and birnormal direction, ignores normal map.\n");
 		}
 
-		if (ImGui::SliderFloat("Default Material Transparency Increase", &settings.AlphaReduction, 0.f, 1.f)) {
+		if (ImGui::SliderFloat("Transparency Increase", &settings.AlphaReduction, 0.f, 1.f)) {
 			changed = true;
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
@@ -116,7 +116,7 @@ void ExtendedTranslucency::DrawSettings()
 			ImGui::Text("Control the softness of the alpha increase, increase the softness reduce the increased amount of alpha.");
 		}
 
-		if (ImGui::SliderFloat("Strength", &settings.AlphaStrength, 0.0f, 1.0f)) {
+		if (ImGui::SliderFloat("Blend Weight", &settings.AlphaStrength, 0.0f, 1.0f)) {
 			changed = true;
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
