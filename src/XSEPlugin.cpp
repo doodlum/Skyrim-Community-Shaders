@@ -146,7 +146,7 @@ bool Load()
 	}
 
 	if (REL::Module::IsVR()) {
-		REL::IDDatabase::get().IsVRAddressLibraryAtLeastVersion("0.155.0", true);
+		REL::IDDatabase::get().IsVRAddressLibraryAtLeastVersion("0.158.0", true);
 	}
 
 	auto messaging = SKSE::GetMessagingInterface();
