@@ -7,10 +7,10 @@
 // ExtendedTranslucency::MaterialParams
 cbuffer ExtendedTranslucencyPerGeometry : register(b7)
 {
-	uint AnisotropicAlphaFlags;			// [0,1,2,3] The MaterialModel
-	float AnisotropicAlphaReduction;	// [0, 1.0] The factor to reduce the transparency to matain the average transparency [0,1]
-	float AnisotropicAlphaSoftness;		// [0, 2.0] The soft remap upper limit [0,2]
-	float AnisotropicAlphaStrength;		// [0, 1.0] The inverse blend weight of the effect
+	uint AnisotropicAlphaFlags;       // [0,1,2,3] The MaterialModel
+	float AnisotropicAlphaReduction;  // [0, 1.0] The factor to reduce the transparency to matain the average transparency [0,1]
+	float AnisotropicAlphaSoftness;   // [0, 2.0] The soft remap upper limit [0,2]
+	float AnisotropicAlphaStrength;   // [0, 1.0] The inverse blend weight of the effect
 };
 
 namespace ExtendedTransclucency

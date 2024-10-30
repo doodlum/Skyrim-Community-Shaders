@@ -2627,7 +2627,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			float originalAlpha = alpha;
 			alpha = alpha * (1.0 - AnisotropicAlphaReduction);
 			if (AnisotropicAlphaFlags == ExtendedTransclucency::MaterialModel::AnisotropicFabric) {
-#if defined(SKINNED) || !defined(MODELSPACENORMALS)
+#			if defined(SKINNED) || !defined(MODELSPACENORMALS)
 				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric2D(alpha, viewDirection, tbnTr);
 #			else
 				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
@@ -2641,7 +2641,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			alpha = lerp(alpha, originalAlpha, AnisotropicAlphaStrength);
 		}
 	}
-#endif  // EXTENDED_TRANSLUCENCY
+#		endif  // EXTENDED_TRANSLUCENCY
 
 	psout.Diffuse.w = alpha;
 
