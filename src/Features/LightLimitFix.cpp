@@ -185,20 +185,20 @@ void LightLimitFix::SetupResources()
 		numElements = 1;
 		sbDesc.StructureByteStride = sizeof(uint32_t);
 		sbDesc.ByteWidth = sizeof(uint32_t) * numElements;
-		lightCounter = eastl::make_unique<Buffer>(sbDesc);
+		lightIndexCounter = eastl::make_unique<Buffer>(sbDesc);
 		srvDesc.Buffer.NumElements = numElements;
-		lightCounter->CreateSRV(srvDesc);
+		lightIndexCounter->CreateSRV(srvDesc);
 		uavDesc.Buffer.NumElements = numElements;
-		lightCounter->CreateUAV(uavDesc);
+		lightIndexCounter->CreateUAV(uavDesc);
 
 		numElements = clusterCount * CLUSTER_MAX_LIGHTS;
 		sbDesc.StructureByteStride = sizeof(uint32_t);
 		sbDesc.ByteWidth = sizeof(uint32_t) * numElements;
-		lightList = eastl::make_unique<Buffer>(sbDesc);
+		lightIndexList = eastl::make_unique<Buffer>(sbDesc);
 		srvDesc.Buffer.NumElements = numElements;
-		lightList->CreateSRV(srvDesc);
+		lightIndexList->CreateSRV(srvDesc);
 		uavDesc.Buffer.NumElements = numElements;
-		lightList->CreateUAV(uavDesc);
+		lightIndexList->CreateUAV(uavDesc);
 
 		numElements = clusterCount;
 		sbDesc.StructureByteStride = sizeof(LightGrid);
@@ -454,7 +454,7 @@ void LightLimitFix::Prepass()
 
 	ID3D11ShaderResourceView* views[3]{};
 	views[0] = lights->srv.get();
-	views[1] = lightList->srv.get();
+	views[1] = lightIndexList->srv.get();
 	views[2] = lightGrid->srv.get();
 	context->PSSetShaderResources(50, ARRAYSIZE(views), views);
 }
@@ -991,14 +991,17 @@ void LightLimitFix::UpdateLights()
 		updateData.LightCount = lightCount;
 		lightCullingCB->Update(updateData);
 
+		UINT counterReset[4] = { 0, 0, 0, 0 };
+		context->ClearUnorderedAccessViewUint(lightIndexCounter->uav.get(), counterReset);
+
 		ID3D11Buffer* buffer = lightCullingCB->CB();
 		context->CSSetConstantBuffers(0, 1, &buffer);
 
 		ID3D11ShaderResourceView* srvs[] = { clusters->srv.get(), lights->srv.get() };
-		context->CSSetShaderResources(0, 2, srvs);
+		context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
 
-		ID3D11UnorderedAccessView* uavs[] = { lightCounter->uav.get(), lightList->uav.get(), lightGrid->uav.get() };
-		context->CSSetUnorderedAccessViews(0, 3, uavs, nullptr);
+		ID3D11UnorderedAccessView* uavs[] = { lightIndexCounter->uav.get(), lightIndexList->uav.get(), lightGrid->uav.get() };
+		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
 
 		context->CSSetShader(clusterCullingCS, nullptr, 0);
 		context->Dispatch((clusterSize[0] + 15) / 16, (clusterSize[1] + 15) / 16, (clusterSize[2] + 3) / 4);

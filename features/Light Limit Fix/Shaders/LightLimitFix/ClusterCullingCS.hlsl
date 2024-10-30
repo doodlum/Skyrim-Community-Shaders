@@ -34,10 +34,6 @@ bool LightIntersectsCluster(float3 position, float radius, ClusterAABB cluster)
 	if (any(dispatchThreadId >= uint3(CLUSTER_BUILDING_DISPATCH_SIZE_X, CLUSTER_BUILDING_DISPATCH_SIZE_Y, CLUSTER_BUILDING_DISPATCH_SIZE_Z)))
 		return;
 
-	if (all(dispatchThreadId == 0)) {
-		lightIndexCounter[0] = 0;
-	}
-
 	uint visibleLightCount = 0;
 	uint visibleLightIndices[MAX_CLUSTER_LIGHTS];
 
