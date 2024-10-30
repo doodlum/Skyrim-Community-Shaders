@@ -22,7 +22,7 @@ bool LightIntersectsCluster(float3 position, float radius, ClusterAABB cluster)
 	float3 closest = max(cluster.minPoint.xyz, min(position, cluster.maxPoint.xyz));
 
 	float3 dist = closest - position;
-    return dot(dist, dist) <= radius;
+	return dot(dist, dist) <= radius;
 }
 
 [numthreads(NUMTHREAD_X, NUMTHREAD_Y, NUMTHREAD_Z)] void main(
@@ -56,11 +56,13 @@ bool LightIntersectsCluster(float3 position, float radius, ClusterAABB cluster)
 
 		float radius = light.radius * light.radius;
 
-#	if defined(VR)
-		[branch] if (LightIntersectsCluster(light.positionVS[0], radius, cluster) || LightIntersectsCluster(light.positionVS[1], radius, cluster)) {
-#	else
-		[branch] if (LightIntersectsCluster(light.positionVS[0], radius, cluster)) {
-#	endif
+#if defined(VR)
+		[branch] if (LightIntersectsCluster(light.positionVS[0], radius, cluster) || LightIntersectsCluster(light.positionVS[1], radius, cluster))
+		{
+#else
+		[branch] if (LightIntersectsCluster(light.positionVS[0], radius, cluster))
+		{
+#endif
 			visibleLightIndices[visibleLightCount] = i;
 			visibleLightCount++;
 			if (visibleLightCount >= MAX_CLUSTER_LIGHTS)
