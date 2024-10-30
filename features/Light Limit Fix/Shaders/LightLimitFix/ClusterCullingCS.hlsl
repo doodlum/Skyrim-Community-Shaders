@@ -17,12 +17,12 @@ RWStructuredBuffer<LightGrid> lightGrid : register(u2);
 
 groupshared StructuredLight sharedLights[GROUP_SIZE];
 
-bool LightIntersectsCluster(StructuredLight light, ClusterAABB cluster, int eyeIndex = 0)
+bool LightIntersectsCluster(float3 position, float radius, ClusterAABB cluster)
 {
-	float3 closest = max(cluster.minPoint.xyz, min(light.positionVS[eyeIndex].xyz, cluster.maxPoint.xyz));
+	float3 closest = max(cluster.minPoint.xyz, min(position, cluster.maxPoint.xyz));
 
-	float3 dist = closest - light.positionVS[eyeIndex].xyz;
-	return dot(dist, dist) <= (light.radius * light.radius);
+	float3 dist = closest - position;
+    return dot(dist, dist) <= radius;
 }
 
 [numthreads(NUMTHREAD_X, NUMTHREAD_Y, NUMTHREAD_Z)] void main(
@@ -58,15 +58,17 @@ bool LightIntersectsCluster(StructuredLight light, ClusterAABB cluster, int eyeI
 	for (uint i = 0; i < LightCount; i++) {
 		StructuredLight light = lights[i];
 
-		bool updateCluster = LightIntersectsCluster(light, cluster);
-#ifdef VR
-		updateCluster = updateCluster || LightIntersectsCluster(light, cluster, 1);
-#endif  // VR
-		updateCluster = updateCluster && (visibleLightCount < MAX_CLUSTER_LIGHTS);
+		float radius = light.radius * light.radius;
 
-		if (updateCluster) {
+#	if defined(VR)
+		[branch] if (LightIntersectsCluster(light.positionVS[0], radius, cluster) || LightIntersectsCluster(light.positionVS[1], radius, cluster)) {
+#	else
+		[branch] if (LightIntersectsCluster(light.positionVS[0], radius, cluster)) {
+#	endif
 			visibleLightIndices[visibleLightCount] = i;
 			visibleLightCount++;
+			if (visibleLightCount >= MAX_CLUSTER_LIGHTS)
+				break;
 		}
 	}
 
