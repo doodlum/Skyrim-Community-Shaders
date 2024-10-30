@@ -48,7 +48,6 @@ struct VS_OUTPUT
 	float4 WorldPosition : POSITION1;
 	float4 PreviousWorldPosition : POSITION2;
 	float4 VertexNormal : POSITION4;
-	float3 SphereNormal : POSITION5;
 #	ifdef VR
 	float ClipDistance : SV_ClipDistance0;
 	float CullDistance : SV_CullDistance0;
@@ -232,7 +231,6 @@ VS_OUTPUT main(VS_INPUT input)
 
 	// Vertex normal needs to be transformed to world-space for lighting calculations.
 	vsout.VertexNormal = float4(mul(world3x3, input.Normal.xyz * 2.0 - 1.0).xyz, saturate(input.Color.w));
-	vsout.SphereNormal = mul(world3x3, normalize(input.Position.xyz));
 
 	return vsout;
 }
@@ -452,10 +450,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (!frontFace)
 		normal = -normal;
 
-	float sssAmount = saturate(input.VertexNormal.w * grassLightingSettings.SubsurfaceScatteringAmount);
-
-	normal = normalize(lerp(normal, input.SphereNormal, sssAmount));
-
 	float3x3 tbn = 0;
 
 #			if !defined(TRUE_PBR)
@@ -550,6 +544,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	dirLightColor *= dirLightColorMultiplier;
 	dirLightColor *= dirShadow;
 
+	float sssAmount = saturate(input.VertexNormal.w * grassLightingSettings.SubsurfaceScatteringAmount);
 	float wrapMultiplier = rcp((1 + sssAmount) * (1 + sssAmount));
 
 	float dirDiffuse = (dirLightAngle + sssAmount) * wrapMultiplier;
