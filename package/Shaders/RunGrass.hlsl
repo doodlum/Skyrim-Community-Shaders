@@ -47,8 +47,8 @@ struct VS_OUTPUT
 #	endif  // RENDER_DEPTH
 	float4 WorldPosition : POSITION1;
 	float4 PreviousWorldPosition : POSITION2;
-	float3 VertexNormal : POSITION4;
-	float4 SphereNormal : POSITION5;
+	float4 VertexNormal : POSITION4;
+	float3 SphereNormal : POSITION5;
 #	ifdef VR
 	float ClipDistance : SV_ClipDistance0;
 	float CullDistance : SV_CullDistance0;
@@ -231,9 +231,8 @@ VS_OUTPUT main(VS_INPUT input)
 #		endif  // !VR
 
 	// Vertex normal needs to be transformed to world-space for lighting calculations.
-	vsout.VertexNormal.xyz = mul(world3x3, input.Normal.xyz * 2.0 - 1.0);
-	vsout.SphereNormal.xyz = mul(world3x3, normalize(input.Position.xyz));
-	vsout.SphereNormal.w = saturate(input.Color.w);
+	vsout.VertexNormal = float4(mul(world3x3, input.Normal.xyz * 2.0 - 1.0).xyz, saturate(input.Color.w));
+	vsout.SphereNormal = mul(world3x3, normalize(input.Position.xyz));
 
 	return vsout;
 }
@@ -453,7 +452,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (!frontFace)
 		normal = -normal;
 
-	normal = normalize(lerp(normal, normalize(input.SphereNormal.xyz), input.SphereNormal.w));
+	float sssAmount = saturate(input.VertexNormal.w * grassLightingSettings.SubsurfaceScatteringAmount);
+
+	normal = normalize(lerp(normal, input.SphereNormal, sssAmount));
 
 	float3x3 tbn = 0;
 
@@ -549,14 +550,17 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	dirLightColor *= dirLightColorMultiplier;
 	dirLightColor *= dirShadow;
 
-	lightsDiffuseColor += dirLightColor * saturate(dirLightAngle) * dirDetailShadow;
+	float wrapMultiplier = rcp((1 + sssAmount) * (1 + sssAmount));
+
+	float dirDiffuse = (dirLightAngle + sssAmount) * wrapMultiplier;
+	lightsDiffuseColor += dirLightColor * saturate(dirDiffuse) * dirDetailShadow;
 
 	float3 albedo = max(0, baseColor.xyz * input.VertexColor.xyz);
 
-	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * input.SphereNormal.w;
+	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * sssAmount;
 
 	float dirLightBacklighting = 1.0 + saturate(dot(viewDirection, -DirLightDirectionShared.xyz));
-	float3 sss = dirLightColor * saturate(-dirLightAngle) * dirLightBacklighting;
+	float3 sss = dirLightColor * saturate(-dirDiffuse) * dirLightBacklighting;
 
 	if (complex)
 		lightsSpecularColor += GrassLighting::GetLightSpecularInput(DirLightDirection, viewDirection, normal, dirLightColor, grassLightingSettings.Glossiness);
@@ -598,10 +602,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 					specularColorPBR += pointSpecularColor;
 				}
 #				else
-				float3 lightDiffuseColor = lightColor * saturate(lightAngle.xxx);
+				float lightDiffuse = (lightAngle + sssAmount) * wrapMultiplier;
+				float3 lightDiffuseColor = lightColor * saturate(lightDiffuse);
 
 				float lightBacklighting = 1.0 + saturate(dot(viewDirection, -normalizedLightDirection.xyz));
-				sss += lightColor * saturate(-lightAngle) * lightBacklighting;
+				sss += lightColor * saturate(-lightDiffuse) * lightBacklighting;
 
 				lightsDiffuseColor += lightDiffuseColor * intensityMultiplier;
 
@@ -649,7 +654,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #				endif      // !SSGI
 
 	diffuseColor *= albedo;
-	diffuseColor += max(0, sss * subsurfaceColor * grassLightingSettings.SubsurfaceScatteringAmount);
+	diffuseColor += max(0, sss * subsurfaceColor);
 
 	specularColor += lightsSpecularColor;
 	specularColor *= specColor.w * grassLightingSettings.SpecularStrength;
