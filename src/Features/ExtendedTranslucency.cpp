@@ -125,6 +125,7 @@ void ExtendedTranslucency::DrawSettings()
 
 		if (changed && materialDefaultCB) {
 			materialDefaultCB->Update(settings);
+			logger::info("[ExtendedTranslucency] Installed hooks");
 		}
 
 		ImGui::Spacing();

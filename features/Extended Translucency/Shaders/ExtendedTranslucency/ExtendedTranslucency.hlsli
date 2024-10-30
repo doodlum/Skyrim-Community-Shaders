@@ -15,6 +15,14 @@ cbuffer ExtendedTranslucencyPerGeometry : register(b7)
 
 namespace ExtendedTransclucency
 {
+	namespace MaterialModel
+	{
+		static const uint Disabled = 0;
+		static const uint RimLight = 1;
+		static const uint IsotropicFabric = 2;
+		static const uint AnisotropicFabric = 3;
+	}
+
 	float GetViewDependentAlphaNaive(float alpha, float3 view, float3 normal)
 	{
 		return 1.0 - (1.0 - alpha) * dot(view, normal);

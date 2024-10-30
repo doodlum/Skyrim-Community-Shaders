@@ -2622,17 +2622,17 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif      // DO_ALPHA_TEST
 
 #		if defined(ANISOTROPIC_ALPHA)
-	if (AnisotropicAlphaFlags > _ExtendedTranslucency_MaterialModel_Disabled) {
+	if (AnisotropicAlphaFlags > ExtendedTransclucency::MaterialModel::Disabled) {
 		if (alpha >= 0.0156862754 && alpha < 1.0) {
 			float originalAlpha = alpha;
 			alpha = alpha * (1.0 - AnisotropicAlphaReduction);
-			if (AnisotropicAlphaFlags == _ExtendedTranslucency_MaterialModel_AnisotropicFabric) {
+			if (AnisotropicAlphaFlags == ExtendedTransclucency::MaterialModel::AnisotropicFabric) {
 #if defined(SKINNED) || !defined(MODELSPACENORMALS)
 				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric2D(alpha, viewDirection, tbnTr);
 #			else
 				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
 #			endif
-			} else if (AnisotropicAlphaFlags == _ExtendedTranslucency_MaterialModel_IsotropicFabric) {
+			} else if (AnisotropicAlphaFlags == ExtendedTransclucency::MaterialModel::IsotropicFabric) {
 				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
 			} else {
 				alpha = ExtendedTransclucency::GetViewDependentAlphaNaive(alpha, viewDirection, modelNormal.xyz);

@@ -49,8 +49,8 @@ D3D11_BUFFER_DESC ConstantBufferDesc(bool dynamic = true)
 class ConstantBuffer
 {
 public:
-	explicit ConstantBuffer(D3D11_BUFFER_DESC const& desc) :
-		dynamic(desc.Usage & D3D11_USAGE_DYNAMIC)
+	explicit ConstantBuffer(D3D11_BUFFER_DESC const& a_desc) :
+		desc(a_desc)
 	{
 		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, nullptr, resource.put()));
@@ -58,10 +58,10 @@ public:
 
 	// Create a constant buffer of FIXED data
 	template <typename T>
-	explicit ConstantBuffer(const T& data)
+	explicit ConstantBuffer(const T& data) :
+		desc(ConstantBufferDesc<T>(/*dynamic=*/false))
 	{
 		static_assert(alignof(T) >= 16);
-		D3D11_BUFFER_DESC desc = ConstantBufferDesc<T>();
 		D3D11_SUBRESOURCE_DATA subresource{ .pSysMem = &data, .SysMemPitch = 0, .SysMemSlicePitch = 0 };
 		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, &subresource, resource.put()));
@@ -72,7 +72,7 @@ public:
 	void Update(void const* src_data, size_t data_size)
 	{
 		ID3D11DeviceContext* ctx = reinterpret_cast<ID3D11DeviceContext*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().context);
-		if (dynamic) {
+		if (desc.Usage & D3D11_USAGE_DYNAMIC) {
 			D3D11_MAPPED_SUBRESOURCE mapped_buffer{};
 			ZeroMemory(&mapped_buffer, sizeof(D3D11_MAPPED_SUBRESOURCE));
 			DX::ThrowIfFailed(ctx->Map(resource.get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &mapped_buffer));
@@ -90,7 +90,7 @@ public:
 
 private:
 	winrt::com_ptr<ID3D11Buffer> resource;
-	bool dynamic = false;
+	D3D11_BUFFER_DESC desc;
 };
 
 template <typename T>
