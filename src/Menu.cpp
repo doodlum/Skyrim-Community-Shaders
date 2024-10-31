@@ -187,6 +187,7 @@ Menu::~Menu()
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
+	dxgiAdapter3 = nullptr;
 }
 
 void Menu::Load(json& o_json)
@@ -225,6 +226,16 @@ void Menu::Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceCon
 
 	auto& io = ImGui::GetIO();
 	io.FontGlobalScale = exp2(settings.Theme.GlobalScale);
+
+	{
+		winrt::com_ptr<IDXGIDevice> dxgiDevice;
+		if (!FAILED(device->QueryInterface(dxgiDevice.put()))) {
+			winrt::com_ptr<IDXGIAdapter> dxgiAdapter;
+			if (!FAILED(dxgiDevice->GetAdapter(dxgiAdapter.put()))) {
+				dxgiAdapter->QueryInterface(dxgiAdapter3.put());
+			}
+		}
+	}
 
 	initialized = true;
 }
@@ -979,6 +990,19 @@ void Menu::DrawFooter()
 	ImGui::BulletText(std::format("D3D12 Interop: {}", Streamline::GetSingleton()->featureDLSSG && !REL::Module::IsVR() ? "Active" : "Inactive").c_str());
 	ImGui::SameLine();
 	ImGui::BulletText(std::format("GPU: {}", State::GetSingleton()->adapterDescription.c_str()).c_str());
+
+	if (dxgiAdapter3) {
+		ImGui::SameLine();
+		DXGI_QUERY_VIDEO_MEMORY_INFO videoMemoryInfo;
+		dxgiAdapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &videoMemoryInfo);
+
+		float currentGpuUsage = videoMemoryInfo.CurrentUsage / (1024.f * 1024.f * 1024.f);
+		float totalGpuMemory = videoMemoryInfo.Budget / (1024.f * 1024.f * 1024.f);
+		float percent = currentGpuUsage / totalGpuMemory;
+
+		auto progressOverlay = std::format("GPU Usage: {:.02f}GB/{:.02f}GB ({:2.1f}%) ", currentGpuUsage, totalGpuMemory, 100 * percent);
+		ImGui::ProgressBar(percent, ImVec2(500.f, ImGui::GetTextLineHeight()), progressOverlay.c_str());
+	}
 }
 
 void Menu::DrawOverlay()
