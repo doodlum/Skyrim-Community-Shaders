@@ -408,7 +408,7 @@ namespace SIE
 		RE::BSGraphics::ComputeShader* MakeAndAddComputeShader(const RE::BSShader& shader,
 			uint32_t descriptor);
 
-		static std::string GetDefinesString(const RE::BSShader& shader, uint32_t descriptor);
+		static std::string GetDefinesString(const RE::BSShader& shader, ShaderClass shaderClass, uint32_t descriptor);
 
 		uint64_t GetCachedHitTasks();
 		uint64_t GetCompletedTasks();

@@ -79,7 +79,7 @@ void State::Draw()
 
 					if (IsDeveloperMode()) {
 						BeginPerfEvent(std::format("Draw: CS {}::{:x}::{}", magic_enum::enum_name(currentShader->shaderType.get()), currentPixelDescriptor, currentShader->fxpFilename));
-						SetPerfMarker(std::format("Defines: {}", SIE::ShaderCache::GetDefinesString(*currentShader, currentPixelDescriptor)));
+						SetPerfMarker(std::format("Defines: {}", SIE::ShaderCache::GetDefinesString(*currentShader, SIE::ShaderClass::Pixel, currentPixelDescriptor)));
 						EndPerfEvent();
 					}
 				}

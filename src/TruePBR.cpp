@@ -489,40 +489,15 @@ namespace Permutations
 		}
 	}
 
-	std::unordered_set<uint32_t> GeneratePBRLightingVertexPermutations()
-	{
-		using enum SIE::ShaderCache::LightingShaderFlags;
-
-		constexpr std::array defaultFlags{ VC, Skinned, WorldMap };
-		constexpr std::array projectedUvFlags{ VC, WorldMap };
-		constexpr std::array treeFlags{ VC, Skinned };
-		constexpr std::array landFlags{ VC };
-
-		constexpr uint32_t defaultConstantFlags = static_cast<uint32_t>(TruePbr);
-		constexpr uint32_t projectedUvConstantFlags = static_cast<uint32_t>(TruePbr) | static_cast<uint32_t>(ProjectedUV);
-
-		const std::unordered_set<uint32_t> defaultFlagValues = GenerateFlagPermutations(defaultFlags, defaultConstantFlags);
-		const std::unordered_set<uint32_t> projectedUvFlagValues = GenerateFlagPermutations(projectedUvFlags, projectedUvConstantFlags);
-		const std::unordered_set<uint32_t> treeFlagValues = GenerateFlagPermutations(treeFlags, defaultConstantFlags);
-		const std::unordered_set<uint32_t> landFlagValues = GenerateFlagPermutations(landFlags, defaultConstantFlags);
-
-		std::unordered_set<uint32_t> result;
-		AddLightingShaderDescriptors(SIE::ShaderCache::LightingShaderTechniques::None, defaultFlagValues, result);
-		AddLightingShaderDescriptors(SIE::ShaderCache::LightingShaderTechniques::None, projectedUvFlagValues, result);
-		AddLightingShaderDescriptors(SIE::ShaderCache::LightingShaderTechniques::TreeAnim, treeFlagValues, result);
-		AddLightingShaderDescriptors(SIE::ShaderCache::LightingShaderTechniques::MTLand, landFlagValues, result);
-		AddLightingShaderDescriptors(SIE::ShaderCache::LightingShaderTechniques::MTLandLODBlend, landFlagValues, result);
-		return result;
-	}
-
 	std::unordered_set<uint32_t> GeneratePBRLightingPixelPermutations()
 	{
 		using enum SIE::ShaderCache::LightingShaderFlags;
 
-		constexpr std::array defaultFlags{ Skinned, DoAlphaTest, AdditionalAlphaMask };
-		constexpr std::array projectedUvFlags{ DoAlphaTest, AdditionalAlphaMask, Snow, BaseObjectIsSnow };
-		constexpr std::array lodObjectsFlags{ WorldMap, DoAlphaTest, AdditionalAlphaMask, ProjectedUV };
-		constexpr std::array treeFlags{ Skinned, DoAlphaTest, AdditionalAlphaMask };
+		constexpr std::array defaultFlags{ Deferred, AnisoLighting, Skinned, DoAlphaTest, AdditionalAlphaMask };
+		constexpr std::array projectedUvFlags{ Deferred, AnisoLighting, DoAlphaTest, AdditionalAlphaMask, Snow, BaseObjectIsSnow };
+		constexpr std::array lodObjectsFlags{ Deferred, WorldMap, DoAlphaTest, AdditionalAlphaMask, ProjectedUV };
+		constexpr std::array treeFlags{ Deferred, AnisoLighting, Skinned, DoAlphaTest, AdditionalAlphaMask };
+		constexpr std::array landFlags{ Deferred, AnisoLighting };
 
 		constexpr uint32_t defaultConstantFlags = static_cast<uint32_t>(TruePbr) | static_cast<uint32_t>(VC);
 		constexpr uint32_t projectedUvConstantFlags = static_cast<uint32_t>(TruePbr) | static_cast<uint32_t>(VC) | static_cast<uint32_t>(ProjectedUV);
@@ -531,7 +506,7 @@ namespace Permutations
 		const std::unordered_set<uint32_t> projectedUvFlagValues = GenerateFlagPermutations(projectedUvFlags, projectedUvConstantFlags);
 		const std::unordered_set<uint32_t> lodObjectsFlagValues = GenerateFlagPermutations(lodObjectsFlags, defaultConstantFlags);
 		const std::unordered_set<uint32_t> treeFlagValues = GenerateFlagPermutations(treeFlags, defaultConstantFlags);
-		const std::unordered_set<uint32_t> landFlagValues = { defaultConstantFlags };
+		const std::unordered_set<uint32_t> landFlagValues = GenerateFlagPermutations(landFlags, defaultConstantFlags);
 
 		std::unordered_set<uint32_t> result;
 		AddLightingShaderDescriptors(SIE::ShaderCache::LightingShaderTechniques::None, defaultFlagValues, result);
@@ -544,7 +519,7 @@ namespace Permutations
 		return result;
 	}
 
-	std::unordered_set<uint32_t> GeneratePBRGrassPermutations()
+	std::unordered_set<uint32_t> GeneratePBRGrassPixelPermutations()
 	{
 		using enum SIE::ShaderCache::GrassShaderTechniques;
 		using enum SIE::ShaderCache::GrassShaderFlags;
@@ -552,30 +527,12 @@ namespace Permutations
 		return { static_cast<uint32_t>(TruePbr),
 			static_cast<uint32_t>(TruePbr) | static_cast<uint32_t>(AlphaTest) };
 	}
-
-	std::unordered_set<uint32_t> GeneratePBRGrassVertexPermutations()
-	{
-		return GeneratePBRGrassPermutations();
-	}
-
-	std::unordered_set<uint32_t> GeneratePBRGrassPixelPermutations()
-	{
-		return GeneratePBRGrassPermutations();
-	}
 }
 
 void TruePBR::GenerateShaderPermutations(RE::BSShader* shader)
 {
 	auto& shaderCache = SIE::ShaderCache::Instance();
 	if (shader->shaderType == RE::BSShader::Type::Lighting) {
-		const auto vertexPermutations = Permutations::GeneratePBRLightingVertexPermutations();
-		for (auto descriptor : vertexPermutations) {
-			auto vertexShaderDesriptor = descriptor;
-			auto pixelShaderDescriptor = descriptor;
-			State::GetSingleton()->ModifyShaderLookup(*shader, vertexShaderDesriptor, pixelShaderDescriptor);
-			std::ignore = shaderCache.GetVertexShader(*shader, vertexShaderDesriptor);
-		}
-
 		const auto pixelPermutations = Permutations::GeneratePBRLightingPixelPermutations();
 		for (auto descriptor : pixelPermutations) {
 			auto vertexShaderDesriptor = descriptor;
@@ -584,14 +541,6 @@ void TruePBR::GenerateShaderPermutations(RE::BSShader* shader)
 			std::ignore = shaderCache.GetPixelShader(*shader, pixelShaderDescriptor);
 		}
 	} else if (shader->shaderType == RE::BSShader::Type::Grass) {
-		const auto vertexPermutations = Permutations::GeneratePBRGrassVertexPermutations();
-		for (auto descriptor : vertexPermutations) {
-			auto vertexShaderDesriptor = descriptor;
-			auto pixelShaderDescriptor = descriptor;
-			State::GetSingleton()->ModifyShaderLookup(*shader, vertexShaderDesriptor, pixelShaderDescriptor);
-			std::ignore = shaderCache.GetVertexShader(*shader, vertexShaderDesriptor);
-		}
-
 		const auto pixelPermutations = Permutations::GeneratePBRGrassPixelPermutations();
 		for (auto descriptor : pixelPermutations) {
 			auto vertexShaderDesriptor = descriptor;
@@ -750,6 +699,7 @@ struct BSLightingShaderProperty_GetRenderPasses
 				lightingFlags &= ~0b111000u;
 				if (isPbr) {
 					lightingFlags |= static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::TruePbr);
+					lightingFlags &= ~static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::Specular);
 					if (property->flags.any(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape)) {
 						auto* material = static_cast<BSLightingShaderMaterialPBRLandscape*>(property->material);
 						if (material->HasGlint()) {
