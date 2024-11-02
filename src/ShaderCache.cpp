@@ -1333,7 +1333,7 @@ namespace SIE
 			const uint32_t flags = !State::GetSingleton()->IsDeveloperMode() ? D3DCOMPILE_OPTIMIZATION_LEVEL3 : D3DCOMPILE_DEBUG;
 			const HRESULT compileResult = D3DCompileFromFile(path.c_str(), defines.data(), D3D_COMPILE_STANDARD_FILE_INCLUDE, "main",
 				GetShaderProfile(shaderClass), flags, 0, &shaderBlob, &errorBlob);
-			
+
 			if (FAILED(compileResult)) {
 				if (errorBlob != nullptr) {
 					logger::error("Failed to compile {} shader {}::{:X}:\n{}",

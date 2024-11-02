@@ -589,8 +589,7 @@ void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescr
 			{
 				auto technique = a_vertexDescriptor & 0xF;
 				auto flags = a_vertexDescriptor & ~0xF;
-				if (technique == static_cast<uint32_t>(SIE::ShaderCache::GrassShaderTechniques::TruePbr))
-				{
+				if (technique == static_cast<uint32_t>(SIE::ShaderCache::GrassShaderTechniques::TruePbr)) {
 					technique = 0;
 				}
 				a_vertexDescriptor = flags | technique;
