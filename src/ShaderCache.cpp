@@ -204,7 +204,7 @@ namespace SIE
 			size_t lastIndex = 0;
 			if (technique == static_cast<uint32_t>(ShaderCache::GrassShaderTechniques::RenderDepth)) {
 				defines[lastIndex++] = { "RENDER_DEPTH", nullptr };
-			} else if (shaderClass == ShaderClass::Pixel && technique == static_cast<uint32_t>(ShaderCache::GrassShaderTechniques::TruePbr)) {
+			} else if (technique == static_cast<uint32_t>(ShaderCache::GrassShaderTechniques::TruePbr)) {
 				defines[lastIndex++] = { "TRUE_PBR", nullptr };
 			}
 			if (descriptor & static_cast<uint32_t>(ShaderCache::GrassShaderFlags::AlphaTest)) {
@@ -598,7 +598,7 @@ namespace SIE
 		{
 			switch (shader.shaderType.get()) {
 			case RE::BSShader::Type::Grass:
-				GetGrassShaderDefines(shaderClass, descriptor, defines);
+				GetGrassShaderDefines(descriptor, defines);
 				break;
 			case RE::BSShader::Type::Sky:
 				GetSkyShaderDefines(descriptor, defines);

@@ -493,10 +493,10 @@ namespace Permutations
 	{
 		using enum SIE::ShaderCache::LightingShaderFlags;
 
-		constexpr std::array defaultFlags{ Deferred, AnisoLighting, Skinned, DoAlphaTest, AdditionalAlphaMask };
-		constexpr std::array projectedUvFlags{ Deferred, AnisoLighting, DoAlphaTest, AdditionalAlphaMask, Snow };
-		constexpr std::array lodObjectsFlags{ Deferred, WorldMap, DoAlphaTest, AdditionalAlphaMask, ProjectedUV };
-		constexpr std::array treeFlags{ Deferred, AnisoLighting, Skinned, DoAlphaTest, AdditionalAlphaMask };
+		constexpr std::array defaultFlags{ Deferred, AnisoLighting, Skinned, DoAlphaTest };
+		constexpr std::array projectedUvFlags{ Deferred, AnisoLighting, DoAlphaTest, Snow };
+		constexpr std::array lodObjectsFlags{ Deferred, WorldMap, DoAlphaTest, ProjectedUV };
+		constexpr std::array treeFlags{ Deferred, AnisoLighting, Skinned, DoAlphaTest };
 		constexpr std::array landFlags{ Deferred, AnisoLighting };
 
 		constexpr uint32_t defaultConstantFlags = static_cast<uint32_t>(TruePbr) | static_cast<uint32_t>(VC);
