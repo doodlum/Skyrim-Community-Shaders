@@ -2622,22 +2622,22 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif      // DO_ALPHA_TEST
 
 #		if defined(ANISOTROPIC_ALPHA)
-	if (AnisotropicAlphaFlags > ExtendedTransclucency::MaterialModel::Disabled) {
+	if (AnisotropicAlphaFlags > ExtendedTranslucency::MaterialModel::Disabled) {
 		if (alpha >= 0.0156862754 && alpha < 1.0) {
 			float originalAlpha = alpha;
 			alpha = alpha * (1.0 - AnisotropicAlphaReduction);
-			if (AnisotropicAlphaFlags == ExtendedTransclucency::MaterialModel::AnisotropicFabric) {
+			if (AnisotropicAlphaFlags == ExtendedTranslucency::MaterialModel::AnisotropicFabric) {
 #			if defined(SKINNED) || !defined(MODELSPACENORMALS)
 				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric2D(alpha, viewDirection, tbnTr);
 #			else
-				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
+				alpha = ExtendedTranslucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
 #			endif
-			} else if (AnisotropicAlphaFlags == ExtendedTransclucency::MaterialModel::IsotropicFabric) {
-				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
+			} else if (AnisotropicAlphaFlags == ExtendedTranslucency::MaterialModel::IsotropicFabric) {
+				alpha = ExtendedTranslucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
 			} else {
-				alpha = ExtendedTransclucency::GetViewDependentAlphaNaive(alpha, viewDirection, modelNormal.xyz);
+				alpha = ExtendedTranslucency::GetViewDependentAlphaNaive(alpha, viewDirection, modelNormal.xyz);
 			}
-			alpha = saturate(ExtendedTransclucency::SoftClamp(alpha, 2.0f - AnisotropicAlphaSoftness));
+			alpha = saturate(ExtendedTranslucency::SoftClamp(alpha, 2.0f - AnisotropicAlphaSoftness));
 			alpha = lerp(alpha, originalAlpha, AnisotropicAlphaStrength);
 		}
 	}

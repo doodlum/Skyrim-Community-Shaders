@@ -1,9 +1,3 @@
-// ExtendedTranslucency::MaterialModel
-#define _ExtendedTranslucency_MaterialModel_Disabled 0
-#define _ExtendedTranslucency_MaterialModel_RimLight 1
-#define _ExtendedTranslucency_MaterialModel_IsotropicFabric 2
-#define _ExtendedTranslucency_MaterialModel_AnisotropicFabric 3
-
 // ExtendedTranslucency::MaterialParams
 cbuffer ExtendedTranslucencyPerGeometry : register(b7)
 {
@@ -13,7 +7,7 @@ cbuffer ExtendedTranslucencyPerGeometry : register(b7)
 	float AnisotropicAlphaStrength;   // [0, 1.0] The inverse blend weight of the effect
 };
 
-namespace ExtendedTransclucency
+namespace ExtendedTranslucency
 {
 	namespace MaterialModel
 	{
