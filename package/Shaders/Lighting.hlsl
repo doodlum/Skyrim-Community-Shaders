@@ -1157,7 +1157,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif  // TRUE_PBR
 
 #	endif  // EMAT
-	
+
 #	if defined(SNOW)
 	bool useSnowSpecular = true;
 #	else
