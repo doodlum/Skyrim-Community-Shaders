@@ -79,7 +79,7 @@ void State::Draw()
 
 					if (IsDeveloperMode()) {
 						BeginPerfEvent(std::format("Draw: CS {}::{:x}::{}", magic_enum::enum_name(currentShader->shaderType.get()), currentPixelDescriptor, currentShader->fxpFilename));
-						SetPerfMarker(std::format("Defines: {}", SIE::ShaderCache::GetDefinesString(*currentShader, SIE::ShaderClass::Pixel, currentPixelDescriptor)));
+						SetPerfMarker(std::format("Defines: {}", SIE::ShaderCache::GetDefinesString(*currentShader, currentPixelDescriptor)));
 						EndPerfEvent();
 					}
 				}
@@ -510,7 +510,8 @@ void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescr
 										(uint32_t)SIE::ShaderCache::LightingShaderFlags::Specular |
 										(uint32_t)SIE::ShaderCache::LightingShaderFlags::AnisoLighting |
 										(uint32_t)SIE::ShaderCache::LightingShaderFlags::BaseObjectIsSnow |
-										(uint32_t)SIE::ShaderCache::LightingShaderFlags::Snow);
+										(uint32_t)SIE::ShaderCache::LightingShaderFlags::Snow |
+										(uint32_t)SIE::ShaderCache::LightingShaderFlags::TruePbr);
 
 				a_pixelDescriptor &= ~((uint32_t)SIE::ShaderCache::LightingShaderFlags::AmbientSpecular |
 									   (uint32_t)SIE::ShaderCache::LightingShaderFlags::ShadowDir |
@@ -583,6 +584,17 @@ void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescr
 			{
 				if (Deferred::GetSingleton()->deferredPass || a_forceDeferred)
 					a_pixelDescriptor |= 256;
+			}
+			break;
+		case RE::BSShader::Type::Grass:
+			{
+				auto technique = a_vertexDescriptor & 0xF;
+				auto flags = a_vertexDescriptor & ~0xF;
+				if (technique == static_cast<uint32_t>(SIE::ShaderCache::GrassShaderTechniques::TruePbr))
+				{
+					technique = 0;
+				}
+				a_vertexDescriptor = flags | technique;
 			}
 			break;
 		}

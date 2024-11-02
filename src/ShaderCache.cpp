@@ -17,7 +17,7 @@ namespace SIE
 {
 	namespace SShaderCache
 	{
-		static void GetShaderDefines(const RE::BSShader&, ShaderClass, uint32_t, D3D_SHADER_MACRO*);
+		static void GetShaderDefines(const RE::BSShader&, uint32_t, D3D_SHADER_MACRO*);
 		static std::string GetShaderString(ShaderClass, const RE::BSShader&, uint32_t, bool = false);
 		/**
 		@brief Get the BSShader::Type from the ShaderString
@@ -52,7 +52,7 @@ namespace SIE
 			return 0x3F & (descriptor >> 24);
 		}
 
-		static void GetLightingShaderDefines(ShaderClass shaderClass, uint32_t descriptor, std::span<D3D_SHADER_MACRO> defines)
+		static void GetLightingShaderDefines(uint32_t descriptor, std::span<D3D_SHADER_MACRO> defines)
 		{
 			static REL::Relocation<void(uint32_t, D3D_SHADER_MACRO*)> VanillaGetLightingShaderDefines(RELOCATION_ID(101631, 108698));
 			VanillaGetLightingShaderDefines(descriptor, defines.data());
@@ -62,12 +62,10 @@ namespace SIE
 			if (descriptor & static_cast<uint32_t>(ShaderCache::LightingShaderFlags::Deferred)) {
 				defines[lastIndex++] = { "DEFERRED", nullptr };
 			}
-			if (shaderClass == ShaderClass::Pixel) {
-				if ((descriptor & static_cast<uint32_t>(ShaderCache::LightingShaderFlags::TruePbr)) != 0) {
-					defines[lastIndex++] = { "TRUE_PBR", nullptr };
-					if ((descriptor & static_cast<uint32_t>(ShaderCache::LightingShaderFlags::AnisoLighting)) != 0) {
-						defines[lastIndex++] = { "GLINT", nullptr };
-					}
+			if ((descriptor & static_cast<uint32_t>(ShaderCache::LightingShaderFlags::TruePbr)) != 0) {
+				defines[lastIndex++] = { "TRUE_PBR", nullptr };
+				if ((descriptor & static_cast<uint32_t>(ShaderCache::LightingShaderFlags::AnisoLighting)) != 0) {
+					defines[lastIndex++] = { "GLINT", nullptr };
 				}
 			}
 
@@ -198,7 +196,7 @@ namespace SIE
 			defines[lastIndex] = { nullptr, nullptr };
 		}
 
-		static void GetGrassShaderDefines(ShaderClass shaderClass, uint32_t descriptor, std::span<D3D_SHADER_MACRO> defines)
+		static void GetGrassShaderDefines(uint32_t descriptor, std::span<D3D_SHADER_MACRO> defines)
 		{
 			const auto technique = descriptor & 0b1111;
 			size_t lastIndex = 0;
@@ -594,7 +592,7 @@ namespace SIE
 			return;
 		}
 
-		static void GetShaderDefines(const RE::BSShader& shader, ShaderClass shaderClass, uint32_t descriptor, std::span<D3D_SHADER_MACRO> defines)
+		static void GetShaderDefines(const RE::BSShader& shader, uint32_t descriptor, std::span<D3D_SHADER_MACRO> defines)
 		{
 			switch (shader.shaderType.get()) {
 			case RE::BSShader::Type::Grass:
@@ -613,7 +611,7 @@ namespace SIE
 				GetImagespaceShaderDefines(shader, defines);
 				break;
 			case RE::BSShader::Type::Lighting:
-				GetLightingShaderDefines(shaderClass, descriptor, defines);
+				GetLightingShaderDefines(descriptor, defines);
 				break;
 			case RE::BSShader::Type::DistantTree:
 				GetDistantTreeShaderDefines(descriptor, defines);
@@ -1240,7 +1238,7 @@ namespace SIE
 		{
 			auto sourceShaderFile = shader.fxpFilename;
 			std::array<D3D_SHADER_MACRO, 64> defines{};
-			SIE::SShaderCache::GetShaderDefines(shader, shaderClass, descriptor, std::span{ defines });
+			SIE::SShaderCache::GetShaderDefines(shader, descriptor, std::span{ defines });
 			std::string result;
 			if (hashkey)  // generate hashkey so don't include descriptor
 				result = fmt::format("{}:{}:{}", sourceShaderFile, magic_enum::enum_name(shaderClass), SIE::SShaderCache::MergeDefinesString(defines, true));
@@ -1317,7 +1315,7 @@ namespace SIE
 					defines[lastIndex++] = { shaderDefines->at(i).first.c_str(), shaderDefines->at(i).second.c_str() };
 			}
 			defines[lastIndex] = { nullptr, nullptr };  // do final entry
-			GetShaderDefines(shader, shaderClass, descriptor, std::span{ defines }.subspan(lastIndex));
+			GetShaderDefines(shader, descriptor, std::span{ defines }.subspan(lastIndex));
 
 			const std::wstring path = GetShaderPath(
 				shader.shaderType == RE::BSShader::Type::ImageSpace ?
@@ -1335,7 +1333,7 @@ namespace SIE
 			const uint32_t flags = !State::GetSingleton()->IsDeveloperMode() ? D3DCOMPILE_OPTIMIZATION_LEVEL3 : D3DCOMPILE_DEBUG;
 			const HRESULT compileResult = D3DCompileFromFile(path.c_str(), defines.data(), D3D_COMPILE_STANDARD_FILE_INCLUDE, "main",
 				GetShaderProfile(shaderClass), flags, 0, &shaderBlob, &errorBlob);
-
+			
 			if (FAILED(compileResult)) {
 				if (errorBlob != nullptr) {
 					logger::error("Failed to compile {} shader {}::{:X}:\n{}",
@@ -2367,10 +2365,10 @@ namespace SIE
 		return nullptr;
 	}
 
-	std::string ShaderCache::GetDefinesString(const RE::BSShader& shader, ShaderClass shaderClass, uint32_t descriptor)
+	std::string ShaderCache::GetDefinesString(const RE::BSShader& shader, uint32_t descriptor)
 	{
 		std::array<D3D_SHADER_MACRO, 64> defines{};
-		SIE::SShaderCache::GetShaderDefines(shader, shaderClass, descriptor, std::span{ defines });
+		SIE::SShaderCache::GetShaderDefines(shader, descriptor, std::span{ defines });
 
 		return SIE::SShaderCache::MergeDefinesString(defines, true);
 	}
