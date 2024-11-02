@@ -2569,7 +2569,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 #		if defined(DO_ALPHA_TEST)
 	[branch] if ((PixelShaderDescriptor & LightingFlags::AdditionalAlphaMask) != 0)
-    {
+	{
 		uint2 alphaMask = input.Position.xy;
 		alphaMask.x = ((alphaMask.x << 2) & 12);
 		alphaMask.x = (alphaMask.y & 3) | (alphaMask.x & ~3);
@@ -2596,18 +2596,18 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		if (MaterialData.z - maskValues[alphaMask.x] < 0) {
 			discard;
 		}
-    }
+	}
 	else
 #		endif  // defined(DO_ALPHA_TEST)
-    {
+	{
 		alpha *= MaterialData.z;
-    }
+	}
 #		if !(defined(TREE_ANIM) || defined(LODOBJECTSHD) || defined(LODOBJECTS))
 	alpha *= input.Color.w;
 #		endif  // !(defined(TREE_ANIM) || defined(LODOBJECTSHD) || defined(LODOBJECTS))
 #		if defined(DO_ALPHA_TEST)
 	[branch] if ((PixelShaderDescriptor & LightingFlags::DoAlphaTest) != 0)
-    {
+	{
 #			if defined(DEPTH_WRITE_DECALS)
 		if (alpha - 0.0156862754 < 0) {
 			discard;

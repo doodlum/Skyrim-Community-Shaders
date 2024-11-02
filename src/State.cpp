@@ -518,8 +518,7 @@ void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescr
 									   (uint32_t)SIE::ShaderCache::LightingShaderFlags::DefShadow |
 									   (uint32_t)SIE::ShaderCache::LightingShaderFlags::CharacterLight |
 									   (uint32_t)SIE::ShaderCache::LightingShaderFlags::BaseObjectIsSnow);
-				if (a_pixelDescriptor & (uint32_t)SIE::ShaderCache::LightingShaderFlags::AdditionalAlphaMask)
-				{
+				if (a_pixelDescriptor & (uint32_t)SIE::ShaderCache::LightingShaderFlags::AdditionalAlphaMask) {
 					a_pixelDescriptor |= (uint32_t)SIE::ShaderCache::LightingShaderFlags::DoAlphaTest;
 					a_pixelDescriptor &= ~(uint32_t)SIE::ShaderCache::LightingShaderFlags::AdditionalAlphaMask;
 				}
