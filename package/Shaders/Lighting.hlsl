@@ -916,11 +916,10 @@ float3 GetWorldMapBaseColor(float3 originalBaseColor, float3 rawBaseColor, float
 
 float GetSnowParameterY(float texProjTmp, float alpha)
 {
-#	if defined(BASE_OBJECT_IS_SNOW)
-	return min(1, texProjTmp + alpha);
-#	else
+	if (PixelShaderDescriptor & LightingFlags::BaseObjectIsSnow) {
+		return min(1, texProjTmp + alpha);
+	}
 	return texProjTmp;
-#	endif
 }
 
 #	if defined(LOD)
@@ -1158,7 +1157,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif  // TRUE_PBR
 
 #	endif  // EMAT
-
+	
 #	if defined(SNOW)
 	bool useSnowSpecular = true;
 #	else

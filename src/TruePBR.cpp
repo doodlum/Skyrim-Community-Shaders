@@ -494,7 +494,7 @@ namespace Permutations
 		using enum SIE::ShaderCache::LightingShaderFlags;
 
 		constexpr std::array defaultFlags{ Deferred, AnisoLighting, Skinned, DoAlphaTest, AdditionalAlphaMask };
-		constexpr std::array projectedUvFlags{ Deferred, AnisoLighting, DoAlphaTest, AdditionalAlphaMask, Snow, BaseObjectIsSnow };
+		constexpr std::array projectedUvFlags{ Deferred, AnisoLighting, DoAlphaTest, AdditionalAlphaMask, Snow };
 		constexpr std::array lodObjectsFlags{ Deferred, WorldMap, DoAlphaTest, AdditionalAlphaMask, ProjectedUV };
 		constexpr std::array treeFlags{ Deferred, AnisoLighting, Skinned, DoAlphaTest, AdditionalAlphaMask };
 		constexpr std::array landFlags{ Deferred, AnisoLighting };
