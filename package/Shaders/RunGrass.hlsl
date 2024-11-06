@@ -363,7 +363,6 @@ Texture2D<float4> TexRMAOSSampler : register(t3);
 Texture2D<float4> TexSubsurfaceSampler : register(t4);
 #		endif  // TRUE_PBR
 
-
 #	endif  // GRASS_LIGHTING
 
 #	if !defined(VR)
@@ -373,35 +372,35 @@ cbuffer AlphaTestRefCB : register(b11)
 }
 #	endif  // !VR
 
-#		if defined(SCREEN_SPACE_SHADOWS)
-#			include "ScreenSpaceShadows/ScreenSpaceShadows.hlsli"
-#		endif
+#	if defined(SCREEN_SPACE_SHADOWS)
+#		include "ScreenSpaceShadows/ScreenSpaceShadows.hlsli"
+#	endif
 
-#		if defined(LIGHT_LIMIT_FIX)
-#			include "LightLimitFix/LightLimitFix.hlsli"
-#		endif
+#	if defined(LIGHT_LIMIT_FIX)
+#		include "LightLimitFix/LightLimitFix.hlsli"
+#	endif
 
-#		define SampColorSampler SampBaseSampler
+#	define SampColorSampler SampBaseSampler
 
-#		if defined(DYNAMIC_CUBEMAPS)
-#			include "DynamicCubemaps/DynamicCubemaps.hlsli"
-#		endif
+#	if defined(DYNAMIC_CUBEMAPS)
+#		include "DynamicCubemaps/DynamicCubemaps.hlsli"
+#	endif
 
-#		if defined(TERRAIN_SHADOWS)
-#			include "TerrainShadows/TerrainShadows.hlsli"
-#		endif
+#	if defined(TERRAIN_SHADOWS)
+#		include "TerrainShadows/TerrainShadows.hlsli"
+#	endif
 
-#		if defined(CLOUD_SHADOWS)
-#			include "CloudShadows/CloudShadows.hlsli"
-#		endif
+#	if defined(CLOUD_SHADOWS)
+#		include "CloudShadows/CloudShadows.hlsli"
+#	endif
 
-#		if defined(SKYLIGHTING)
-#			include "Skylighting/Skylighting.hlsli"
-#		endif
+#	if defined(SKYLIGHTING)
+#		include "Skylighting/Skylighting.hlsli"
+#	endif
 
-#		if defined(TRUE_PBR)
-#			include "Common/PBR.hlsli"
-#		endif
+#	if defined(TRUE_PBR)
+#		include "Common/PBR.hlsli"
+#	endif
 
 #	ifdef GRASS_LIGHTING
 #		if defined(TRUE_PBR)
@@ -521,7 +520,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 dirLightColorMultiplier = 1;
 
 	float dirLightAngle = dot(normal, DirLightDirectionShared.xyz);
-	
+
 	float dirShadow = !InInterior ? TexShadowMaskSampler.Load(int3(input.HPosition.xy, 0)).r : 1.0;
 	float dirDetailShadow = 1.0;
 
