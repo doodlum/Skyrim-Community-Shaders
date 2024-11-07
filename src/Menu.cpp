@@ -86,15 +86,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	EffectToggleKey,
 	Theme)
 
-namespace ImGui
-{
-	ImVec2 GetNativeViewportSizeScaled(float scale)
-	{
-		const auto Size = GetMainViewport()->Size;
-		return { Size.x * scale, Size.y * scale };
-	}
-}
-
 void Menu::SetupImGuiStyle() const
 {
 	auto& style = ImGui::GetStyle();
@@ -242,8 +233,8 @@ void Menu::DrawSettings()
 {
 	ImGui::DockSpaceOverViewport(NULL, ImGuiDockNodeFlags_PassthruCentralNode);
 
-	ImGui::SetNextWindowPos(ImGui::GetNativeViewportSizeScaled(0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImGui::GetNativeViewportSizeScaled(0.8f), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowPos(Util::GetNativeViewportSizeScaled(0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+	ImGui::SetNextWindowSize(Util::GetNativeViewportSizeScaled(0.8f), ImGuiCond_FirstUseEver);
 
 	auto title = std::format("Community Shaders {}", Util::GetFormattedVersion(Plugin::VERSION));
 
@@ -363,7 +354,7 @@ void Menu::DrawSettings()
 					} else if (isLoaded) {
 						textColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
 					} else if (hasFailedMessage) {
-						textColor = themeSettings.StatusPalette.Error;
+						textColor = feat->version.empty() ? themeSettings.StatusPalette.Disable : themeSettings.StatusPalette.Error;
 					} else {
 						textColor = themeSettings.StatusPalette.RestartNeeded;
 					}
@@ -1038,10 +1029,10 @@ void Menu::DrawOverlay()
 		ImGui::ProgressBar(percent, ImVec2(0.0f, 0.0f), progressOverlay.c_str());
 		if (!shaderCache.backgroundCompilation && shaderCache.menuLoaded) {
 			auto skipShadersText = fmt::format(
-				"Press {} to proceed without completing shader compilation. "
-				"WARNING: Uncompiled shaders will have visual errors or cause stuttering when loading.",
+				"Press {} to proceed without completing shader compilation. ",
 				KeyIdToString(settings.SkipCompilationKey));
 			ImGui::TextUnformatted(skipShadersText.c_str());
+			ImGui::TextUnformatted("WARNING: Uncompiled shaders will have visual errors or cause stuttering when loading.");
 		}
 
 		ImGui::End();
