@@ -408,7 +408,7 @@ cbuffer PerMaterial : register(b1)
 	float4 PBRParams2 : packoffset(c1);    // subsurface color, subsurface opacity
 };
 
-#		include "Common/PBR.hlsli"
+#			include "Common/PBR.hlsli"
 
 #		endif  // TRUE_PBR
 
