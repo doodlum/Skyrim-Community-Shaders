@@ -1514,8 +1514,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float4 rimSoftLightColor = TexRimSoftLightWorldMapOverlaySampler.Sample(SampRimSoftLightWorldMapOverlaySampler, uv);
 #	endif  // RIM_LIGHTING || SOFT_LIGHTING
 
-	float numLights = min(7, NumLightNumShadowLight.x);
-	float numShadowLights = min(4, NumLightNumShadowLight.y);
+	uint numLights = min(7, uint(NumLightNumShadowLight.x));
+	uint numShadowLights = min(4, uint(NumLightNumShadowLight.y));
 
 #	if defined(TRUE_PBR) && !defined(MODELSPACENORMALS)
 	if (!frontFace) {
@@ -2034,7 +2034,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		float intensityMultiplier = 1 - intensityFactor * intensityFactor;
 		float3 lightColor = PointLightColor[lightIndex].xyz * intensityMultiplier;
 		float lightShadow = 1.f;
-		if (PixelShaderDescriptor LightingFlags::DefShadow) {
+		if (PixelShaderDescriptor & LightingFlags::DefShadow) {
 			if (lightIndex < numShadowLights) {
 				lightShadow *= shadowColor[ShadowLightMaskSelect[lightIndex]];
 			}
