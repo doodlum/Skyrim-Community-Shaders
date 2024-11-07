@@ -398,18 +398,18 @@ cbuffer AlphaTestRefCB : register(b11)
 #		include "Skylighting/Skylighting.hlsli"
 #	endif
 
-#	if defined(TRUE_PBR)
-#		include "Common/PBR.hlsli"
-#	endif
-
 #	ifdef GRASS_LIGHTING
 #		if defined(TRUE_PBR)
+
 cbuffer PerMaterial : register(b1)
 {
 	uint PBRFlags : packoffset(c0.x);
 	float3 PBRParams1 : packoffset(c0.y);  // roughness scale, specular level
 	float4 PBRParams2 : packoffset(c1);    // subsurface color, subsurface opacity
 };
+
+#		include "Common/PBR.hlsli"
+
 #		endif  // TRUE_PBR
 
 #		include "GrassLighting/GrassLighting.hlsli"
