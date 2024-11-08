@@ -8,20 +8,17 @@ RWTexture3D<uint> outAccumFramesArray : register(u1);
 
 SamplerState samplerPointClamp : register(s0);
 
-#define ARRAY_DIM uint3(128, 128, 64)
-#define ARRAY_SIZE float3(10000, 10000, 10000 * 0.5)
-
 [numthreads(8, 8, 1)] void main(uint3 dtid
 								: SV_DispatchThreadID) {
 	const float fadeInThreshold = 255;
 	const static sh2 unitSH = float4(sqrt(4.0 * Math::PI), 0, 0, 0);
 	const SkylightingSettings settings = skylightingSettings;
 
-	uint3 cellID = (int3(dtid) - settings.ArrayOrigin.xyz) % ARRAY_DIM;
-	bool isValid = all(cellID >= max(0, settings.ValidMargin.xyz)) && all(cellID <= ARRAY_DIM - 1 + min(0, settings.ValidMargin.xyz));  // check if the cell is newly added
+	uint3 cellID = (int3(dtid) - settings.ArrayOrigin.xyz) % Skylighting::ARRAY_DIM;
+	bool isValid = all(cellID >= max(0, settings.ValidMargin.xyz)) && all(cellID <= Skylighting::ARRAY_DIM - 1 + min(0, settings.ValidMargin.xyz));  // check if the cell is newly added
 
-	float3 cellCentreMS = cellID + 0.5 - ARRAY_DIM / 2;
-	cellCentreMS = cellCentreMS / ARRAY_DIM * ARRAY_SIZE + settings.PosOffset.xyz;
+	float3 cellCentreMS = cellID + 0.5 - Skylighting::ARRAY_DIM / 2;
+	cellCentreMS = cellCentreMS / Skylighting::ARRAY_DIM * Skylighting::ARRAY_SIZE + settings.PosOffset.xyz;
 
 	float3 cellCentreOS = mul(settings.OcclusionViewProj, float4(cellCentreMS, 1)).xyz;
 	cellCentreOS.y = -cellCentreOS.y;

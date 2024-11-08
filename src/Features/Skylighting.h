@@ -78,8 +78,8 @@ struct Skylighting : Feature
 
 	// misc parameters
 	bool doOcclusion = true;
-	uint probeArrayDims[3] = { 128, 128, 64 };
-	float occlusionDistance = 10000.f;
+	uint probeArrayDims[3] = { 256, 256, 128 };
+	float occlusionDistance = 4096.f * 3.f;  // 3 cells
 
 	// cached variables
 	bool inOcclusion = false;
