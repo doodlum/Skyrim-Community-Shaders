@@ -16,7 +16,7 @@ namespace PBR
 		static const uint Glint = (1 << 11);
 		static const uint ProjectedGlint = (1 << 12);
 	}
-	
+
 	namespace TerrainFlags
 	{
 		static const uint LandTile0PBR = (1 << 0);
