@@ -344,7 +344,7 @@ void LightLimitFix::BSLightingShader_SetupGeometry_GeometrySetupConstantPointLig
 		if (bsLight->IsShadowLight()) {
 			auto* shadowLight = static_cast<RE::BSShadowLight*>(bsLight);
 			GET_INSTANCE_MEMBER(shadowLightIndex, shadowLight);
-			if (shadowLightIndex >= 0 && shadowLightIndex < 4){
+			if (shadowLightIndex >= 0 && shadowLightIndex < 4) {
 				light.shadowMaskIndex = shadowLightIndex;
 				light.lightFlags.set(LightFlags::Shadow);
 			}
