@@ -1128,16 +1128,16 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #		if defined(TRUE_PBR) && !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 	bool PBRParallax = false;
-	[branch] if (extendedMaterialSettings.EnableParallax && (PBRFlags & TruePBR_HasDisplacement) != 0)
+	[branch] if (extendedMaterialSettings.EnableParallax && (PBRFlags & PBR::Flags::HasDisplacement) != 0)
 	{
 		PBRParallax = true;
 		displacementParams.HeightScale = PBRParams1.y;
-		[branch] if ((PBRFlags & TruePBR_InterlayerParallax) != 0)
+		[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 		{
 			displacementParams.DisplacementScale = 0.5;
 			displacementParams.DisplacementOffset = -0.25;
 			eta = (1 - sqrt(MultiLayerParallaxData.y)) / (1 + sqrt(MultiLayerParallaxData.y));
-			[branch] if ((PBRFlags & TruePBR_CoatNormal) != 0)
+			[branch] if ((PBRFlags & PBR::Flags::CoatNormal) != 0)
 			{
 				entryNormalTS = normalize(TransformNormal(TexBackLightSampler.Sample(SampBackLightSampler, uvOriginal).xyz));
 			}
@@ -1254,7 +1254,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		float4 rawBaseColor = TexColorSampler.Sample(SampColorSampler, diffuseUv);
 #	if defined(TRUE_PBR) && defined(LANDSCAPE)
-		[branch] if ((PBRFlags & TruePBR_LandTile0PBR) == 0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile0PBR) == 0)
 		{
 			rawBaseColor.rgb = Color::GammaToLinear(rawBaseColor.rgb) / Color::AlbedoPreMult;
 		}
@@ -1300,10 +1300,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		if defined(LODLANDNOISE)
 		rawRMAOS = float4(1, 0, 1, 0.04);
 #		elif defined(LANDSCAPE)
-		[branch] if ((PBRFlags & TruePBR_LandTile0PBR) != 0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile0PBR) != 0)
 		{
 			rawRMAOS = input.LandBlendWeights1.x * TexRMAOSSampler.Sample(SampRMAOSSampler, diffuseUv) * float4(PBRParams1.x, 1, 1, PBRParams1.z);
-			if ((PBRFlags & TruePBR_LandTile0HasGlint) != 0) {
+			if ((PBRFlags & PBR::TerrainFlags::LandTile0HasGlint) != 0) {
 				glintParameters += input.LandBlendWeights1.x * LandscapeTexture1GlintParameters;
 			}
 		}
@@ -1313,7 +1313,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		}
 #		else
 		rawRMAOS = TexRMAOSSampler.Sample(SampRMAOSSampler, diffuseUv) * float4(PBRParams1.x, 1, 1, PBRParams1.z);
-		if ((PBRFlags & TruePBR_Glint) != 0) {
+		if ((PBRFlags & PBR::Flags::Glint) != 0) {
 			glintParameters = MultiLayerParallaxData;
 		}
 #		endif
@@ -1357,10 +1357,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif  // SNOW
 
 #		if defined(TRUE_PBR)
-		[branch] if ((PBRFlags & TruePBR_LandTile1PBR) != 0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile1PBR) != 0)
 		{
 			rawRMAOS += input.LandBlendWeights1.y * TexLandRMAOS2Sampler.Sample(SampLandRMAOS2Sampler, uv) * float4(LandscapeTexture2PBRParams.x, 1, 1, LandscapeTexture2PBRParams.z);
-			if ((PBRFlags & TruePBR_LandTile1HasGlint) != 0) {
+			if ((PBRFlags & PBR::TerrainFlags::LandTile1HasGlint) != 0) {
 				glintParameters += input.LandBlendWeights1.y * LandscapeTexture2GlintParameters;
 			}
 		}
@@ -1385,10 +1385,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif  // SNOW
 
 #		if defined(TRUE_PBR)
-		[branch] if ((PBRFlags & TruePBR_LandTile2PBR) != 0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile2PBR) != 0)
 		{
 			rawRMAOS += input.LandBlendWeights1.z * TexLandRMAOS3Sampler.Sample(SampLandRMAOS3Sampler, uv) * float4(LandscapeTexture3PBRParams.x, 1, 1, LandscapeTexture3PBRParams.z);
-			if ((PBRFlags & TruePBR_LandTile2HasGlint) != 0) {
+			if ((PBRFlags & PBR::TerrainFlags::LandTile2HasGlint) != 0) {
 				glintParameters += input.LandBlendWeights1.z * LandscapeTexture3GlintParameters;
 			}
 		}
@@ -1413,10 +1413,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif  // SNOW
 
 #		if defined(TRUE_PBR)
-		[branch] if ((PBRFlags & TruePBR_LandTile3PBR) != 0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile3PBR) != 0)
 		{
 			rawRMAOS += input.LandBlendWeights1.w * TexLandRMAOS4Sampler.Sample(SampLandRMAOS4Sampler, uv) * float4(LandscapeTexture4PBRParams.x, 1, 1, LandscapeTexture4PBRParams.z);
-			if ((PBRFlags & TruePBR_LandTile3HasGlint) != 0) {
+			if ((PBRFlags & PBR::TerrainFlags::LandTile3HasGlint) != 0) {
 				glintParameters += input.LandBlendWeights1.w * LandscapeTexture4GlintParameters;
 			}
 		}
@@ -1441,10 +1441,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif  // SNOW
 
 #		if defined(TRUE_PBR)
-		[branch] if ((PBRFlags & TruePBR_LandTile4PBR) != 0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile4PBR) != 0)
 		{
 			rawRMAOS += input.LandBlendWeights2.x * TexLandRMAOS5Sampler.Sample(SampLandRMAOS5Sampler, uv) * float4(LandscapeTexture5PBRParams.x, 1, 1, LandscapeTexture5PBRParams.z);
-			if ((PBRFlags & TruePBR_LandTile4HasGlint) != 0) {
+			if ((PBRFlags & PBR::TerrainFlags::LandTile4HasGlint) != 0) {
 				glintParameters += input.LandBlendWeights2.x * LandscapeTexture5GlintParameters;
 			}
 		}
@@ -1469,10 +1469,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif  // SNOW
 
 #		if defined(TRUE_PBR)
-		[branch] if ((PBRFlags & TruePBR_LandTile5PBR) != 0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile5PBR) != 0)
 		{
 			rawRMAOS += input.LandBlendWeights2.y * TexLandRMAOS6Sampler.Sample(SampLandRMAOS6Sampler, uv) * float4(LandscapeTexture6PBRParams.x, 1, 1, LandscapeTexture6PBRParams.z);
-			if ((PBRFlags & TruePBR_LandTile5HasGlint) != 0) {
+			if ((PBRFlags & PBR::TerrainFlags::LandTile5HasGlint) != 0) {
 				glintParameters += input.LandBlendWeights2.y * LandscapeTexture6GlintParameters;
 			}
 		}
@@ -1580,7 +1580,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		projBaseColor = saturate(EnvmapData.xyz * projBaseColor);
 		rawRMAOS.xyw = lerp(rawRMAOS.xyw, float3(ParallaxOccData.x, 0, ParallaxOccData.y), projectedMaterialWeight);
 		float4 projectedGlintParameters = 0;
-		if ((PBRFlags & TruePBR_ProjectedGlint) != 0) {
+		if ((PBRFlags & PBR::Flags::ProjectedGlint) != 0) {
 			projectedGlintParameters = SparkleParams;
 		}
 		glintParameters = lerp(glintParameters, projectedGlintParameters, projectedMaterialWeight);
@@ -1657,11 +1657,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 coatWorldNormal = worldSpaceNormal;
 
 #		if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
-	[branch] if ((PBRFlags & TruePBR_Subsurface) != 0)
+	[branch] if ((PBRFlags & PBR::Flags::Subsurface) != 0)
 	{
 		pbrSurfaceProperties.SubsurfaceColor = PBRParams2.xyz;
 		pbrSurfaceProperties.Thickness = PBRParams2.w;
-		[branch] if ((PBRFlags & TruePBR_HasFeatureTexture0) != 0)
+		[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture0) != 0)
 		{
 			float4 sampledSubsurfaceProperties = TexRimSoftLightWorldMapOverlaySampler.Sample(SampRimSoftLightWorldMapOverlaySampler, uv);
 			pbrSurfaceProperties.SubsurfaceColor *= sampledSubsurfaceProperties.xyz;
@@ -1669,7 +1669,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		}
 		pbrSurfaceProperties.Thickness = lerp(pbrSurfaceProperties.Thickness, 1, projectedMaterialWeight);
 	}
-	else if ((PBRFlags & TruePBR_TwoLayer) != 0)
+	else if ((PBRFlags & PBR::Flags::TwoLayer) != 0)
 	{
 		pbrSurfaceProperties.CoatColor = PBRParams2.xyz;
 		pbrSurfaceProperties.CoatStrength = PBRParams2.w;
@@ -1677,21 +1677,21 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		pbrSurfaceProperties.CoatF0 = MultiLayerParallaxData.y;
 
 		float2 coatUv = uv;
-		[branch] if ((PBRFlags & TruePBR_InterlayerParallax) != 0)
+		[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 		{
 			coatUv = uvOriginal;
 		}
-		[branch] if ((PBRFlags & TruePBR_HasFeatureTexture0) != 0)
+		[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture0) != 0)
 		{
 			float4 sampledCoatProperties = TexRimSoftLightWorldMapOverlaySampler.Sample(SampRimSoftLightWorldMapOverlaySampler, coatUv);
 			pbrSurfaceProperties.CoatColor *= sampledCoatProperties.xyz;
 			pbrSurfaceProperties.CoatStrength *= sampledCoatProperties.w;
 		}
-		[branch] if ((PBRFlags & TruePBR_HasFeatureTexture1) != 0)
+		[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture1) != 0)
 		{
 			float4 sampledCoatProperties = TexBackLightSampler.Sample(SampBackLightSampler, coatUv);
 			pbrSurfaceProperties.CoatRoughness *= sampledCoatProperties.w;
-			[branch] if ((PBRFlags & TruePBR_CoatNormal) != 0)
+			[branch] if ((PBRFlags & PBR::Flags::CoatNormal) != 0)
 			{
 				coatModelNormal = normalize(mul(tbn, TransformNormal(sampledCoatProperties.xyz)));
 			}
@@ -1706,11 +1706,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		pbrSurfaceProperties.CoatStrength = lerp(pbrSurfaceProperties.CoatStrength, 0, projectedMaterialWeight);
 	}
 
-	[branch] if ((PBRFlags & TruePBR_Fuzz) != 0)
+	[branch] if ((PBRFlags & PBR::Flags::Fuzz) != 0)
 	{
 		pbrSurfaceProperties.FuzzColor = MultiLayerParallaxData.xyz;
 		pbrSurfaceProperties.FuzzWeight = MultiLayerParallaxData.w;
-		[branch] if ((PBRFlags & TruePBR_HasFeatureTexture1) != 0)
+		[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture1) != 0)
 		{
 			float4 sampledFuzzProperties = TexBackLightSampler.Sample(SampBackLightSampler, uv);
 			pbrSurfaceProperties.FuzzColor *= sampledFuzzProperties.xyz;
@@ -1881,7 +1881,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 refractedDirLightDirection = DirLightDirection;
 #	if defined(TRUE_PBR)
-	[branch] if ((PBRFlags & TruePBR_InterlayerParallax) != 0)
+	[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 	{
 		refractedDirLightDirection = -refract(-DirLightDirection, coatModelNormal, eta);
 	}
@@ -2046,7 +2046,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		{
 			float3 pointDiffuseColor, coatPointDiffuseColor, pointTransmissionColor, pointSpecularColor;
 			float3 refractedLightDirection = normalizedLightDirection;
-			[branch] if ((PBRFlags & TruePBR_InterlayerParallax) != 0)
+			[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 			{
 				refractedLightDirection = -refract(-normalizedLightDirection, coatModelNormal, eta);
 			}
@@ -2153,7 +2153,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		float3 refractedLightDirection = normalizedLightDirection;
 #			if defined(TRUE_PBR)
-		[branch] if ((PBRFlags & TruePBR_InterlayerParallax) != 0)
+		[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 		{
 			refractedLightDirection = -refract(-normalizedLightDirection, coatWorldNormal, eta);
 		}
@@ -2260,7 +2260,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 	bool hasEmissive = (0x3F & (PixelShaderDescriptor >> 24)) == LightingTechnique::Glowmap;
 #		if defined(TRUE_PBR)
-	hasEmissive = hasEmissive || (PBRFlags & TruePBR_HasEmissive != 0);
+	hasEmissive = hasEmissive || (PBRFlags & PBR::Flags::HasEmissive != 0);
 #		endif
 	[branch] if (hasEmissive)
 	{
@@ -2356,7 +2356,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		if !(defined(FACEGEN) || defined(FACEGEN_RGB_TINT) || defined(EYE)) || defined(TREE_ANIM)
 #			if defined(TRUE_PBR)
 #				if !defined(LANDSCAPE)
-	[branch] if ((PBRFlags & TruePBR_TwoLayer) != 0)
+	[branch] if ((PBRFlags & PBR::Flags::TwoLayer) != 0)
 	{
 		porosity = 0;
 	}
@@ -2390,7 +2390,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(TRUE_PBR)
 	{
 		float3 directLightsDiffuseInput = diffuseColor * baseColor.xyz;
-		[branch] if ((PBRFlags & TruePBR_ColoredCoat) != 0)
+		[branch] if ((PBRFlags & PBR::Flags::ColoredCoat) != 0)
 		{
 			directLightsDiffuseInput = lerp(directLightsDiffuseInput, pbrSurfaceProperties.CoatColor * coatLightsDiffuseColor, pbrSurfaceProperties.CoatStrength);
 		}

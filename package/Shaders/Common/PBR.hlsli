@@ -1,38 +1,44 @@
-#define TruePBR_HasEmissive (1 << 0)
-#define TruePBR_HasDisplacement (1 << 1)
-#define TruePBR_HasFeatureTexture0 (1 << 2)
-#define TruePBR_HasFeatureTexture1 (1 << 3)
-#define TruePBR_Subsurface (1 << 4)
-#define TruePBR_TwoLayer (1 << 5)
-#define TruePBR_ColoredCoat (1 << 6)
-#define TruePBR_InterlayerParallax (1 << 7)
-#define TruePBR_CoatNormal (1 << 8)
-#define TruePBR_Fuzz (1 << 9)
-#define TruePBR_HairMarschner (1 << 10)
-#define TruePBR_Glint (1 << 11)
-#define TruePBR_ProjectedGlint (1 << 12)
-
-#define TruePBR_LandTile0PBR (1 << 0)
-#define TruePBR_LandTile1PBR (1 << 1)
-#define TruePBR_LandTile2PBR (1 << 2)
-#define TruePBR_LandTile3PBR (1 << 3)
-#define TruePBR_LandTile4PBR (1 << 4)
-#define TruePBR_LandTile5PBR (1 << 5)
-#define TruePBR_LandTile0HasDisplacement (1 << 6)
-#define TruePBR_LandTile1HasDisplacement (1 << 7)
-#define TruePBR_LandTile2HasDisplacement (1 << 8)
-#define TruePBR_LandTile3HasDisplacement (1 << 9)
-#define TruePBR_LandTile4HasDisplacement (1 << 10)
-#define TruePBR_LandTile5HasDisplacement (1 << 11)
-#define TruePBR_LandTile0HasGlint (1 << 12)
-#define TruePBR_LandTile1HasGlint (1 << 13)
-#define TruePBR_LandTile2HasGlint (1 << 14)
-#define TruePBR_LandTile3HasGlint (1 << 15)
-#define TruePBR_LandTile4HasGlint (1 << 16)
-#define TruePBR_LandTile5HasGlint (1 << 17)
-
 namespace PBR
 {
+	namespace Flags
+	{
+		static const uint HasEmissive = (1 << 0);
+		static const uint HasDisplacement = (1 << 1);
+		static const uint HasFeatureTexture0 = (1 << 2);
+		static const uint HasFeatureTexture1 = (1 << 3);
+		static const uint Subsurface = (1 << 4);
+		static const uint TwoLayer = (1 << 5);
+		static const uint ColoredCoat = (1 << 6);
+		static const uint InterlayerParallax = (1 << 7);
+		static const uint CoatNormal = (1 << 8);
+		static const uint Fuzz = (1 << 9);
+		static const uint HairMarschner = (1 << 10);
+		static const uint Glint = (1 << 11);
+		static const uint ProjectedGlint = (1 << 12);
+	}
+	
+	namespace TerrainFlags
+	{
+		static const uint LandTile0PBR = (1 << 0);
+		static const uint LandTile1PBR = (1 << 1);
+		static const uint LandTile2PBR = (1 << 2);
+		static const uint LandTile3PBR = (1 << 3);
+		static const uint LandTile4PBR = (1 << 4);
+		static const uint LandTile5PBR = (1 << 5);
+		static const uint LandTile0HasDisplacement = (1 << 6);
+		static const uint LandTile1HasDisplacement = (1 << 7);
+		static const uint LandTile2HasDisplacement = (1 << 8);
+		static const uint LandTile3HasDisplacement = (1 << 9);
+		static const uint LandTile4HasDisplacement = (1 << 10);
+		static const uint LandTile5HasDisplacement = (1 << 11);
+		static const uint LandTile0HasGlint = (1 << 12);
+		static const uint LandTile1HasGlint = (1 << 13);
+		static const uint LandTile2HasGlint = (1 << 14);
+		static const uint LandTile3HasGlint = (1 << 15);
+		static const uint LandTile4HasGlint = (1 << 16);
+		static const uint LandTile5HasGlint = (1 << 17);
+	}
+
 #include "Common/Math.hlsli"
 #if defined(GLINT)
 #	include "Common/Glints/Glints2023.hlsli"
@@ -109,7 +115,7 @@ namespace PBR
 	{
 		LightProperties result;
 		result.LinearLightColor = Color::GammaToLinear(lightColor) * nonParallaxShadow * parallaxShadow / Color::LightPreMult;
-		[branch] if ((PBRFlags & TruePBR_InterlayerParallax) != 0)
+		[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 		{
 			result.LinearCoatLightColor = Color::GammaToLinear(lightColor) * nonParallaxShadow / Color::LightPreMult;
 		}
@@ -417,7 +423,7 @@ namespace PBR
 		float satVdotH = saturate(VdotH);
 
 #if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
-		[branch] if ((PBRFlags & TruePBR_HairMarschner) != 0)
+		[branch] if ((PBRFlags & PBR::Flags::HairMarschner) != 0)
 		{
 			transmission += lightProperties.LinearLightColor * GetHairColorMarschner(N, V, L, NdotL, NdotV, VdotL, 0, 1, 0, surfaceProperties);
 		}
@@ -443,7 +449,7 @@ namespace PBR
 			}
 
 #if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
-			[branch] if ((PBRFlags & TruePBR_Fuzz) != 0)
+			[branch] if ((PBRFlags & PBR::Flags::Fuzz) != 0)
 			{
 				float3 fuzzSpecular = GetSpecularDirectLightMultiplierMicroflakes(surfaceProperties.Roughness, surfaceProperties.FuzzColor, satNdotL, satNdotV, satNdotH, satVdotH) * lightProperties.LinearLightColor * satNdotL;
 				[branch] if (pbrSettings.UseMultipleScattering)
@@ -454,7 +460,7 @@ namespace PBR
 				specular = lerp(specular, fuzzSpecular, surfaceProperties.FuzzWeight);
 			}
 
-			[branch] if ((PBRFlags & TruePBR_Subsurface) != 0)
+			[branch] if ((PBRFlags & PBR::Flags::Subsurface) != 0)
 			{
 				const float subsurfacePower = 12.234;
 				float forwardScatter = exp2(saturate(-VdotL) * subsurfacePower - subsurfacePower);
@@ -462,7 +468,7 @@ namespace PBR
 				float subsurface = lerp(backScatter, 1, forwardScatter) * (1.0 - surfaceProperties.Thickness);
 				transmission += surfaceProperties.SubsurfaceColor * subsurface * lightProperties.LinearLightColor * GetDiffuseDirectLightMultiplierLambert();
 			}
-			else if ((PBRFlags & TruePBR_TwoLayer) != 0)
+			else if ((PBRFlags & PBR::Flags::TwoLayer) != 0)
 			{
 				float3 coatH = normalize(coatV + coatL);
 
@@ -470,7 +476,7 @@ namespace PBR
 				float coatNdotV = satNdotV;
 				float coatNdotH = satNdotH;
 				float coatVdotH = satVdotH;
-				[branch] if ((PBRFlags & TruePBR_CoatNormal) != 0)
+				[branch] if ((PBRFlags & PBR::Flags::CoatNormal) != 0)
 				{
 					coatNdotL = clamp(dot(coatN, coatL), 1e-5, 1);
 					coatNdotV = saturate(abs(dot(coatN, coatV)) + 1e-5);
@@ -517,7 +523,7 @@ namespace PBR
 		float NdotV = saturate(dot(N, V));
 
 #if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
-		[branch] if ((PBRFlags & TruePBR_HairMarschner) != 0)
+		[branch] if ((PBRFlags & PBR::Flags::HairMarschner) != 0)
 		{
 			float3 L = normalize(V - N * dot(V, N));
 			float NdotL = dot(N, L);
@@ -530,11 +536,11 @@ namespace PBR
 			diffuseLobeWeight = diffuseColor;
 
 #if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
-			[branch] if ((PBRFlags & TruePBR_Subsurface) != 0)
+			[branch] if ((PBRFlags & PBR::Flags::Subsurface) != 0)
 			{
 				diffuseLobeWeight += surfaceProperties.SubsurfaceColor * (1 - surfaceProperties.Thickness) / Math::PI;
 			}
-			[branch] if ((PBRFlags & TruePBR_Fuzz) != 0)
+			[branch] if ((PBRFlags & PBR::Flags::Fuzz) != 0)
 			{
 				diffuseLobeWeight += surfaceProperties.FuzzColor * surfaceProperties.FuzzWeight;
 			}
@@ -551,7 +557,7 @@ namespace PBR
 			}
 
 #if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
-			[branch] if ((PBRFlags & TruePBR_TwoLayer) != 0)
+			[branch] if ((PBRFlags & PBR::Flags::TwoLayer) != 0)
 			{
 				float2 coatSpecularBRDF = GetEnvBRDFApproxLazarov(surfaceProperties.CoatRoughness, NdotV);
 				float3 coatSpecularLobeWeight = surfaceProperties.CoatF0 * coatSpecularBRDF.x + coatSpecularBRDF.y;
@@ -565,7 +571,7 @@ namespace PBR
 				diffuseLobeWeight *= layerAttenuation;
 				specularLobeWeight *= layerAttenuation;
 
-				[branch] if ((PBRFlags & TruePBR_ColoredCoat) != 0)
+				[branch] if ((PBRFlags & PBR::Flags::ColoredCoat) != 0)
 				{
 					float3 coatDiffuseLobeWeight = surfaceProperties.CoatColor * (1 - coatSpecularLobeWeight);
 					diffuseLobeWeight += coatDiffuseLobeWeight * surfaceProperties.CoatStrength;

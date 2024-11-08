@@ -505,7 +505,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	pbrSurfaceProperties.SubsurfaceColor = PBRParams2.xyz;
 	pbrSurfaceProperties.Thickness = PBRParams2.w;
-	[branch] if ((PBRFlags & TruePBR_HasFeatureTexture0) != 0)
+	[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture0) != 0)
 	{
 		float4 sampledSubsurfaceProperties = TexSubsurfaceSampler.Sample(SampSubsurfaceSampler, input.TexCoord.xy);
 		pbrSurfaceProperties.SubsurfaceColor *= sampledSubsurfaceProperties.xyz;
