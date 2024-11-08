@@ -646,7 +646,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			else
 
 #				if !defined(SSGI)
-	float3 directionalAmbientColor = mul(DirectionalAmbientShared, float4(normal, 1.0));
+	float3 directionalAmbientColor = max(0, mul(DirectionalAmbientShared, float4(normal, 1.0)));
 
 #					if defined(SKYLIGHTING)
 #						if defined(VR)
@@ -792,7 +792,7 @@ PS_OUTPUT main(PS_INPUT input)
 	normal = float3(normal.xy, normal.z * 0.5 + 0.5);
 
 #			if !defined(SSGI)
-	float3 directionalAmbientColor = mul(DirectionalAmbientShared, float4(normal, 1.0));
+	float3 directionalAmbientColor = max(0, mul(DirectionalAmbientShared, float4(normal, 1.0)));
 	diffuseColor += directionalAmbientColor;
 #			endif  // !SSGI
 

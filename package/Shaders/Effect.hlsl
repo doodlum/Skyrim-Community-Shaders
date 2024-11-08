@@ -545,7 +545,7 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 			color = DirLightColorShared * 0.5;
 	}
 
-	color += DirectionalAmbientShared._14_24_34;
+	color += max(0, DirectionalAmbientShared._14_24_34);
 
 	color.x += dot(PLightColorR * lightFadeMul, 1.0.xxxx);
 	color.y += dot(PLightColorG * lightFadeMul, 1.0.xxxx);
