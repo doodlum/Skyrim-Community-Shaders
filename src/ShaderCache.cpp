@@ -1477,9 +1477,6 @@ namespace SIE
 				ReflectConstantBuffers(*reflector.get(), bufferSizes, newShader->constantTable,
 					dummy,
 					ShaderClass::Pixel, descriptor, shader);
-				if (shader.shaderType == RE::BSShader::Type::Effect) {
-					logger::info("{}: {}", descriptor, bufferSizes[2]);
-				}
 				if (bufferSizes[0] != 0) {
 					newShader->constantBuffers[0].buffer =
 						(REX::W32::ID3D11Buffer*)perTechniqueBuffersArray.get()[bufferSizes[0]];
