@@ -793,10 +793,7 @@ PS_OUTPUT main(PS_INPUT input)
 	psout.ScreenSpaceNormals.xy = screenSpaceNormal.xy + 0.5.xx;
 	psout.ScreenSpaceNormals.zw = 0.0.xx;
 #	else
-	if (ExtendedFlags & Effect_Shadows)
-		psout.Normal = float4(0, 0, 0, sqrt(finalColor.w));
-	else
-		psout.Normal = float4(1, 0, 0, finalColor.w);
+	psout.Normal = float4(!(ExtendedFlags & Effect_Shadows), 0, 0, finalColor.w);
 	psout.Color2 = finalColor;
 #	endif
 
