@@ -492,6 +492,7 @@ namespace Hooks
 						if (state->enabledClasses[type - 1]) {
 							RE::BSGraphics::VertexShader* vertexShader = shaderCache.GetVertexShader(*currentShader, state->modifiedVertexDescriptor);
 							if (vertexShader) {
+								a_vertexShader = vertexShader;
 								state->context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(vertexShader->shader), NULL, NULL);
 								auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 								GET_INSTANCE_MEMBER(currentVertexShader, shadowState)
@@ -523,6 +524,7 @@ namespace Hooks
 						if (state->enabledClasses[type - 1]) {
 							RE::BSGraphics::PixelShader* pixelShader = shaderCache.GetPixelShader(*currentShader, state->modifiedPixelDescriptor);
 							if (pixelShader) {
+								a_pixelShader = pixelShader;
 								state->context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(pixelShader->shader), NULL, NULL);
 								auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 								GET_INSTANCE_MEMBER(currentPixelShader, shadowState)
