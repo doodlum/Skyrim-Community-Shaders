@@ -41,8 +41,6 @@ float Get3DFilteredShadow(float3 positionWS, float3 viewDirection, float2 screen
 
 	uint3 seed = Random::pcg3d(uint3(screenPosition.xy, screenPosition.x * Math::PI));
 
-	float maxDepth = SharedData::GetScreenDepth(screenPosition / float2(3440, 1440), eyeIndex);
-
 	float2 compareValue;
 	compareValue.x = mul(transpose(sD.ShadowMapProj[eyeIndex][0]), float4(positionWS, 1)).z - 0.01;
 	compareValue.y = mul(transpose(sD.ShadowMapProj[eyeIndex][1]), float4(positionWS, 1)).z - 0.01; 
@@ -64,9 +62,7 @@ float Get3DFilteredShadow(float3 positionWS, float3 viewDirection, float2 screen
 
 			uint cascadeIndex = sD.EndSplitDistances.x < GetShadowDepth(positionWS.xyz + viewDirection * (sampleOffset.x + sampleOffset.y), eyeIndex);  // Stochastic cascade sampling
 
-			float3 samplePosition = positionWS + sampleOffset;
-
-			float3 positionLS = mul(transpose(sD.ShadowMapProj[eyeIndex][cascadeIndex]), float4(samplePosition, 1));
+			float3 positionLS = mul(transpose(sD.ShadowMapProj[eyeIndex][cascadeIndex]), float4(positionWS + sampleOffset, 1));
 
 			float4 depths = SharedTexShadowMapSampler.GatherRed(LinearSampler, float3(saturate(positionLS.xy), cascadeIndex), 0);
 			shadow += dot(depths > compareValue[cascadeIndex], 0.25);
