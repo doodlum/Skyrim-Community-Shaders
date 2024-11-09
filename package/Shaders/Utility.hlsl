@@ -375,7 +375,6 @@ float GetPoissonDiskFilteredShadowVisibility(float noise, float2x2 rotationMatri
 
 #	if defined(RENDER_SHADOWMASK)
 	uint onePlusLayerIndex = 1.0 + layerIndex;
-	compareValue += 0.001 * onePlusLayerIndex;
 	float layerIndexRcp = rcp(onePlusLayerIndex);
 #	endif
 
@@ -397,7 +396,7 @@ float GetPoissonDiskFilteredShadowVisibility(float noise, float2x2 rotationMatri
 		float2 shadowMapUV = lightDirection.xy / lightDirection.z * 0.5 + 0.5;
 		shadowMapUV.y = lowerHalf ? 1 - 0.5 * shadowMapUV.y : 0.5 * shadowMapUV.y;
 
-		visibility += tex.SampleCmpLevelZero(samp, float3(shadowMapUV, layerIndex), compareValue + noise * 0.001).x;
+		visibility += tex.SampleCmpLevelZero(samp, float3(shadowMapUV, layerIndex), compareValue).x;
 
 #	elif defined(RENDER_SHADOWMASK)
 		float2 sampleUV = layerIndexRcp * sampleOffset * ShadowSampleParam.z + baseUV;

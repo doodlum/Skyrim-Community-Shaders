@@ -76,7 +76,6 @@ float Get3DFilteredShadow(float3 positionWS, float3 viewDirection, float2 screen
 float Get2DFilteredShadowCascade(float noise, float2x2 rotationMatrix, float sampleOffsetScale, float2 baseUV, float cascadeIndex, float compareValue, uint eyeIndex)
 {
 	const uint sampleCount = 8;
-	compareValue += 0.001 * (1 + cascadeIndex);
 
 	float layerIndexRcp = rcp(1 + cascadeIndex);
 
@@ -92,7 +91,7 @@ float Get2DFilteredShadowCascade(float noise, float2x2 rotationMatrix, float sam
 		float2 sampleUV = layerIndexRcp * sampleOffset * sampleOffsetScale + baseUV;
 
 		float4 depths = SharedTexShadowMapSampler.GatherRed(LinearSampler, float3(saturate(sampleUV), cascadeIndex), 0);
-		visibility += dot(depths > (compareValue + noise * 0.001), 0.25);
+		visibility += dot(depths > compareValue, 0.25);
 	}
 
 	return visibility * rcp(sampleCount);
