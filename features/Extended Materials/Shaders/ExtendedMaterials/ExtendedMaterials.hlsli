@@ -74,37 +74,37 @@ namespace ExtendedMaterials
 		weights[4] = w2.x;
 		weights[5] = w2.y;
 		float total = 0;
-		[branch] if ((PBRFlags & TruePBR_LandTile0HasDisplacement) != 0 && w1.x > 0.0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile0HasDisplacement) != 0 && w1.x > 0.0)
 		{
 			float h = ScaleDisplacement(TexLandDisplacement0Sampler.SampleLevel(SampTerrainParallaxSampler, coords, mipLevels[0]).x, params[0]);
 			total += h * weights[0];
 			weights[0] *= pow(heightBlend, h);
 		}
-		[branch] if ((PBRFlags & TruePBR_LandTile1HasDisplacement) != 0 && w1.y > 0.0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile1HasDisplacement) != 0 && w1.y > 0.0)
 		{
 			float h = ScaleDisplacement(TexLandDisplacement1Sampler.SampleLevel(SampTerrainParallaxSampler, coords, mipLevels[1]).x, params[1]);
 			total += h * weights[1];
 			weights[1] *= pow(heightBlend, h);
 		}
-		[branch] if ((PBRFlags & TruePBR_LandTile2HasDisplacement) != 0 && w1.z > 0.0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile2HasDisplacement) != 0 && w1.z > 0.0)
 		{
 			float h = ScaleDisplacement(TexLandDisplacement2Sampler.SampleLevel(SampTerrainParallaxSampler, coords, mipLevels[2]).x, params[2]);
 			total += h * weights[2];
 			weights[2] *= pow(heightBlend, h);
 		}
-		[branch] if ((PBRFlags & TruePBR_LandTile3HasDisplacement) != 0 && w1.w > 0.0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile3HasDisplacement) != 0 && w1.w > 0.0)
 		{
 			float h = ScaleDisplacement(TexLandDisplacement3Sampler.SampleLevel(SampTerrainParallaxSampler, coords, mipLevels[3]).x, params[3]);
 			total += h * weights[3];
 			weights[3] *= pow(heightBlend, h);
 		}
-		[branch] if ((PBRFlags & TruePBR_LandTile4HasDisplacement) != 0 && w2.x > 0.0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile4HasDisplacement) != 0 && w2.x > 0.0)
 		{
 			float h = ScaleDisplacement(TexLandDisplacement4Sampler.SampleLevel(SampTerrainParallaxSampler, coords, mipLevels[4]).x, params[4]);
 			total += h * weights[4];
 			weights[4] *= pow(heightBlend, h);
 		}
-		[branch] if ((PBRFlags & TruePBR_LandTile5HasDisplacement) != 0 && w2.y > 0.0)
+		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile5HasDisplacement) != 0 && w2.y > 0.0)
 		{
 			float h = ScaleDisplacement(TexLandDisplacement5Sampler.SampleLevel(SampTerrainParallaxSampler, coords, mipLevels[5]).x, params[5]);
 			total += h * weights[5];
