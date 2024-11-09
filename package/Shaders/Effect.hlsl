@@ -528,21 +528,22 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 
 	float3 color = 0.0;
 	float angleShadow = saturate(DirLightDirectionShared.z) * saturate(DirLightDirectionShared.z);
+	float dirLightBacklighting = 1.0 + saturate(dot(normalize(worldPosition), -DirLightDirectionShared.xyz));
 
-	if ((ExtendedFlags & Effect_Shadows) != 0) {
+	if (ExtendedFlags & Effect_Shadows) {
 		if (InMapMenu)
-			color = DirLightColorShared * angleShadow;
+			color = dirLightBacklighting * DirLightColorShared * angleShadow;
 		else if (!InInterior && (ExtraShaderDescriptor & ExtraFlags::InWorld))
-			color = DirLightColorShared * GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
+			color = dirLightBacklighting * DirLightColorShared * GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
 		else
-			color = DirLightColorShared * 0.5;
+			color = dirLightBacklighting * DirLightColorShared * 0.5;
 	} else {
 		if (InMapMenu)
-			color = DirLightColorShared * angleShadow;
+			color = dirLightBacklighting * DirLightColorShared * angleShadow;
 		else if (!InInterior && (ExtraShaderDescriptor & ExtraFlags::InWorld))
-			color = DirLightColorShared * GetWorldShadow(worldPosition, length(worldPosition), 0.0, eyeIndex) * angleShadow * 0.5;
+			color = dirLightBacklighting * DirLightColorShared * GetWorldShadow(worldPosition, length(worldPosition), 0.0, eyeIndex) * angleShadow * 0.5;
 		else
-			color = DirLightColorShared * 0.5;
+			color = dirLightBacklighting * DirLightColorShared * 0.5;
 	}
 
 	color += DirectionalAmbientShared._14_24_34;
@@ -792,7 +793,7 @@ PS_OUTPUT main(PS_INPUT input)
 	psout.ScreenSpaceNormals.xy = screenSpaceNormal.xy + 0.5.xx;
 	psout.ScreenSpaceNormals.zw = 0.0.xx;
 #	else
-	psout.Normal.xyz = float3(1, 0, 0);
+	psout.Normal.xyz = float3(!(ExtendedFlags & Effect_Shadows), 0, 0);
 	psout.Normal.w = finalColor.w;
 
 	psout.Color2 = finalColor;
