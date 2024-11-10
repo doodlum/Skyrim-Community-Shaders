@@ -155,11 +155,6 @@ namespace EffectExtensions
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	enum class EffectExtendedFlags : uint32_t
-	{
-		Shadows = 1 << 0,
-	};
-
 	void EffectSetupGeometry(ID3D11Resource* pResource)
 	{
 		auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
@@ -168,13 +163,9 @@ namespace EffectExtensions
 			EffectRenderPass && EffectRenderPass->geometry &&
 			pResource == static_cast<void*>(currentPixelShader->constantBuffers[2].buffer)) {
 			if (auto* shaderProperty = static_cast<RE::BSShaderProperty*>(EffectRenderPass->geometry->GetGeometryRuntimeData().properties[1].get())) {
-				stl::enumeration<EffectExtendedFlags> flags;
 				if (shaderProperty->flags.any(RE::BSShaderProperty::EShaderPropertyFlag::kUniformScale)) {
-					flags.set(EffectExtendedFlags::Shadows);
+					State::GetSingleton()->currentExtraDescriptor |= (uint)State::ExtraShaderDescriptors::EffectShadows;
 				}
-
-				const auto& effectPSConstants = ShaderConstants::EffectPS::Get();
-				shadowState->SetPSConstant(flags, RE::BSGraphics::ConstantGroupLevel::PerGeometry, effectPSConstants.ExtendedFlags);
 			}
 		}
 	}
@@ -492,7 +483,6 @@ namespace Hooks
 						if (state->enabledClasses[type - 1]) {
 							RE::BSGraphics::VertexShader* vertexShader = shaderCache.GetVertexShader(*currentShader, state->modifiedVertexDescriptor);
 							if (vertexShader) {
-								a_vertexShader = vertexShader;
 								state->context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(vertexShader->shader), NULL, NULL);
 								auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 								GET_INSTANCE_MEMBER(currentVertexShader, shadowState)
@@ -524,7 +514,6 @@ namespace Hooks
 						if (state->enabledClasses[type - 1]) {
 							RE::BSGraphics::PixelShader* pixelShader = shaderCache.GetPixelShader(*currentShader, state->modifiedPixelDescriptor);
 							if (pixelShader) {
-								a_pixelShader = pixelShader;
 								state->context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(pixelShader->shader), NULL, NULL);
 								auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 								GET_INSTANCE_MEMBER(currentPixelShader, shadowState)

@@ -530,7 +530,7 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 	float angleShadow = saturate(DirLightDirectionShared.z) * saturate(DirLightDirectionShared.z);
 	float dirLightBacklighting = 1.0 + saturate(dot(normalize(worldPosition), -DirLightDirectionShared.xyz));
 
-	if (ExtendedFlags & Effect_Shadows) {
+	if (ExtraShaderDescriptor & ExtraFlags::EffectShadows) {
 		if (InMapMenu)
 			color = dirLightBacklighting * DirLightColorShared * angleShadow;
 		else if (!InInterior && (ExtraShaderDescriptor & ExtraFlags::InWorld))
