@@ -68,8 +68,6 @@ void State::Draw()
 						forceUpdatePermutationBuffer = false;
 					}
 
-					currentExtraDescriptor = 0;
-
 					static Util::FrameChecker frameChecker;
 					if (frameChecker.IsNewFrame()) {
 						ID3D11Buffer* buffers[3] = { permutationCB->CB(), sharedDataCB->CB(), featureDataCB->CB() };
@@ -87,6 +85,7 @@ void State::Draw()
 		}
 		updateShader = false;
 	}
+	currentExtraDescriptor = 0;
 }
 
 void State::Reset()
