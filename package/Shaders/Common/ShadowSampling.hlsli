@@ -43,7 +43,7 @@ float Get3DFilteredShadow(float3 positionWS, float3 viewDirection, float2 screen
 
 	float2 compareValue;
 	compareValue.x = mul(transpose(sD.ShadowMapProj[eyeIndex][0]), float4(positionWS, 1)).z - 0.01;
-	compareValue.y = mul(transpose(sD.ShadowMapProj[eyeIndex][1]), float4(positionWS, 1)).z - 0.01; 
+	compareValue.y = mul(transpose(sD.ShadowMapProj[eyeIndex][1]), float4(positionWS, 1)).z - 0.01;
 
 	float shadow = 0.0;
 	if (sD.EndSplitDistances.z >= GetShadowDepth(positionWS, eyeIndex)) {
