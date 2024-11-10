@@ -810,6 +810,7 @@ void LightLimitFix::UpdateLights()
 						light.lightFlags.set(LightFlags::Shadow);
 					}
 
+					// Check for inactive shadow light
 					if (light.shadowMaskIndex != 255) {
 						SetLightPosition(light, niLight->world.translate);
 
