@@ -1,6 +1,6 @@
+#include "Common/Color.hlsli"
 #include "Common/DummyVSTexCoord.hlsl"
 #include "Common/FrameBuffer.hlsli"
-#include "Common/Color.hlsli"
 
 typedef VS_OUTPUT PS_INPUT;
 
