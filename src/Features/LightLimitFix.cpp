@@ -344,7 +344,7 @@ void LightLimitFix::BSLightingShader_SetupGeometry_GeometrySetupConstantPointLig
 		if (bsLight->IsShadowLight()) {
 			auto* shadowLight = static_cast<RE::BSShadowLight*>(bsLight);
 			GET_INSTANCE_MEMBER(shadowLightIndex, shadowLight);
-			light.shadowMaskIndex = std::min(3u, shadowLightIndex);
+			light.shadowMaskIndex = shadowLightIndex;
 			light.lightFlags.set(LightFlags::Shadow);
 		}
 
@@ -803,17 +803,21 @@ void LightLimitFix::UpdateLights()
 						light.lightFlags.set(LightFlags::PortalStrict);
 					}
 
+					bool inactiveShadowLight = false;
 					if (bsLight->IsShadowLight()) {
 						auto* shadowLight = static_cast<RE::BSShadowLight*>(bsLight);
 						GET_INSTANCE_MEMBER(shadowLightIndex, shadowLight);
-						light.shadowMaskIndex = std::min(3u, shadowLightIndex);
+						inactiveShadowLight = shadowLightIndex == 255;
+						light.shadowMaskIndex = shadowLightIndex;
 						light.lightFlags.set(LightFlags::Shadow);
 					}
 
-					SetLightPosition(light, niLight->world.translate);
+					if (!inactiveShadowLight) {
+						SetLightPosition(light, niLight->world.translate);
 
-					if ((light.color.x + light.color.y + light.color.z) > 1e-4 && light.radius > 1e-4) {
-						lightsData.push_back(light);
+						if ((light.color.x + light.color.y + light.color.z) > 1e-4 && light.radius > 1e-4) {
+							lightsData.push_back(light);
+						}
 					}
 				}
 			}
