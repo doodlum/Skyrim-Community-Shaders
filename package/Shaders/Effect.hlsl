@@ -484,7 +484,6 @@ cbuffer PerGeometry : register(b2)
 	float4 AlphaTestRef : packoffset(c9);
 	float4 MembraneRimColor : packoffset(c10);
 	float4 MembraneVars : packoffset(c11);
-	uint ExtendedFlags : packoffset(c12);
 #	else
 	float4 PLightPositionX[2] : packoffset(c0);
 	float4 PLightPositionY[2] : packoffset(c2);
@@ -498,7 +497,6 @@ cbuffer PerGeometry : register(b2)
 	float4 AlphaTestRef : packoffset(c12);
 	float4 MembraneRimColor : packoffset(c13);
 	float4 MembraneVars : packoffset(c14);
-	uint ExtendedFlags : packoffset(c15);
 #	endif
 };
 
@@ -793,7 +791,7 @@ PS_OUTPUT main(PS_INPUT input)
 	psout.ScreenSpaceNormals.xy = screenSpaceNormal.xy + 0.5.xx;
 	psout.ScreenSpaceNormals.zw = 0.0.xx;
 #	else
-	psout.Normal = float4(!(ExtendedFlags & Effect_Shadows), 0, 0, finalColor.w);
+	psout.Normal = float4(!(ExtraShaderDescriptor & ExtraFlags::EffectShadows), 0, 0, finalColor.w);
 	psout.Color2 = finalColor;
 #	endif
 
