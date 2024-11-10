@@ -32,6 +32,37 @@ void State::Draw()
 		auto skylighting = Skylighting::GetSingleton();
 		if (skylighting->loaded)
 			skylighting->SkylightingShaderHacks();
+		
+		if (auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator()) {
+			// Set an unused bit to indicate if we are rendering an object in the main rendering pass
+			if (accumulator->GetRuntimeData().activeShadowSceneNode == RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0]) {
+				currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
+			}
+		}
+
+		if (forceUpdatePermutationBuffer || currentPixelDescriptor != lastPixelDescriptor || currentExtraDescriptor != lastExtraDescriptor) {
+			PermutationCB data{};
+			data.VertexShaderDescriptor = currentVertexDescriptor;
+			data.PixelShaderDescriptor = currentPixelDescriptor;
+			data.ExtraShaderDescriptor = currentExtraDescriptor;
+
+			permutationCB->Update(data);
+
+			lastVertexDescriptor = currentVertexDescriptor;
+			lastPixelDescriptor = currentPixelDescriptor;
+			lastExtraDescriptor = currentExtraDescriptor;
+
+			forceUpdatePermutationBuffer = false;
+		}
+		
+		currentExtraDescriptor = 0;
+	
+		static Util::FrameChecker frameChecker;
+		if (frameChecker.IsNewFrame()) {
+			ID3D11Buffer* buffers[3] = { permutationCB->CB(), sharedDataCB->CB(), featureDataCB->CB() };
+			context->PSSetConstantBuffers(4, 3, buffers);
+			context->CSSetConstantBuffers(5, 2, buffers + 1);
+		}
 
 		if (currentShader && updateShader) {
 			auto type = currentShader->shaderType.get();
@@ -46,35 +77,6 @@ void State::Draw()
 					// Only check against non-shader bits
 					currentPixelDescriptor &= ~modifiedPixelDescriptor;
 
-					if (auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator()) {
-						// Set an unused bit to indicate if we are rendering an object in the main rendering pass
-						if (accumulator->GetRuntimeData().activeShadowSceneNode == RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0]) {
-							currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
-						}
-					}
-
-					if (forceUpdatePermutationBuffer || currentPixelDescriptor != lastPixelDescriptor || currentExtraDescriptor != lastExtraDescriptor) {
-						PermutationCB data{};
-						data.VertexShaderDescriptor = currentVertexDescriptor;
-						data.PixelShaderDescriptor = currentPixelDescriptor;
-						data.ExtraShaderDescriptor = currentExtraDescriptor;
-
-						permutationCB->Update(data);
-
-						lastVertexDescriptor = currentVertexDescriptor;
-						lastPixelDescriptor = currentPixelDescriptor;
-						lastExtraDescriptor = currentExtraDescriptor;
-
-						forceUpdatePermutationBuffer = false;
-					}
-
-					static Util::FrameChecker frameChecker;
-					if (frameChecker.IsNewFrame()) {
-						ID3D11Buffer* buffers[3] = { permutationCB->CB(), sharedDataCB->CB(), featureDataCB->CB() };
-						context->PSSetConstantBuffers(4, 3, buffers);
-						context->CSSetConstantBuffers(5, 2, buffers + 1);
-					}
-
 					if (IsDeveloperMode()) {
 						BeginPerfEvent(std::format("Draw: CS {}::{:x}::{}", magic_enum::enum_name(currentShader->shaderType.get()), currentPixelDescriptor, currentShader->fxpFilename));
 						SetPerfMarker(std::format("Defines: {}", SIE::ShaderCache::GetDefinesString(*currentShader, currentPixelDescriptor)));
@@ -85,7 +87,6 @@ void State::Draw()
 		}
 		updateShader = false;
 	}
-	currentExtraDescriptor = 0;
 }
 
 void State::Reset()
