@@ -124,7 +124,10 @@ void MessageHandler(SKSE::MessagingInterface::Message* message)
 				if (shaderCache.IsDiskCache()) {
 					shaderCache.WriteDiskCacheInfo();
 				}
-
+				
+				auto bEnableImprovedSnow = RE::GetINISetting("bEnableImprovedSnow:Display");
+				bEnableImprovedSnow->data.b = false;
+				
 				TruePBR::GetSingleton()->DataLoaded();
 				for (auto* feature : Feature::GetFeatureList()) {
 					if (feature->loaded) {
