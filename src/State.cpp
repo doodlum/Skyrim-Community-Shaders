@@ -32,7 +32,7 @@ void State::Draw()
 		auto skylighting = Skylighting::GetSingleton();
 		if (skylighting->loaded)
 			skylighting->SkylightingShaderHacks();
-		
+
 		if (auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator()) {
 			// Set an unused bit to indicate if we are rendering an object in the main rendering pass
 			if (accumulator->GetRuntimeData().activeShadowSceneNode == RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0]) {
@@ -54,9 +54,9 @@ void State::Draw()
 
 			forceUpdatePermutationBuffer = false;
 		}
-		
+
 		currentExtraDescriptor = 0;
-	
+
 		static Util::FrameChecker frameChecker;
 		if (frameChecker.IsNewFrame()) {
 			ID3D11Buffer* buffers[3] = { permutationCB->CB(), sharedDataCB->CB(), featureDataCB->CB() };
