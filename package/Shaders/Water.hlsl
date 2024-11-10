@@ -908,12 +908,9 @@ PS_OUTPUT main(PS_INPUT input)
 #			endif
 
 	psout.Lighting = saturate(float4(finalColor * PosAdjust[eyeIndex].w, isSpecular));
-#			if defined(DEPTH)
-#				if defined(VERTEX_ALPHA_DEPTH) && defined(VC)
-	float blendFactor = 1 - smoothstep(0.0, 0.025, input.TexCoord3.z);
-#				else
-	float blendFactor = 1 - smoothstep(0.0, 0.025, distanceMul.z);
-#				endif  // defined(VERTEX_ALPHA_DEPTH) && defined(VC)
+
+#			if defined(DEPTH) && !defined(VERTEX_ALPHA_DEPTH)
+	float blendFactor = 1.0 - smoothstep(0.0, 0.025, distanceMul.z);
 	if (blendFactor > 0.0) {
 		float4 background = RefractionTex.Load(float3(screenPosition, 0));
 		psout.Lighting.xyz = lerp(psout.Lighting.xyz, background.xyz, blendFactor);
