@@ -803,16 +803,14 @@ void LightLimitFix::UpdateLights()
 						light.lightFlags.set(LightFlags::PortalStrict);
 					}
 
-					bool inactiveShadowLight = false;
 					if (bsLight->IsShadowLight()) {
 						auto* shadowLight = static_cast<RE::BSShadowLight*>(bsLight);
 						GET_INSTANCE_MEMBER(shadowLightIndex, shadowLight);
-						inactiveShadowLight = shadowLightIndex == 255;
 						light.shadowMaskIndex = shadowLightIndex;
 						light.lightFlags.set(LightFlags::Shadow);
 					}
 
-					if (!inactiveShadowLight) {
+					if (light.shadowMaskIndex == 255) {
 						SetLightPosition(light, niLight->world.translate);
 
 						if ((light.color.x + light.color.y + light.color.z) > 1e-4 && light.radius > 1e-4) {
