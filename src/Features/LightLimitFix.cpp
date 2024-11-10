@@ -889,8 +889,7 @@ void LightLimitFix::UpdateLights()
 							}
 						}
 
-						if (particleRuntimeData.color)
-						{
+						if (particleRuntimeData.color) {
 							float alpha = particleLight.color.alpha * particleRuntimeData.color[p].alpha;
 
 							float3 color;
