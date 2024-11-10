@@ -437,8 +437,9 @@ float3 GetFlowmapNormal(PS_INPUT input, float2 uvShift, float multiplier, float 
 }
 #			endif
 
-#			if (defined(FLOWMAP) && !defined(BLEND_NORMALS)) || defined(LOD)
+#			if defined(LOD)
 #				undef WATER_LIGHTING
+#				undef WETNESS_EFFECTS
 #			endif
 
 #			if defined(WATER_LIGHTING)
@@ -448,6 +449,10 @@ float3 GetFlowmapNormal(PS_INPUT input, float2 uvShift, float multiplier, float 
 
 #			if defined(DYNAMIC_CUBEMAPS)
 #				include "DynamicCubemaps/DynamicCubemaps.hlsli"
+#			endif
+
+#			if defined(WETNESS_EFFECTS)
+#				include "WetnessEffects/WetnessEffects.hlsli"
 #			endif
 
 float3 GetWaterNormal(PS_INPUT input, float distanceFactor, float normalsDepthFactor, float3 viewDirection, float depth, uint a_eyeIndex)
@@ -528,6 +533,40 @@ float3 GetWaterNormal(PS_INPUT input, float distanceFactor, float normalsDepthFa
 	float3 displacement = normalize(float3(NormalsAmplitude.w * (-0.5 + DisplacementTex.Sample(DisplacementSampler, displacementUv).zw),
 		0.04));
 	finalNormal = lerp(displacement, finalNormal, displacement.z);
+#			endif
+
+#			if defined(WETNESS_EFFECTS)
+	bool inWorld = ExtraShaderDescriptor & _InWorld;
+#				if defined(SKYLIGHTING)
+#					if defined(VR)
+	float3 positionMSSkylight = input.WPosition.xyz + CameraPosAdjust[a_eyeIndex].xyz - CameraPosAdjust[0].xyz;
+#					else
+	float3 positionMSSkylight = input.WPosition.xyz;
+#					endif
+	sh2 skylightingSH = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMSSkylight, float3(0, 0, 1));
+	float skylighting = shUnproject(skylightingSH, float3(0, 0, 1));
+
+	float wetnessOcclusion = inWorld ? pow(saturate(skylighting), 2) : 0;
+#				else
+	float wetnessOcclusion = inWorld;
+#				endif
+
+	float4 raindropInfo = float4(0, 0, 1, 0);
+	float maxRainDropDistance = wetnessEffectsSettings.RaindropFxRange * wetnessEffectsSettings.RaindropFxRange * 3;
+	float rainDropDistance = dot(input.WPosition, input.WPosition);
+	float distanceFadeout = saturate((1 - saturate(rainDropDistance / maxRainDropDistance)) * 3);
+	if (finalNormal.z > 0 && wetnessEffectsSettings.Raining > 0.0f && wetnessEffectsSettings.EnableRaindropFx &&
+		(rainDropDistance < maxRainDropDistance) && wetnessOcclusion > 0.05) {
+		float rippleStrengthModifier = (wetnessOcclusion * wetnessOcclusion) * distanceFadeout;
+		float3 rippleWPosition = input.WPosition + finalNormal * 16;
+#				if defined(WATER_PARALLAX)
+		rippleWPosition.xy += parallaxOffset;
+#				endif
+		raindropInfo = WetnessEffects::GetRainDrops(rippleWPosition + CameraPosAdjust[a_eyeIndex], wetnessEffectsSettings.Time, finalNormal, rippleStrengthModifier);
+	}
+
+	float3 rippleNormal = normalize(raindropInfo.xyz);
+	finalNormal = WetnessEffects::ReorientNormal(rippleNormal, finalNormal);
 #			endif
 
 	return finalNormal;

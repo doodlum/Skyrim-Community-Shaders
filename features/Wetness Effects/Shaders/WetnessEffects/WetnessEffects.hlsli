@@ -52,7 +52,7 @@ namespace WetnessEffects
 	}
 
 	// xyz - ripple normal, w - splotches
-	float4 GetRainDrops(float3 worldPos, float t, float3 normal)
+	float4 GetRainDrops(float3 worldPos, float t, float3 normal, float rippleStrengthModifier = 1)
 	{
 		const static float uintToFloat = rcp(4294967295.0);
 		const float rippleBreadthRcp = rcp(wetnessEffectsSettings.RippleBreadth);
@@ -110,7 +110,7 @@ namespace WetnessEffects
 								float band_lerp = (sqrt(distSqr) - ripple_inner_radius) * rippleBreadthRcp;
 								if (band_lerp > 0. && band_lerp < 1.) {
 									float deriv = (band_lerp < .5 ? SmoothstepDeriv(band_lerp * 2.) : -SmoothstepDeriv(2. - band_lerp * 2.)) *
-									              lerp(wetnessEffectsSettings.RippleStrength, 0, rippleT * rippleT);
+									              lerp(wetnessEffectsSettings.RippleStrength * rippleStrengthModifier, 0, rippleT * rippleT);
 
 									float3 grad = float3(normalize(vec2Centre), -deriv);
 									float3 bitangent = float3(-grad.y, grad.x, 0);
@@ -140,7 +140,7 @@ namespace WetnessEffects
 		float3 R = reflect(-V, N);
 		float NoV = saturate(dot(N, V));
 
-#if defined(DYNAMIC_CUBEMAPS)
+#if defined(DYNAMIC_CUBEMAPS) && !defined(WATER)
 #	if defined(DEFERRED)
 		float level = roughness * 7.0;
 		float3 specularIrradiance = 1.0;
