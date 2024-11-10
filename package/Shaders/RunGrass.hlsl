@@ -657,7 +657,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	sh2 skylightingSH = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMSSkylight, normal);
 	float skylighting = shFuncProductIntegral(skylightingSH, shEvaluateCosineLobe(float3(normal.xy, normal.z * 0.5 + 0.5))) / Math::PI;
-	skylighting = lerp(1.0, skylighting, Skylighting::getFadeOutFactor(input.WPosition));
+	skylighting = lerp(1.0, skylighting, Skylighting::getFadeOutFactor(input.WorldPosition));
 	skylighting = Skylighting::mixDiffuse(skylightingSettings, skylighting);
 
 	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
