@@ -125,7 +125,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* message)
 					shaderCache.WriteDiskCacheInfo();
 				}
 
-				if (!REL::Module::IsVR()){
+				if (!REL::Module::IsVR()) {
 					auto bEnableImprovedSnow = RE::GetINISetting("bEnableImprovedSnow:Display");
 					bEnableImprovedSnow->data.b = false;
 				}
