@@ -810,7 +810,7 @@ void LightLimitFix::UpdateLights()
 						light.lightFlags.set(LightFlags::Shadow);
 					}
 
-					if (light.shadowMaskIndex == 255) {
+					if (light.shadowMaskIndex != 255) {
 						SetLightPosition(light, niLight->world.translate);
 
 						if ((light.color.x + light.color.y + light.color.z) > 1e-4 && light.radius > 1e-4) {
