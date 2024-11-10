@@ -2241,9 +2241,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if !defined(LANDSCAPE)
 	if (PixelShaderDescriptor & LightingFlags::CharacterLight) {
-		float charLightMul =
-			saturate(dot(viewDirection, modelNormal.xyz)) * CharacterLightParams.x +
-			CharacterLightParams.y * saturate(dot(float2(0.164398998, -0.986393988), modelNormal.yz));
+		float charLightMul = saturate(dot(worldSpaceViewDirection, worldSpaceNormal.xyz)) * CharacterLightParams.x + CharacterLightParams.y * saturate(dot(float2(0.164398998, -0.986393988), worldSpaceNormal.yz));
 		float charLightColor = min(CharacterLightParams.w, max(0, CharacterLightParams.z * TexCharacterLightProjNoiseSampler.Sample(SampCharacterLightProjNoiseSampler, baseShadowUV).x));
 #		if defined(TRUE_PBR)
 		charLightColor = Color::GammaToLinear(charLightColor).x / Color::LightPreMult;
