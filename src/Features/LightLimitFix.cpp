@@ -341,7 +341,7 @@ void LightLimitFix::BSLightingShader_SetupGeometry_GeometrySetupConstantPointLig
 
 		SetLightPosition(light, niLight->world.translate, inWorld);
 
-		light.lightFlags = (LightFlags)runtimeData.radius.y;
+		light.lightFlags = static_cast<LightFlags>(runtimeData.radius.y);
 
 		if (bsLight->IsShadowLight()) {
 			auto* shadowLight = static_cast<RE::BSShadowLight*>(bsLight);
@@ -793,7 +793,7 @@ void LightLimitFix::UpdateLights()
 
 					light.radius = runtimeData.radius.x;
 
-					light.lightFlags = (LightFlags)runtimeData.radius.y;
+					light.lightFlags = static_cast<LightFlags>(runtimeData.radius.y);
 
 					if (!IsGlobalLight(bsLight)) {
 						// List of BSMultiBoundRooms affected by a light
