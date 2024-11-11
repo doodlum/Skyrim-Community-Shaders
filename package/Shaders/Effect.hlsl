@@ -500,8 +500,6 @@ cbuffer PerGeometry : register(b2)
 #	endif
 };
 
-static const uint Effect_Shadows = 1 << 0;
-
 #	if defined(LIGHT_LIMIT_FIX)
 #		include "LightLimitFix/LightLimitFix.hlsli"
 #	endif
