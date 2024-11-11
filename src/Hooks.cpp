@@ -157,15 +157,6 @@ namespace EffectExtensions
 	};
 }
 
-struct ID3D11DeviceContext_Unmap
-{
-	static void thunk(ID3D11DeviceContext* This, ID3D11Resource* pResource, UINT Subresource)
-	{
-		func(This, pResource, Subresource);
-	}
-	static inline REL::Relocation<decltype(thunk)> func;
-};
-
 struct IDXGISwapChain_Present
 {
 	static HRESULT WINAPI thunk(IDXGISwapChain* This, UINT SyncInterval, UINT Flags)
@@ -373,8 +364,6 @@ namespace Hooks
 
 			logger::info("Detouring virtual function tables");
 			stl::detour_vfunc<8, IDXGISwapChain_Present>(swapchain);
-
-			stl::detour_vfunc<15, ID3D11DeviceContext_Unmap>(context);
 
 			auto& shaderCache = SIE::ShaderCache::Instance();
 			if (shaderCache.IsDump()) {
