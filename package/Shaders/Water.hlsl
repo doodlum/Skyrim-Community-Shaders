@@ -667,7 +667,7 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 	float4 refractionNormal = mul(transpose(TextureProj[eyeIndex]), float4((VarAmounts.w * refractionsDepthFactor * normal.xy) + input.MPosition.xy, input.MPosition.z, 1));
 
 	float2 refractionUvRaw = float2(refractionNormal.x, refractionNormal.w - refractionNormal.y) / refractionNormal.ww;
-	
+
 	refractionUvRaw = Stereo::ConvertToStereoUV(refractionUvRaw, eyeIndex);  // need to convert here for VR due to refractionNormal values
 
 	float2 screenPosition = DynamicResolutionParams1.xy * (DynamicResolutionParams2.xy * input.HPosition.xy);
@@ -912,7 +912,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseOutput.refractionDiffuseColor), Color::GammaToLinear(specularColor), fresnel);
 	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
-	finalColorPreFog= lerp(finalColorPreFog, input.FogParam.xyz, input.FogParam.w);
+	finalColorPreFog = lerp(finalColorPreFog, input.FogParam.xyz, input.FogParam.w);
 	finalColorPreFog = Color::GammaToLinear(finalColorPreFog);
 
 	float3 refractionColor = diffuseOutput.refractionColor;
