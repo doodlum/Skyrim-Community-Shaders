@@ -341,14 +341,14 @@ void LightLimitFix::BSLightingShader_SetupGeometry_GeometrySetupConstantPointLig
 
 		SetLightPosition(light, niLight->world.translate, inWorld);
 
+		light.lightFlags = *reinterpret_cast<LightFlags*>(&runtimeData.radius.y);
+
 		if (bsLight->IsShadowLight()) {
 			auto* shadowLight = static_cast<RE::BSShadowLight*>(bsLight);
 			GET_INSTANCE_MEMBER(shadowLightIndex, shadowLight);
 			light.shadowMaskIndex = shadowLightIndex;
 			light.lightFlags.set(LightFlags::Shadow);
 		}
-
-		light.lightFlags = *reinterpret_cast<LightFlags*>(&runtimeData.radius.y);
 
 		strictLightDataTemp.StrictLights[i] = light;
 	}
