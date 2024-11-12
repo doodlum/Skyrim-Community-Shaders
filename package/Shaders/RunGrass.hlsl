@@ -523,7 +523,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float4 shadowColor = TexShadowMaskSampler.Load(int3(input.HPosition.xy, 0));
 
-	float dirShadow = !InInterior ? shadowColor.x: 1.0;
+	float dirShadow = !InInterior ? shadowColor.x : 1.0;
 	float dirDetailShadow = 1.0;
 
 	if (dirShadow > 0.0) {
@@ -749,7 +749,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	float4 shadowColor = TexShadowMaskSampler.Load(int3(input.HPosition.xy, 0));
 
-	float dirShadow = !InInterior ? shadowColor.x: 1.0;
+	float dirShadow = !InInterior ? shadowColor.x : 1.0;
 
 	float dirDetailShadow = 1.0;
 
@@ -806,8 +806,8 @@ PS_OUTPUT main(PS_INPUT input)
 				}
 
 				lightColor *= lightShadow;
-				
-				diffuseColor += lightColor* 0.5;
+
+				diffuseColor += lightColor * 0.5;
 			}
 		}
 	}
