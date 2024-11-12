@@ -657,7 +657,6 @@ struct DiffuseOutput
 	float3 refractionColor;
 	float3 refractionDiffuseColor;
 	float depth;
-	float4 distanceMul;
 	float refractionMul;
 };
 
@@ -738,18 +737,14 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 	DiffuseOutput output;
 	output.refractionColor = refractionColor;
 	output.refractionDiffuseColor = refractionDiffuseColor;
-
 	output.depth = depth;
-	output.distanceMul = distanceMul;
 	output.refractionMul = refractionMul;
-
 	return output;
 #			else
 	DiffuseOutput output;
 	output.refractionColor = lerp(ShallowColor.xyz, DeepColor.xyz, fresnel) * GetLdotN(normal);
 	output.refractionDiffuseColor = output.refractionColor;
 	output.depth = 1;
-	output.distanceMul = 1;
 	output.refractionMul = 1;
 	return output;
 #			endif
@@ -912,7 +907,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseOutput.refractionDiffuseColor), Color::GammaToLinear(specularColor), fresnel);
 	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
-	finalColorPreFog = lerp(finalColorPreFog, input.FogParam.xyz, input.FogParam.w);
+	finalColorPreFog = lerp(finalColorPreFog, input.FogParam.xyz, input.FogParam.w) * PosAdjust[eyeIndex].w;
 	finalColorPreFog = Color::GammaToLinear(finalColorPreFog);
 
 	float3 refractionColor = diffuseOutput.refractionColor;
@@ -923,7 +918,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	finalColorPreFog = lerp(Color::GammaToLinear(refractionColor), finalColorPreFog, diffuseOutput.refractionMul);
 
-	float3 finalColor = Color::LinearToGamma(finalColorPreFog) * PosAdjust[eyeIndex].w;
+	float3 finalColor = Color::LinearToGamma(finalColorPreFog);
 #				endif
 #			endif
 	psout.Lighting = saturate(float4(finalColor, isSpecular));
