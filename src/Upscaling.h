@@ -61,7 +61,9 @@ public:
 	ID3D11ComputeShader* GetRCASCS();
 
 	ID3D11ComputeShader* encodeTexturesCS;
+	ID3D11ComputeShader* encodeTexturesDLSSCS;
 	ID3D11ComputeShader* GetEncodeTexturesCS();
+	ID3D11ComputeShader* GetEncodeTexturesDLSSCS();
 
 	void UpdateJitter();
 	void Upscale();

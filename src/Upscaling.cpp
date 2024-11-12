@@ -180,6 +180,15 @@ ID3D11ComputeShader* Upscaling::GetEncodeTexturesCS()
 	return encodeTexturesCS;
 }
 
+ID3D11ComputeShader* Upscaling::GetEncodeTexturesDLSSCS()
+{
+	if (!encodeTexturesDLSSCS) {
+		logger::debug("Compiling EncodeTexturesCS.hlsl DLSS");
+		encodeTexturesDLSSCS = (ID3D11ComputeShader*)Util::CompileShader(L"Data/Shaders/Upscaling/EncodeTexturesCS.hlsl", { { "DLSS", "" } }, "cs_5_0");
+	}
+	return encodeTexturesDLSSCS;
+}
+
 void Upscaling::UpdateJitter()
 {
 	auto upscaleMethod = GetUpscaleMethod();
@@ -251,7 +260,7 @@ void Upscaling::Upscale()
 			ID3D11UnorderedAccessView* uavs[1] = { alphaMaskTexture->uav.get() };
 			context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
 
-			context->CSSetShader(GetEncodeTexturesCS(), nullptr, 0);
+			context->CSSetShader(upscaleMethod == UpscaleMethod::kDLSS ? GetEncodeTexturesDLSSCS() : GetEncodeTexturesCS(), nullptr, 0);
 
 			context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
 		}
