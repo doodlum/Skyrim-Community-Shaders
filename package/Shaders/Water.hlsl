@@ -905,7 +905,7 @@ PS_OUTPUT main(PS_INPUT input)
 		sunColor *= GetWaterShadow(screenNoise, input.WPosition.xyz, eyeIndex);
 	}
 
-#					if defined(VC) 
+#					if defined(VC)
 	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseColor), Color::GammaToLinear(specularColor), fresnel * depthControl.x) + Color::GammaToLinear(sunColor) * depthControl.w;
 	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
 	float3 finalColor = lerp(finalColorPreFog, input.FogParam.xyz * PosAdjust[eyeIndex].w, input.FogParam.w);
