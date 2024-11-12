@@ -850,7 +850,7 @@ void LightLimitFix::UpdateLights()
 
 					auto numVertices = particleData->GetActiveVertexCount();
 					for (std::uint32_t p = 0; p < numVertices; p++) {
-						float radius = particleRuntimeData.sizes[p] * 70.0f;
+						float radius = particleRuntimeData.radii[p] * particleRuntimeData.sizes[p];
 
 						auto initialPosition = particleRuntimeData.positions[p];
 						if (!particleSystemRuntimeData.isWorldspace) {
