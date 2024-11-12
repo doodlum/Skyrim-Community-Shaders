@@ -905,9 +905,14 @@ PS_OUTPUT main(PS_INPUT input)
 		sunColor *= GetWaterShadow(screenNoise, input.WPosition.xyz, eyeIndex);
 	}
 
+#					if defined(VC) 
+	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseColor), Color::GammaToLinear(specularColor), fresnel * depthControl.x) + Color::GammaToLinear(sunColor) * depthControl.w;
+	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
+	float3 finalColor = lerp(finalColorPreFog, input.FogParam.xyz * PosAdjust[eyeIndex].w, input.FogParam.w);
+#					else
 	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseOutput.refractionDiffuseColor), Color::GammaToLinear(specularColor), fresnel);
 	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
-	finalColorPreFog = lerp(finalColorPreFog, input.FogParam.xyz, input.FogParam.w) * PosAdjust[eyeIndex].w;
+	finalColorPreFog = lerp(finalColorPreFog, input.FogParam.xyz * PosAdjust[eyeIndex].w, input.FogParam.w);
 	finalColorPreFog = Color::GammaToLinear(finalColorPreFog);
 
 	float3 refractionColor = diffuseOutput.refractionColor;
@@ -917,8 +922,9 @@ PS_OUTPUT main(PS_INPUT input)
 	refractionColor = lerp(refractionColor, fogColor, fogFactor);
 
 	finalColorPreFog = lerp(Color::GammaToLinear(refractionColor), finalColorPreFog, diffuseOutput.refractionMul);
-
 	float3 finalColor = Color::LinearToGamma(finalColorPreFog);
+#					endif
+
 #				endif
 #			endif
 	psout.Lighting = saturate(float4(finalColor, isSpecular));
