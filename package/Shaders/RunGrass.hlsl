@@ -620,7 +620,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #				if defined(TRUE_PBR)
 				{
-					PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor * intensityMultiplier, lightShadow, 1);
+					PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor, lightShadow, 1);
 					float3 pointDiffuseColor, coatDirDiffuseColor, pointTransmissionColor, pointSpecularColor;
 					PBR::GetDirectLightInput(pointDiffuseColor, coatDirDiffuseColor, pointTransmissionColor, pointSpecularColor, normal, normal, viewDirection, viewDirection, normalizedLightDirection, normalizedLightDirection, lightProperties, pbrSurfaceProperties, tbn, input.TexCoord.xy);
 					lightsDiffuseColor += pointDiffuseColor;
