@@ -1,5 +1,4 @@
 #include "Common/Color.hlsli"
-#include "Common/DICETonemapper.hlsli"
 #include "Common/DummyVSTexCoord.hlsl"
 #include "Common/FrameBuffer.hlsli"
 
@@ -39,14 +38,14 @@ cbuffer PerGeometry : register(b2)
 	float4 BlurOffsets[16] : packoffset(c7);
 };
 
-float GetTonemapFactorReinhard(float luminance)
+float3 GetTonemapFactorReinhard(float3 luminance)
 {
 	return (luminance * (luminance * Param.y + 1)) / (luminance + 1);
 }
 
-float GetTonemapFactorHejlBurgessDawson(float luminance)
+float3 GetTonemapFactorHejlBurgessDawson(float3 luminance)
 {
-	float tmp = max(0, luminance - 0.004);
+	float3 tmp = max(0, luminance - 0.004);
 	return Param.y *
 	       pow(((tmp * 6.2 + 0.5) * tmp) / (tmp * (tmp * 6.2 + 1.7) + 0.06), Color::GammaCorrectionValue);
 }
@@ -103,17 +102,17 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 gameSdrColor = 0.0;
 	float3 ppColor = 0.0;
 	{
-		float luminance = max(1e-5, Color::RGBToLuminance(inputColor));
-		float exposureAdjustedLuminance = (avgValue.y / avgValue.x) * luminance;
-		float blendFactor;
+		inputColor *= avgValue.y / avgValue.x;
+
+		float3 blendedColor;
+		float3 blendFactor;
 		if (Param.z > 0.5) {
-			blendFactor = GetTonemapFactorHejlBurgessDawson(exposureAdjustedLuminance);
+			blendedColor = GetTonemapFactorHejlBurgessDawson(inputColor);
 		} else {
-			blendFactor = GetTonemapFactorReinhard(exposureAdjustedLuminance);
+			blendedColor = GetTonemapFactorReinhard(inputColor);
 		}
 
-		float3 blendedColor = inputColor * (blendFactor / luminance);
-		blendedColor += saturate(Param.x - blendFactor) * bloomColor;
+		blendedColor += saturate(Param.x - blendedColor) * bloomColor;
 
 		gameSdrColor = blendedColor;
 
@@ -127,8 +126,7 @@ PS_OUTPUT main(PS_INPUT input)
 		ppColor = max(0, linearColor);
 	}
 
-	// HDR tonemapping
-	float3 srgbColor = RangeCompress(ppColor, 0.5);
+	float3 srgbColor = ppColor;
 
 #		if defined(FADE)
 	srgbColor = lerp(srgbColor, Fade.xyz, Fade.w);
