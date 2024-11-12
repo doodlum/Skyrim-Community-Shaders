@@ -521,7 +521,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float dirLightAngle = dot(normal, DirLightDirectionShared.xyz);
 
-	float dirShadow = !InInterior ? TexShadowMaskSampler.Load(int3(input.HPosition.xy, 0)).r : 1.0;
+	float4 shadowColor = TexShadowMaskSampler.Load(int3(input.HPosition.xy, 0));
+
+	float dirShadow = !InInterior ? shadowColor.x: 1.0;
 	float dirDetailShadow = 1.0;
 
 	if (dirShadow > 0.0) {
@@ -602,14 +604,23 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 					continue;
 
 				float intensityMultiplier = 1 - intensityFactor * intensityFactor;
-				float3 lightColor = light.color.xyz;
+				float3 lightColor = light.color.xyz * intensityMultiplier;
+
+				float lightShadow = 1.0;
+
+				float shadowComponent = 1.0;
+				if (light.lightFlags & LightFlags::Shadow) {
+					shadowComponent = shadowColor[light.shadowLightIndex];
+					lightShadow *= shadowComponent;
+				}
+
 				float3 normalizedLightDirection = normalize(lightDirection);
 
 				float lightAngle = dot(normal, normalizedLightDirection);
 
 #				if defined(TRUE_PBR)
 				{
-					PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor * intensityMultiplier, 1, 1);
+					PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor * intensityMultiplier, lightShadow, 1);
 					float3 pointDiffuseColor, coatDirDiffuseColor, pointTransmissionColor, pointSpecularColor;
 					PBR::GetDirectLightInput(pointDiffuseColor, coatDirDiffuseColor, pointTransmissionColor, pointSpecularColor, normal, normal, viewDirection, viewDirection, normalizedLightDirection, normalizedLightDirection, lightProperties, pbrSurfaceProperties, tbn, input.TexCoord.xy);
 					lightsDiffuseColor += pointDiffuseColor;
@@ -617,13 +628,15 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 					specularColorPBR += pointSpecularColor;
 				}
 #				else
+				lightColor *= lightShadow;
+
 				float lightDiffuse = (lightAngle + wrapAmount) * wrapMultiplier;
 				float3 lightDiffuseColor = lightColor * saturate(lightDiffuse);
 
 				float lightBacklighting = 1.0 + saturate(dot(viewDirection, -normalizedLightDirection.xyz));
 				sss += lightColor * saturate(-lightAngle) * lightBacklighting;
 
-				lightsDiffuseColor += lightDiffuseColor * intensityMultiplier;
+				lightsDiffuseColor += lightDiffuseColor;
 
 				if (complex)
 					lightsSpecularColor += GrassLighting::GetLightSpecularInput(normalizedLightDirection, viewDirection, normal, lightColor, grassLightingSettings.Glossiness) * intensityMultiplier;
@@ -734,7 +747,10 @@ PS_OUTPUT main(PS_INPUT input)
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
 	float screenNoise = Random::InterleavedGradientNoise(input.HPosition.xy, FrameCount);
 
-	float dirShadow = !InInterior ? TexShadowMaskSampler.Load(int3(input.HPosition.xy, 0)).x : 1.0;
+	float4 shadowColor = TexShadowMaskSampler.Load(int3(input.HPosition.xy, 0));
+
+	float dirShadow = !InInterior ? shadowColor.x: 1.0;
+
 	float dirDetailShadow = 1.0;
 
 	if (dirShadow > 0.0) {
@@ -779,7 +795,19 @@ PS_OUTPUT main(PS_INPUT input)
 					continue;
 
 				float intensityMultiplier = 1 - intensityFactor * intensityFactor;
-				diffuseColor += light.color.xyz * intensityMultiplier * 0.5;
+				float3 lightColor = light.color.xyz * intensityMultiplier;
+
+				float lightShadow = 1.0;
+
+				float shadowComponent = 1.0;
+				if (light.lightFlags & LightFlags::Shadow) {
+					shadowComponent = shadowColor[light.shadowLightIndex];
+					lightShadow *= shadowComponent;
+				}
+
+				lightColor *= lightShadow;
+				
+				diffuseColor += lightColor* 0.5;
 			}
 		}
 	}
