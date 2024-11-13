@@ -42,7 +42,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	EnableSplashes,
 	EnableRipples,
 	EnableChaoticRipples,
-	RaindropFxRange,
 	RaindropGridSize,
 	RaindropInterval,
 	RaindropChance,
@@ -89,8 +88,6 @@ void WetnessEffects::DrawSettings()
 		ImGui::Checkbox("Enable Chaotic Ripples", (bool*)&settings.EnableChaoticRipples);
 		if (auto _tt = Util::HoverTooltipWrapper())
 			ImGui::Text("Enables an additional layer of disturbance to wet surfaces.");
-
-		ImGui::SliderFloat("Effect Range", &settings.RaindropFxRange, 1e2f, 2e3f, "%.0f game unit(s)");
 
 		if (ImGui::TreeNodeEx("Raindrops")) {
 			ImGui::BulletText(
@@ -248,6 +245,34 @@ void WetnessEffects::CalculateWetness(RE::TESWeather* weather, RE::Sky* sky, flo
 WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 {
 	PerFrame data{};
+
+	data.Raining = false;
+
+	if (auto sky = RE::Sky::GetSingleton()) {
+		if (auto precip = sky->precip) {
+			auto precipObject = precip->currentPrecip;
+			if (!precipObject) {
+				precipObject = precip->lastPrecip;
+			}
+			if (precipObject) {
+				auto effect = precipObject->GetGeometryRuntimeData().properties[RE::BSGeometry::States::kEffect];
+				auto shaderProp = netimmerse_cast<RE::BSShaderProperty*>(effect.get());
+				auto particleShaderProperty = netimmerse_cast<RE::BSParticleShaderProperty*>(shaderProp);
+				auto rain = (RE::BSParticleShaderRainEmitter*)(particleShaderProperty->particleEmitter);
+				data.OcclusionViewProj = rain->occlusionProjection;
+				data.Raining = rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain) && rain->alpha > 0.0;
+			}
+			if (precip->currentPrecip && precip->lastPrecip) {
+				precipObject = precip->lastPrecip;
+				auto effect = precipObject->GetGeometryRuntimeData().properties[RE::BSGeometry::States::kEffect];
+				auto shaderProp = netimmerse_cast<RE::BSShaderProperty*>(effect.get());
+				auto particleShaderProperty = netimmerse_cast<RE::BSParticleShaderProperty*>(shaderProp);
+				auto rain = (RE::BSParticleShaderRainEmitter*)(particleShaderProperty->particleEmitter);
+				data.Raining = data.Raining || (rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain) && rain->alpha > 0.0);
+			}
+		}
+	}
+
 	data.Wetness = DRY_WETNESS;
 	data.PuddleWetness = DRY_WETNESS;
 	currentWeatherID = 0;
@@ -317,7 +342,6 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 						// Calculate the wetness value from the water depth
 						data.Wetness = std::min(wetnessDepth, MAX_WETNESS);
 						data.PuddleWetness = std::min(puddleDepth, MAX_PUDDLE_WETNESS);
-						data.Raining = std::lerp(lastWeatherRaining, currentWeatherRaining, weatherTransitionPercentage);
 						previousWeatherTransitionPercentage = weatherTransitionPercentage;
 					}
 				}
@@ -342,6 +366,17 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 	data.settings.ChaoticRippleScale = 1.f / settings.ChaoticRippleScale;
 
 	return data;
+}
+
+void WetnessEffects::Prepass()
+{
+	static auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	static auto& precipOcclusionTexture = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPRECIPITATION_OCCLUSION_MAP];
+
+	auto state = State::GetSingleton();
+	auto& context = state->context;
+
+	context->PSSetShaderResources(31, 1, &precipOcclusionTexture.depthSRV);
 }
 
 void WetnessEffects::Reset()

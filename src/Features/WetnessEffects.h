@@ -38,7 +38,6 @@ public:
 		uint EnableSplashes = true;
 		uint EnableRipples = true;
 		uint EnableChaoticRipples = true;
-		float RaindropFxRange = 1000.f;
 		float RaindropGridSize = 4.f;
 		float RaindropInterval = .5f;
 		float RaindropChance = .3f;
@@ -57,12 +56,13 @@ public:
 
 	struct alignas(16) PerFrame
 	{
+		REX::W32::XMFLOAT4X4 OcclusionViewProj;
 		float Time;
 		float Raining;
 		float Wetness;
 		float PuddleWetness;
 		Settings settings;
-		uint pad0[2];
+		uint pad0[3];
 	};
 
 	Settings settings;
@@ -76,6 +76,8 @@ public:
 	uint32_t currentWeatherID = 0;
 	uint32_t lastWeatherID = 0;
 	float previousWeatherTransitionPercentage = 0.0f;
+
+	virtual void Prepass() override;
 
 	virtual void Reset() override;
 
