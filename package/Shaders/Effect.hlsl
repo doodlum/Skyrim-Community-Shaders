@@ -532,7 +532,7 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 		float dirBrightness = Color::RGBToLuminance(dirLightColor);
 
 		if (ambientBrightness > 0.0)
-			color = (color / (ambientBrightness + dirBrightness)) * ambientBrightness; 
+			color = (color / (ambientBrightness + dirBrightness)) * ambientBrightness;
 		else
 			color = 0.0;
 
