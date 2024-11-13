@@ -260,7 +260,7 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 				auto particleShaderProperty = netimmerse_cast<RE::BSParticleShaderProperty*>(shaderProp);
 				auto rain = (RE::BSParticleShaderRainEmitter*)(particleShaderProperty->particleEmitter);
 				data.OcclusionViewProj = rain->occlusionProjection;
-				data.Raining = rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain) && rain->alpha > 0.0;
+				data.Raining = rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain) && rain->density > 0.0;
 			}
 			if (precip->currentPrecip && precip->lastPrecip) {
 				precipObject = precip->lastPrecip;
@@ -268,7 +268,7 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 				auto shaderProp = netimmerse_cast<RE::BSShaderProperty*>(effect.get());
 				auto particleShaderProperty = netimmerse_cast<RE::BSParticleShaderProperty*>(shaderProp);
 				auto rain = (RE::BSParticleShaderRainEmitter*)(particleShaderProperty->particleEmitter);
-				data.Raining = data.Raining || (rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain) && rain->alpha > 0.0);
+				data.Raining = data.Raining || (rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain) && rain->density > 0.0);
 			}
 		}
 	}
