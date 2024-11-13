@@ -1787,8 +1787,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		float4 precipOcclusionTexCoord = mul(wetnessEffectsSettings.OcclusionViewProj, float4(input.WorldPosition.xyz, 1));
 		precipOcclusionTexCoord.y = -precipOcclusionTexCoord.y;
 		float2 precipOcclusionUV = precipOcclusionTexCoord.xy * 0.5 + 0.5;
-		
-		if (saturate(precipOcclusionUV.x) == precipOcclusionUV.x && saturate(precipOcclusionUV.y) == precipOcclusionUV.y){
+
+		if (saturate(precipOcclusionUV.x) == precipOcclusionUV.x && saturate(precipOcclusionUV.y) == precipOcclusionUV.y) {
 			float precipOcclusionZ = WetnessEffects::TexPrecipOcclusion.SampleLevel(SampColorSampler, precipOcclusionUV, 0).x;
 
 			if (precipOcclusionTexCoord.z < precipOcclusionZ + 0.1)
