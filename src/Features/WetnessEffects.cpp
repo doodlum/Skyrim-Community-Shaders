@@ -41,7 +41,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	EnableRaindropFx,
 	EnableSplashes,
 	EnableRipples,
-	EnableChaoticRipples,
 	RaindropGridSize,
 	RaindropInterval,
 	RaindropChance,
@@ -52,10 +51,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	RippleStrength,
 	RippleRadius,
 	RippleBreadth,
-	RippleLifetime,
-	ChaoticRippleStrength,
-	ChaoticRippleScale,
-	ChaoticRippleSpeed)
+	RippleLifetime
+)
 
 void WetnessEffects::DrawSettings()
 {
@@ -85,15 +82,11 @@ void WetnessEffects::DrawSettings()
 		ImGui::Checkbox("Enable Ripples", (bool*)&settings.EnableRipples);
 		if (auto _tt = Util::HoverTooltipWrapper())
 			ImGui::Text("Enables circular ripples on puddles, and to a less extent other wet surfaces");
-		ImGui::Checkbox("Enable Chaotic Ripples", (bool*)&settings.EnableChaoticRipples);
-		if (auto _tt = Util::HoverTooltipWrapper())
-			ImGui::Text("Enables an additional layer of disturbance to wet surfaces.");
 
 		if (ImGui::TreeNodeEx("Raindrops")) {
 			ImGui::BulletText(
 				"At every interval, a raindrop is placed within each grid cell.\n"
-				"Only a set portion of raindrops will actually trigger splashes and ripples.\n"
-				"Chaotic ripples are not affected by raindrop settings.");
+				"Only a set portion of raindrops will actually trigger splashes and ripples.\n");
 
 			ImGui::SliderFloat("Grid Size", &settings.RaindropGridSize, 1.f, 10.f, "%.1f game unit(s)");
 			ImGui::SliderFloat("Interval", &settings.RaindropInterval, 0.1f, 2.f, "%.1f sec");
@@ -122,13 +115,6 @@ void WetnessEffects::DrawSettings()
 				ImGui::Text("As portion of grid size.");
 			ImGui::SliderFloat("Breadth", &settings.RippleBreadth, 0.f, 1.f, "%.2f");
 			ImGui::SliderFloat("Lifetime", &settings.RippleLifetime, 0.f, settings.RaindropInterval, "%.2f sec", ImGuiSliderFlags_AlwaysClamp);
-			ImGui::TreePop();
-		}
-
-		if (ImGui::TreeNodeEx("Chaotic Ripples")) {
-			ImGui::SliderFloat("Strength", &settings.ChaoticRippleStrength, 0.f, .5f, "%.2f");
-			ImGui::SliderFloat("Scale", &settings.ChaoticRippleScale, 0.1f, 5.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-			ImGui::SliderFloat("Speed", &settings.ChaoticRippleSpeed, 0.f, 50.f, "%.1f");
 			ImGui::TreePop();
 		}
 
@@ -362,8 +348,6 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 	data.settings.RaindropGridSize = 1.f / settings.RaindropGridSize;
 	data.settings.RaindropInterval = 1.f / settings.RaindropInterval;
 	data.settings.RippleLifetime = settings.RaindropInterval / settings.RippleLifetime;
-	data.settings.ChaoticRippleStrength *= std::clamp(data.Raining, 0.f, 1.f);
-	data.settings.ChaoticRippleScale = 1.f / settings.ChaoticRippleScale;
 
 	return data;
 }

@@ -94,25 +94,20 @@ struct WetnessEffectsSettings
 
 	bool EnableSplashes;
 	bool EnableRipples;
-	bool EnableChaoticRipples;
 	float RaindropGridSizeRcp;
-
 	float RaindropIntervalRcp;
+
 	float RaindropChance;
 	float SplashesLifetime;
 	float SplashesStrength;
-
 	float SplashesMinRadius;
+
 	float SplashesMaxRadius;
 	float RippleStrength;
 	float RippleRadius;
-
 	float RippleBreadth;
-	float RippleLifetimeRcp;
-	float ChaoticRippleStrength;
-	float ChaoticRippleScaleRcp;
 
-	float ChaoticRippleSpeed;
+	float RippleLifetimeRcp;
 	float pad0[3];
 };
 

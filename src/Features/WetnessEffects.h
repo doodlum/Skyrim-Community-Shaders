@@ -37,7 +37,6 @@ public:
 		uint EnableRaindropFx = true;
 		uint EnableSplashes = true;
 		uint EnableRipples = true;
-		uint EnableChaoticRipples = true;
 		float RaindropGridSize = 4.f;
 		float RaindropInterval = .5f;
 		float RaindropChance = .3f;
@@ -49,9 +48,6 @@ public:
 		float RippleRadius = 1.f;
 		float RippleBreadth = .5f;
 		float RippleLifetime = .15f;
-		float ChaoticRippleStrength = .1f;
-		float ChaoticRippleScale = 1.f;
-		float ChaoticRippleSpeed = 20.f;
 	};
 
 	struct alignas(16) PerFrame
