@@ -159,15 +159,15 @@ PS_OUTPUT main(PS_INPUT input)
 		float3 iterationUvDepthDR = ViewToUVDepthHelper(lerp(csStart.xyz, csFinish.xyz, (iterationIndex / (float)maxIterations) * SSRParams.x * rcp(length(deltaUvDepth.xy))), eyeIndex);
 		float3 iterationUvDepthSampleDR = iterationUvDepthDR;
 #		ifdef VR
-			// Apply dynamic resolution adjustments and stereo UV conversions
-			FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(
-				Stereo::ConvertStereoRayMarchUV(
-					FrameBuffer::GetDynamicResolutionUnadjustedScreenPosition(iterationUvDepthDR),
-					eyeIndex,
-					fromOtherEye));
+		// Apply dynamic resolution adjustments and stereo UV conversions
+		FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(
+			Stereo::ConvertStereoRayMarchUV(
+				FrameBuffer::GetDynamicResolutionUnadjustedScreenPosition(iterationUvDepthDR),
+				eyeIndex,
+				fromOtherEye));
 #		else
-			// No VR adjustments, just use the raw UV coordinates
-			iterationUvDepthDR;
+		// No VR adjustments, just use the raw UV coordinates
+		iterationUvDepthDR;
 #		endif
 		float iterationDepth = DepthTex.SampleLevel(DepthSampler, iterationUvDepthSampleDR.xy, 0).x;
 		uvDepthPreResultDR = uvDepthResultDR;
