@@ -528,14 +528,7 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 		float3 dirLightColor = DirLightColorShared * 0.5;
 		float3 ambientColor = mul(DirectionalAmbientShared, float4(0, 0, 1, 1));
 
-		float ambientBrightness = Color::RGBToLuminance(ambientColor);
-		float dirBrightness = Color::RGBToLuminance(dirLightColor);
-
-		if (ambientBrightness > 0.0)
-			color = (color / (ambientBrightness + dirBrightness)) * ambientBrightness; 
-		else
-			color = 0.0;
-
+		color = ambientColor;
 		color += dirLightColor * GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
 	}
 
