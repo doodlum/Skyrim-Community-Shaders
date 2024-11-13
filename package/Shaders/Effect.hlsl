@@ -522,27 +522,22 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 	float4 lightDistanceSquared = (PLightPositionX[eyeIndex] - msPosition.xxxx) * (PLightPositionX[eyeIndex] - msPosition.xxxx) + (PLightPositionY[eyeIndex] - msPosition.yyyy) * (PLightPositionY[eyeIndex] - msPosition.yyyy) + (PLightPositionZ[eyeIndex] - msPosition.zzzz) * (PLightPositionZ[eyeIndex] - msPosition.zzzz);
 	float4 lightFadeMul = 1.0.xxxx - saturate(PLightingRadiusInverseSquared * lightDistanceSquared);
 
-	float3 color = 0.0;
-	float angleShadow = saturate(DirLightDirectionShared.z) * saturate(DirLightDirectionShared.z);
-	float dirLightBacklighting = 1.0 + saturate(dot(normalize(worldPosition), -DirLightDirectionShared.xyz));
+	float3 color = DLightColor.xyz;
 
-	if (ExtraShaderDescriptor & ExtraFlags::EffectShadows) {
-		if (InMapMenu)
-			color = dirLightBacklighting * DirLightColorShared * angleShadow;
-		else if (!InInterior && (ExtraShaderDescriptor & ExtraFlags::InWorld))
-			color = dirLightBacklighting * DirLightColorShared * GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
+	if ((ExtraShaderDescriptor & ExtraFlags::EffectShadows) && !InMapMenu && !InInterior) {
+		float3 dirLightColor = DirLightColorShared * 0.5;
+		float3 ambientColor = mul(DirectionalAmbientShared, float4(0, 0, 1, 1));
+
+		float ambientBrightness = Color::RGBToLuminance(ambientColor);
+		float dirBrightness = Color::RGBToLuminance(dirLightColor);
+
+		if (ambientBrightness > 0.0)
+			color = (color / (ambientBrightness + dirBrightness)) * ambientBrightness; 
 		else
-			color = dirLightBacklighting * DirLightColorShared * 0.5;
-	} else {
-		if (InMapMenu)
-			color = dirLightBacklighting * DirLightColorShared * angleShadow;
-		else if (!InInterior && (ExtraShaderDescriptor & ExtraFlags::InWorld))
-			color = dirLightBacklighting * DirLightColorShared * GetWorldShadow(worldPosition, length(worldPosition), 0.0, eyeIndex) * angleShadow;
-		else
-			color = dirLightBacklighting * DirLightColorShared * 0.5;
+			color = 0.0;
+
+		color += dirLightColor * GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
 	}
-
-	color += mul(DirectionalAmbientShared, float4(0, 0, 1, 1));
 
 	color.x += dot(PLightColorR * lightFadeMul, 1.0.xxxx);
 	color.y += dot(PLightColorG * lightFadeMul, 1.0.xxxx);

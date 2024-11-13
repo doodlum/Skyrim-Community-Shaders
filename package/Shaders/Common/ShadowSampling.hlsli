@@ -32,7 +32,7 @@ float Get3DFilteredShadow(float3 positionWS, float3 viewDirection, float2 screen
 	PerGeometry sD = SharedPerShadow[0];
 
 	float fadeFactor = 1.0 - pow(saturate(dot(positionWS, positionWS) / sD.ShadowLightParam.z), 8);
-	uint sampleCount = ceil(16.0 * (1.0 - saturate(length(positionWS) / sqrt(sD.ShadowLightParam.z))));
+	uint sampleCount = ceil(8.0 * (1.0 - saturate(length(positionWS) / sqrt(sD.ShadowLightParam.z))));
 
 	if (sampleCount == 0)
 		return 1.0;
@@ -57,8 +57,8 @@ float Get3DFilteredShadow(float3 positionWS, float3 viewDirection, float2 screen
 			float r = rnd.z;
 			float4 sincos_phi;
 			sincos(phi, sincos_phi.y, sincos_phi.x);
-			float3 sampleOffset = viewDirection * i * 64 * rcpSampleCount;
-			sampleOffset += (float3(r * sin_theta * sincos_phi.x, r * sin_theta * sincos_phi.y, r * cos_theta) * 0.5 + 0.5) * 64;
+			float3 sampleOffset = -viewDirection * i * 64 * rcpSampleCount;
+			sampleOffset += -viewDirection * (float3(r * sin_theta * sincos_phi.x, r * sin_theta * sincos_phi.y, r * cos_theta) * 0.5 + 0.5) * 64;
 
 			uint cascadeIndex = sD.EndSplitDistances.x < GetShadowDepth(positionWS.xyz + viewDirection * (sampleOffset.x + sampleOffset.y), eyeIndex);  // Stochastic cascade sampling
 
