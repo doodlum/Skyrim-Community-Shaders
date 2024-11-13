@@ -51,8 +51,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	RippleStrength,
 	RippleRadius,
 	RippleBreadth,
-	RippleLifetime
-)
+	RippleLifetime)
 
 void WetnessEffects::DrawSettings()
 {
