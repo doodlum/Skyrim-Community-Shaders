@@ -228,12 +228,14 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 				float puddleLastWeather = 0.0f;
 
 				if (sky->lastWeather && sky->lastWeather->precipitationData && sky->lastWeather->data.flags.any(RE::TESWeather::WeatherDataFlag::kRainy)) {
-					wetnessLastWeather = 1.0f - linearstep((float)sky->lastWeather->data.precipitationEndFadeOut, 255, sky->currentWeatherPct * 255);
+					wetnessLastWeather = 1.0f - linearstep((float)sky->lastWeather->data.precipitationEndFadeOut, 255, sky->currentWeatherPct * 255));
 					puddleLastWeather = pow(1.0f - sky->currentWeatherPct, 0.25f);
 				}
 
-				data.Wetness = wetnessCurrentWeather + wetnessLastWeather;
-				data.PuddleWetness = std::max(data.Wetness, puddleLastWeather) * settings.MaxPuddleWetness * 0.5f;
+				float wetness = std::min(1.0f, wetnessCurrentWeather + wetnessLastWeather);
+
+				data.Wetness = wetness * settings.MaxRainWetness;
+				data.PuddleWetness = std::max(wetness, puddleLastWeather) * settings.MaxPuddleWetness;
 			}
 		}
 	}
