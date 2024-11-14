@@ -140,7 +140,6 @@ PS_OUTPUT main(PS_INPUT input)
 #		endif
 
 	float3 uvDepthStartDR = float3(uvStartDR, vsStart.z);
-	float3 deltaUvDepthDR = uvDepthFinishDR - uvDepthStartDR;
 
 	float3 uvDepthPreResultDR = uvDepthStartDR;
 	float3 uvDepthResultDR = float3(uvDepthStartDR.xy, depthStart);
