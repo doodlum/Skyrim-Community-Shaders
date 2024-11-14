@@ -232,30 +232,58 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 {
 	PerFrame data{};
 
-	data.Raining = false;
+	data.Raining = 0.0f;
 
 	if (auto sky = RE::Sky::GetSingleton()) {
 		if (auto precip = sky->precip) {
-			auto precipObject = precip->currentPrecip;
-			if (!precipObject) {
-				precipObject = precip->lastPrecip;
+			float currentRaining = 0.0f;
+			float lastRaining = 0.0f;
+
+			{
+				auto precipObject = precip->currentPrecip;
+				if (!precipObject) {
+					precipObject = precip->lastPrecip;
+				}
+				if (precipObject) {
+					auto& effect = precipObject->GetGeometryRuntimeData().properties[RE::BSGeometry::States::kEffect];
+					auto shaderProp = netimmerse_cast<RE::BSShaderProperty*>(effect.get());
+					auto particleShaderProperty = netimmerse_cast<RE::BSParticleShaderProperty*>(shaderProp);
+					auto rain = (RE::BSParticleShaderRainEmitter*)(particleShaderProperty->particleEmitter);
+					data.OcclusionViewProj = rain->occlusionProjection;
+				}
 			}
-			if (precipObject) {
-				auto effect = precipObject->GetGeometryRuntimeData().properties[RE::BSGeometry::States::kEffect];
+
+			if (precip->currentPrecip && sky->currentWeather->precipitationData) {
+				auto& precipObject = precip->currentPrecip;
+				auto weather = sky->currentWeather;
+
+				auto& effect = precipObject->GetGeometryRuntimeData().properties[RE::BSGeometry::States::kEffect];
 				auto shaderProp = netimmerse_cast<RE::BSShaderProperty*>(effect.get());
 				auto particleShaderProperty = netimmerse_cast<RE::BSParticleShaderProperty*>(shaderProp);
 				auto rain = (RE::BSParticleShaderRainEmitter*)(particleShaderProperty->particleEmitter);
-				data.OcclusionViewProj = rain->occlusionProjection;
-				data.Raining = rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain) && rain->density > 0.0;
+				if (rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain)) {
+					auto maxDensity = weather->precipitationData->data[(uint)RE::BGSShaderParticleGeometryData::DataID::kParticleDensity].f;
+					if (maxDensity > 0.0f)
+						currentRaining = rain->density / maxDensity;
+				}
 			}
-			if (precip->currentPrecip && precip->lastPrecip) {
-				precipObject = precip->lastPrecip;
-				auto effect = precipObject->GetGeometryRuntimeData().properties[RE::BSGeometry::States::kEffect];
+
+			if (precip->lastPrecip && sky->lastWeather->precipitationData) {
+				auto& precipObject = precip->lastPrecip;
+				auto weather = sky->lastWeather;
+
+				auto& effect = precipObject->GetGeometryRuntimeData().properties[RE::BSGeometry::States::kEffect];
 				auto shaderProp = netimmerse_cast<RE::BSShaderProperty*>(effect.get());
 				auto particleShaderProperty = netimmerse_cast<RE::BSParticleShaderProperty*>(shaderProp);
 				auto rain = (RE::BSParticleShaderRainEmitter*)(particleShaderProperty->particleEmitter);
-				data.Raining = data.Raining || (rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain) && rain->density > 0.0);
+				if (rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain)) {
+					auto maxDensity = weather->precipitationData->data[(uint)RE::BGSShaderParticleGeometryData::DataID::kParticleDensity].f;
+					if (maxDensity > 0.0f)
+						lastRaining = rain->density / maxDensity;
+				}
 			}
+
+			data.Raining = std::lerp(lastRaining, currentRaining, sky->currentWeatherPct);
 		}
 	}
 
