@@ -22,8 +22,8 @@ public:
 	struct Settings
 	{
 		uint EnableWetnessEffects = true;
-		float MaxRainWetness = 1.0f;
-		float MaxPuddleWetness = 2.667f;
+		float MaxRainWetness = 0.75f;
+		float MaxPuddleWetness = 2.5f;
 		float MaxShoreWetness = 0.5f;
 		uint ShoreRange = 32;
 		float PuddleRadius = 1.0f;
