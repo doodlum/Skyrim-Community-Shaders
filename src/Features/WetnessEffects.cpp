@@ -182,7 +182,7 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 						}
 					}
 
-					if (precip->currentPrecip && sky->currentWeather->precipitationData) {
+					if (precip->currentPrecip && sky->currentWeather && sky->currentWeather->precipitationData) {
 						auto& precipObject = precip->currentPrecip;
 						auto weather = sky->currentWeather;
 
@@ -197,7 +197,7 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 						}
 					}
 
-					if (precip->lastPrecip && sky->lastWeather->precipitationData) {
+					if (precip->lastPrecip && sky->lastWeather && sky->lastWeather->precipitationData) {
 						auto& precipObject = precip->lastPrecip;
 						auto weather = sky->lastWeather;
 
