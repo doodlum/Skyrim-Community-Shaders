@@ -212,7 +212,7 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 						}
 					}
 
-					data.Raining = currentRaining + lastRaining;
+					data.Raining = std::min(1.0f, currentRaining + lastRaining);
 				}
 
 				auto linearstep = [](float edge0, float edge1, float x) {
