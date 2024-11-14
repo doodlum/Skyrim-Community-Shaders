@@ -532,9 +532,11 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 		color += dirLightColor * GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
 	}
 
+#	if !defined(LIGHT_LIMIT_FIX)
 	color.x += dot(PLightColorR * lightFadeMul, 1.0.xxxx);
 	color.y += dot(PLightColorG * lightFadeMul, 1.0.xxxx);
 	color.z += dot(PLightColorB * lightFadeMul, 1.0.xxxx);
+#	endif
 
 	return color;
 }
@@ -621,7 +623,7 @@ PS_OUTPUT main(PS_INPUT input)
 				float lightDist = length(lightDirection);
 				float intensityFactor = saturate(lightDist / light.radius);
 				float intensityMultiplier = 1 - intensityFactor * intensityFactor;
-				float3 lightColor = light.color.xyz * intensityMultiplier;
+				float3 lightColor = light.color.xyz * intensityMultiplier * 0.5;
 				propertyColor += lightColor;
 			}
 		}
