@@ -108,7 +108,6 @@ struct WetnessEffectsSettings
 	float RippleBreadth;
 
 	float RippleLifetimeRcp;
-	float pad0[3];
 };
 
 struct SkylightingSettings
