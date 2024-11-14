@@ -62,7 +62,9 @@ float3 ViewToUVDepthHelper(float3 x, uint eyeIndex)
 	float4 newPosition = float4(x, 1.0);
 	float4 uv = mul(CameraProj[eyeIndex], newPosition);
 	uv.xyz /= uv.w;
-	return float3(uv.xy * float2(0.5, -0.5) + 0.5, uv.z);
+	float3 uvDepth = float3(uv.xy * float2(0.5, -0.5) + 0.5, uv.z);
+	uvDepth.xy = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(uvDepth.xy);
+	return uvDepth;
 }
 
 PS_OUTPUT main(PS_INPUT input)
@@ -157,7 +159,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	for (; iterationIndex < maxIterations; iterationIndex++) {
 		float3 iterationUvDepthDR = ViewToUVDepthHelper(lerp(csStart.xyz, csFinish.xyz, (iterationIndex / (float)maxIterations) * SSRParams.x * rcp(length(deltaUvDepth.xy))), eyeIndex);
-		float3 iterationUvDepthSampleDR = iterationUvDepthDR;
+		float3 iterationUvDepthSampleDR =
 #		ifdef VR
 		// Apply dynamic resolution adjustments and stereo UV conversions
 		FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(
