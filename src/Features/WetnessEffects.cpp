@@ -2,9 +2,6 @@
 
 #include "Util.h"
 
-const float MIN_START_PERCENTAGE = 0.05f;
-const float TRANSITION_DENOMINATOR = 256.0f;
-
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	WetnessEffects::Settings,
 	EnableWetnessEffects,
