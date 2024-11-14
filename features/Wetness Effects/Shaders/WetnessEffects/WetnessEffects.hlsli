@@ -67,8 +67,8 @@ namespace WetnessEffects
 		float3 rippleNormal = float3(0, 0, 1);
 		float wetness = 0;
 
-		if (wetnessEffectsSettings.EnableSplashes || wetnessEffectsSettings.EnableRipples){
-			for (int i = -1; i <= 1; i++){
+		if (wetnessEffectsSettings.EnableSplashes || wetnessEffectsSettings.EnableRipples) {
+			for (int i = -1; i <= 1; i++) {
 				for (int j = -1; j <= 1; j++) {
 					int2 gridCurr = grid + int2(i, j);
 					float tOffset = float(Random::iqint3(gridCurr)) * uintToFloat;
