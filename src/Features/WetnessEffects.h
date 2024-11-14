@@ -65,17 +65,7 @@ public:
 
 	PerFrame GetCommonBufferData();
 
-	bool requiresUpdate = true;
-	float wetnessDepth = 0.0f;
-	float puddleDepth = 0.0f;
-	float lastGameTimeValue = 0.0f;
-	uint32_t currentWeatherID = 0;
-	uint32_t lastWeatherID = 0;
-	float previousWeatherTransitionPercentage = 0.0f;
-
 	virtual void Prepass() override;
-
-	virtual void Reset() override;
 
 	virtual void DrawSettings() override;
 

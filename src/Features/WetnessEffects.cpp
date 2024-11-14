@@ -153,11 +153,6 @@ void WetnessEffects::DrawSettings()
 	ImGui::Spacing();
 }
 
-static float linearstep(float edge0, float edge1, float x)
-{
-	return std::clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
-}
-
 WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 {
 	PerFrame data{};
@@ -220,6 +215,10 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 					data.Raining = currentRaining + lastRaining;
 				}
 
+				auto linearstep = [](float edge0, float edge1, float x) {
+					return std::clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+				};
+
 				float wetnessCurrentWeather = 0.0f;
 				if (sky->currentWeather && sky->currentWeather->precipitationData && sky->currentWeather->data.flags.any(RE::TESWeather::WeatherDataFlag::kRainy)) {
 					wetnessCurrentWeather = linearstep(abs((float)sky->currentWeather->data.precipitationBeginFadeIn), 255, sky->currentWeatherPct * 255);
@@ -266,11 +265,6 @@ void WetnessEffects::Prepass()
 	auto& context = state->context;
 
 	context->PSSetShaderResources(31, 1, &precipOcclusionTexture.depthSRV);
-}
-
-void WetnessEffects::Reset()
-{
-	requiresUpdate = true;
 }
 
 void WetnessEffects::LoadSettings(json& o_json)
