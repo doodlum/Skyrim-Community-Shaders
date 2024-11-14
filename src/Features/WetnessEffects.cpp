@@ -221,7 +221,7 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 
 				float wetnessCurrentWeather = 0.0f;
 				if (sky->currentWeather && sky->currentWeather->precipitationData && sky->currentWeather->data.flags.any(RE::TESWeather::WeatherDataFlag::kRainy)) {
-					wetnessCurrentWeather = linearstep(abs((float)sky->currentWeather->data.precipitationBeginFadeIn), 255, sky->currentWeatherPct * 255);
+					wetnessCurrentWeather = linearstep(255.0f + (float)sky->currentWeather->data.precipitationBeginFadeIn, 255, sky->currentWeatherPct * 255);
 				}
 
 				float wetnessLastWeather = 0.0f;
