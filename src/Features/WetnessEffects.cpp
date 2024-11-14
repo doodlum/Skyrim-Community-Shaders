@@ -223,7 +223,7 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 					data.Raining = currentRaining + lastRaining;
 				}
 
-				float wetnessCurrentWeather = 0.0f;	
+				float wetnessCurrentWeather = 0.0f;
 				if (sky->currentWeather && sky->currentWeather->precipitationData && sky->currentWeather->data.flags.any(RE::TESWeather::WeatherDataFlag::kRainy)) {
 					wetnessCurrentWeather = linearstep(abs((float)sky->currentWeather->data.precipitationBeginFadeIn), 255, sky->currentWeatherPct * 255);
 				}
@@ -242,8 +242,8 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 		}
 	}
 
-	static size_t rainTimer = 0;                                       // size_t for precision
-	if (!RE::UI::GetSingleton()->GameIsPaused())                       
+	static size_t rainTimer = 0;  // size_t for precision
+	if (!RE::UI::GetSingleton()->GameIsPaused())
 		rainTimer += (size_t)(RE::GetSecondsSinceLastFrame() * 1000);  // BSTimer::delta is always 0 for some reason
 	data.Time = rainTimer / 1000.f;
 
