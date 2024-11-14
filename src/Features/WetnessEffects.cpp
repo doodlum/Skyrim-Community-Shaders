@@ -234,8 +234,8 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 
 				float wetness = std::min(1.0f, wetnessCurrentWeather + wetnessLastWeather);
 
-				data.Wetness = wetness * settings.MaxRainWetness;
-				data.PuddleWetness = std::max(wetness, puddleLastWeather) * settings.MaxPuddleWetness;
+				data.Wetness = wetness;
+				data.PuddleWetness = std::max(wetness, puddleLastWeather);
 			}
 		}
 	}
@@ -251,8 +251,8 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 
 	// Calculating some parameters on cpu
 	data.settings.RaindropChance *= data.Raining;
-	data.settings.RaindropGridSize = 1.f / settings.RaindropGridSize;
-	data.settings.RaindropInterval = 1.f / settings.RaindropInterval;
+	data.settings.RaindropGridSize = 1.0f / settings.RaindropGridSize;
+	data.settings.RaindropInterval = 1.0f / settings.RaindropInterval;
 	data.settings.RippleLifetime = settings.RaindropInterval / settings.RippleLifetime;
 
 	return data;
