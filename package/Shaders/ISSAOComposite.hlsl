@@ -1,6 +1,7 @@
 #include "Common/Color.hlsli"
 #include "Common/DummyVSTexCoord.hlsl"
 #include "Common/FrameBuffer.hlsli"
+#include "Common/VR.hlsli"
 
 typedef VS_OUTPUT PS_INPUT;
 
@@ -125,33 +126,104 @@ float SimplexNoise(float3 v)
 									 dot(p2, x2), dot(p3, x3)));
 }
 
+float3 DecodeNormal(float2 encodedNormal)
+{
+	float2 fenc = 4 * encodedNormal - 2;
+	float f = dot(fenc, fenc);
+
+	float3 decodedNormal;
+	decodedNormal.xy = fenc * sqrt(1 - f / 4);
+	decodedNormal.z = -(1 - f / 2);
+
+	return normalize(decodedNormal);
+}
+
+TextureCube<float4> specularTexture : register(t64);
+
+Texture2D<float3> ReflectanceTexture : register(t86);
+Texture2D<float3> MasksTexture : register(t87);
+Texture2D<float4> SSRRawSourceTexture : register(t88);
+
 PS_OUTPUT main(PS_INPUT input)
 {
 	PS_OUTPUT psout;
 
-	float2 screenPosition = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(input.TexCoord);
+	float2 uv = input.TexCoord.xy;
+
+	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
+	// uv *= FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(uv);
+	// uv = Stereo::ConvertFromStereoUV(uv, eyeIndex);
+
+	float2 screenPosition = uv;
 	float ao = SAOTex.Sample(SAOSampler, screenPosition).x;
 	float4 sourceColor = sourceTex.SampleLevel(sourceSampler, screenPosition, 0);
 
+	float depth = depthTex.SampleLevel(depthSampler, screenPosition, 0).x;
+
 	float4 composedColor = sourceColor;
+	
+	float4 normalSSRMask = NormalsSSRMaskTex.SampleLevel(NormalsSSRMaskSampler, screenPosition, 0);
+	float glossiness = normalSSRMask.w;
 
-	if (0.5 < SSRParams.z) {
-		float2 ssrMask = NormalsSSRMaskTex.SampleLevel(NormalsSSRMaskSampler, screenPosition, 0).zw;
-		float4 ssr = SSRSourceTex.Sample(SSRSourceSampler, screenPosition);
+//	float3 reflectance = glossiness;
+	float3 reflectance = ReflectanceTexture.SampleLevel(NormalsSSRMaskSampler, screenPosition, 0);;
 
-		float3 ssrInput = 0;
-		if (1e-5 >= ssrMask.x && 1e-5 < ssrMask.y) {
-			ssrInput = min(SSRParams.y * sourceColor.xyz, max(0, SSRParams.x * (ssr.xyz * ssr.w)));
+	if (reflectance.x > 0.0 || reflectance.y > 0.0 || reflectance.z > 0.0) {
+
+		float3 normalVS = DecodeNormal(normalSSRMask.xy);
+		float3 normalWS = normalize(mul(CameraViewInverse[eyeIndex], float4(normalVS, 0)).xyz);
+
+		float wetnessMask = MasksTexture.SampleLevel(sourceSampler, screenPosition, 0).xy;
+
+		normalWS = lerp(normalWS, float3(0, 0, 1), wetnessMask);
+
+		composedColor.xyz = Color::GammaToLinear(composedColor.xyz);
+
+		float4 positionCS = float4(2 * float2(uv.x, -uv.y + 1) - 1, depth, 1);
+		positionCS = mul(CameraViewProjInverse[eyeIndex], positionCS);
+		positionCS.xyz = positionCS.xyz / positionCS.w;
+
+		float3 positionWS = positionCS.xyz;
+
+		float3 V = normalize(positionWS);
+		float3 R = reflect(V, normalWS);
+
+		float roughness = 1.0 - glossiness;
+		float level = roughness * 7.0;
+
+		float3 finalIrradiance = 0;
+
+		float3 specularIrradianceReflections = specularTexture.SampleLevel(sourceSampler, R, level).xyz;
+		specularIrradianceReflections = Color::GammaToLinear(specularIrradianceReflections);
+
+		finalIrradiance += specularIrradianceReflections;
+
+		if (0.5 < SSRParams.z) {
+			float2 ssrMask = normalSSRMask.zw;
+			float4 ssr = SSRSourceTex.Sample(SSRSourceSampler, screenPosition);
+			float4 ssrRaw = SSRRawSourceTexture.Sample(SSRSourceSampler, screenPosition);
+
+			// if (1e-5 >= ssrMask.x && 1e-5 < ssrMask.y)
+			// 	ssr.w = 0;
+
+			ssr = lerp(ssr, ssrRaw, glossiness);
+
+			if (glossiness > 0.0)
+				finalIrradiance = lerp(finalIrradiance, Color::GammaToLinear(ssr.xyz), saturate(SSRParams.x * 3 * (ssr.w / glossiness)));
 		}
-		composedColor.xyz += ssrInput;
+
+		finalIrradiance *= reflectance;
+			
+		composedColor.xyz = Color::LinearToGamma(composedColor.xyz + finalIrradiance);
 	}
+
 
 	float snowMask = 0;
 #	if !defined(VR)
 	if (EyePosition.w != 0) {
-		float2 specSnow = snowSpecAlphaTex.Sample(snowSpecAlphaSampler, screenPosition).xy;
-		composedColor.xyz += specSnow.x * specSnow.y;
-		snowMask = specSnow.y;
+		// float2 specSnow = normalMask.xy;
+		// composedColor.xyz += specSnow.x * specSnow.y;
+		// snowMask = specSnow.y;
 	}
 #	endif
 
@@ -163,8 +235,6 @@ PS_OUTPUT main(PS_INPUT input)
 	composedColor.xyz *= pow(ao, 1.5);
 	composedColor.xyz = Color::LinearToGamma(composedColor.xyz);
 #	endif
-
-	float depth = depthTex.SampleLevel(depthSampler, screenPosition, 0).x;
 
 #	if defined(APPLY_FOG)
 	float fogDistanceFactor = (2 * CameraNearFar.x * CameraNearFar.y) / ((CameraNearFar.y + CameraNearFar.x) - (2 * (1.01 * depth - 0.01) - 1) * (CameraNearFar.y - CameraNearFar.x));

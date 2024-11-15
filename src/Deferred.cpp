@@ -664,3 +664,16 @@ ID3D11ComputeShader* Deferred::GetComputeMainCompositeInterior()
 	}
 	return mainCompositeInteriorCS;
 }
+
+void Deferred::BindExtraViews()
+{
+	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	auto& context = State::GetSingleton()->context;
+
+	auto reflectance = renderer->GetRuntimeData().renderTargets[REFLECTANCE];
+	auto masks = renderer->GetRuntimeData().renderTargets[MASKS];
+	auto ssrRaw = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGET::kSSR_RAW];
+
+	ID3D11ShaderResourceView* views[3] = { reflectance.SRV, masks.SRV, ssrRaw.SRV };
+	context->PSSetShaderResources(86, 3, views);
+}

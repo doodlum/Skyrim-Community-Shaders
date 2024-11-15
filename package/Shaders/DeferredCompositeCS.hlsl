@@ -60,117 +60,117 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 
 	half3 color = lerp(diffuseColor + specularColor, Color::LinearToGamma(Color::GammaToLinear(diffuseColor) + Color::GammaToLinear(specularColor)), pbrWeight);
 
-#if defined(DYNAMIC_CUBEMAPS)
+// #if defined(DYNAMIC_CUBEMAPS)
 
-	half3 reflectance = ReflectanceTexture[dispatchID.xy];
+ 	half3 reflectance = ReflectanceTexture[dispatchID.xy];
 
-	if (reflectance.x > 0.0 || reflectance.y > 0.0 || reflectance.z > 0.0) {
-		half3 normalWS = normalize(mul(CameraViewInverse[eyeIndex], half4(normalVS, 0)).xyz);
+// 	if (reflectance.x > 0.0 || reflectance.y > 0.0 || reflectance.z > 0.0) {
+// 		half3 normalWS = normalize(mul(CameraViewInverse[eyeIndex], half4(normalVS, 0)).xyz);
 
-		half wetnessMask = MasksTexture[dispatchID.xy].z;
+// 		half wetnessMask = MasksTexture[dispatchID.xy].z;
 
-		normalWS = lerp(normalWS, float3(0, 0, 1), wetnessMask);
+// 		normalWS = lerp(normalWS, float3(0, 0, 1), wetnessMask);
 
-		color = Color::GammaToLinear(color);
+// 		color = Color::GammaToLinear(color);
 
-		half depth = DepthTexture[dispatchID.xy];
+// 		half depth = DepthTexture[dispatchID.xy];
 
-		half4 positionCS = half4(2 * half2(uv.x, -uv.y + 1) - 1, depth, 1);
-		positionCS = mul(CameraViewProjInverse[eyeIndex], positionCS);
-		positionCS.xyz = positionCS.xyz / positionCS.w;
+// 		half4 positionCS = half4(2 * half2(uv.x, -uv.y + 1) - 1, depth, 1);
+// 		positionCS = mul(CameraViewProjInverse[eyeIndex], positionCS);
+// 		positionCS.xyz = positionCS.xyz / positionCS.w;
 
-		half3 positionWS = positionCS.xyz;
+// 		half3 positionWS = positionCS.xyz;
 
-		half3 V = normalize(positionWS);
-		half3 R = reflect(V, normalWS);
+// 		half3 V = normalize(positionWS);
+// 		half3 R = reflect(V, normalWS);
 
-		half roughness = 1.0 - glossiness;
-		half level = roughness * 7.0;
+// 		half roughness = 1.0 - glossiness;
+// 		half level = roughness * 7.0;
 
-		half3 finalIrradiance = 0;
+// 		half3 finalIrradiance = 0;
 
-#	if defined(INTERIOR)
-		half3 specularIrradiance = EnvTexture.SampleLevel(LinearSampler, R, level).xyz;
-		specularIrradiance = Color::GammaToLinear(specularIrradiance);
+// #	if defined(INTERIOR)
+// 		half3 specularIrradiance = EnvTexture.SampleLevel(LinearSampler, R, level).xyz;
+// 		specularIrradiance = Color::GammaToLinear(specularIrradiance);
 
-		finalIrradiance += specularIrradiance;
-#	elif defined(SKYLIGHTING)
-#		if defined(VR)
-		float3 positionMS = positionWS + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
-#		else
-		float3 positionMS = positionWS;
-#		endif
+// 		finalIrradiance += specularIrradiance;
+// #	elif defined(SKYLIGHTING)
+// #		if defined(VR)
+// 		float3 positionMS = positionWS + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
+// #		else
+// 		float3 positionMS = positionWS;
+// #		endif
 
-		sh2 skylighting = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
-		sh2 specularLobe = Skylighting::fauxSpecularLobeSH(normalWS, -V, roughness);
+// 		sh2 skylighting = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
+// 		sh2 specularLobe = Skylighting::fauxSpecularLobeSH(normalWS, -V, roughness);
 
-		half skylightingSpecular = shFuncProductIntegral(skylighting, specularLobe);
-		skylightingSpecular = Skylighting::mixSpecular(skylightingSettings, skylightingSpecular);
+// 		half skylightingSpecular = shFuncProductIntegral(skylighting, specularLobe);
+// 		skylightingSpecular = Skylighting::mixSpecular(skylightingSettings, skylightingSpecular);
 
-		half3 specularIrradiance = 1;
+// 		half3 specularIrradiance = 1;
 
-		if (skylightingSpecular < 1.0) {
-			specularIrradiance = EnvTexture.SampleLevel(LinearSampler, R, level).xyz;
-			specularIrradiance = Color::GammaToLinear(specularIrradiance);
-		}
+// 		if (skylightingSpecular < 1.0) {
+// 			specularIrradiance = EnvTexture.SampleLevel(LinearSampler, R, level).xyz;
+// 			specularIrradiance = Color::GammaToLinear(specularIrradiance);
+// 		}
 
-		half3 specularIrradianceReflections = 1.0;
+// 		half3 specularIrradianceReflections = 1.0;
 
-		if (skylightingSpecular > 0.0) {
-			specularIrradianceReflections = EnvReflectionsTexture.SampleLevel(LinearSampler, R, level).xyz;
-			specularIrradianceReflections = Color::GammaToLinear(specularIrradianceReflections);
-		}
-		finalIrradiance = finalIrradiance * skylightingSpecular + lerp(specularIrradiance, specularIrradianceReflections, skylightingSpecular);
-#	else
-		half3 specularIrradianceReflections = EnvReflectionsTexture.SampleLevel(LinearSampler, R, level).xyz;
-		specularIrradianceReflections = Color::GammaToLinear(specularIrradianceReflections);
+// 		if (skylightingSpecular > 0.0) {
+// 			specularIrradianceReflections = EnvReflectionsTexture.SampleLevel(LinearSampler, R, level).xyz;
+// 			specularIrradianceReflections = Color::GammaToLinear(specularIrradianceReflections);
+// 		}
+// 		finalIrradiance = finalIrradiance * skylightingSpecular + lerp(specularIrradiance, specularIrradianceReflections, skylightingSpecular);
+// #	else
+// 		half3 specularIrradianceReflections = EnvReflectionsTexture.SampleLevel(LinearSampler, R, level).xyz;
+// 		specularIrradianceReflections = Color::GammaToLinear(specularIrradianceReflections);
 
-		finalIrradiance += specularIrradianceReflections;
-#	endif
+// 		finalIrradiance += specularIrradianceReflections;
+// #	endif
 
-#	if defined(SSGI)
-#		if defined(VR)
-		float3 uvF = float3((dispatchID.xy + 0.5) * BufferDim.zw, DepthTexture[dispatchID.xy]);  // calculate high precision uv of initial eye
-		float3 uv2 = Stereo::ConvertStereoUVToOtherEyeStereoUV(uvF, eyeIndex, false);            // calculate other eye uv
-		float3 uv1Mono = Stereo::ConvertFromStereoUV(uvF, eyeIndex);
-		float3 uv2Mono = Stereo::ConvertFromStereoUV(uv2, (1 - eyeIndex));
-		uint2 pixCoord2 = (uint2)(uv2.xy / BufferDim.zw - 0.5);
-#		endif
+// #	if defined(SSGI)
+// #		if defined(VR)
+// 		float3 uvF = float3((dispatchID.xy + 0.5) * BufferDim.zw, DepthTexture[dispatchID.xy]);  // calculate high precision uv of initial eye
+// 		float3 uv2 = Stereo::ConvertStereoUVToOtherEyeStereoUV(uvF, eyeIndex, false);            // calculate other eye uv
+// 		float3 uv1Mono = Stereo::ConvertFromStereoUV(uvF, eyeIndex);
+// 		float3 uv2Mono = Stereo::ConvertFromStereoUV(uv2, (1 - eyeIndex));
+// 		uint2 pixCoord2 = (uint2)(uv2.xy / BufferDim.zw - 0.5);
+// #		endif
 
-		half4 ssgiSpecular = SpecularSSGITexture[dispatchID.xy];
-#		if defined(VR)
-		half4 ssgiSpecular2 = SpecularSSGITexture[pixCoord2];
-		ssgiSpecular = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiSpecular, uv2Mono, (float4)ssgiSpecular2);
-#		endif
-		finalIrradiance = finalIrradiance * (1 - ssgiSpecular.a) + ssgiSpecular.rgb;
-#	endif
+// 		half4 ssgiSpecular = SpecularSSGITexture[dispatchID.xy];
+// #		if defined(VR)
+// 		half4 ssgiSpecular2 = SpecularSSGITexture[pixCoord2];
+// 		ssgiSpecular = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiSpecular, uv2Mono, (float4)ssgiSpecular2);
+// #		endif
+// 		finalIrradiance = finalIrradiance * (1 - ssgiSpecular.a) + ssgiSpecular.rgb;
+// #	endif
 
-		color += reflectance * finalIrradiance;
+// 		color += reflectance * finalIrradiance;
 
-		color = Color::LinearToGamma(color);
-	}
+// 		color = Color::LinearToGamma(color);
+// 	}
 
-#endif
+// #endif
 
-#if defined(DEBUG)
+// #if defined(DEBUG)
 
-#	if defined(VR)
-	uv.x += (eyeIndex ? 0.1 : -0.1);
-#	endif  // VR
+// #	if defined(VR)
+// 	uv.x += (eyeIndex ? 0.1 : -0.1);
+// #	endif  // VR
 
-	if (uv.x < 0.5 && uv.y < 0.5) {
-		color = color;
-	} else if (uv.x < 0.5) {
-		color = albedo;
-	} else if (uv.y < 0.5) {
-		color = normalVS;
-	} else {
-		color = glossiness;
-	}
+// 	if (uv.x < 0.5 && uv.y < 0.5) {
+// 		color = color;
+// 	} else if (uv.x < 0.5) {
+// 		color = albedo;
+// 	} else if (uv.y < 0.5) {
+// 		color = normalVS;
+// 	} else {
+// 		color = glossiness;
+// 	}
 
-#endif
+// #endif
 
 	MainRW[dispatchID.xy] = color;
-	NormalTAAMaskSpecularMaskRW[dispatchID.xy] = half4(GBuffer::EncodeNormalVanilla(normalVS), 0.0, 0.0);
+	NormalTAAMaskSpecularMaskRW[dispatchID.xy] = half4(GBuffer::EncodeNormalVanilla(normalVS), 0, glossiness);
 	SnowParametersRW[dispatchID.xy] = snowParameters;
 }

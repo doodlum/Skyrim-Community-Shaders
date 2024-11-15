@@ -75,6 +75,8 @@ public:
 	Buffer* perShadow = nullptr;
 	ID3D11ShaderResourceView* shadowView = nullptr;
 
+	void BindExtraViews();
+
 	struct Hooks
 	{
 		struct Main_RenderWorld
@@ -125,13 +127,45 @@ public:
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
+		struct BSImagespaceShaderISSAOCompositeSAO_SetupTechnique
+		{
+			static void thunk(RE::BSShader* a_shader, RE::BSShaderMaterial* a_material)
+			{
+				GetSingleton()->BindExtraViews();
+				func(a_shader, a_material);
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+		};
+
+		struct BSImagespaceShaderISSAOCompositeFog_SetupTechnique
+		{
+			static void thunk(RE::BSShader* a_shader, RE::BSShaderMaterial* a_material)
+			{
+				GetSingleton()->BindExtraViews();
+				func(a_shader, a_material);
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+		};
+
+		struct BSImagespaceShaderISSAOCompositeSAOFog_SetupTechnique
+		{
+			static void thunk(RE::BSShader* a_shader, RE::BSShaderMaterial* a_material)
+			{
+				GetSingleton()->BindExtraViews();
+				func(a_shader, a_material);
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+		};
+
 		static void Install()
 		{
 			stl::write_thunk_call<Main_RenderWorld>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x831, 0x841, 0x791));
 			stl::write_thunk_call<Main_RenderWorld_Start>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x8E, 0x84));
 			stl::write_thunk_call<Main_RenderWorld_End>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x319, 0x308, 0x321));
 			//stl::write_thunk_call<Main_RenderWorld_End>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x2F2, 0x2E1, 0x321));
-
+			stl::write_vfunc<0x2, BSImagespaceShaderISSAOCompositeSAO_SetupTechnique>(RE::VTABLE_BSImagespaceShaderISSAOCompositeSAO[0]);
+			stl::write_vfunc<0x2, BSImagespaceShaderISSAOCompositeFog_SetupTechnique>(RE::VTABLE_BSImagespaceShaderISSAOCompositeFog[0]);
+			stl::write_vfunc<0x2, BSImagespaceShaderISSAOCompositeSAOFog_SetupTechnique>(RE::VTABLE_BSImagespaceShaderISSAOCompositeSAOFog[0]);
 			logger::info("[Deferred] Installed hooks");
 		}
 	};
