@@ -161,15 +161,15 @@ PS_OUTPUT main(PS_INPUT input)
 	float depth = depthTex.SampleLevel(depthSampler, screenPosition, 0).x;
 
 	float4 composedColor = sourceColor;
-	
+
 	float4 normalSSRMask = NormalsSSRMaskTex.SampleLevel(NormalsSSRMaskSampler, screenPosition, 0);
 	float glossiness = normalSSRMask.w;
 
-//	float3 reflectance = glossiness;
-	float3 reflectance = ReflectanceTexture.SampleLevel(NormalsSSRMaskSampler, screenPosition, 0);;
+	//	float3 reflectance = glossiness;
+	float3 reflectance = ReflectanceTexture.SampleLevel(NormalsSSRMaskSampler, screenPosition, 0);
+	;
 
 	if (reflectance.x > 0.0 || reflectance.y > 0.0 || reflectance.z > 0.0) {
-
 		float3 normalVS = DecodeNormal(normalSSRMask.xy);
 		float3 normalWS = normalize(mul(CameraViewInverse[eyeIndex], float4(normalVS, 0)).xyz);
 
@@ -213,10 +213,9 @@ PS_OUTPUT main(PS_INPUT input)
 		}
 
 		finalIrradiance *= reflectance;
-			
+
 		composedColor.xyz = Color::LinearToGamma(composedColor.xyz + finalIrradiance);
 	}
-
 
 	float snowMask = 0;
 #	if !defined(VR)
