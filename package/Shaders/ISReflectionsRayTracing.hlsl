@@ -57,6 +57,16 @@ float hash(float2 p)
 	return frac(p.x * p.y * float2(0.5, 0.5).x);
 }
 
+float3 ViewToUVDepthHelper(float3 x, uint eyeIndex)
+{
+	float4 newPosition = float4(x, 1.0);
+	float4 uv = mul(CameraProj[eyeIndex], newPosition);
+	uv.xyz /= uv.w;
+	float3 uvDepth = float3(uv.xy * float2(0.5, -0.5) + 0.5, uv.z);
+	uvDepth.xy = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(uvDepth.xy);
+	return uvDepth;
+}
+
 PS_OUTPUT main(PS_INPUT input)
 {
 	PS_OUTPUT psout;
@@ -84,6 +94,12 @@ PS_OUTPUT main(PS_INPUT input)
 	bool isDefaultNormal = srcNormal.z >= 1e-5;
 	float ssrPower = max(srcNormal.z >= 1e-5, srcNormal.w);
 	bool isSsrDisabled = ssrPower < 1e-5;
+
+	[branch] if (isSsrDisabled)
+	{
+		psout.Color = 0;
+		return psout;
+	}
 
 #	if defined(SPECMASK)
 	float3 color = ColorTex.Sample(ColorSampler, uvStartDR).xyz;
@@ -116,7 +132,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 uvDepthFinish = ViewToUVDepth(vsFinish.xyz);
 	float3 deltaUvDepth = uvDepthFinish - uvDepthStart;
 
-	float3 uvDepthFinishDR = uvDepthStart + deltaUvDepth * (SSRParams.x * rcp(length(deltaUvDepth.xy)));
+	float3 uvDepthFinishDR = uvDepthStart + deltaUvDepth * SSRParams.x * rcp(length(deltaUvDepth.xy));
 	uvDepthFinishDR.xy = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(uvDepthFinishDR.xy);
 
 #		ifdef VR
@@ -124,7 +140,6 @@ PS_OUTPUT main(PS_INPUT input)
 #		endif
 
 	float3 uvDepthStartDR = float3(uvStartDR, vsStart.z);
-	float3 deltaUvDepthDR = uvDepthFinishDR - uvDepthStartDR;
 
 	float3 uvDepthPreResultDR = uvDepthStartDR;
 	float3 uvDepthResultDR = float3(uvDepthStartDR.xy, depthStart);
@@ -142,7 +157,7 @@ PS_OUTPUT main(PS_INPUT input)
 		;  // Adjust based on performance/quality tradeoff
 
 	for (; iterationIndex < maxIterations; iterationIndex++) {
-		float3 iterationUvDepthDR = uvDepthStartDR + (iterationIndex / (float)maxIterations) * deltaUvDepthDR;
+		float3 iterationUvDepthDR = ViewToUVDepthHelper(lerp(csStart.xyz, csFinish.xyz, (iterationIndex / (float)maxIterations) * SSRParams.x * rcp(length(deltaUvDepth.xy))), eyeIndex);
 		float3 iterationUvDepthSampleDR =
 #		ifdef VR
 			// Apply dynamic resolution adjustments and stereo UV conversions
