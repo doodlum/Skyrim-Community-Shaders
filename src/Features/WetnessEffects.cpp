@@ -220,8 +220,11 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 				};
 
 				float wetnessCurrentWeather = 0.0f;
+				float puddleCurrentWeather = 0.0f;
+
 				if (sky->currentWeather && sky->currentWeather->precipitationData && sky->currentWeather->data.flags.any(RE::TESWeather::WeatherDataFlag::kRainy)) {
 					wetnessCurrentWeather = linearstep(255.0f + (float)sky->currentWeather->data.precipitationBeginFadeIn, 255, sky->currentWeatherPct * 255);
+					puddleCurrentWeather = pow(wetnessCurrentWeather, 2.0f);
 				}
 
 				float wetnessLastWeather = 0.0f;
@@ -229,13 +232,14 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 
 				if (sky->lastWeather && sky->lastWeather->precipitationData && sky->lastWeather->data.flags.any(RE::TESWeather::WeatherDataFlag::kRainy)) {
 					wetnessLastWeather = 1.0f - linearstep((float)sky->lastWeather->data.precipitationEndFadeOut, 255, sky->currentWeatherPct * 255);
-					puddleLastWeather = pow(1.0f - sky->currentWeatherPct, 0.25f);
+					puddleLastWeather = pow(std::max(wetnessLastWeather, 1.0f - sky->currentWeatherPct), 0.25f);
 				}
 
 				float wetness = std::min(1.0f, wetnessCurrentWeather + wetnessLastWeather);
+				float puddleWetness = std::min(1.0f, puddleCurrentWeather + puddleLastWeather);
 
 				data.Wetness = wetness;
-				data.PuddleWetness = std::max(wetness, puddleLastWeather);
+				data.PuddleWetness = puddleWetness;
 			}
 		}
 	}
