@@ -74,8 +74,11 @@ public:
 	PBRTextureSetData* GetPBRTextureSetData(const RE::TESForm* textureSet);
 	bool IsPBRTextureSet(const RE::TESForm* textureSet);
 
+	void SetupDefaultPBRLandTextureSet();
+
 	std::unordered_map<std::string, PBRTextureSetData> pbrTextureSets;
 	RE::BGSTextureSet* defaultPbrLandTextureSet = nullptr;
+	bool defaultLandTextureSetReplaced = false;
 	std::string selectedPbrTextureSetName;
 	PBRTextureSetData* selectedPbrTextureSet = nullptr;
 
