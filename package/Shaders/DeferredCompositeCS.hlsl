@@ -2,9 +2,9 @@
 #include "Common/Color.hlsli"
 #include "Common/FrameBuffer.hlsli"
 #include "Common/GBuffer.hlsli"
+#include "Common/MotionBlur.hlsli"
 #include "Common/SharedData.hlsli"
 #include "Common/VR.hlsli"
-#include "Common/MotionBlur.hlsli"
 
 Texture2D<half3> SpecularTexture : register(t0);
 Texture2D<unorm half3> AlbedoTexture : register(t1);
@@ -59,8 +59,8 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 	positionWS = mul(CameraViewProjInverse[eyeIndex], positionWS);
 	positionWS.xyz = positionWS.xyz / positionWS.w;
 
-	if (depth == 1.0){
-		MotionVectorsRW[dispatchID.xy] = GetSSMotionVector(positionWS, positionWS, eyeIndex); // Apply sky motion vectors
+	if (depth == 1.0) {
+		MotionVectorsRW[dispatchID.xy] = GetSSMotionVector(positionWS, positionWS, eyeIndex);  // Apply sky motion vectors
 	}
 
 	half pbrWeight = masks2.z;
