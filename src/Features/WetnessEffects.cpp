@@ -153,6 +153,20 @@ void WetnessEffects::DrawSettings()
 	ImGui::Spacing();
 }
 
+class BGSShaderParticleGeometryDataVR : public RE::TESForm
+{
+public:
+
+	struct SETTING_VALUE
+	{
+		RE::SETTING_VALUE value;
+		float pad0;
+	};
+
+	RE::BSTArray<SETTING_VALUE> data;
+	RE::TESTexture particleTexture;
+};
+
 WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 {
 	PerFrame data{};
@@ -189,12 +203,21 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 						auto& effect = precipObject->GetGeometryRuntimeData().properties[RE::BSGeometry::States::kEffect];
 						auto shaderProp = netimmerse_cast<RE::BSShaderProperty*>(effect.get());
 						auto particleShaderProperty = netimmerse_cast<RE::BSParticleShaderProperty*>(shaderProp);
+
 						auto rain = (RE::BSParticleShaderRainEmitter*)(particleShaderProperty->particleEmitter);
 						if (rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain)) {
-							auto maxDensity = weather->precipitationData->data[(uint)RE::BGSShaderParticleGeometryData::DataID::kParticleDensity].f;
-							if (maxDensity > 0.0f)
-								currentRaining = rain->density / maxDensity;
+							if (REL::Module::IsVR()) {
+								auto precipitionData = (BGSShaderParticleGeometryDataVR*)weather->precipitationData;
+								auto maxDensity = precipitionData->data[(uint)RE::BGSShaderParticleGeometryData::DataID::kParticleDensity].value.f;
+								if (maxDensity > 0.0f)
+									currentRaining = rain->density / maxDensity;
+							} else {
+								auto maxDensity = weather->precipitationData->data[(uint)RE::BGSShaderParticleGeometryData::DataID::kParticleDensity].f;
+								if (maxDensity > 0.0f)
+									currentRaining = rain->density / maxDensity;
+							}
 						}
+	
 					}
 
 					if (precip->lastPrecip && sky->lastWeather && sky->lastWeather->precipitationData) {
@@ -206,9 +229,16 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 						auto particleShaderProperty = netimmerse_cast<RE::BSParticleShaderProperty*>(shaderProp);
 						auto rain = (RE::BSParticleShaderRainEmitter*)(particleShaderProperty->particleEmitter);
 						if (rain->emitterType.any(RE::BSParticleShaderEmitter::EMITTER_TYPE::kRain)) {
-							auto maxDensity = weather->precipitationData->data[(uint)RE::BGSShaderParticleGeometryData::DataID::kParticleDensity].f;
-							if (maxDensity > 0.0f)
-								lastRaining = rain->density / maxDensity;
+							if (REL::Module::IsVR()) {
+								auto precipitionData = (BGSShaderParticleGeometryDataVR*)weather->precipitationData;
+								auto maxDensity = precipitionData->data[(uint)RE::BGSShaderParticleGeometryData::DataID::kParticleDensity].value.f;
+								if (maxDensity > 0.0f)
+									lastRaining = rain->density / maxDensity;
+							} else {
+								auto maxDensity = weather->precipitationData->data[(uint)RE::BGSShaderParticleGeometryData::DataID::kParticleDensity].f;
+								if (maxDensity > 0.0f)
+									lastRaining = rain->density / maxDensity;
+							}
 						}
 					}
 
