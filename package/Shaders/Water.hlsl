@@ -670,25 +670,13 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 	refractionUvRaw = Stereo::ConvertToStereoUV(refractionUvRaw, eyeIndex);  // need to convert here for VR due to refractionNormal values
 
 	float2 screenPosition = DynamicResolutionParams1.xy * (DynamicResolutionParams2.xy * input.HPosition.xy);
-	float depth = GetScreenDepthWater(screenPosition,
-#				if defined(VR)
-		1
-#				else
-		0
-#				endif
-	);
+	float depth = GetScreenDepthWater(screenPosition);
 
 	float2 refractionScreenPosition = DynamicResolutionParams1.xy * (refractionUvRaw / VPOSOffset.xy);
 	float4 refractionWorldPosition = float4(input.WPosition.xyz * depth / viewPosition.z, 0);
 
 #				if defined(DEPTH) && !defined(VERTEX_ALPHA_DEPTH)
-	float refractionDepth = GetScreenDepthWater(refractionScreenPosition,
-#					if defined(VR)
-		1
-#					else
-		0
-#					endif
-	);
+	float refractionDepth = GetScreenDepthWater(refractionScreenPosition);
 	float refractionDepthMul = length(float3((((VPOSOffset.zw + refractionUvRaw) * 2 - 1)) * refractionDepth / ProjData.xy, refractionDepth));
 
 	float3 refractionDepthAdjustedViewDirection = -viewDirection * refractionDepthMul;
