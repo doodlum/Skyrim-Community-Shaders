@@ -282,7 +282,7 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 	data.settings.MaxShoreWetness = settings.EnableWetnessEffects ? settings.MaxShoreWetness : 0.0f;
 
 	// Calculating some parameters on cpu
-	data.settings.RaindropChance *= data.Raining;
+	data.settings.RaindropChance *= data.Raining * data.Raining;
 	data.settings.RaindropGridSize = 1.0f / settings.RaindropGridSize;
 	data.settings.RaindropInterval = 1.0f / settings.RaindropInterval;
 	data.settings.RippleLifetime = settings.RaindropInterval / settings.RippleLifetime;
