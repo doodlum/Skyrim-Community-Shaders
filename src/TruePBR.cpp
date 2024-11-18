@@ -365,6 +365,7 @@ void TruePBR::SetupGlintsTexture()
 
 void TruePBR::SetupFrame()
 {
+	SetupDefaultPBRLandTextureSet();
 }
 
 void TruePBR::SetupTextureSetData()
@@ -1089,8 +1090,8 @@ void SetupLandscapeTexture(BSLightingShaderMaterialPBRLandscape& material, RE::T
 
 RE::TESLandTexture* GetDefaultLandTexture()
 {
-	static RE::TESLandTexture* const defaultLandTexture = *REL::Relocation<RE::TESLandTexture**>(RELOCATION_ID(514783, 400936));
-	return defaultLandTexture;
+	static const auto defaultLandTextureAddress = REL::Relocation<RE::TESLandTexture**>(RELOCATION_ID(514783, 400936));
+	return *defaultLandTextureAddress;
 }
 
 struct TESObjectLAND_SetupMaterial
@@ -1132,7 +1133,7 @@ struct TESObjectLAND_SetupMaterial
 		if (land->loadedData != nullptr && land->loadedData->mesh[0] != nullptr) {
 			land->data.flags.set(static_cast<RE::OBJ_LAND::Flag>(8));
 			for (uint32_t quadIndex = 0; quadIndex < 4; ++quadIndex) {
-				auto shaderProperty = static_cast<RE::BSLightingShaderProperty*>(RE::MemoryManager::GetSingleton()->Allocate(sizeof(RE::BSLightingShaderProperty), 0, false));
+				auto shaderProperty = static_cast<RE::BSLightingShaderProperty*>(RE::MemoryManager::GetSingleton()->Allocate(REL::Module::IsVR() ? 0x178 : sizeof(RE::BSLightingShaderProperty), 0, false));
 				shaderProperty->Ctor();
 
 				{
@@ -1601,9 +1602,17 @@ void TruePBR::PostPostLoad()
 void TruePBR::DataLoaded()
 {
 	defaultPbrLandTextureSet = RE::TESForm::LookupByEditorID<RE::BGSTextureSet>("DefaultPBRLand");
-	if (defaultPbrLandTextureSet != nullptr) {
-		logger::info("[TruePBR] replacing default land texture set record with {}", defaultPbrLandTextureSet->GetFormEditorID());
-		GetDefaultLandTexture()->textureSet = defaultPbrLandTextureSet;
+	SetupDefaultPBRLandTextureSet();
+}
+
+void TruePBR::SetupDefaultPBRLandTextureSet()
+{
+	if (!defaultLandTextureSetReplaced && defaultPbrLandTextureSet != nullptr) {
+		if (auto* defaultLandTexture = GetDefaultLandTexture()) {
+			logger::info("[TruePBR] replacing default land texture set record with {}", defaultPbrLandTextureSet->GetFormEditorID());
+			defaultLandTexture->textureSet = defaultPbrLandTextureSet;
+			defaultLandTextureSetReplaced = true;
+		}
 	}
 }
 

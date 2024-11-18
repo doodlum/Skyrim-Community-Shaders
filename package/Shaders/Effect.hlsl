@@ -592,7 +592,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float softMul = 1;
 #	if defined(SOFT)
 	float depth = TexDepthSamplerEffect.Load(int3(input.Position.xy, 0)).x;
-	softMul = saturate(-input.TexCoord0.w + LightingInfluence.y / ((1 - depth) * CameraData.z + CameraData.y));
+	softMul = saturate(-input.TexCoord0.w + LightingInfluence.y / ((1 - depth) * CameraDataEffect.z + CameraDataEffect.y));
 #	endif
 
 	float lightingInfluence = LightingInfluence.x;

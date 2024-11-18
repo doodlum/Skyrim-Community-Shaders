@@ -366,10 +366,10 @@ void Deferred::DeferredPasses()
 
 	auto main = renderer->GetRuntimeData().renderTargets[forwardRenderTargets[0]];
 	auto normals = renderer->GetRuntimeData().renderTargets[forwardRenderTargets[2]];
-	auto snow = renderer->GetRuntimeData().renderTargets[forwardRenderTargets[3]];
-
 	auto depth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 	auto reflectance = renderer->GetRuntimeData().renderTargets[REFLECTANCE];
+
+	auto motionVectors = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMOTION_VECTOR];
 
 	bool interior = true;
 	if (auto sky = RE::Sky::GetSingleton())
@@ -455,7 +455,7 @@ void Deferred::DeferredPasses()
 
 		context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
 
-		ID3D11UnorderedAccessView* uavs[3]{ main.UAV, normals.UAV, snow.UAV };
+		ID3D11UnorderedAccessView* uavs[3]{ main.UAV, normals.UAV, motionVectors.UAV };
 		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
 
 		auto shader = interior ? GetComputeMainCompositeInterior() : GetComputeMainComposite();

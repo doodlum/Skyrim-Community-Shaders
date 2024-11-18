@@ -885,7 +885,6 @@ void LightLimitFix::UpdateLights()
 								}
 
 								clusteredLight.lightFlags.set(LightFlags::Simple);
-								clusteredLight.lightFlags.set(LightFlags::Particle);
 
 								AddCachedParticleLights(lightsData, clusteredLight);
 
@@ -943,7 +942,6 @@ void LightLimitFix::UpdateLights()
 				SetLightPosition(light, position);  // Light is complete for both eyes by now
 
 				light.lightFlags.set(LightFlags::Simple);
-				light.lightFlags.set(LightFlags::Billboard);
 
 				AddCachedParticleLights(lightsData, light);
 			}
@@ -959,7 +957,6 @@ void LightLimitFix::UpdateLights()
 				clusteredLight.positionWS[1].data.z += eyePositionOffset.z / (float)clusteredLights;
 			}
 			clusteredLight.lightFlags.set(LightFlags::Simple);
-			clusteredLight.lightFlags.set(LightFlags::Particle);
 			AddCachedParticleLights(lightsData, clusteredLight);
 		}
 	}

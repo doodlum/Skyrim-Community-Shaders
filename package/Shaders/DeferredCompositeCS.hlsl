@@ -2,6 +2,7 @@
 #include "Common/Color.hlsli"
 #include "Common/FrameBuffer.hlsli"
 #include "Common/GBuffer.hlsli"
+#include "Common/MotionBlur.hlsli"
 #include "Common/SharedData.hlsli"
 #include "Common/VR.hlsli"
 
@@ -13,7 +14,7 @@ Texture2D<unorm half3> Masks2Texture : register(t4);
 
 RWTexture2D<half3> MainRW : register(u0);
 RWTexture2D<half4> NormalTAAMaskSpecularMaskRW : register(u1);
-RWTexture2D<half2> SnowParametersRW : register(u2);
+RWTexture2D<half2> MotionVectorsRW : register(u2);
 
 #if defined(DYNAMIC_CUBEMAPS)
 Texture2D<float> DepthTexture : register(t5);
@@ -42,7 +43,7 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 								: SV_DispatchThreadID) {
 	half2 uv = half2(dispatchID.xy + 0.5) * BufferDim.zw;
 	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
-	uv *= DynamicResolutionParams2.xy;  // adjust for dynamic res
+	uv *= DynamicResolutionParams2.xy;  // Adjust for dynamic res
 	uv = Stereo::ConvertFromStereoUV(uv, eyeIndex);
 
 	half3 normalGlossiness = NormalRoughnessTexture[dispatchID.xy];
@@ -53,7 +54,15 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 	half3 albedo = AlbedoTexture[dispatchID.xy];
 	half3 masks2 = Masks2Texture[dispatchID.xy];
 
-	half2 snowParameters = masks2.xy;
+	half depth = DepthTexture[dispatchID.xy];
+	half4 positionWS = half4(2 * half2(uv.x, -uv.y + 1) - 1, depth, 1);
+	positionWS = mul(CameraViewProjInverse[eyeIndex], positionWS);
+	positionWS.xyz = positionWS.xyz / positionWS.w;
+
+	if (depth == 1.0) {
+		MotionVectorsRW[dispatchID.xy] = GetSSMotionVector(positionWS, positionWS, eyeIndex);  // Apply sky motion vectors
+	}
+
 	half pbrWeight = masks2.z;
 
 	half glossiness = normalGlossiness.z;
@@ -73,15 +82,7 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 
 		color = Color::GammaToLinear(color);
 
-		half depth = DepthTexture[dispatchID.xy];
-
-		half4 positionCS = half4(2 * half2(uv.x, -uv.y + 1) - 1, depth, 1);
-		positionCS = mul(CameraViewProjInverse[eyeIndex], positionCS);
-		positionCS.xyz = positionCS.xyz / positionCS.w;
-
-		half3 positionWS = positionCS.xyz;
-
-		half3 V = normalize(positionWS);
+		half3 V = normalize(positionWS.xyz);
 		half3 R = reflect(V, normalWS);
 
 		half roughness = 1.0 - glossiness;
@@ -96,9 +97,9 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 		finalIrradiance += specularIrradiance;
 #	elif defined(SKYLIGHTING)
 #		if defined(VR)
-		float3 positionMS = positionWS + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
+		float3 positionMS = positionWS.xyz + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
 #		else
-		float3 positionMS = positionWS;
+		float3 positionMS = positionWS.xyz;
 #		endif
 
 		sh2 skylighting = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
@@ -172,5 +173,4 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 
 	MainRW[dispatchID.xy] = color;
 	NormalTAAMaskSpecularMaskRW[dispatchID.xy] = half4(GBuffer::EncodeNormalVanilla(normalVS), 0.0, 0.0);
-	SnowParametersRW[dispatchID.xy] = snowParameters;
 }

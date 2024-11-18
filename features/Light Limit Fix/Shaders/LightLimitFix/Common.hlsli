@@ -12,8 +12,6 @@ namespace LightFlags
 	static const uint PortalStrict = (1 << 0);
 	static const uint Shadow = (1 << 1);
 	static const uint Simple = (1 << 2);
-	static const uint Particle = (1 << 3);
-	static const uint Billboard = (1 << 4);
 }
 
 struct ClusterAABB
