@@ -67,6 +67,10 @@ struct VS_OUTPUT
 #	endif  // RENDER_DEPTH
 	float4 WorldPosition : POSITION1;
 	float4 PreviousWorldPosition : POSITION2;
+#	ifdef VR
+	float ClipDistance : SV_ClipDistance0;
+	float CullDistance : SV_CullDistance0;
+#	endif  // VR
 };
 #endif
 
