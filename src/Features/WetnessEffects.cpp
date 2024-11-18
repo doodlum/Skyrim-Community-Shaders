@@ -156,7 +156,6 @@ void WetnessEffects::DrawSettings()
 class BGSShaderParticleGeometryDataVR : public RE::TESForm
 {
 public:
-
 	struct SETTING_VALUE
 	{
 		RE::SETTING_VALUE value;
@@ -217,7 +216,6 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 									currentRaining = rain->density / maxDensity;
 							}
 						}
-	
 					}
 
 					if (precip->lastPrecip && sky->lastWeather && sky->lastWeather->precipitationData) {
