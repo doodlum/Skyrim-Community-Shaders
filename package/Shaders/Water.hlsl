@@ -401,8 +401,10 @@ float calculateDepthMultfromUV(float2 a_uv, float a_depth, uint eyeIndex = 0)
 	temp.z = a_depth;
 	temp.w = 1;
 	temp = mul(CameraProjInverse[eyeIndex], temp.xyzw);
-	temp.xyz /= temp.w;
-	return length(temp);
+	temp.xyz /= temp.w;	
+	temp.w = dot(temp.xyz, temp.xyz);
+	temp.w = sqrt(temp.w);
+	return temp.w;
 }
 #		endif  // VR
 
