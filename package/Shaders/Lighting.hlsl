@@ -980,10 +980,8 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		include "TerrainBlending/TerrainBlending.hlsli"
 #	endif
 
-#	if defined(SSS)
-#		if defined(SKIN)
-#			undef SOFT_LIGHTING
-#		endif
+#	if defined(SSS) && defined(SKIN) && defined(DEFERRED)
+#		undef SOFT_LIGHTING
 #	endif
 
 #	if defined(TERRAIN_SHADOWS)
