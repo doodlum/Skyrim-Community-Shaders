@@ -2,6 +2,8 @@
 
 namespace WetnessEffects
 {
+	Texture2D<float4> TexPrecipOcclusion : register(t31);
+
 	// https://www.unrealengine.com/en-US/blog/physically-based-shading-on-mobile
 	float2 EnvBRDFApproxWater(float3 F0, float Roughness, float NoV)
 	{
@@ -58,15 +60,15 @@ namespace WetnessEffects
 		const float rippleBreadthRcp = rcp(wetnessEffectsSettings.RippleBreadth);
 
 		float2 gridUV = worldPos.xy * wetnessEffectsSettings.RaindropGridSizeRcp;
-		gridUV += normal.xy * 0.5;
+		gridUV += normal.xy;
 		int2 grid = floor(gridUV);
 		gridUV -= grid;
 
 		float3 rippleNormal = float3(0, 0, 1);
 		float wetness = 0;
 
-		if (wetnessEffectsSettings.EnableSplashes || wetnessEffectsSettings.EnableRipples)
-			for (int i = -1; i <= 1; i++)
+		if (wetnessEffectsSettings.EnableSplashes || wetnessEffectsSettings.EnableRipples) {
+			for (int i = -1; i <= 1; i++) {
 				for (int j = -1; j <= 1; j++) {
 					int2 gridCurr = grid + int2(i, j);
 					float tOffset = float(Random::iqint3(gridCurr)) * uintToFloat;
@@ -122,12 +124,7 @@ namespace WetnessEffects
 						}
 					}
 				}
-
-		if (wetnessEffectsSettings.EnableChaoticRipples) {
-			float3 turbulenceNormal = Random::perlinNoise(float3(worldPos.xy * wetnessEffectsSettings.ChaoticRippleScaleRcp, t * wetnessEffectsSettings.ChaoticRippleSpeed));
-			turbulenceNormal.z = turbulenceNormal.z * .5 + 5;
-			turbulenceNormal = normalize(turbulenceNormal);
-			rippleNormal = normalize(rippleNormal + float3(turbulenceNormal.xy * wetnessEffectsSettings.ChaoticRippleStrength, 0));
+			}
 		}
 
 		wetness *= wetnessEffectsSettings.SplashesStrength;

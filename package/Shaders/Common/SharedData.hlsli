@@ -70,6 +70,8 @@ struct LightLimitFixSettings
 
 struct WetnessEffectsSettings
 {
+	row_major float4x4 OcclusionViewProj;
+
 	float Time;
 	float Raining;
 	float Wetness;
@@ -92,26 +94,20 @@ struct WetnessEffectsSettings
 
 	bool EnableSplashes;
 	bool EnableRipples;
-	bool EnableChaoticRipples;
-	float RaindropFxRange;
-
 	float RaindropGridSizeRcp;
 	float RaindropIntervalRcp;
+
 	float RaindropChance;
 	float SplashesLifetime;
-
 	float SplashesStrength;
 	float SplashesMinRadius;
+
 	float SplashesMaxRadius;
 	float RippleStrength;
-
 	float RippleRadius;
 	float RippleBreadth;
-	float RippleLifetimeRcp;
-	float ChaoticRippleStrength;
 
-	float ChaoticRippleScaleRcp;
-	float ChaoticRippleSpeed;
+	float RippleLifetimeRcp;
 };
 
 struct SkylightingSettings

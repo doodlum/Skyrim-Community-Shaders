@@ -1783,16 +1783,23 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 
 	float4 raindropInfo = float4(0, 0, 1, 0);
-	if (worldSpaceNormal.z > 0 && wetnessEffectsSettings.Raining > 0.0f && wetnessEffectsSettings.EnableRaindropFx &&
-		(dot(input.WorldPosition, input.WorldPosition) < wetnessEffectsSettings.RaindropFxRange * wetnessEffectsSettings.RaindropFxRange)) {
-		if (wetnessOcclusion > 0.0)
+	if (worldSpaceNormal.z > 0 && wetnessEffectsSettings.Raining > 0.0f && wetnessEffectsSettings.EnableRaindropFx) {
+		float4 precipOcclusionTexCoord = mul(wetnessEffectsSettings.OcclusionViewProj, float4(input.WorldPosition.xyz, 1));
+		precipOcclusionTexCoord.y = -precipOcclusionTexCoord.y;
+		float2 precipOcclusionUV = precipOcclusionTexCoord.xy * 0.5 + 0.5;
+
+		if (saturate(precipOcclusionUV.x) == precipOcclusionUV.x && saturate(precipOcclusionUV.y) == precipOcclusionUV.y) {
+			float precipOcclusionZ = WetnessEffects::TexPrecipOcclusion.SampleLevel(SampColorSampler, precipOcclusionUV, 0).x;
+
+			if (precipOcclusionTexCoord.z < precipOcclusionZ + 0.1)
 #		if defined(SKINNED)
-			raindropInfo = WetnessEffects::GetRainDrops(input.ModelPosition.xyz, wetnessEffectsSettings.Time, worldSpaceNormal);
+				raindropInfo = WetnessEffects::GetRainDrops(input.ModelPosition.xyz, wetnessEffectsSettings.Time, worldSpaceNormal);
 #		elif defined(DEFERRED)
-			raindropInfo = WetnessEffects::GetRainDrops(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz, wetnessEffectsSettings.Time, worldSpaceNormal);
+				raindropInfo = WetnessEffects::GetRainDrops(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz, wetnessEffectsSettings.Time, worldSpaceNormal);
 #		else
-			raindropInfo = WetnessEffects::GetRainDrops(!FrameParams.y ? input.ModelPosition.xyz : input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz, wetnessEffectsSettings.Time, worldSpaceNormal);
+				raindropInfo = WetnessEffects::GetRainDrops(!FrameParams.y ? input.ModelPosition.xyz : input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz, wetnessEffectsSettings.Time, worldSpaceNormal);
 #		endif
+		}
 	}
 
 	float rainWetness = wetnessEffectsSettings.Wetness * minWetnessAngle * wetnessEffectsSettings.MaxRainWetness;
