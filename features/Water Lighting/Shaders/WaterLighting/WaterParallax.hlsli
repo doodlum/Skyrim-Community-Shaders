@@ -67,8 +67,7 @@ namespace WaterLighting
 
 	float2 GetParallaxOffset(PS_INPUT input, float3 normalScalesRcp, uint eyeIndex)
 	{
-
-#	if defined(VC)
+#if defined(VC)
 		float3 reflectPlaneWS = mul(CameraViewInverse[eyeIndex], float4(ReflectPlane[eyeIndex].xyz, 1.0));
 
 		float3x3 tbn = CalculateTBN(reflectPlaneWS.xyz, -input.WPosition.xyz, input.TexCoord1.xy);
