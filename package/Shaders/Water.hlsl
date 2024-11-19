@@ -441,7 +441,7 @@ float3 GetFlowmapNormal(PS_INPUT input, float2 uvShift, float multiplier, float 
 #				undef WATER_LIGHTING
 #			endif
 
-#			if defined(WATER_LIGHTING)
+#			if defined(WATER_LIGHTING) && !defined(VC)
 #				define WATER_PARALLAX
 #				include "WaterLighting/WaterParallax.hlsli"
 #			endif
@@ -455,7 +455,7 @@ float3 GetWaterNormal(PS_INPUT input, float distanceFactor, float normalsDepthFa
 	float3 normalScalesRcp = rcp(input.NormalsScale.xyz);
 
 #			if defined(WATER_PARALLAX)
-	float2 parallaxOffset = WaterLighting::GetParallaxOffset(input, normalScalesRcp, eyeIndex);
+	float2 parallaxOffset = WaterLighting::GetParallaxOffset(input, normalScalesRcp);
 #			endif
 
 #			if defined(FLOWMAP)

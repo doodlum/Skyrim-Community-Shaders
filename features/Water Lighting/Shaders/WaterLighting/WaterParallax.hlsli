@@ -45,42 +45,11 @@ namespace WaterLighting
 		return 1.0 - length(heights);
 	}
 
-	// http://www.thetenthplanet.de/archives/1180
-	float3x3 CalculateTBN(float3 N, float3 p, float2 uv)
+	float2 GetParallaxOffset(PS_INPUT input, float3 normalScalesRcp)
 	{
-		// get edge vectors of the pixel triangle
-		float3 dp1 = ddx_coarse(p);
-		float3 dp2 = ddy_coarse(p);
-		float2 duv1 = ddx_coarse(uv);
-		float2 duv2 = ddy_coarse(uv);
-
-		// solve the linear system
-		float3 dp2perp = cross(dp2, N);
-		float3 dp1perp = cross(N, dp1);
-		float3 T = dp2perp * duv1.x + dp1perp * duv2.x;
-		float3 B = dp2perp * duv1.y + dp1perp * duv2.y;
-
-		// construct a scale-invariant frame
-		float invmax = rsqrt(max(dot(T, T), dot(B, B)));
-		return float3x3(T * invmax, B * invmax, N);
-	}
-
-	float2 GetParallaxOffset(PS_INPUT input, float3 normalScalesRcp, uint eyeIndex)
-	{
-
-#	if defined(VC)
-		float3 reflectPlaneWS = mul(CameraViewInverse[eyeIndex], float4(ReflectPlane[eyeIndex].xyz, 1.0));
-
-		float3x3 tbn = CalculateTBN(reflectPlaneWS.xyz, -input.WPosition.xyz, input.TexCoord1.xy);
-
-		float3 viewDirection = normalize(input.WPosition.xyz);
-		float3 viewDirectionTS = normalize(mul(tbn, viewDirection));
-
-		float2 parallaxOffsetTS = viewDirectionTS.xy / -viewDirectionTS.z;
-#else
 		float3 viewDirection = normalize(input.WPosition.xyz);
 		float2 parallaxOffsetTS = viewDirection.xy / -viewDirection.z;
-#endif
+
 		// Parallax scale is also multiplied by normalScalesRcp
 		parallaxOffsetTS *= 20.0;
 
