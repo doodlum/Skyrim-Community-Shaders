@@ -77,10 +77,10 @@ namespace WaterLighting
 		float3 viewDirectionTS = normalize(mul(tbn, viewDirection));
 
 		float2 parallaxOffsetTS = viewDirectionTS.xy / -viewDirectionTS.z;
-#	else
+#else
 		float3 viewDirection = normalize(input.WPosition.xyz);
 		float2 parallaxOffsetTS = viewDirection.xy / -viewDirection.z;
-#	endif
+#endif
 		// Parallax scale is also multiplied by normalScalesRcp
 		parallaxOffsetTS *= 20.0;
 
