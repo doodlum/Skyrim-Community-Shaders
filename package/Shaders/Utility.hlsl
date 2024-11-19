@@ -157,13 +157,13 @@ VS_OUTPUT main(VS_INPUT input)
 #		endif
 
 #		if defined(LOD_LANDSCAPE)
-	positionMS = AdjustLodLandscapeVertexPositionMS(positionMS, World[eyeIndex], HighDetailRange[eyeIndex]);
+	positionMS = LodLandscape::AdjustLodLandscapeVertexPositionMS(positionMS, World[eyeIndex], HighDetailRange[eyeIndex]);
 #		endif
 
 #		if defined(SKINNED)
 	precise int4 boneIndices = 765.01.xxxx * input.BoneIndices.xyzw;
 
-	float3x4 worldMatrix = GetBoneTransformMatrix(Bones, boneIndices, CameraPosAdjust[eyeIndex].xyz, input.BoneWeights);
+	float3x4 worldMatrix = Skinned::GetBoneTransformMatrix(Bones, boneIndices, CameraPosAdjust[eyeIndex].xyz, input.BoneWeights);
 	precise float4 positionWS = float4(mul(positionMS, transpose(worldMatrix)), 1);
 
 	positionCS = mul(CameraViewProj[eyeIndex], positionWS);
@@ -177,7 +177,7 @@ VS_OUTPUT main(VS_INPUT input)
 #		endif
 
 #		if defined(LOD_LANDSCAPE)
-	vsout.PositionCS = AdjustLodLandscapeVertexPositionCS(positionCS);
+	vsout.PositionCS = LodLandscape::AdjustLodLandscapeVertexPositionCS(positionCS);
 #		elif defined(RENDER_SHADOWMAP_PB)
 	float3 positionCSPerspective = positionCS.xyz / positionCS.w;
 	float3 shadowDirection = normalize(normalize(positionCSPerspective) + float3(0, 0, ParabolaParam.y));
@@ -191,7 +191,7 @@ VS_OUTPUT main(VS_INPUT input)
 #		if defined(RENDER_NORMAL)
 	float3 normalVS = float3(1, 1, 1);
 #			if defined(SKINNED)
-	float3x3 boneRSMatrix = GetBoneRSMatrix(Bones, boneIndices, input.BoneWeights);
+	float3x3 boneRSMatrix = Skinned::GetBoneRSMatrix(Bones, boneIndices, input.BoneWeights);
 	normalMS = normalize(mul(normalMS, transpose(boneRSMatrix)));
 	normalVS = mul(CameraView[eyeIndex], float4(normalMS, 0)).xyz;
 #			else

@@ -1,3 +1,5 @@
+#ifndef __PERMUTATION_DEPENDENCY_HLSL__
+#define __PERMUTATION_DEPENDENCY_HLSL__
 
 namespace LightingTechnique
 {
@@ -62,3 +64,5 @@ cbuffer PerShader : register(b4)
 	uint PixelShaderDescriptor;
 	uint ExtraShaderDescriptor;
 };
+
+#endif  // __PERMUTATION_DEPENDENCY_HLSL__

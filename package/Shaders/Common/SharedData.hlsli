@@ -1,5 +1,5 @@
-#ifndef SHARED_DATA
-#define SHARED_DATA
+#ifndef __SHARED_DATA_DEPENDENCY_HLSL__
+#define __SHARED_DATA_DEPENDENCY_HLSL__
 
 #include "Common/FrameBuffer.hlsli"
 #include "Common/VR.hlsli"
@@ -206,4 +206,4 @@ namespace SharedData
 
 #endif  // PSHADER
 
-#endif  // SHARED_DATA
+#endif  // __SHARED_DATA_DEPENDENCY_HLSL__

@@ -554,7 +554,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 			sh2 skylighting = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMSSkylight, normal);
 			sh2 specularLobe = Skylighting::fauxSpecularLobeSH(normal, -viewDirection, 0.0);
 
-			float skylightingSpecular = shFuncProductIntegral(skylighting, specularLobe);
+			float skylightingSpecular = SphericalHarmonics::FuncProductIntegral(skylighting, specularLobe);
 			skylightingSpecular = lerp(1.0, skylightingSpecular, Skylighting::getFadeOutFactor(input.WPosition.xyz));
 			skylightingSpecular = Skylighting::mixSpecular(skylightingSettings, skylightingSpecular);
 
@@ -733,7 +733,7 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 #					endif
 
 		sh2 skylightingSH = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMSSkylight, float3(0, 0, 1));
-		float skylighting = shUnproject(skylightingSH, float3(0, 0, 1));
+		float skylighting = SphericalHarmonics::Unproject(skylightingSH, float3(0, 0, 1));
 		skylighting = lerp(1.0, skylighting, Skylighting::getFadeOutFactor(input.WPosition.xyz));
 
 		float3 refractionDiffuseColorSkylight = Skylighting::mixDiffuse(skylightingSettings, skylighting);
@@ -915,7 +915,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 sunColor = GetSunColor(normal, viewDirection);
 
 	if (!(PixelShaderDescriptor & WaterFlags::Interior)) {
-		sunColor *= GetWaterShadow(screenNoise, input.WPosition.xyz, eyeIndex);
+		sunColor *= ShadowSampling::GetWaterShadow(screenNoise, input.WPosition.xyz, eyeIndex);
 	}
 
 #					if defined(VC)
@@ -950,7 +950,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float VdotN = dot(viewDirection, normal);
 	psout.WaterMask = float4(0, 0, VdotN, 0);
 
-	psout.MotionVector = GetSSMotionVector(input.WorldPosition, input.PreviousWorldPosition);
+	psout.MotionVector = MotionBlur::GetSSMotionVector(input.WorldPosition, input.PreviousWorldPosition);
 #		endif
 
 	return psout;

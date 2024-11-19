@@ -1,3 +1,10 @@
+#ifndef __PBR_DEPENDENCY_HLSL__
+#define __PBR_DEPENDENCY_HLSL__
+
+#include "Common/Color.hlsli"
+#include "Common/Math.hlsli"
+#include "Common/SharedData.hlsli"
+
 namespace PBR
 {
 	namespace Flags
@@ -39,11 +46,13 @@ namespace PBR
 		static const uint LandTile5HasGlint = (1 << 17);
 	}
 
-#include "Common/Math.hlsli"
 #if defined(GLINT)
 #	include "Common/Glints/Glints2023.hlsli"
 #else
-	typedef float GlintCachedVars;
+	namespace Glints
+	{
+		typedef float GlintCachedVars;
+	}
 #endif
 
 	struct SurfaceProperties
@@ -65,7 +74,7 @@ namespace PBR
 		float GlintLogMicrofacetDensity;
 		float GlintMicrofacetRoughness;
 		float GlintDensityRandomization;
-		GlintCachedVars GlintCache[4];
+		Glints::GlintCachedVars GlintCache[4];
 	};
 
 	SurfaceProperties InitSurfaceProperties()
@@ -182,14 +191,14 @@ namespace PBR
 
 #if defined(GLINT)
 	float3 GetSpecularDirectLightMultiplierMicrofacetWithGlint(float roughness, float3 specularColor, float NdotL, float NdotV, float NdotH, float VdotH, float glintH,
-		float logDensity, float microfacetRoughness, float densityRandomization, GlintCachedVars glintCache[4],
+		float logDensity, float microfacetRoughness, float densityRandomization, Glints::GlintCachedVars glintCache[4],
 		out float3 F)
 	{
 		float D = GetNormalDistributionFunctionGGX(roughness, NdotH);
 		[branch] if (logDensity > 1.1)
 		{
 			float D_max = GetNormalDistributionFunctionGGX(roughness, 1);
-			D = SampleGlints2023NDF(logDensity, microfacetRoughness, densityRandomization, glintCache, glintH, D, D_max);
+			D = Glints::SampleGlints2023NDF(logDensity, microfacetRoughness, densityRandomization, glintCache, glintH, D, D_max);
 		}
 		float G = GetVisibilityFunctionSmithJointApprox(roughness, NdotV, NdotL);
 		F = GetFresnelFactorSchlick(specularColor, VdotH);
@@ -619,3 +628,5 @@ namespace PBR
 		return specularLobeWeight * wetnessStrength;
 	}
 }
+
+#endif  // __PBR_DEPENDENCY_HLSL__

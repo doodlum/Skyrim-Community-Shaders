@@ -1,5 +1,5 @@
-#ifndef CS_RANDOM
-#define CS_RANDOM
+#ifndef __RANDOM_DEPENDENCY_HLSL__
+#define __RANDOM_DEPENDENCY_HLSL__
 
 namespace Random
 {
@@ -252,4 +252,4 @@ namespace Random
 
 }
 
-#endif
+#endif  // __RANDOM_DEPENDENCY_HLSL__

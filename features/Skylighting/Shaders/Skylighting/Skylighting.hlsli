@@ -72,13 +72,13 @@ namespace Skylighting
 			float w = trilinearWeights.x * trilinearWeights.y * trilinearWeights.z * tangentWeight;
 
 			uint3 cellTexID = (cellID + params.ArrayOrigin.xyz) % ARRAY_DIM;
-			sh2 probe = shScale(probeArray[cellTexID], w);
+			sh2 probe = SphericalHarmonics::Scale(probeArray[cellTexID], w);
 
-			sum = shAdd(sum, probe);
+			sum = SphericalHarmonics::Add(sum, probe);
 			wsum += w;
 		}
 
-		return shScale(sum, rcp(wsum + 1e-10));
+		return SphericalHarmonics::Scale(sum, rcp(wsum + 1e-10));
 	}
 
 	float getVL(SkylightingSettings params, Texture3D<sh2> probeArray, float3 startPosWS, float3 endPosWS, float2 pxCoord)
@@ -102,7 +102,7 @@ namespace Skylighting
 
 				sh2 skylighting = Skylighting::sample(params, probeArray, samplePositionWS, float3(0, 0, 1));
 
-				shadow += Skylighting::mixDiffuse(params, shUnproject(skylighting, worldDirNormalised));
+				shadow += Skylighting::mixDiffuse(params, SphericalHarmonics::Unproject(skylighting, worldDirNormalised));
 			}
 			vl += shadow;
 		}
@@ -123,9 +123,9 @@ namespace Skylighting
 		float roughness2 = roughness * roughness;
 		float halfAngle = clamp(4.1679 * roughness2 * roughness2 - 9.0127 * roughness2 * roughness + 4.6161 * roughness2 + 1.7048 * roughness + 0.1, 0, Math::HALF_PI);
 		float lerpFactor = halfAngle / Math::HALF_PI;
-		sh2 directional = shEvaluate(dominantDir);
-		sh2 cosineLobe = shEvaluateCosineLobe(dominantDir) / Math::PI;
-		sh2 result = shAdd(shScale(directional, lerpFactor), shScale(cosineLobe, 1 - lerpFactor));
+		sh2 directional = SphericalHarmonics::Evaluate(dominantDir);
+		sh2 cosineLobe = SphericalHarmonics::EvaluateCosineLobe(dominantDir) / Math::PI;
+		sh2 result = SphericalHarmonics::Add(SphericalHarmonics::Scale(directional, lerpFactor), SphericalHarmonics::Scale(cosineLobe, 1 - lerpFactor));
 
 		return result;
 	}

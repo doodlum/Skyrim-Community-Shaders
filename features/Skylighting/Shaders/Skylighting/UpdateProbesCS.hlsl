@@ -30,13 +30,13 @@ SamplerState samplerPointClamp : register(s0);
 			float occlusionDepth = srcOcclusionDepth.SampleLevel(samplerPointClamp, occlusionUV, 0);
 			float visibility = saturate((occlusionDepth + 0.0005 - cellCentreOS.z) * 1024);
 
-			sh2 occlusionSH = shScale(shEvaluate(settings.OcclusionDir.xyz), visibility * 4.0 * Math::PI);  // 4 pi from monte carlo
+			sh2 occlusionSH = SphericalHarmonics::Scale(SphericalHarmonics::Evaluate(settings.OcclusionDir.xyz), visibility * 4.0 * Math::PI);  // 4 pi from monte carlo
 			if (isValid) {
 				float lerpFactor = rcp(accumFrames);
 				sh2 prevProbeSH = unitSH;
 				if (accumFrames > 1)
 					prevProbeSH += (outProbeArray[dtid] - unitSH) * fadeInThreshold / min(fadeInThreshold, accumFrames - 1);  // inverse confidence
-				occlusionSH = shAdd(shScale(prevProbeSH, 1 - lerpFactor), shScale(occlusionSH, lerpFactor));
+				occlusionSH = SphericalHarmonics::Add(SphericalHarmonics::Scale(prevProbeSH, 1 - lerpFactor), SphericalHarmonics::Scale(occlusionSH, lerpFactor));
 			}
 			occlusionSH = lerp(unitSH, occlusionSH, min(fadeInThreshold, accumFrames) / fadeInThreshold);  // confidence fade in
 

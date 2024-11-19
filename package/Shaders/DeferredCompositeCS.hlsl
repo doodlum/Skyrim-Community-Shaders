@@ -60,7 +60,7 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 	positionWS.xyz = positionWS.xyz / positionWS.w;
 
 	if (depth == 1.0) {
-		MotionVectorsRW[dispatchID.xy] = GetSSMotionVector(positionWS, positionWS, eyeIndex);  // Apply sky motion vectors
+		MotionVectorsRW[dispatchID.xy] = MotionBlur::GetSSMotionVector(positionWS, positionWS, eyeIndex);  // Apply sky motion vectors
 	}
 
 	half pbrWeight = masks2.z;
@@ -105,7 +105,7 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 		sh2 skylighting = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
 		sh2 specularLobe = Skylighting::fauxSpecularLobeSH(normalWS, -V, roughness);
 
-		half skylightingSpecular = shFuncProductIntegral(skylighting, specularLobe);
+		half skylightingSpecular = SphericalHarmonics::FuncProductIntegral(skylighting, specularLobe);
 		skylightingSpecular = Skylighting::mixSpecular(skylightingSettings, skylightingSpecular);
 
 		half3 specularIrradiance = 1;
