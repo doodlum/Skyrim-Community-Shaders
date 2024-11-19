@@ -40,6 +40,9 @@ void State::Draw()
 			}
 		}
 
+		if (Deferred::GetSingleton()->inDecals)
+			currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::IsDecal;
+
 		if (forceUpdatePermutationBuffer || currentPixelDescriptor != lastPixelDescriptor || currentExtraDescriptor != lastExtraDescriptor) {
 			PermutationCB data{};
 			data.VertexShaderDescriptor = currentVertexDescriptor;

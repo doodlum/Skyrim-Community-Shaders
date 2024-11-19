@@ -760,9 +760,10 @@ PS_OUTPUT main(PS_INPUT input)
 	psout.MotionVectors = float4(screenMotionVector, 0.0, psout.Diffuse.w);
 #		endif
 
-	psout.Specular = float4(0.0.xxx, psout.Diffuse.w);
-	psout.Albedo = float4(baseColor.xyz * psout.Diffuse.w, psout.Diffuse.w);
-	psout.Reflectance = float4(0.0.xxx, psout.Diffuse.w);
+	psout.Specular = float4(0.0.xxx, finalColor.w);
+	psout.Albedo = float4(0.0.xxx, finalColor.w);
+	psout.Reflectance = float4(0.0.xxx, finalColor.w);
+	psout.Masks = float4(0.0.xxx, finalColor.w);
 
 #	elif defined(MOTIONVECTORS_NORMALS)
 	float2 screenMotionVector = GetSSMotionVector(input.WorldPosition, input.PreviousWorldPosition, eyeIndex);

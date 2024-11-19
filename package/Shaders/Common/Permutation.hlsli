@@ -54,6 +54,7 @@ namespace ExtraFlags
 	static const uint InWorld = (1 << 0);
 	static const uint IsBeastRace = (1 << 1);
 	static const uint EffectShadows = (1 << 2);
+	static const uint IsDecal = (1 << 3);
 }
 
 cbuffer PerShader : register(b4)

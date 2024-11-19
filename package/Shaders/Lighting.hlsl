@@ -980,10 +980,8 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		include "TerrainBlending/TerrainBlending.hlsli"
 #	endif
 
-#	if defined(SSS)
-#		if defined(SKIN)
-#			undef SOFT_LIGHTING
-#		endif
+#	if defined(SSS) && defined(SKIN) && defined(DEFERRED)
+#		undef SOFT_LIGHTING
 #	endif
 
 #	if defined(TERRAIN_SHADOWS)
@@ -1907,11 +1905,18 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif
 
 	if (extraDirShadows) {
-#	if defined(DEFERRED) && defined(SCREEN_SPACE_SHADOWS)
-#		if defined(SOFT_LIGHTING) || defined(BACK_LIGHTING) || defined(RIM_LIGHTING)
-		if (dirLightAngle > 0.0)
+#	if defined(SCREEN_SPACE_SHADOWS)
+#		if defined(DEFERRED)
+		bool useScreenSpaceShadows = true;
+#		else
+		bool useScreenSpaceShadows = ExtraShaderDescriptor & ExtraFlags::IsDecal;
 #		endif
-		{
+
+#		if defined(SOFT_LIGHTING) || defined(BACK_LIGHTING) || defined(RIM_LIGHTING)
+		useScreenSpaceShadows = useScreenSpaceShadows && (dirLightAngle > 0.0);
+#		endif
+
+		if (useScreenSpaceShadows){
 			dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.Position.xyz, screenUV, screenNoise, viewPosition, eyeIndex);
 #		if defined(TREE_ANIM)
 			PerGeometry sD = SharedPerShadow[0];

@@ -26,18 +26,6 @@ struct BlendStates
 		return blendStates;
 	}
 
-	static std::array<ID3D11BlendState**, 6> GetBlendStates()
-	{
-		auto blendStates = GetSingleton();
-		return {
-			&blendStates->a[0][0][1][0],
-			&blendStates->a[0][0][10][0],
-			&blendStates->a[1][0][1][0],
-			&blendStates->a[1][0][11][0],
-			&blendStates->a[2][0][1][0],
-			&blendStates->a[3][0][11][0]
-		};
-	}
 };
 
 void SetupRenderTarget(RE::RENDER_TARGET target, D3D11_TEXTURE2D_DESC texDesc, D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc, D3D11_RENDER_TARGET_VIEW_DESC rtvDesc, D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc, DXGI_FORMAT format)
@@ -262,24 +250,6 @@ void Deferred::StartDeferred()
 
 	State::GetSingleton()->UpdateSharedData();
 
-	static std::once_flag setup;
-	std::call_once(setup, [&]() {
-		auto& device = State::GetSingleton()->device;
-
-		auto blendStates = BlendStates::GetBlendStates();
-
-		for (int i = 0; i < blendStates.size(); ++i) {
-			forwardBlendStates[i] = *blendStates[i];
-
-			D3D11_BLEND_DESC blendDesc;
-			forwardBlendStates[i]->GetDesc(&blendDesc);
-
-			blendDesc.IndependentBlendEnable = false;
-
-			DX::ThrowIfFailed(device->CreateBlendState(&blendDesc, &deferredBlendStates[i]));
-		}
-	});
-
 	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 	GET_INSTANCE_MEMBER(renderTargets, shadowState)
 	GET_INSTANCE_MEMBER(setRenderTargetMode, shadowState)
@@ -331,6 +301,8 @@ void Deferred::StartDeferred()
 	}
 
 	PrepassPasses();
+
+	OverrideBlendStates();
 }
 
 void Deferred::DeferredPasses()
@@ -513,31 +485,63 @@ void Deferred::EndDeferred()
 	stateUpdateFlags.set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);  // Run OMSetRenderTargets again
 
 	deferredPass = false;
+
+	ResetBlendStates();
 }
 
 void Deferred::OverrideBlendStates()
 {
-	auto blendStates = BlendStates::GetBlendStates();
+	auto blendStates = BlendStates::GetSingleton();
 
 	static std::once_flag setup;
 	std::call_once(setup, [&]() {
 		auto& device = State::GetSingleton()->device;
 
-		for (int i = 0; i < blendStates.size(); ++i) {
-			forwardBlendStates[i] = *blendStates[i];
+		for (int a = 0; a < 7; a++){
+			for (int b = 0; b < 2; b++) {
+				for (int c = 0; c < 13; c++) {
+					for (int d = 0; d < 2; d++) {
+						forwardBlendStates[a][b][c][d] = blendStates->a[a][b][c][d];
 
-			D3D11_BLEND_DESC blendDesc;
-			forwardBlendStates[i]->GetDesc(&blendDesc);
+						if (auto blendState = forwardBlendStates[a][b][c][d]) {
+							D3D11_BLEND_DESC blendDesc;
+							forwardBlendStates[a][b][c][d]->GetDesc(&blendDesc);
 
-			blendDesc.IndependentBlendEnable = false;
+							blendDesc.IndependentBlendEnable = true;
 
-			DX::ThrowIfFailed(device->CreateBlendState(&blendDesc, &deferredBlendStates[i]));
+							// Start at 1 to ignore Diffuse
+							for (int i = 0; i < 8; i++)
+							{
+								blendDesc.RenderTarget[i].BlendEnable = blendDesc.RenderTarget[0].BlendEnable;
+								blendDesc.RenderTarget[i].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+								blendDesc.RenderTarget[i].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+								blendDesc.RenderTarget[i].BlendOp = D3D11_BLEND_OP_ADD;
+								blendDesc.RenderTarget[i].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
+								blendDesc.RenderTarget[i].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+								blendDesc.RenderTarget[i].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+								blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+							}
+
+							DX::ThrowIfFailed(device->CreateBlendState(&blendDesc, &deferredBlendStates[a][b][c][d]));
+						} else {
+							deferredBlendStates[a][b][c][d] = nullptr;
+						}
+					}
+				}
+			}
 		}
 	});
 
 	// Set modified blend states
-	for (int i = 0; i < blendStates.size(); ++i)
-		*blendStates[i] = deferredBlendStates[i];
+	for (int a = 0; a < 7; a++) {
+		for (int b = 0; b < 2; b++) {
+			for (int c = 0; c < 13; c++) {
+				for (int d = 0; d < 2; d++) {
+					blendStates->a[a][b][c][d] = deferredBlendStates[a][b][c][d];
+				}
+			}
+		}
+	}
 
 	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 	GET_INSTANCE_MEMBER(stateUpdateFlags, shadowState)
@@ -547,11 +551,18 @@ void Deferred::OverrideBlendStates()
 
 void Deferred::ResetBlendStates()
 {
-	auto blendStates = BlendStates::GetBlendStates();
+	auto blendStates = BlendStates::GetSingleton();
 
 	// Restore modified blend states
-	for (int i = 0; i < blendStates.size(); ++i)
-		*blendStates[i] = forwardBlendStates[i];
+	for (int a = 0; a < 7; a++) {
+		for (int b = 0; b < 2; b++) {
+			for (int c = 0; c < 13; c++) {
+				for (int d = 0; d < 2; d++) {
+					blendStates->a[a][b][c][d] = forwardBlendStates[a][b][c][d];
+				}
+			}
+		}
+	}
 
 	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 	GET_INSTANCE_MEMBER(stateUpdateFlags, shadowState)

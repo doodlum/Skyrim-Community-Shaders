@@ -121,6 +121,7 @@ public:
 		InWorld = 1 << 0,
 		IsBeastRace = 1 << 1,
 		EffectShadows = 1 << 2,
+		IsDecal = 1 << 3
 	};
 
 	void UpdateSharedData();
