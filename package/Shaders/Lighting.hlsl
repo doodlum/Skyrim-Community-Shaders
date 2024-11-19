@@ -1916,7 +1916,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		useScreenSpaceShadows = useScreenSpaceShadows && (dirLightAngle > 0.0);
 #		endif
 
-		if (useScreenSpaceShadows){
+		if (useScreenSpaceShadows) {
 			dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.Position.xyz, screenUV, screenNoise, viewPosition, eyeIndex);
 #		if defined(TREE_ANIM)
 			PerGeometry sD = SharedPerShadow[0];

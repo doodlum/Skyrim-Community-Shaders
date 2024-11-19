@@ -25,7 +25,6 @@ struct BlendStates
 		static auto blendStates = reinterpret_cast<BlendStates*>(REL::RelocationID(524749, 411364).address());
 		return blendStates;
 	}
-
 };
 
 void SetupRenderTarget(RE::RENDER_TARGET target, D3D11_TEXTURE2D_DESC texDesc, D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc, D3D11_RENDER_TARGET_VIEW_DESC rtvDesc, D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc, DXGI_FORMAT format)
@@ -497,7 +496,7 @@ void Deferred::OverrideBlendStates()
 	std::call_once(setup, [&]() {
 		auto& device = State::GetSingleton()->device;
 
-		for (int a = 0; a < 7; a++){
+		for (int a = 0; a < 7; a++) {
 			for (int b = 0; b < 2; b++) {
 				for (int c = 0; c < 13; c++) {
 					for (int d = 0; d < 2; d++) {
@@ -510,8 +509,7 @@ void Deferred::OverrideBlendStates()
 							blendDesc.IndependentBlendEnable = true;
 
 							// Start at 1 to ignore Diffuse
-							for (int i = 0; i < 8; i++)
-							{
+							for (int i = 0; i < 8; i++) {
 								blendDesc.RenderTarget[i].BlendEnable = blendDesc.RenderTarget[0].BlendEnable;
 								blendDesc.RenderTarget[i].SrcBlend = D3D11_BLEND_SRC_ALPHA;
 								blendDesc.RenderTarget[i].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
