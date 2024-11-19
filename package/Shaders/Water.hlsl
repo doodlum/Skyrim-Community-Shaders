@@ -455,7 +455,7 @@ float3 GetWaterNormal(PS_INPUT input, float distanceFactor, float normalsDepthFa
 	float3 normalScalesRcp = rcp(input.NormalsScale.xyz);
 
 #			if defined(WATER_PARALLAX)
-	float2 parallaxOffset = WaterLighting::GetParallaxOffset(input, normalScalesRcp);
+	float2 parallaxOffset = WaterLighting::GetParallaxOffset(input, normalScalesRcp, eyeIndex);
 #			endif
 
 #			if defined(FLOWMAP)
