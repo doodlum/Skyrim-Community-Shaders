@@ -401,10 +401,8 @@ float calculateDepthMultfromUV(float2 a_uv, float a_depth, uint eyeIndex = 0)
 	temp.z = a_depth;
 	temp.w = 1;
 	temp = mul(CameraProjInverse[eyeIndex], temp.xyzw);
-	temp.xyz /= temp.w;	
-	temp.w = dot(temp.xyz, temp.xyz);
-	temp.w = sqrt(temp.w);
-	return temp.w;
+	temp.xyz /= temp.w;
+	return length(temp.xyz);
 }
 #		endif  // VR
 
@@ -668,9 +666,11 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 	float4 refractionNormal = mul(transpose(TextureProj[eyeIndex]), float4((VarAmounts.w * refractionsDepthFactor * normal.xy) + input.MPosition.xy, input.MPosition.z, 1));
 
 	float2 refractionUvRaw = float2(refractionNormal.x, refractionNormal.w - refractionNormal.y) / refractionNormal.ww;
-	float2 refractionUvRawNoStereo = refractionUvRaw;
-
 	refractionUvRaw = Stereo::ConvertToStereoUV(refractionUvRaw, eyeIndex);  // need to convert here for VR due to refractionNormal values
+
+#	if defined(VR)
+	float2 refractionUvRawNoStereo = Stereo::ConvertFromStereoUV(refractionUvRaw, eyeIndex, 1);
+#	endif
 
 	float2 screenPosition = DynamicResolutionParams1.xy * (DynamicResolutionParams2.xy * input.HPosition.xy);
 	float depth = GetScreenDepthWater(screenPosition,
@@ -694,7 +694,7 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 	);
 
 #					if !defined(VR)
-	float refractionDepthMul = length(float3((((VPOSOffset.zw + refractionUvRawNoStereo) * 2 - 1)) * refractionDepth / ProjData.xy, refractionDepth));
+	float refractionDepthMul = length(float3((((VPOSOffset.zw + refractionUvRaw) * 2 - 1)) * refractionDepth / ProjData.xy, refractionDepth));
 #					else
 	float refractionDepthMul = calculateDepthMultfromUV(refractionUvRawNoStereo, refractionDepth, eyeIndex);
 #					endif  //VR
@@ -708,7 +708,12 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 		refractionUvRaw = DynamicResolutionParams2.xy * input.HPosition.xy * VPOSOffset.xy + VPOSOffset.zw;  // This value is already stereo converted for VR
 	} else {
 		distanceMul = saturate(refractionPlaneMul * float4(length(refractionDepthAdjustedViewDirection).xx, abs(refractionViewSurfaceAngle).xx) / FogParam.z);
+		
+#	if defined(VR)
 		refractionWorldPosition = mul(CameraViewProjInverse[eyeIndex], float4((refractionUvRawNoStereo * 2 - 1) * float2(1, -1), DepthTex.Load(float3(refractionScreenPosition, 0)).x, 1));
+#	else
+		refractionWorldPosition = mul(CameraViewProjInverse[eyeIndex], float4((refractionUvRaw * 2 - 1) * float2(1, -1), DepthTex.Load(float3(refractionScreenPosition, 0)).x, 1));
+#	endif
 		refractionWorldPosition.xyz /= refractionWorldPosition.w;
 	}
 #				endif
