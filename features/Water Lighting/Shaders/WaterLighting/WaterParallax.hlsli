@@ -67,8 +67,7 @@ namespace WaterLighting
 
 	float2 GetParallaxOffset(PS_INPUT input, float3 normalScalesRcp)
 	{
-
-#	if defined(VC)
+#if defined(VC)
 		float3 reflectPlaneWS = mul(CameraViewInverse[0], float4(ReflectPlane[0].xyz, 1.0));
 
 		float3x3 tbn = CalculateTBN(reflectPlaneWS.xyz, -input.WPosition.xyz, input.TexCoord1.xy);
@@ -77,10 +76,10 @@ namespace WaterLighting
 		float3 viewDirectionTS = normalize(mul(tbn, viewDirection));
 
 		float2 parallaxOffsetTS = viewDirectionTS.xy / -viewDirectionTS.z;
-#	else
+#else
 		float3 viewDirection = normalize(input.WPosition.xyz);
 		float2 parallaxOffsetTS = viewDirection.xy / -viewDirection.z;
-#	endif
+#endif
 		// Parallax scale is also multiplied by normalScalesRcp
 		parallaxOffsetTS *= 20.0;
 
