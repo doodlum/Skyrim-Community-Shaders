@@ -4,6 +4,8 @@
 
 namespace Util
 {
+	static constexpr std::string_view CS_SETTINGS_PATH{ "Data/SKSE/plugins/CommunityShadersOverwrite.ini"sv };
+
 	void DumpSettingsOptions()
 	{
 		// List of INI setting collections to iterate over
@@ -357,9 +359,15 @@ namespace Util
 
 	void SaveGameSettings(const std::map<std::string, GameSetting>& settingsMap)
 	{
+		auto ini = RE::INISettingCollection::GetSingleton();
+
+		char subKeyBackup[0x104];
+		strcpy_s(subKeyBackup, 260, ini->subKey);
+		strcpy_s(ini->subKey, 260, CS_SETTINGS_PATH.data());
+
 		// Initialize collections
 		std::vector<std::pair<RE::INISettingCollection*, std::string>> iniCollections = {
-			{ RE::INISettingCollection::GetSingleton(), "INISettingCollection" },
+			{ ini, "INISettingCollection" },
 			{ RE::INIPrefSettingCollection::GetSingleton(), "INIPrefSettingCollection" }
 		};
 		auto gameSettingCollection = RE::GameSettingCollection::GetSingleton();
@@ -395,13 +403,20 @@ namespace Util
 				}
 			}
 		}
+		strcpy_s(ini->subKey, 260, subKeyBackup);
 	}
 
 	void LoadGameSettings(const std::map<std::string, GameSetting>& settingsMap)
 	{
+		auto ini = RE::INISettingCollection::GetSingleton();
+
+		char subKeyBackup[0x104];
+		strcpy_s(subKeyBackup, 260, ini->subKey);
+		strcpy_s(ini->subKey, 260, CS_SETTINGS_PATH.data());
+
 		// Handle INI and Game settings in a single loop
 		std::vector<std::pair<RE::INISettingCollection*, std::string>> iniCollections = {
-			{ RE::INISettingCollection::GetSingleton(), "INISettingCollection" },
+			{ ini, "INISettingCollection" },
 			{ RE::INIPrefSettingCollection::GetSingleton(), "INIPrefSettingCollection" }
 		};
 
@@ -438,5 +453,6 @@ namespace Util
 				}
 			}
 		}
+		strcpy_s(ini->subKey, 260, subKeyBackup);
 	}
 }  // namespace Util
