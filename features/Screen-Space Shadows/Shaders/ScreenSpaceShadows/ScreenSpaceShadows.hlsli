@@ -14,6 +14,9 @@ namespace ScreenSpaceShadows
 
 	float GetScreenSpaceShadow(float3 screenPosition, float2 uv, float noise, float3 viewPosition, uint eyeIndex)
 	{
+#if defined(VR)
+		return ScreenSpaceShadowsTexture.Load(int3(screenPosition.xy, 0));
+#else
 		noise *= Math::TAU;
 
 		half2x2 rotationMatrix = half2x2(cos(noise), sin(noise), -sin(noise), cos(noise));
@@ -53,5 +56,6 @@ namespace ScreenSpaceShadows
 			shadow = shadow / blurWeightsTotal;
 
 		return shadow;
+#endif
 	}
 }

@@ -40,6 +40,10 @@ namespace ExtendedMaterials
 		textureDims /= 2.0;
 #endif
 
+#if defined(VR)
+		textureDims /= 2.0;
+#endif
+
 		float2 texCoordsPerSize = coords * textureDims;
 
 		float2 dxSize = ddx(texCoordsPerSize);
@@ -55,6 +59,10 @@ namespace ExtendedMaterials
 		float mipLevel = max(0.5 * log2(minTexCoordDelta), 0);
 
 #if !defined(PARALLAX) && !defined(TRUE_PBR)
+		mipLevel++;
+#endif
+
+#if defined(VR)
 		mipLevel++;
 #endif
 
