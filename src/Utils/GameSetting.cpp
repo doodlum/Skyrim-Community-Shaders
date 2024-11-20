@@ -4,7 +4,7 @@
 
 namespace Util
 {
-	static constexpr std::string_view CS_SETTINGS_PATH{ "Data/SKSE/plugins/CommunityShadersOverwrite.ini"sv };
+	static constexpr std::string_view CS_SETTINGS_PATH{ "Data/SKSE/Plugins/CommunityShaders/SkyrimOverwrite.ini"sv };
 
 	void DumpSettingsOptions()
 	{
@@ -414,10 +414,16 @@ namespace Util
 		strcpy_s(subKeyBackup, 260, ini->subKey);
 		strcpy_s(ini->subKey, 260, CS_SETTINGS_PATH.data());
 
+		auto iniPref = RE::INIPrefSettingCollection::GetSingleton();
+
+		char subKeyPrefBackup[0x104];
+		strcpy_s(subKeyPrefBackup, 260, iniPref->subKey);
+		strcpy_s(iniPref->subKey, 260, CS_SETTINGS_PATH.data());
+
 		// Handle INI and Game settings in a single loop
 		std::vector<std::pair<RE::INISettingCollection*, std::string>> iniCollections = {
 			{ ini, "INISettingCollection" },
-			{ RE::INIPrefSettingCollection::GetSingleton(), "INIPrefSettingCollection" }
+			{ iniPref, "INIPrefSettingCollection" }
 		};
 
 		auto gameSettingCollection = RE::GameSettingCollection::GetSingleton();
@@ -454,5 +460,6 @@ namespace Util
 			}
 		}
 		strcpy_s(ini->subKey, 260, subKeyBackup);
+		strcpy_s(iniPref->subKey, 260, subKeyPrefBackup);
 	}
 }  // namespace Util
