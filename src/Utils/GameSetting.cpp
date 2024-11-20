@@ -365,11 +365,18 @@ namespace Util
 		strcpy_s(subKeyBackup, 260, ini->subKey);
 		strcpy_s(ini->subKey, 260, CS_SETTINGS_PATH.data());
 
+		auto iniPref = RE::INIPrefSettingCollection::GetSingleton();
+
+		char subKeyPrefBackup[0x104];
+		strcpy_s(subKeyPrefBackup, 260, iniPref->subKey);
+		strcpy_s(iniPref->subKey, 260, CS_SETTINGS_PATH.data());
+
 		// Initialize collections
 		std::vector<std::pair<RE::INISettingCollection*, std::string>> iniCollections = {
 			{ ini, "INISettingCollection" },
-			{ RE::INIPrefSettingCollection::GetSingleton(), "INIPrefSettingCollection" }
+			{ iniPref, "INIPrefSettingCollection" }
 		};
+
 		auto gameSettingCollection = RE::GameSettingCollection::GetSingleton();
 
 		// Single iteration for settings
@@ -404,6 +411,7 @@ namespace Util
 			}
 		}
 		strcpy_s(ini->subKey, 260, subKeyBackup);
+		strcpy_s(iniPref->subKey, 260, subKeyPrefBackup);
 	}
 
 	void LoadGameSettings(const std::map<std::string, GameSetting>& settingsMap)
