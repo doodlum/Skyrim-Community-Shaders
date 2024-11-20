@@ -374,7 +374,7 @@ namespace ExtendedMaterials
 				sh.z = GetTerrainHeight(input, coords + rayDir * multipliers.z, mipLevel, params, quality, heights);
 			if (quality > 0.75)
 				sh.w = GetTerrainHeight(input, coords + rayDir * multipliers.w, mipLevel, params, quality, heights);
-			return 1.0 - saturate(dot(max(0, sh - sh0), 1.0) * shadowIntensity) * quality;
+			return 1.0 - saturate(dot(max(0, sh - sh0), 1.0) * shadowIntensity) * shadowQuality;
 #	endif
 		}
 		return 1.0;
