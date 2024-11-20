@@ -17,7 +17,7 @@ namespace WaterLighting
 		float2 textureDims;
 		tex.GetDimensions(textureDims.x, textureDims.y);
 
-#if defined(VR)		
+#if defined(VR)
 		textureDims /= 16.0;
 #else
 		textureDims /= 8.0;
@@ -62,11 +62,11 @@ namespace WaterLighting
 		mipLevels.y = GetMipLevel(input.TexCoord1.zw, Normals02Tex);
 		mipLevels.z = GetMipLevel(input.TexCoord2.xy, Normals03Tex);
 
-#	if defined(VR)		
+#if defined(VR)
 		mipLevels = mipLevels + 4;
-#	else
+#else
 		mipLevels = mipLevels + 3;
-#	endif
+#endif
 
 		float stepSize = rcp(16);
 		float currBound = 0.0;
