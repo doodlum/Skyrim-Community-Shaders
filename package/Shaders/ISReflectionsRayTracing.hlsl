@@ -49,14 +49,6 @@ float3 ViewToUVDepth(float3 view)
 	return float3(0.5 * view.x + 0.5, 0.5 - 0.5 * view.y, view.z);
 }
 
-// Simple hash function for generating a pseudo-random float
-float hash(float2 p)
-{
-	p = frac(p * float2(0.1031, 0.1030));      // Random values for perturbation
-	p *= dot(p, p.xy + float2(33.33, 33.33));  // Mix values
-	return frac(p.x * p.y * float2(0.5, 0.5).x);
-}
-
 float3 ViewToUVDepthHelper(float3 x, uint eyeIndex)
 {
 	float4 newPosition = float4(x, 1.0);
@@ -121,10 +113,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float4 csStart = mul(CameraProjInverse[eyeIndex], float4(vsStart, 1));
 	csStart /= csStart.w;
 	float4 viewDirection = float4(normalize(-csStart.xyz), 0);
-	// Apply jitter to view direction
-	float2 jitter = hash(input.TexCoord) * SSRParams.xy;
-	float4 jitteredViewDirection = float4(normalize(viewDirection.xyz + float3(jitter, 0.0)), 0.0);
-	float4 reflectedDirection = normalize(reflect(-jitteredViewDirection, normal));
+	float4 reflectedDirection = normalize(reflect(-viewDirection, normal));
 	float4 csFinish = csStart + reflectedDirection;
 	float4 vsFinish = mul(CameraProj[eyeIndex], csFinish);
 	vsFinish.xyz /= vsFinish.w;
@@ -156,8 +145,10 @@ PS_OUTPUT main(PS_INPUT input)
 #		endif
 		;  // Adjust based on performance/quality tradeoff
 
+	float ssrScale = 4.0;
+
 	for (; iterationIndex < maxIterations; iterationIndex++) {
-		float3 iterationUvDepthDR = ViewToUVDepthHelper(lerp(csStart.xyz, csFinish.xyz, (iterationIndex / (float)maxIterations) * SSRParams.x * rcp(length(deltaUvDepth.xy))), eyeIndex);
+		float3 iterationUvDepthDR = ViewToUVDepthHelper(lerp(csStart.xyz, csFinish.xyz, (iterationIndex / (float)maxIterations) * SSRParams.x * ssrScale * rcp(length(deltaUvDepth.xy))), eyeIndex);
 		float3 iterationUvDepthSampleDR =
 #		ifdef VR
 			// Apply dynamic resolution adjustments and stereo UV conversions
@@ -358,7 +349,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	// SSR Marching Radius Fade Factor (based on ray distance)
 	float2 deltaUv = uvFinal - uvStart;
-	float ssrMarchingRadiusFadeFactor = 1 - length(deltaUv) * SSRParams.w;
+	float ssrMarchingRadiusFadeFactor = 1 - pow(length(deltaUv) * SSRParams.w, 3);
 
 	// Screen Center Distance Fade Factor
 	float2 uvResultScreenCenterOffset = uvFinal - 0.5;
@@ -371,10 +362,10 @@ PS_OUTPUT main(PS_INPUT input)
 	centerDistance = min(centerDistance, 2 * length(otherEyeUvResultScreenCenterOffset));
 #		endif
 
-	float centerDistanceFadeFactor = 1 - centerDistance * centerDistance;
+	float centerDistanceFadeFactor = 1 - pow(centerDistance, 5);
 
 	// Final alpha calculation
-	psout.Color.a = ssrPower * ssrMarchingRadiusFadeFactor * centerDistanceFadeFactor;
+	psout.Color.a = ssrMarchingRadiusFadeFactor * centerDistanceFadeFactor;
 #	endif
 
 	return psout;
