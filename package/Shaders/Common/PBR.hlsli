@@ -400,12 +400,9 @@ namespace PBR
 	{
 		float3 color = 0;
 
-		color += GetHairDiffuseColorMarschner(N, V, L, NdotL, NdotV, VdotL, backlit, area, surfaceProperties);
-		[branch] if (pbrSettings.UseMultipleScattering)
-		{
-			color += GetHairDiffuseAttenuationKajiyaKay(N, V, L, NdotL, NdotV, shadow, surfaceProperties);
-		}
-
+		color += GetHairDiffuseColorMarschner(N, V, L, NdotL, NdotV, VdotL, backlit, area, surfaceProperties);	
+		color += GetHairDiffuseAttenuationKajiyaKay(N, V, L, NdotL, NdotV, shadow, surfaceProperties);
+		
 		return color;
 	}
 
@@ -450,21 +447,15 @@ namespace PBR
 			specular += GetSpecularDirectLightMultiplierMicrofacet(surfaceProperties.Roughness, surfaceProperties.F0, satNdotL, satNdotV, satNdotH, satVdotH, F) * lightProperties.LinearLightColor * satNdotL;
 #endif
 
-			float2 specularBRDF = 0;
-			[branch] if (pbrSettings.UseMultipleScattering)
-			{
-				specularBRDF = GetEnvBRDFApproxLazarov(surfaceProperties.Roughness, satNdotV);
-				specular *= 1 + surfaceProperties.F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1);
-			}
+			float2 specularBRDF = GetEnvBRDFApproxLazarov(surfaceProperties.Roughness, satNdotV);
+
+			specular *= 1 + surfaceProperties.F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1);
 
 #if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 			[branch] if ((PBRFlags & Flags::Fuzz) != 0)
 			{
-				float3 fuzzSpecular = GetSpecularDirectLightMultiplierMicroflakes(surfaceProperties.Roughness, surfaceProperties.FuzzColor, satNdotL, satNdotV, satNdotH, satVdotH) * lightProperties.LinearLightColor * satNdotL;
-				[branch] if (pbrSettings.UseMultipleScattering)
-				{
-					fuzzSpecular *= 1 + surfaceProperties.FuzzColor * (1 / (specularBRDF.x + specularBRDF.y) - 1);
-				}
+				float3 fuzzSpecular = GetSpecularDirectLightMultiplierMicroflakes(surfaceProperties.Roughness, surfaceProperties.FuzzColor, satNdotL, satNdotV, satNdotH, satVdotH) * lightProperties.LinearLightColor * satNdotL;		
+				fuzzSpecular *= 1 + surfaceProperties.FuzzColor * (1 / (specularBRDF.x + specularBRDF.y) - 1);		
 
 				specular = lerp(specular, fuzzSpecular, surfaceProperties.FuzzWeight);
 			}
@@ -559,21 +550,15 @@ namespace PBR
 			specularLobeWeight = surfaceProperties.F0 * specularBRDF.x + specularBRDF.y;
 
 			diffuseLobeWeight *= (1 - specularLobeWeight);
-
-			[branch] if (pbrSettings.UseMultipleScattering)
-			{
-				specularLobeWeight *= 1 + surfaceProperties.F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1);
-			}
+			specularLobeWeight *= 1 + surfaceProperties.F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1);
 
 #if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 			[branch] if ((PBRFlags & Flags::TwoLayer) != 0)
 			{
 				float2 coatSpecularBRDF = GetEnvBRDFApproxLazarov(surfaceProperties.CoatRoughness, NdotV);
-				float3 coatSpecularLobeWeight = surfaceProperties.CoatF0 * coatSpecularBRDF.x + coatSpecularBRDF.y;
-				[branch] if (pbrSettings.UseMultipleScattering)
-				{
-					coatSpecularLobeWeight *= 1 + surfaceProperties.CoatF0 * (1 / (coatSpecularBRDF.x + coatSpecularBRDF.y) - 1);
-				}
+				float3 coatSpecularLobeWeight = surfaceProperties.CoatF0 * coatSpecularBRDF.x + coatSpecularBRDF.y;	
+				coatSpecularLobeWeight *= 1 + surfaceProperties.CoatF0 * (1 / (coatSpecularBRDF.x + coatSpecularBRDF.y) - 1);
+				
 				float3 coatF = GetFresnelFactorSchlick(surfaceProperties.CoatF0, NdotV);
 
 				float3 layerAttenuation = 1 - coatF * surfaceProperties.CoatStrength;
@@ -599,11 +584,9 @@ namespace PBR
 
 		float3 diffuseAO = surfaceProperties.AO;
 		float3 specularAO = SpecularAOLagarde(NdotV, surfaceProperties.AO, surfaceProperties.Roughness);
-		[branch] if (pbrSettings.UseMultiBounceAO)
-		{
-			diffuseAO = MultiBounceAO(diffuseColor, diffuseAO.x).y;
-			specularAO = MultiBounceAO(surfaceProperties.F0, specularAO.x).y;
-		}
+
+		diffuseAO = MultiBounceAO(diffuseColor, diffuseAO.x).y;
+		specularAO = MultiBounceAO(surfaceProperties.F0, specularAO.x).y;
 
 		diffuseLobeWeight *= diffuseAO / Math::PI;
 		specularLobeWeight *= specularAO;

@@ -21,8 +21,15 @@
 
 void Feature::Load(json& o_json)
 {
-	if (o_json[GetName()].is_structured())
-		LoadSettings(o_json[GetName()]);
+	if (o_json[GetName()].is_structured()) {
+		logger::info("Loading {} settings", GetName());
+		try {
+			LoadSettings(o_json[GetName()]);
+		} catch (...) {
+			logger::warn("Invalid settings for {}, using default.", GetName());
+			RestoreDefaultSettings();
+		}
+	}
 
 	// Convert string to wstring
 	auto ini_filename = std::format("{}.ini", GetShortName());

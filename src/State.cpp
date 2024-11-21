@@ -256,20 +256,16 @@ void State::Load(ConfigMode a_configMode, bool a_allowReload)
 			}
 		}
 
-		auto truePBR = TruePBR::GetSingleton();
-		auto& pbrJson = settings[truePBR->GetShortName()];
-		if (pbrJson.is_object()) {
-			logger::info("Loading 'TruePBR' settings");
-			truePBR->LoadSettings(pbrJson);
-		} else {
-			logger::warn("Missing settings for TruePBR, using default.");
-		}
-
 		auto upscaling = Upscaling::GetSingleton();
 		auto& upscalingJson = settings[upscaling->GetShortName()];
 		if (upscalingJson.is_object()) {
-			logger::info("Loading 'Upscaling' settings");
-			upscaling->LoadSettings(upscalingJson);
+			logger::info("Loading Upscaling settings");
+			try {
+				upscaling->LoadSettings(upscalingJson);
+			} catch (...) {
+				logger::warn("Invalid settings for Upscaling, using default.");
+				upscaling->RestoreDefaultSettings();
+			}
 		} else {
 			logger::warn("Missing settings for Upscaling, using default.");
 		}
@@ -342,10 +338,6 @@ void State::Save(ConfigMode a_configMode)
 	general["Enable Async"] = shaderCache.IsAsync();
 
 	settings["General"] = general;
-
-	auto truePBR = TruePBR::GetSingleton();
-	auto& pbrJson = settings[truePBR->GetShortName()];
-	truePBR->SaveSettings(pbrJson);
 
 	auto upscaling = Upscaling::GetSingleton();
 	auto& upscalingJson = settings[upscaling->GetShortName()];

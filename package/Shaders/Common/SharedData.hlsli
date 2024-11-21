@@ -124,13 +124,6 @@ struct SkylightingSettings
 	uint pad0[2];
 };
 
-struct PBRSettings
-{
-	bool UseMultipleScattering;
-	bool UseMultiBounceAO;
-	uint pad0[2];
-};
-
 cbuffer FeatureData : register(b6)
 {
 	GrassLightingSettings grassLightingSettings;
@@ -140,7 +133,6 @@ cbuffer FeatureData : register(b6)
 	LightLimitFixSettings lightLimitFixSettings;
 	WetnessEffectsSettings wetnessEffectsSettings;
 	SkylightingSettings skylightingSettings;
-	PBRSettings pbrSettings;
 };
 
 Texture2D<float4> TexDepthSampler : register(t20);

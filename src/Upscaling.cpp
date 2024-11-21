@@ -118,6 +118,11 @@ void Upscaling::LoadSettings(json& o_json)
 	}
 }
 
+void Upscaling::RestoreDefaultSettings()
+{
+	settings = {};
+}
+
 Upscaling::UpscaleMethod Upscaling::GetUpscaleMethod()
 {
 	auto streamline = Streamline::GetSingleton();

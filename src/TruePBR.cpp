@@ -250,15 +250,6 @@ void TruePBR::DrawSettings()
 			}
 			ImGui::TreePop();
 		}
-
-		bool useMultipleScattering = settings.useMultipleScattering;
-		bool useMultiBounceAO = settings.useMultiBounceAO;
-		if (ImGui::Checkbox("Use Multiple Scattering", &useMultipleScattering)) {
-			settings.useMultipleScattering = useMultipleScattering;
-		}
-		if (ImGui::Checkbox("Use Multi-bounce AO", &useMultiBounceAO)) {
-			settings.useMultiBounceAO = useMultiBounceAO;
-		}
 	}
 }
 
@@ -266,22 +257,6 @@ void TruePBR::SetupResources()
 {
 	SetupTextureSetData();
 	SetupMaterialObjectData();
-}
-
-void TruePBR::LoadSettings(json& o_json)
-{
-	if (o_json["Use Multiple Scattering"].is_boolean()) {
-		settings.useMultipleScattering = o_json["Use Multiple Scattering"];
-	}
-	if (o_json["Use Multi-bounce AO"].is_boolean()) {
-		settings.useMultiBounceAO = o_json["Use Multi-bounce AO"];
-	}
-}
-
-void TruePBR::SaveSettings(json& o_json)
-{
-	o_json["Use Multiple Scattering"] = (bool)settings.useMultipleScattering;
-	o_json["Use Multi-bounce AO"] = (bool)settings.useMultiBounceAO;
 }
 
 void TruePBR::PrePass()
