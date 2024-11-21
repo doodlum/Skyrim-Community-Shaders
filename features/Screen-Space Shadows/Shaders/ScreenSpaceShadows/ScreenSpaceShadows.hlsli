@@ -24,7 +24,7 @@ namespace ScreenSpaceShadows
 		float4 shadowSamples = 0;
 		float4 depthSamples = 0;
 
-#if defined(DEFERRED) && !defined(DO_ALPHA_TEST)
+#	if defined(DEFERRED) && !defined(DO_ALPHA_TEST)
 		depthSamples[0] = screenPosition.z;
 #	else
 		depthSamples[0] = TexDepthSampler.Load(int3(screenPosition.xy, 0));
