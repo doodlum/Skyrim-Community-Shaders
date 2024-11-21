@@ -26,9 +26,9 @@ namespace ScreenSpaceShadows
 
 #if defined(DEFERRED) && !defined(DO_ALPHA_TEST)
 		depthSamples[0] = screenPosition.z;
-#else
+#	else
 		depthSamples[0] = TexDepthSampler.Load(int3(screenPosition.xy, 0));
-#endif
+#	endif
 
 		shadowSamples[0] = ScreenSpaceShadowsTexture.Load(int3(screenPosition.xy, 0));
 
