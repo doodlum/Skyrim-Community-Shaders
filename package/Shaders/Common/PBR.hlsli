@@ -448,7 +448,6 @@ namespace PBR
 #endif
 
 			float2 specularBRDF = GetEnvBRDFApproxLazarov(surfaceProperties.Roughness, satNdotV);
-
 			specular *= 1 + surfaceProperties.F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1);
 
 #if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
