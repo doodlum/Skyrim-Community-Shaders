@@ -1,6 +1,7 @@
 #include "Common/DummyVSTexCoord.hlsl"
 #include "Common/FrameBuffer.hlsli"
 #include "Common/VR.hlsli"
+#include "Common/SharedData.hlsli"
 
 typedef VS_OUTPUT PS_INPUT;
 
@@ -349,21 +350,24 @@ PS_OUTPUT main(PS_INPUT input)
 
 	// SSR Marching Radius Fade Factor (based on ray distance)
 	float2 deltaUv = uvFinal - uvStart;
-	float ssrMarchingRadiusFadeFactor = 1 - length(deltaUv) * SSRParams.w * 0.25;
+	float ssrMarchingRadiusFadeFactor = 1 - length(deltaUv);
 	ssrMarchingRadiusFadeFactor *= ssrMarchingRadiusFadeFactor;
 
 	// Screen Center Distance Fade Factor
 	float2 uvResultScreenCenterOffset = uvFinal - 0.5;
-	float centerDistance = min(1, 2 * length(uvResultScreenCenterOffset));
 
-#		ifdef VR
+#	ifdef VR
+	float centerDistance = min(1, 2 * length(uvResultScreenCenterOffset.xy * normalize(BufferDim.zw * float2(2, 1))));
+
 	// Make VR fades consistent by taking the closer of the two eyes
 	// Based on concepts from https://cuteloong.github.io/publications/scssr24/
 	float2 otherEyeUvResultScreenCenterOffset = Stereo::ConvertMonoUVToOtherEye(FrameBuffer::GetDynamicResolutionUnadjustedScreenPosition(uvDepthFinalDR), eyeIndex).xy - 0.5;
-	centerDistance = min(centerDistance, 2 * length(otherEyeUvResultScreenCenterOffset));
-#		endif
+	centerDistance = min(centerDistance, 2 * length(otherEyeUvResultScreenCenterOffset * normalize(BufferDim.zw * float2(2, 1))));
+#	else
+	float centerDistance = min(1, 2 * length(uvResultScreenCenterOffset.xy * normalize(BufferDim.zw)));
+#	endif
 
-	float centerDistanceFadeFactor = 1 - pow(centerDistance, 4);
+	float centerDistanceFadeFactor = 1 - pow(centerDistance + 0.25, 10);
 
 	// Final alpha calculation
 	psout.Color.a = ssrMarchingRadiusFadeFactor * centerDistanceFadeFactor;
