@@ -24,7 +24,12 @@ namespace ScreenSpaceShadows
 		float4 shadowSamples = 0;
 		float4 depthSamples = 0;
 
+#if defined(DEFERRED)
 		depthSamples[0] = screenPosition.z;
+#else
+		depthSamples[0] = TexDepthSampler.Load(int3(screenPosition.xy, 0));
+#endif
+
 		shadowSamples[0] = ScreenSpaceShadowsTexture.Load(int3(screenPosition.xy, 0));
 
 		static const float2 BlurOffsets[3] = {
