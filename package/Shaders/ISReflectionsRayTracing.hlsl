@@ -1,7 +1,7 @@
 #include "Common/DummyVSTexCoord.hlsl"
 #include "Common/FrameBuffer.hlsli"
-#include "Common/VR.hlsli"
 #include "Common/SharedData.hlsli"
+#include "Common/VR.hlsli"
 
 typedef VS_OUTPUT PS_INPUT;
 
@@ -356,16 +356,16 @@ PS_OUTPUT main(PS_INPUT input)
 	// Screen Center Distance Fade Factor
 	float2 uvResultScreenCenterOffset = uvFinal - 0.5;
 
-#	ifdef VR
+#		ifdef VR
 	float centerDistance = min(1, 2 * length(uvResultScreenCenterOffset.xy * normalize(BufferDim.zw * float2(2, 1))));
 
 	// Make VR fades consistent by taking the closer of the two eyes
 	// Based on concepts from https://cuteloong.github.io/publications/scssr24/
 	float2 otherEyeUvResultScreenCenterOffset = Stereo::ConvertMonoUVToOtherEye(FrameBuffer::GetDynamicResolutionUnadjustedScreenPosition(uvDepthFinalDR), eyeIndex).xy - 0.5;
 	centerDistance = min(centerDistance, 2 * length(otherEyeUvResultScreenCenterOffset * normalize(BufferDim.zw * float2(2, 1))));
-#	else
+#		else
 	float centerDistance = min(1, 2 * length(uvResultScreenCenterOffset.xy * normalize(BufferDim.zw)));
-#	endif
+#		endif
 
 	float centerDistanceFadeFactor = 1 - pow(centerDistance + 0.25, 10);
 
