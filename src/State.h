@@ -33,9 +33,9 @@ public:
 	spdlog::level::level_enum logLevel = spdlog::level::info;
 	std::string shaderDefinesString = "";
 	std::vector<std::pair<std::string, std::string>> shaderDefines{};  // data structure to parse string into; needed to avoid dangling pointers
-	const std::string testConfigPath = "Data\\SKSE\\Plugins\\CommunityShadersTEST.json";
-	const std::string userConfigPath = "Data\\SKSE\\Plugins\\CommunityShadersUSER.json";
-	const std::string defaultConfigPath = "Data\\SKSE\\Plugins\\CommunityShaders.json";
+	const std::string testConfigPath = "Data\\SKSE\\Plugins\\CommunityShaders\\TestSettings.json";
+	const std::string userConfigPath = "Data\\SKSE\\Plugins\\CommunityShaders\\UserSettings.json";
+	const std::string defaultConfigPath = "Data\\SKSE\\Plugins\\CommunityShaders\\DefaultSettings.json";
 
 	bool upscalerLoaded = false;
 
