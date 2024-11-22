@@ -50,6 +50,8 @@ float3 GetTonemapFactorHejlBurgessDawson(float3 luminance)
 	       pow(((tmp * 6.2 + 0.5) * tmp) / (tmp * (tmp * 6.2 + 1.7) + 0.06), Color::GammaCorrectionValue);
 }
 
+#include "Common/DICETonemapper.hlsli"
+
 PS_OUTPUT main(PS_INPUT input)
 {
 	PS_OUTPUT psout;
@@ -107,7 +109,7 @@ PS_OUTPUT main(PS_INPUT input)
 		float3 blendedColor;
 		float3 blendFactor;
 		if (Param.z > 0.5) {
-			blendedColor = GetTonemapFactorHejlBurgessDawson(inputColor);
+			blendedColor = HuePreservingHejlBurgessDawson(inputColor);
 			float blendedLuminance = Color::RGBToLuminance(blendedColor);
 			// Compensate for modified tonemapping desaturating colors
 			blendedColor = lerp(blendedLuminance, blendedColor, 1.2);
