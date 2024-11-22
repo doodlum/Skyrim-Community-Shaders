@@ -149,7 +149,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float ssrScale = 8.0;
 
 	for (; iterationIndex < maxIterations; iterationIndex++) {
-		float3 iterationUvDepthDR = ViewToUVDepthHelper(lerp(csStart.xyz, csFinish.xyz, pow((iterationIndex / (float)maxIterations), 1.0) * SSRParams.x * ssrScale * rcp(length(deltaUvDepth.xy))), eyeIndex);
+		float3 iterationUvDepthDR = ViewToUVDepthHelper(lerp(csStart.xyz, csFinish.xyz, pow((iterationIndex / (float)maxIterations), 2.0) * SSRParams.x * ssrScale * rcp(length(deltaUvDepth.xy))), eyeIndex);
 		float3 iterationUvDepthSampleDR =
 #		ifdef VR
 			// Apply dynamic resolution adjustments and stereo UV conversions
