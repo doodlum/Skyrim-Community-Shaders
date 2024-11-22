@@ -112,11 +112,16 @@ PS_OUTPUT main(PS_INPUT input)
 			blendedColor = GetTonemapFactorReinhard(inputColor);
 		}
 
+		float blendedLuminance = Color::RGBToLuminance(blendedColor);
+
+		// Compensate for modified tonemapping desaturating colors
+		blendedColor = lerp(blendedLuminance, blendedColor, 1.2);
+
 		blendedColor += saturate(Param.x - blendedColor) * bloomColor;
 
 		gameSdrColor = blendedColor;
 
-		float blendedLuminance = Color::RGBToLuminance(blendedColor);
+		blendedLuminance = Color::RGBToLuminance(blendedColor);
 
 		float3 linearColor = Cinematic.w * lerp(lerp(blendedLuminance, float4(blendedColor, 1), Cinematic.x), blendedLuminance * Tint, Tint.w).xyz;
 
