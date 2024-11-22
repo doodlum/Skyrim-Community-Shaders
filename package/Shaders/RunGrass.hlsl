@@ -533,7 +533,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (dirShadow > 0.0) {
 		if (dirLightAngle > 0.0) {
 #			if defined(SCREEN_SPACE_SHADOWS)
-			dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, viewPosition, eyeIndex);
+			dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
 #			endif  // SCREEN_SPACE_SHADOWS
 		}
 
@@ -759,7 +759,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	if (dirShadow > 0.0) {
 #			if defined(SCREEN_SPACE_SHADOWS)
-		dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, viewPosition, eyeIndex);
+		dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
 #			endif  // SCREEN_SPACE_SHADOWS
 
 #			if defined(TERRAIN_SHADOWS)
