@@ -50,7 +50,7 @@ float3 GetTonemapFactorHejlBurgessDawson(float3 luminance)
 	       pow(((tmp * 6.2 + 0.5) * tmp) / (tmp * (tmp * 6.2 + 1.7) + 0.06), Color::GammaCorrectionValue);
 }
 
-#include "Common/DICETonemapper.hlsli"
+#	include "Common/DICETonemapper.hlsli"
 
 PS_OUTPUT main(PS_INPUT input)
 {
@@ -108,7 +108,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 		float3 blendedColor;
 		float3 blendFactor;
-		if (Param.z > 0.5) {		
+		if (Param.z > 0.5) {
 			blendedColor = HuePreservingHejlBurgessDawson(inputColor);
 		} else {
 			blendedColor = GetTonemapFactorReinhard(inputColor);
