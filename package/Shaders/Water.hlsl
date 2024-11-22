@@ -903,7 +903,7 @@ PS_OUTPUT main(PS_INPUT input)
 	}
 
 #					if defined(VC)
-	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseColor), Color::GammaToLinear(specularColor), fresnel * diffuseOutput.refractionMul) + Color::GammaToLinear(sunColor) * depthControl.w;
+	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseColor), Color::GammaToLinear(specularColor), fresnel * diffuseOutput.refractionMul) + Color::GammaToLinear(sunColor) * depthControl.w * fresnel;
 	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
 	float3 finalColor = lerp(finalColorPreFog, input.FogParam.xyz * PosAdjust[eyeIndex].w, input.FogParam.w);
 #					else
