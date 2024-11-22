@@ -111,7 +111,7 @@ PS_OUTPUT main(PS_INPUT input)
 		if (Param.z > 0.5) {		
 			blendedColor = HuePreservingHejlBurgessDawson(inputColor);
 		} else {
-			blendedColor = GetTonemapFactorReinhard(inputColor);
+			blendedColor = HuePreservingReinhard(inputColor);
 		}
 
 		blendedColor += saturate(Param.x - blendedColor) * bloomColor;
