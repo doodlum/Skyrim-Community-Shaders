@@ -149,7 +149,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float ssrScale = 8.0;
 
 	for (; iterationIndex < maxIterations; iterationIndex++) {
-		float3 iterationUvDepthDR = ViewToUVDepthHelper(lerp(csStart.xyz, csFinish.xyz, (iterationIndex / (float)maxIterations) * SSRParams.x * ssrScale * rcp(length(deltaUvDepth.xy))), eyeIndex);
+		float3 iterationUvDepthDR = ViewToUVDepthHelper(lerp(csStart.xyz, csFinish.xyz, pow((iterationIndex / (float)maxIterations), 1.0) * SSRParams.x * ssrScale * rcp(length(deltaUvDepth.xy))), eyeIndex);
 		float3 iterationUvDepthSampleDR =
 #		ifdef VR
 			// Apply dynamic resolution adjustments and stereo UV conversions
@@ -357,14 +357,14 @@ PS_OUTPUT main(PS_INPUT input)
 	float2 uvResultScreenCenterOffset = uvFinal - 0.5;
 
 #		ifdef VR
-	float centerDistance = min(1, 2 * length(uvResultScreenCenterOffset.xy * normalize(BufferDim.zw * float2(2, 1))));
+	float centerDistance = min(1, 2 * length(uvResultScreenCenterOffset.xy * lerp(1.0, normalize(BufferDim.zw * float2(2, 1)), 0.5)));
 
 	// Make VR fades consistent by taking the closer of the two eyes
 	// Based on concepts from https://cuteloong.github.io/publications/scssr24/
 	float2 otherEyeUvResultScreenCenterOffset = Stereo::ConvertMonoUVToOtherEye(FrameBuffer::GetDynamicResolutionUnadjustedScreenPosition(uvDepthFinalDR), eyeIndex).xy - 0.5;
-	centerDistance = min(centerDistance, 2 * length(otherEyeUvResultScreenCenterOffset * normalize(BufferDim.zw * float2(2, 1))));
+	centerDistance = min(centerDistance, 2 * length(otherEyeUvResultScreenCenterOffset * lerp(1.0, normalize(BufferDim.zw * float2(2, 1)), 0.5)));
 #		else
-	float centerDistance = min(1, 2 * length(uvResultScreenCenterOffset.xy * normalize(BufferDim.zw)));
+	float centerDistance = min(1, 2 * length(uvResultScreenCenterOffset.xy * lerp(1.0, normalize(BufferDim.zw), 0.5)));
 #		endif
 
 	float centerDistanceFadeFactor = 1 - pow(centerDistance + 0.25, 10);
