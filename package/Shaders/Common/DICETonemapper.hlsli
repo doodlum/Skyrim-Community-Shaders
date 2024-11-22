@@ -130,10 +130,17 @@ float3 HuePreservingHejlBurgessDawson(float3 col)
 	float saturationAmount = pow(smoothstep(1.0, 0.3, ictcp.x), 1.3);
 	col = ICtCpToRGB(ictcp * float3(1, saturationAmount.xx));
 
+	// Hue preserving mapping
+	float maxCol = Color::RGBToLuminance(col);
+	float mappedMax = GetTonemapFactorHejlBurgessDawson(maxCol);
+	float3 compressedHuePreserving = col * mappedMax / maxCol;
+
 	// Non-hue preserving mapping
 	float3 perChannelCompressed = GetTonemapFactorHejlBurgessDawson(col);
+	// Compensate for modified tonemapping desaturating colors
+	perChannelCompressed = lerp(Color::RGBToLuminance(perChannelCompressed), perChannelCompressed, 1.5);
 
-	col = perChannelCompressed;
+	col = lerp(perChannelCompressed, compressedHuePreserving, 0.6);
 
 	float3 ictcpMapped = RGBToICtCp(col);
 
