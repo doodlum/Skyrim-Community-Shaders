@@ -386,19 +386,19 @@ float GetStencil(float2 uv)
 }
 
 /**
-Calculates the depthMultiplier as used in water.hlsl
+Calculates the depthMultiplier as used in Water.hlsl
 
-VR appears to require use of CameraProjInverse and does not use projData
-@param a_uv uv coords to convert
-@param a_depth The calculated depth
+VR appears to require use of CameraProjInverse and does not use ProjData
+@param uv UV coords to convert
+@param depth The calculated depth
 @param eyeIndex The eyeIndex; 0 is left, 1 is right
 @returns depthMultiplier
 */
-float calculateDepthMultfromUV(float2 a_uv, float a_depth, uint eyeIndex = 0)
+float CalculateDepthMultFromUV(float2 uv, float depth, uint eyeIndex = 0)
 {
 	float4 temp;
-	temp.xy = (a_uv * 2 - 1);
-	temp.z = a_depth;
+	temp.xy = (uv * 2 - 1);
+	temp.z = depth;
 	temp.w = 1;
 	temp = mul(CameraProjInverse[eyeIndex], temp.xyzw);
 	temp.xyz /= temp.w;
@@ -618,17 +618,15 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 	return ReflectionColor.xyz * VarAmounts.y;
 }
 
-//#		if defined(DEPTH)
 float GetScreenDepthWater(float2 screenPosition, uint a_useVR = 0)
 {
 	float depth = DepthTex.Load(float3(screenPosition, 0)).x;
-	return
 #			if defined(VR)  // VR appears to use hard coded values
-		a_useVR ? depth * 1.01 + -0.01 :
+	return depth * 1.01 + -0.01;
+#			else
+	return (CameraData.w / (-depth * CameraData.z + CameraData.x));
 #			endif
-				  (CameraData.w / (-depth * CameraData.z + CameraData.x));
 }
-//#		endif
 
 float3 GetLdotN(float3 normal)
 {
@@ -660,7 +658,7 @@ struct DiffuseOutput
 	float refractionMul;
 };
 
-DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDirection, inout float4 distanceMul, float refractionsDepthFactor, float fresnel, uint eyeIndex, float3 viewPosition, float noise)
+DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDirection, inout float4 distanceMul, float refractionsDepthFactor, float fresnel, uint eyeIndex, float3 viewPosition, float noise, float depth)
 {
 #			if defined(REFRACTIONS)
 	float4 refractionNormal = mul(transpose(TextureProj[eyeIndex]), float4((VarAmounts.w * refractionsDepthFactor * normal.xy) + input.MPosition.xy, input.MPosition.z, 1));
@@ -673,30 +671,17 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 #				endif
 
 	float2 screenPosition = DynamicResolutionParams1.xy * (DynamicResolutionParams2.xy * input.HPosition.xy);
-	float depth = GetScreenDepthWater(screenPosition,
-#				if defined(VR)
-		1
-#				else
-		0
-#				endif
-	);
 
 	float2 refractionScreenPosition = DynamicResolutionParams1.xy * (refractionUvRaw / VPOSOffset.xy);
 	float4 refractionWorldPosition = float4(input.WPosition.xyz * depth / viewPosition.z, 0);
 
 #				if defined(DEPTH) && !defined(VERTEX_ALPHA_DEPTH)
-	float refractionDepth = GetScreenDepthWater(refractionScreenPosition,
-#					if defined(VR)
-		1
-#					else
-		0
-#					endif
-	);
+	float refractionDepth = GetScreenDepthWater(refractionScreenPosition);
 
 #					if !defined(VR)
 	float refractionDepthMul = length(float3((((VPOSOffset.zw + refractionUvRaw) * 2 - 1)) * refractionDepth / ProjData.xy, refractionDepth));
 #					else
-	float refractionDepthMul = calculateDepthMultfromUV(refractionUvRawNoStereo, refractionDepth, eyeIndex);
+	float refractionDepthMul = CalculateDepthMultFromUV(refractionUvRawNoStereo, refractionDepth, eyeIndex);
 #					endif  //VR
 
 	float3 refractionDepthAdjustedViewDirection = -viewDirection * refractionDepthMul;
@@ -814,8 +799,7 @@ PS_OUTPUT main(PS_INPUT input)
 #					if !defined(VR)
 	float depthMul = length(float3((depthOffset * 2 - 1) * depth / ProjData.xy, depth));
 #					else
-	float VRDepth = GetScreenDepthWater(screenPosition, 1);  // VR uses special hardcoded depth for this calculation
-	float depthMul = calculateDepthMultfromUV(Stereo::ConvertFromStereoUV(depthOffset, eyeIndex, 1), VRDepth, eyeIndex);
+	float depthMul = CalculateDepthMultFromUV(Stereo::ConvertFromStereoUV(depthOffset, eyeIndex, 1), depth, eyeIndex);
 #					endif  //VR
 	float3 depthAdjustedViewDirection = -viewDirection * depthMul;
 	float viewSurfaceAngle = dot(depthAdjustedViewDirection, ReflectPlane[eyeIndex].xyz);
@@ -867,7 +851,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float screenNoise = Random::InterleavedGradientNoise(input.HPosition.xy, FrameCount);
 
 	float3 specularColor = GetWaterSpecularColor(input, normal, viewDirection, distanceFactor, depthControl.y, eyeIndex);
-	DiffuseOutput diffuseOutput = GetWaterDiffuseColor(input, normal, viewDirection, distanceMul, depthControl.y, fresnel, eyeIndex, viewPosition, screenNoise);
+	DiffuseOutput diffuseOutput = GetWaterDiffuseColor(input, normal, viewDirection, distanceMul, depthControl.y, fresnel, eyeIndex, viewPosition, screenNoise, depth);
 
 	float3 diffuseColor = lerp(diffuseOutput.refractionColor, diffuseOutput.refractionDiffuseColor, diffuseOutput.refractionMul);
 
@@ -923,7 +907,7 @@ PS_OUTPUT main(PS_INPUT input)
 	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
 	float3 finalColor = lerp(finalColorPreFog, input.FogParam.xyz * PosAdjust[eyeIndex].w, input.FogParam.w);
 #					else
-	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseOutput.refractionDiffuseColor), Color::GammaToLinear(specularColor), fresnel);
+	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseOutput.refractionDiffuseColor), Color::GammaToLinear(specularColor) + Color::GammaToLinear(sunColor), fresnel);
 	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
 	finalColorPreFog = lerp(finalColorPreFog, input.FogParam.xyz * PosAdjust[eyeIndex].w, input.FogParam.w);
 	finalColorPreFog = Color::GammaToLinear(finalColorPreFog);
