@@ -898,16 +898,16 @@ PS_OUTPUT main(PS_INPUT input)
 #				else
 	float3 sunColor = GetSunColor(normal, viewDirection);
 
-	if (!(PixelShaderDescriptor & WaterFlags::Interior)) {
+	if (!(PixelShaderDescriptor & WaterFlags::Interior) && any(sunColor > 0.0)) {
 		sunColor *= ShadowSampling::GetWaterShadow(screenNoise, input.WPosition.xyz, eyeIndex);
 	}
 
 #					if defined(VC)
-	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseColor), Color::GammaToLinear(specularColor), fresnel * diffuseOutput.refractionMul) + Color::GammaToLinear(sunColor) * depthControl.w * fresnel;
+	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseColor), Color::GammaToLinear(specularColor), fresnel * diffuseOutput.refractionMul) + Color::GammaToLinear(sunColor) * depthControl.w;
 	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
 	float3 finalColor = lerp(finalColorPreFog, input.FogParam.xyz * PosAdjust[eyeIndex].w, input.FogParam.w);
 #					else
-	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseOutput.refractionDiffuseColor), Color::GammaToLinear(specularColor) + Color::GammaToLinear(sunColor), fresnel);
+	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseOutput.refractionDiffuseColor), Color::GammaToLinear(specularColor), fresnel) + Color::GammaToLinear(sunColor) * depthControl.w;
 	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
 	finalColorPreFog = lerp(finalColorPreFog, input.FogParam.xyz * PosAdjust[eyeIndex].w, input.FogParam.w);
 	finalColorPreFog = Color::GammaToLinear(finalColorPreFog);
