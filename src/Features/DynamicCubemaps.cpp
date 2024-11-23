@@ -12,8 +12,7 @@ constexpr auto MIPLEVELS = 8;
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	DynamicCubemaps::Settings,
 	EnabledSSR,
-	EnabledCreator
-	);
+	EnabledCreator);
 
 std::vector<std::pair<std::string_view, std::string_view>> DynamicCubemaps::GetShaderDefineOptions()
 {
