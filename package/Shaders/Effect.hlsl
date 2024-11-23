@@ -533,7 +533,7 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 	}
 
 #		if defined(LIGHT_LIMIT_FIX)
-	if (!(ExtraShaderDescriptor & ExtraFlags::InWorld)){
+	if (!(ExtraShaderDescriptor & ExtraFlags::InWorld)) {
 		color.x += dot(PLightColorR * lightFadeMul, 1.0.xxxx);
 		color.y += dot(PLightColorG * lightFadeMul, 1.0.xxxx);
 		color.z += dot(PLightColorB * lightFadeMul, 1.0.xxxx);
