@@ -81,13 +81,11 @@ public:
 	{
 		uint EnabledCreator = false;
 		uint EnabledSSR = true;
-		uint MaxIterations = static_cast<uint>(REL::Relocate(16, 16, 48));
-		uint pad0{};
+		uint pad0[2];
 		float4 CubemapColor{ 1.0f, 1.0f, 1.0f, 0.0f };
 	};
 
 	Settings settings;
-	std::string maxIterationsString = "";  // required to avoid string going out of scope for defines
 	bool enabledAtBoot = false;
 	void UpdateCubemap();
 

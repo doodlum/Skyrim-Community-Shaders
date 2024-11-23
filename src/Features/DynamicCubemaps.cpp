@@ -12,18 +12,15 @@ constexpr auto MIPLEVELS = 8;
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	DynamicCubemaps::Settings,
 	EnabledSSR,
-	EnabledCreator,
-	MaxIterations);
+	EnabledCreator
+	);
 
 std::vector<std::pair<std::string_view, std::string_view>> DynamicCubemaps::GetShaderDefineOptions()
 {
 	std::vector<std::pair<std::string_view, std::string_view>> result;
-	maxIterationsString = std::to_string(settings.MaxIterations);
 	if (settings.EnabledSSR) {
 		result.push_back({ "ENABLESSR", "" });
 	}
-
-	result.push_back({ "MAX_ITERATIONS", maxIterationsString });
 
 	return result;
 }
@@ -44,12 +41,6 @@ void DynamicCubemaps::DrawSettings()
 				}
 			}
 			if (settings.EnabledSSR) {
-				recompileFlag |= ImGui::SliderInt("Max Iterations", reinterpret_cast<int*>(&settings.MaxIterations), 1, 128);
-				if (auto _tt = Util::HoverTooltipWrapper()) {
-					ImGui::Text(
-						"The maximum iterations to ray march. "
-						"Higher values result in better quality but lower performance.");
-				}
 				Util::RenderImGuiSettingsTree(SSRSettings, "Skyrim SSR");
 			}
 			ImGui::TreePop();
