@@ -136,6 +136,8 @@ static const std::string& GetConfigPath(State::ConfigMode a_configMode)
 
 void State::Load(ConfigMode a_configMode, bool a_allowReload)
 {
+	std::filesystem::create_directories(basePath);
+
 	ConfigMode configMode = a_configMode;
 	auto& shaderCache = SIE::ShaderCache::Instance();
 	json settings;
@@ -308,6 +310,8 @@ void State::Load(ConfigMode a_configMode, bool a_allowReload)
 
 void State::Save(ConfigMode a_configMode)
 {
+	std::filesystem::create_directories(basePath);
+
 	const auto& shaderCache = SIE::ShaderCache::Instance();
 	std::string configPath = GetConfigPath(a_configMode);
 	std::ofstream o{ configPath };
