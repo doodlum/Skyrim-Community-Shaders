@@ -86,7 +86,7 @@ float4 GetReflectionColor(
 			}
 
 			// SSR Marching Radius Fade Factor (based on ray length)
-			float ssrMarchingRadiusFadeFactor = sqrt(1.0 - saturate(length(binaryRaySample.xy - projPosition.xy) / rayLength));
+			float ssrMarchingRadiusFadeFactor = 1.0 - saturate(length(binaryRaySample.xy - projPosition.xy) / rayLength);
 
 			// Screen Center Distance Fade Factor
 			float2 uvResultScreenCenterOffset = binaryRaySample.xy - 0.5;
