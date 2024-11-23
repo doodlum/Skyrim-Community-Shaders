@@ -144,7 +144,7 @@ void State::Load(ConfigMode a_configMode, bool a_allowReload)
 	try {
 		std::filesystem::create_directories(folderPath);
 	} catch (const std::filesystem::filesystem_error& e) {
-		logger::warn("Error trying to create directory during Load ({}) : {}\n", folderPath, e.what());
+		logger::warn("Error creating directory during Load ({}) : {}\n", folderPath, e.what());
 		errorDetected = true;
 	}
 
@@ -322,7 +322,7 @@ void State::Save(ConfigMode a_configMode)
 	try {
 		std::filesystem::create_directories(folderPath);
 	} catch (const std::filesystem::filesystem_error& e) {
-		logger::warn("Error trying to create directory during Save ({}) : {}\n", folderPath, e.what());
+		logger::warn("Error creating directory during Save ({}) : {}\n", folderPath, e.what());
 		return;
 	}
 
