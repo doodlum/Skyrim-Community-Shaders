@@ -609,7 +609,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 				float4 ssrReflectionColor = lerp(ssrReflectionColorRaw, ssrReflectionColorBlurred, effectiveBlurFactor);
 
 				finalSsrReflectionColor = max(0, ssrReflectionColor.xyz);
-				ssrFraction = saturate(ssrReflectionColor.w * distanceFactor * pointingDirection);
+				ssrFraction = saturate(ssrReflectionColor.w * distanceFactor * SSRParams.x * pointingDirection);
 			}
 		}
 #			endif

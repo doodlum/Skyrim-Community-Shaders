@@ -29,7 +29,7 @@ cbuffer PerGeometry : register(b2)
 };
 
 static const int iterations = 32.0;
-static const float rayLength = 0.5;
+static const float rayLength = 1.0;
 
 float2 ConvertRaySample(float2 raySample, uint eyeIndex)
 {
@@ -101,7 +101,7 @@ float4 GetReflectionColor(
 
 			// Fade out around 10% of screen area
 			float centerDistanceFadeFactor = smoothstep(0.0, 0.1, 1.0 - centerDistance);
-			float fadeFactor = depthThicknessFactor * ssrMarchingRadiusFadeFactor * centerDistanceFadeFactor;
+			float fadeFactor = (depthThicknessFactor > 0.0) * ssrMarchingRadiusFadeFactor * centerDistanceFadeFactor;
 
 			if (fadeFactor > 0.0) {
 				float3 color = ColorTex.SampleLevel(ColorSampler, ConvertRaySample(binaryRaySample.xy, eyeIndex), 0);
