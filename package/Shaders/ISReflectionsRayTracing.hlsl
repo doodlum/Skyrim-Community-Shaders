@@ -64,18 +64,18 @@ float4 GetReflectionColor(
 			float3 binaryMinRaySample = prevRaySample;
 			float3 binaryMaxRaySample = raySample;
 			float3 binaryRaySample = raySample;
-			uint2 binaryRaySampleDims = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim);
-			uint2 prevBinaryRaySampleDims;
+			uint2 binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim);
+			uint2 prevBinaryRaySampleCoords;
 			float depthThicknessFactor;
 
 			for (int k = i; k < iterations; k++)
 			{
-				prevBinaryRaySampleDims = binaryRaySampleDims;
+				prevBinaryRaySampleCoords = binaryRaySampleCoords;
 				binaryRaySample = lerp(binaryMinRaySample, binaryMaxRaySample, 0.5);
-				binaryRaySampleDims = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim);
+				binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim);
 
 				// Check if the optimal sampling location has already been found
-				if (all(binaryRaySampleDims == prevBinaryRaySampleDims))
+				if (all(binaryRaySampleCoords == prevBinaryRaySampleCoords))
 					break;
 
 				iterationDepth = DepthTex.SampleLevel(DepthSampler, ConvertRaySample(binaryRaySample.xy, eyeIndex), 0);			
