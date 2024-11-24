@@ -28,7 +28,7 @@ cbuffer PerGeometry : register(b2)
 	float3 DefaultNormal : packoffset(c1);
 };
 
-static const int iterations = 32.0;
+static const int iterations = 128.0;
 static const float rayLength = 1.0;
 
 float2 ConvertRaySample(float2 raySample, uint eyeIndex)
@@ -46,35 +46,45 @@ float4 GetReflectionColor(
 	float3 projPosition,
 	uint eyeIndex)
 {
+	float2 textureDims;
+	NormalTex.GetDimensions(textureDims.x, textureDims.y);
+
 	float3 prevRaySample;
 	float3 raySample = projPosition;
-
-	for (int i = 0; i <= iterations; i++) {
-		prevRaySample = raySample;
+    
+	for (int i = 0; i <= iterations; i++)
+	{
+		prevRaySample = raySample;	
 		raySample = projPosition + (float(i) / float(iterations)) * projReflectionDirection;
 
 		if (FrameBuffer::isOutsideFrame(raySample.xy, true))
 			return 0.0;
 
 		float iterationDepth = DepthTex.SampleLevel(DepthSampler, ConvertRaySample(raySample.xy, eyeIndex), 0);
-
-		if (raySample.z > iterationDepth) {
+				
+		if (raySample.z > iterationDepth)
+		{
 			float3 binaryMinRaySample = prevRaySample;
 			float3 binaryMaxRaySample = raySample;
-			float3 binaryRaySample;
+			float3 binaryRaySample = raySample;
+			uint2 binaryRaySampleDims = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * textureDims);
+			uint2 prevBinaryRaySampleDims;
 			float depthThicknessFactor;
 
-			for (int k = 0; k < iterations; k++) {
+			for (int k = 0; k < iterations; k++)
+			{
+				prevBinaryRaySampleDims = binaryRaySampleDims;
 				binaryRaySample = lerp(binaryMinRaySample, binaryMaxRaySample, 0.5);
+				binaryRaySampleDims = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * textureDims);
 
-				iterationDepth = DepthTex.SampleLevel(DepthSampler, ConvertRaySample(binaryRaySample.xy, eyeIndex), 0);
-
-				// Compute expected depth vs actual depth
-				depthThicknessFactor = 1.0 - smoothstep(0.0, 0.5, abs(binaryRaySample.z - iterationDepth) / SSRParams.y);
-
-				// Early exit
-				if (depthThicknessFactor == 1.0)
+				// Check if the optimal sampling location has already been found
+				if (all(binaryRaySampleDims == prevBinaryRaySampleDims))
 					break;
+
+				iterationDepth = DepthTex.SampleLevel(DepthSampler, ConvertRaySample(binaryRaySample.xy, eyeIndex), 0);			
+				
+				// Compute expected depth vs actual depth
+				depthThicknessFactor = 1.0 - saturate(abs(binaryRaySample.z - iterationDepth) / SSRParams.y);
 
 				if (iterationDepth < binaryRaySample.z)
 					binaryMaxRaySample = binaryRaySample;
@@ -88,22 +98,23 @@ float4 GetReflectionColor(
 			// Screen Center Distance Fade Factor
 			float2 uvResultScreenCenterOffset = binaryRaySample.xy - 0.5;
 
-#	ifdef VR
+#		ifdef VR
 			float centerDistance = min(1.0, 2.0 * length(uvResultScreenCenterOffset.xy));
 
 			// Make VR fades consistent by taking the closer of the two eyes
 			// Based on concepts from https://cuteloong.github.io/publications/scssr24/
 			float2 otherEyeUvResultScreenCenterOffset = Stereo::ConvertMonoUVToOtherEye(float3(binaryRaySample.xy, iterationDepth), eyeIndex).xy - 0.5;
 			centerDistance = min(centerDistance, 2.0 * length(otherEyeUvResultScreenCenterOffset));
-#	else
+#		else
 			float centerDistance = min(1.0, 2.0 * length(uvResultScreenCenterOffset.xy));
-#	endif
-
+#		endif
+			
 			// Fade out around 10% of screen area
 			float centerDistanceFadeFactor = smoothstep(0.0, 0.1, 1.0 - centerDistance);
-			float fadeFactor = (depthThicknessFactor > 0.0) * ssrMarchingRadiusFadeFactor * centerDistanceFadeFactor;
+			float fadeFactor = depthThicknessFactor * ssrMarchingRadiusFadeFactor * centerDistanceFadeFactor;
 
-			if (fadeFactor > 0.0) {
+			if (fadeFactor > 0.0)
+			{
 				float3 color = ColorTex.SampleLevel(ColorSampler, ConvertRaySample(binaryRaySample.xy, eyeIndex), 0);
 
 				// Final sample to world-space
@@ -160,7 +171,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	float3 viewPosition = positionVS;
 	float3 viewDirection = normalize(viewPosition);
-
+	
 	float3 reflectionDirection = reflect(viewDirection, viewNormal);
 	float VdotN = dot(-viewDirection, reflectionDirection);
 	[branch] if (reflectionDirection.z < 0 || 0 < VdotN)
