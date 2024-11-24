@@ -1,8 +1,8 @@
 #include "Common/DummyVSTexCoord.hlsl"
 #include "Common/FrameBuffer.hlsli"
-#include "Common/VR.hlsli"
 #include "Common/MotionBlur.hlsli"
 #include "Common/SharedData.hlsli"
+#include "Common/VR.hlsli"
 
 typedef VS_OUTPUT PS_INPUT;
 
@@ -42,7 +42,7 @@ float2 ConvertRaySamplePrevious(float2 raySample, uint eyeIndex)
 }
 
 float4 GetReflectionColor(
-	float3 projReflectionDirection, 
+	float3 projReflectionDirection,
 	float3 projPosition,
 	uint eyeIndex)
 {
@@ -104,8 +104,8 @@ float4 GetReflectionColor(
 			centerDistance = min(centerDistance, 2.0 * length(otherEyeUvResultScreenCenterOffset));
 #	else
 			float centerDistance = min(1.0, 2.0 * length(uvResultScreenCenterOffset.xy));
-#		endif
-			
+#	endif
+
 			// Fade out around screen edges
 			float centerDistanceFadeFactor = smoothstep(0.0, 0.25, 1.0 - centerDistance);
 			float fadeFactor = depthThicknessFactor * ssrMarchingRadiusFadeFactor * centerDistanceFadeFactor;
