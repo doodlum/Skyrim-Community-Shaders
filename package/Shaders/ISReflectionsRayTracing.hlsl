@@ -66,8 +66,7 @@ float4 GetReflectionColor(
 			uint2 prevBinaryRaySampleCoords;
 			float depthThicknessFactor;
 
-			for (int k = i; k < iterations; k++)
-			{
+			for (int k = i; k < iterations; k++) {
 				prevBinaryRaySampleCoords = binaryRaySampleCoords;
 				binaryRaySample = lerp(binaryMinRaySample, binaryMaxRaySample, 0.5);
 				binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim);
