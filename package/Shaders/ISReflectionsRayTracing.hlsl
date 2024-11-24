@@ -1,8 +1,8 @@
 #include "Common/DummyVSTexCoord.hlsl"
 #include "Common/FrameBuffer.hlsli"
-#include "Common/VR.hlsli"
 #include "Common/MotionBlur.hlsli"
 #include "Common/SharedData.hlsli"
+#include "Common/VR.hlsli"
 
 typedef VS_OUTPUT PS_INPUT;
 
@@ -42,7 +42,7 @@ float2 ConvertRaySamplePrevious(float2 raySample, uint eyeIndex)
 }
 
 float4 GetReflectionColor(
-	float3 projReflectionDirection, 
+	float3 projReflectionDirection,
 	float3 projPosition,
 	uint eyeIndex)
 {
