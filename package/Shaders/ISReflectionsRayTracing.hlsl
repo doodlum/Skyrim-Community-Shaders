@@ -1,8 +1,8 @@
 #include "Common/DummyVSTexCoord.hlsl"
 #include "Common/FrameBuffer.hlsli"
+#include "Common/VR.hlsli"
 #include "Common/MotionBlur.hlsli"
 #include "Common/SharedData.hlsli"
-#include "Common/VR.hlsli"
 
 typedef VS_OUTPUT PS_INPUT;
 
@@ -42,7 +42,7 @@ float2 ConvertRaySamplePrevious(float2 raySample, uint eyeIndex)
 }
 
 float4 GetReflectionColor(
-	float3 projReflectionDirection,
+	float3 projReflectionDirection, 
 	float3 projPosition,
 	uint eyeIndex)
 {
@@ -93,7 +93,7 @@ float4 GetReflectionColor(
 			}
 
 			// SSR Marching Radius Fade Factor (based on ray length)
-			float ssrMarchingRadiusFadeFactor = 1.0 - saturate(length(binaryRaySample.xy - projPosition.xy) / rayLength);
+			float ssrMarchingRadiusFadeFactor = 1.0 - (length(binaryRaySample.xy - projPosition.xy) / rayLength);
 
 			// Screen Center Distance Fade Factor
 			float2 uvResultScreenCenterOffset = binaryRaySample.xy - 0.5;
@@ -109,8 +109,8 @@ float4 GetReflectionColor(
 			float centerDistance = min(1.0, 2.0 * length(uvResultScreenCenterOffset.xy));
 #		endif
 			
-			// Fade out around 10% of screen area
-			float centerDistanceFadeFactor = smoothstep(0.0, 0.1, 1.0 - centerDistance);
+			// Fade out around screen edges
+			float centerDistanceFadeFactor = smoothstep(0.0, 0.25, 1.0 - centerDistance);
 			float fadeFactor = depthThicknessFactor * ssrMarchingRadiusFadeFactor * centerDistanceFadeFactor;
 
 			if (fadeFactor > 0.0)
@@ -185,7 +185,8 @@ PS_OUTPUT main(PS_INPUT input)
 	projReflectionPosition.xy = projReflectionPosition.xy * float2(0.5, -0.5) + float2(0.5, 0.5);
 
 	float3 projPosition = float3(uv, depth);
-	float3 projReflectionDirection = normalize(projReflectionPosition.xyz - projPosition) * rayLength;
+	float3 projReflectionDirection = normalize(projReflectionPosition.xyz - projPosition);
+	projReflectionDirection *= rayLength;
 
 	psout.Color = GetReflectionColor(projReflectionDirection, projPosition, eyeIndex);
 
