@@ -599,7 +599,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 #			if !defined(LOD) && NUM_SPECULAR_LIGHTS == 0
 		if (PixelShaderDescriptor & WaterFlags::Cubemap) {
 			float pointingDirection = saturate(dot(viewDirection, R));
-			if (SSRParams.x > 0.0 && pointingDirection > 0.0){
+			if (SSRParams.x > 0.0 && pointingDirection > 0.0) {
 				float2 ssrReflectionUv = ((DynamicResolutionParams2.xy * input.HPosition.xy) * SSRParams.zw) + SSRParams2.x * normal.xy;
 				float2 ssrReflectionUvDR = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(ssrReflectionUv);
 				float4 ssrReflectionColorBlurred = SSRReflectionTex.Sample(SSRReflectionSampler, ssrReflectionUvDR);
