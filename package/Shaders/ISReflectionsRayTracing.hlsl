@@ -48,19 +48,17 @@ float4 GetReflectionColor(
 {
 	float3 prevRaySample;
 	float3 raySample = projPosition;
-    
-	for (int i = 0; i < iterations - 1; i++)
-	{
-		prevRaySample = raySample;	
+
+	for (int i = 0; i < iterations - 1; i++) {
+		prevRaySample = raySample;
 		raySample = projPosition + (float(i) / float(iterations)) * projReflectionDirection;
 
 		if (FrameBuffer::isOutsideFrame(raySample.xy, true))
 			return 0.0;
 
 		float iterationDepth = DepthTex.SampleLevel(DepthSampler, ConvertRaySample(raySample.xy, eyeIndex), 0);
-				
-		if (saturate((raySample.z - iterationDepth) / SSRParams.y) > 0.0)
-		{
+
+		if (saturate((raySample.z - iterationDepth) / SSRParams.y) > 0.0) {
 			float3 binaryMinRaySample = prevRaySample;
 			float3 binaryMaxRaySample = raySample;
 			float3 binaryRaySample = raySample;
@@ -77,8 +75,8 @@ float4 GetReflectionColor(
 				if (all(binaryRaySampleCoords == prevBinaryRaySampleCoords))
 					break;
 
-				iterationDepth = DepthTex.SampleLevel(DepthSampler, ConvertRaySample(binaryRaySample.xy, eyeIndex), 0);			
-				
+				iterationDepth = DepthTex.SampleLevel(DepthSampler, ConvertRaySample(binaryRaySample.xy, eyeIndex), 0);
+
 				// Compute expected depth vs actual depth
 				depthThicknessFactor = 1.0 - saturate(abs(binaryRaySample.z - iterationDepth) / SSRParams.y);
 
@@ -91,37 +89,36 @@ float4 GetReflectionColor(
 			// Early exit
 			if (depthThicknessFactor <= 0.0)
 				return 0.0;
-				
+
 			// Cubemap skies blend better
 			float skyFadeFactor = iterationDepth != 1.0;
 
 			// Early exit
 			if (skyFadeFactor <= 0.0)
 				return 0.0;
-				
+
 			// Fade based on ray length)
 			float ssrMarchingRadiusFadeFactor = 1.0 - saturate(length(binaryRaySample - projPosition) / rayLength);
 
 			float2 uvResultScreenCenterOffset = binaryRaySample.xy - 0.5;
 
-#		ifdef VR
+#	ifdef VR
 			float centerDistance = abs(uvResultScreenCenterOffset.xy * 2.0);
 
 			// Make VR fades consistent by taking the closer of the two eyes
 			// Based on concepts from https://cuteloong.github.io/publications/scssr24/
 			float2 otherEyeUvResultScreenCenterOffset = Stereo::ConvertMonoUVToOtherEye(float3(binaryRaySample.xy, iterationDepth), eyeIndex).xy - 0.5;
 			centerDistance = min(centerDistance, abs(otherEyeUvResultScreenCenterOffset * 2.0));
-#		else
+#	else
 			float2 centerDistance = abs(uvResultScreenCenterOffset.xy * 2.0);
-#		endif
-			
+#	endif
+
 			// Fade out around screen edges
 			float2 centerDistanceFadeFactor = pow(saturate(1.0 - centerDistance), 0.25);
 
 			float fadeFactor = depthThicknessFactor * skyFadeFactor * sqrt(ssrMarchingRadiusFadeFactor) * min(centerDistanceFadeFactor.x, centerDistanceFadeFactor.y);
-			
-			if (fadeFactor > 0.0)
-			{
+
+			if (fadeFactor > 0.0) {
 				float3 color = ColorTex.SampleLevel(ColorSampler, ConvertRaySample(binaryRaySample.xy, eyeIndex), 0);
 
 				// Final sample to world-space
@@ -178,7 +175,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	float3 viewPosition = positionVS;
 	float3 viewDirection = normalize(viewPosition);
-	
+
 	float3 reflectionDirection = reflect(viewDirection, viewNormal);
 	float viewAttenuation = saturate(dot(viewDirection, reflectionDirection));
 	[branch] if (viewAttenuation < 0)
