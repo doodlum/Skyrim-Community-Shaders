@@ -598,8 +598,9 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 
 #			if !defined(LOD) && NUM_SPECULAR_LIGHTS == 0
 		if (PixelShaderDescriptor & WaterFlags::Cubemap) {
-			float pointingDirection = saturate(dot(viewDirection, R));
-			if (SSRParams.x > 0.0 && pointingDirection > 0.0) {
+			float pointingDirection = dot(viewDirection, R);
+			float pointingAlignment = dot(reflect(viewDirection, float3(0, 0, 1)), R);
+			if (SSRParams.x > 0.0 && pointingDirection > 0.0 && pointingAlignment > 0.0){
 				float2 ssrReflectionUv = ((DynamicResolutionParams2.xy * input.HPosition.xy) * SSRParams.zw) + SSRParams2.x * normal.xy;
 				float2 ssrReflectionUvDR = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(ssrReflectionUv);
 				float4 ssrReflectionColorBlurred = SSRReflectionTex.Sample(SSRReflectionSampler, ssrReflectionUvDR);
@@ -609,7 +610,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 				float4 ssrReflectionColor = lerp(ssrReflectionColorRaw, ssrReflectionColorBlurred, effectiveBlurFactor);
 
 				finalSsrReflectionColor = max(0, ssrReflectionColor.xyz);
-				ssrFraction = saturate(ssrReflectionColor.w * distanceFactor * SSRParams.x) * pointingDirection;
+				ssrFraction = saturate(ssrReflectionColor.w * distanceFactor * SSRParams.x) * min(pointingDirection, pointingAlignment);
 			}
 		}
 #			endif
@@ -725,7 +726,7 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 		skylighting = lerp(1.0, skylighting, Skylighting::getFadeOutFactor(input.WPosition.xyz));
 
 		float3 refractionDiffuseColorSkylight = Skylighting::mixDiffuse(skylightingSettings, skylighting);
-		refractionDiffuseColorSkylight = Color::LinearToGamma(Color::GammaToLinear(refractionDiffuseColor) * refractionDiffuseColorSkylight);
+		refractionDiffuseColor = Color::LinearToGamma(Color::GammaToLinear(refractionDiffuseColor) * refractionDiffuseColorSkylight);
 #				endif
 	}
 
