@@ -381,12 +381,11 @@ float GetPoissonDiskFilteredShadowVisibility(float noise, float2x2 rotationMatri
 	float visibility = 0;
 	for (int sampleIndex = 0; sampleIndex < sampleCount; ++sampleIndex) {
 		float2 sampleOffset = mul(Random::SpiralSampleOffsets8[sampleIndex], rotationMatrix);
-		sampleOffset *= 1.5;
 
 #	if defined(RENDER_SHADOWMASKDPB)
 		float2 sampleUV = sampleOffset + baseUV.xy;
 
-		baseUV.z += noise;
+		baseUV.z += noise * 0.5;
 
 		bool lowerHalf = baseUV.z * 0.5 + 0.5 < 0;
 		float3 normalizedPositionLS = normalize(float3(sampleUV.xy, baseUV.z));
