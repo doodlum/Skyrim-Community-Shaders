@@ -402,7 +402,7 @@ void DynamicCubemaps::Irradiance(bool a_reflections)
 
 		float const delta_roughness = 1.0f / std::max(float(MIPLEVELS - 1), 1.0f);
 
-		std::uint32_t size = std::max(envTexture->desc.Width, envTexture->desc.Height);
+		std::uint32_t size = std::max(envTexture->desc.Width, envTexture->desc.Height) / 2;
 
 		for (std::uint32_t level = 1; level < MIPLEVELS; level++, size /= 2) {
 			const UINT numGroups = (UINT)std::max(1u, size / 8);
