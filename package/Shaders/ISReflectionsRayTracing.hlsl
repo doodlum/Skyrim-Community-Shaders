@@ -85,10 +85,10 @@ float4 GetReflectionColor(
 				else
 					binaryMinRaySample = binaryRaySample;
 			}
-				
+
 			// Cubemap skies blend better
 			float skyFadeFactor = iterationDepth != 1.0;
-				
+
 			// Fade based on ray length
 			float ssrMarchingRadiusFadeFactor = 1.0 - saturate(length(binaryRaySample - projPosition) / rayLength);
 
