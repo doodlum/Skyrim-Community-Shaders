@@ -28,7 +28,9 @@ cbuffer PerGeometry : register(b2)
 	float3 DefaultNormal : packoffset(c1);
 };
 
-static const int iterations = 128.0;
+static const int iterations = 64.0;
+static const int binaryIterations = ceil(log2(iterations));
+
 static const float rayLength = 1.0;
 
 float2 ConvertRaySample(float2 raySample, uint eyeIndex)
@@ -49,7 +51,7 @@ float4 GetReflectionColor(
 	float3 prevRaySample;
 	float3 raySample = projPosition;
 
-	for (int i = 0; i < iterations - 1; i++) {
+	for (int i = 0; i < iterations; i++) {
 		prevRaySample = raySample;
 		raySample = projPosition + (float(i) / float(iterations)) * projReflectionDirection;
 
@@ -66,7 +68,7 @@ float4 GetReflectionColor(
 			uint2 prevBinaryRaySampleCoords;
 			float depthThicknessFactor;
 
-			for (int k = i; k < iterations; k++) {
+			for (int k = 0; k < binaryIterations; k++) {
 				prevBinaryRaySampleCoords = binaryRaySampleCoords;
 				binaryRaySample = lerp(binaryMinRaySample, binaryMaxRaySample, 0.5);
 				binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim);
@@ -114,7 +116,7 @@ float4 GetReflectionColor(
 #	endif
 
 			// Fade out around screen edges
-			float2 centerDistanceFadeFactor = pow(saturate(1.0 - centerDistance), 0.25);
+			float2 centerDistanceFadeFactor = sqrt(saturate(1.0 - centerDistance));
 
 			float fadeFactor = depthThicknessFactor * skyFadeFactor * sqrt(ssrMarchingRadiusFadeFactor) * min(centerDistanceFadeFactor.x, centerDistanceFadeFactor.y);
 
@@ -153,6 +155,11 @@ PS_OUTPUT main(PS_INPUT input)
 {
 	PS_OUTPUT psout;
 	psout.Color = 0;
+
+#	ifndef ENABLESSR
+	// Disable SSR raymarch
+	return psout;
+#	endif
 
 	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(input.TexCoord);
 	float2 uv = input.TexCoord;
