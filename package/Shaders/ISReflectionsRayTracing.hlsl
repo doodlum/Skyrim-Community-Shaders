@@ -85,19 +85,11 @@ float4 GetReflectionColor(
 				else
 					binaryMinRaySample = binaryRaySample;
 			}
-
-			// Early exit
-			if (depthThicknessFactor <= 0.0)
-				return 0.0;
-
+				
 			// Cubemap skies blend better
 			float skyFadeFactor = iterationDepth != 1.0;
-
-			// Early exit
-			if (skyFadeFactor <= 0.0)
-				return 0.0;
-
-			// Fade based on ray length)
+				
+			// Fade based on ray length
 			float ssrMarchingRadiusFadeFactor = 1.0 - saturate(length(binaryRaySample - projPosition) / rayLength);
 
 			float2 uvResultScreenCenterOffset = binaryRaySample.xy - 0.5;
