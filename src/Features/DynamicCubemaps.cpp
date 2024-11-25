@@ -254,6 +254,15 @@ ID3D11ComputeShader* DynamicCubemaps::GetComputeShaderUpdate()
 	return updateCubemapCS;
 }
 
+ID3D11ComputeShader* DynamicCubemaps::GetComputeShaderUpdateReflections()
+{
+	if (!updateCubemapReflectionsCS) {
+		logger::debug("Compiling UpdateCubemapCS REFLECTIONS");
+		updateCubemapReflectionsCS = static_cast<ID3D11ComputeShader*>(Util::CompileShader(L"Data\\Shaders\\DynamicCubemaps\\UpdateCubemapCS.hlsl", { { "REFLECTIONS", "" } }, "cs_5_0"));
+	}
+	return updateCubemapReflectionsCS;
+}
+
 ID3D11ComputeShader* DynamicCubemaps::GetComputeShaderInferrence()
 {
 	if (!inferCubemapCS) {
@@ -281,7 +290,7 @@ ID3D11ComputeShader* DynamicCubemaps::GetComputeShaderSpecularIrradiance()
 	return specularIrradianceCS;
 }
 
-void DynamicCubemaps::UpdateCubemapCapture()
+void DynamicCubemaps::UpdateCubemapCapture(bool a_reflections)
 {
 	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 
@@ -293,7 +302,18 @@ void DynamicCubemaps::UpdateCubemapCapture()
 	ID3D11ShaderResourceView* srvs[2] = { depth.depthSRV, main.SRV };
 	context->CSSetShaderResources(0, 2, srvs);
 
-	ID3D11UnorderedAccessView* uavs[3] = { envCaptureTexture->uav.get(), envCaptureRawTexture->uav.get(), envCapturePositionTexture->uav.get() };
+	ID3D11UnorderedAccessView* uavs[3];
+	if (a_reflections)
+	{
+		uavs[0] = envCaptureReflectionsTexture->uav.get();
+		uavs[1] = envCaptureRawReflectionsTexture->uav.get();
+		uavs[2] = envCapturePositionReflectionsTexture->uav.get();
+	} else {
+		uavs[0] = envCaptureTexture->uav.get();
+		uavs[1] = envCaptureRawTexture->uav.get();
+		uavs[2] = envCapturePositionTexture->uav.get();
+	}
+
 	context->CSSetUnorderedAccessViews(0, 3, uavs, nullptr);
 
 	ID3D11Buffer* buffers[2];
@@ -318,7 +338,8 @@ void DynamicCubemaps::UpdateCubemapCapture()
 
 	context->CSSetSamplers(0, 1, &computeSampler);
 
-	context->CSSetShader(GetComputeShaderUpdate(), nullptr, 0);
+	context->CSSetShader(a_reflections ? GetComputeShaderUpdateReflections() : GetComputeShaderUpdate(), nullptr, 0);
+
 	context->Dispatch((uint32_t)std::ceil(envCaptureTexture->desc.Width / 8.0f), (uint32_t)std::ceil(envCaptureTexture->desc.Height / 8.0f), 6);
 
 	uavs[0] = nullptr;
@@ -350,11 +371,11 @@ void DynamicCubemaps::Inferrence(bool a_reflections)
 
 	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 
-	context->GenerateMips(envCaptureTexture->srv.get());
+	context->GenerateMips((a_reflections ? envCaptureReflectionsTexture : envCaptureTexture)->srv.get());
 
 	auto& cubemap = renderer->GetRendererData().cubemapRenderTargets[RE::RENDER_TARGETS_CUBEMAP::kREFLECTIONS];
 
-	ID3D11ShaderResourceView* srvs[3] = { envCaptureTexture->srv.get(), cubemap.SRV, defaultCubemap };
+	ID3D11ShaderResourceView* srvs[3] = { (a_reflections ? envCaptureReflectionsTexture : envCaptureTexture)->srv.get(), cubemap.SRV, defaultCubemap };
 	context->CSSetShaderResources(0, 3, srvs);
 
 	context->CSSetSamplers(0, 1, &computeSampler);
@@ -442,6 +463,11 @@ void DynamicCubemaps::UpdateCubemap()
 	}
 
 	switch (nextTask) {
+	case NextTask::kCapture:
+		UpdateCubemapCapture(false);
+		nextTask = NextTask::kInferrence;
+		break;
+
 	case NextTask::kInferrence:
 		nextTask = NextTask::kIrradiance;
 		Inferrence(false);
@@ -449,10 +475,15 @@ void DynamicCubemaps::UpdateCubemap()
 
 	case NextTask::kIrradiance:
 		if (activeReflections)
-			nextTask = NextTask::kInferrence2;
+			nextTask = NextTask::kCapture2;
 		else
 			nextTask = NextTask::kCapture;
 		Irradiance(false);
+		break;
+
+	case NextTask::kCapture2:
+		UpdateCubemapCapture(true);
+		nextTask = NextTask::kInferrence2;
 		break;
 
 	case NextTask::kInferrence2:
@@ -463,11 +494,6 @@ void DynamicCubemaps::UpdateCubemap()
 	case NextTask::kIrradiance2:
 		nextTask = NextTask::kCapture;
 		Irradiance(true);
-		break;
-
-	case NextTask::kCapture:
-		UpdateCubemapCapture();
-		nextTask = NextTask::kInferrence;
 		break;
 	}
 }
@@ -483,6 +509,7 @@ void DynamicCubemaps::PostDeferred()
 void DynamicCubemaps::SetupResources()
 {
 	GetComputeShaderUpdate();
+	GetComputeShaderUpdateReflections();
 	GetComputeShaderInferrence();
 	GetComputeShaderInferrenceReflections();
 	GetComputeShaderSpecularIrradiance();
@@ -537,6 +564,18 @@ void DynamicCubemaps::SetupResources()
 		envCapturePositionTexture = new Texture2D(texDesc);
 		envCapturePositionTexture->CreateSRV(srvDesc);
 		envCapturePositionTexture->CreateUAV(uavDesc);
+
+		envCaptureReflectionsTexture = new Texture2D(texDesc);
+		envCaptureReflectionsTexture->CreateSRV(srvDesc);
+		envCaptureReflectionsTexture->CreateUAV(uavDesc);
+
+		envCaptureRawReflectionsTexture = new Texture2D(texDesc);
+		envCaptureRawReflectionsTexture->CreateSRV(srvDesc);
+		envCaptureRawReflectionsTexture->CreateUAV(uavDesc);
+
+		envCapturePositionReflectionsTexture = new Texture2D(texDesc);
+		envCapturePositionReflectionsTexture->CreateSRV(srvDesc);
+		envCapturePositionReflectionsTexture->CreateUAV(uavDesc);
 
 		texDesc.Format = DXGI_FORMAT_R11G11B10_FLOAT;
 		srvDesc.Format = texDesc.Format;

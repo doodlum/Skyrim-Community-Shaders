@@ -48,6 +48,8 @@ public:
 	};
 
 	ID3D11ComputeShader* updateCubemapCS = nullptr;
+	ID3D11ComputeShader* updateCubemapReflectionsCS = nullptr;
+
 	ConstantBuffer* updateCubemapCB = nullptr;
 
 	ID3D11ComputeShader* inferCubemapCS = nullptr;
@@ -56,6 +58,12 @@ public:
 	Texture2D* envCaptureTexture = nullptr;
 	Texture2D* envCaptureRawTexture = nullptr;
 	Texture2D* envCapturePositionTexture = nullptr;
+
+	
+	Texture2D* envCaptureReflectionsTexture = nullptr;
+	Texture2D* envCaptureRawReflectionsTexture = nullptr;
+	Texture2D* envCapturePositionReflectionsTexture = nullptr;
+
 	Texture2D* envInferredTexture = nullptr;
 
 	ID3D11ShaderResourceView* defaultCubemap = nullptr;
@@ -68,8 +76,9 @@ public:
 	{
 		kCapture,
 		kInferrence,
-		kInferrence2,
 		kIrradiance,
+		kCapture2,
+		kInferrence2,
 		kIrradiance2
 	};
 
@@ -131,11 +140,12 @@ public:
 
 	virtual void ClearShaderCache() override;
 	ID3D11ComputeShader* GetComputeShaderUpdate();
+	ID3D11ComputeShader* GetComputeShaderUpdateReflections();
 	ID3D11ComputeShader* GetComputeShaderInferrence();
 	ID3D11ComputeShader* GetComputeShaderInferrenceReflections();
 	ID3D11ComputeShader* GetComputeShaderSpecularIrradiance();
 
-	void UpdateCubemapCapture();
+	void UpdateCubemapCapture(bool a_reflections);
 
 	void Inferrence(bool a_reflections);
 

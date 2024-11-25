@@ -88,9 +88,6 @@ float4 GetReflectionColor(
 					binaryMinRaySample = binaryRaySample;
 			}
 
-			// Cubemap skies blend better
-			float skyFadeFactor = iterationDepth != 1.0;
-
 			// Fade based on ray length
 			float ssrMarchingRadiusFadeFactor = 1.0 - saturate(length(binaryRaySample - projPosition) / rayLength);
 
@@ -110,7 +107,7 @@ float4 GetReflectionColor(
 			// Fade out around screen edges
 			float2 centerDistanceFadeFactor = sqrt(saturate(1.0 - centerDistance));
 
-			float fadeFactor = depthThicknessFactor * skyFadeFactor * sqrt(ssrMarchingRadiusFadeFactor) * min(centerDistanceFadeFactor.x, centerDistanceFadeFactor.y);
+			float fadeFactor = depthThicknessFactor * sqrt(ssrMarchingRadiusFadeFactor) * min(centerDistanceFadeFactor.x, centerDistanceFadeFactor.y);
 
 			if (fadeFactor > 0.0) {
 				float3 color = ColorTex.SampleLevel(ColorSampler, ConvertRaySample(binaryRaySample.xy, eyeIndex), 0);
