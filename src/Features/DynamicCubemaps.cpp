@@ -303,8 +303,7 @@ void DynamicCubemaps::UpdateCubemapCapture(bool a_reflections)
 	context->CSSetShaderResources(0, 2, srvs);
 
 	ID3D11UnorderedAccessView* uavs[3];
-	if (a_reflections)
-	{
+	if (a_reflections) {
 		uavs[0] = envCaptureReflectionsTexture->uav.get();
 		uavs[1] = envCaptureRawReflectionsTexture->uav.get();
 		uavs[2] = envCapturePositionReflectionsTexture->uav.get();

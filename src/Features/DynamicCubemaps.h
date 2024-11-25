@@ -59,7 +59,6 @@ public:
 	Texture2D* envCaptureRawTexture = nullptr;
 	Texture2D* envCapturePositionTexture = nullptr;
 
-	
 	Texture2D* envCaptureReflectionsTexture = nullptr;
 	Texture2D* envCaptureRawReflectionsTexture = nullptr;
 	Texture2D* envCapturePositionReflectionsTexture = nullptr;
