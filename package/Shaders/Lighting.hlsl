@@ -2559,6 +2559,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	dynamicCubemap = true;
 	envColor = 1.0;
 	envRoughness = 0.0;
+	color.xyz = 0;
 #			endif
 #		endif
 #	endif

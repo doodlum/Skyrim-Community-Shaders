@@ -50,22 +50,10 @@ float3 GetSamplingVector(uint3 ThreadID, in RWTexture2DArray<float4> OutputTextu
 	return normalize(result);
 }
 
-cbuffer UpdateData : register(b1)
+cbuffer UpdateData : register(b0)
 {
-	uint Reset;
 	float3 CameraPreviousPosAdjust2;
-}
-
-bool IsSaturated(float value) { return value == saturate(value); }
-bool IsSaturated(float2 value) { return IsSaturated(value.x) && IsSaturated(value.y); }
-
-// Inverse project UV + raw depth into world space.
-float3 InverseProjectUVZ(float2 uv, float z)
-{
-	uv.y = 1 - uv.y;
-	float4 cp = float4(float3(uv, z) * 2 - 1, 1);
-	float4 vp = mul(CameraViewProjInverse[0], cp);
-	return float3(vp.xy, vp.z) / vp.w;
+	uint padb10;
 }
 
 float smoothbumpstep(float edge0, float edge1, float x)
@@ -80,14 +68,7 @@ float smoothbumpstep(float edge0, float edge1, float x)
 	float3 viewDirection = FrameBuffer::WorldToView(captureDirection, false);
 	float2 uv = FrameBuffer::ViewToUV(viewDirection, false);
 
-	if (Reset) {
-		DynamicCubemap[ThreadID] = 0.0;
-		DynamicCubemapRaw[ThreadID] = 0.0;
-		DynamicCubemapPosition[ThreadID] = 0.0;
-		return;
-	}
-
-	if (IsSaturated(uv) && viewDirection.z < 0.0) {  // Check that the view direction exists in screenspace and that it is in front of the camera
+	if (!FrameBuffer::isOutsideFrame(uv) && viewDirection.z < 0.0) {  // Check that the view direction exists in screenspace and that it is in front of the camera
 		float3 color = 0.0;
 		float3 position = 0.0;
 		float weight = 0.0;

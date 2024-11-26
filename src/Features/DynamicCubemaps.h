@@ -43,8 +43,8 @@ public:
 
 	struct alignas(16) UpdateCubemapCB
 	{
-		uint Reset;
 		float3 CameraPreviousPosAdjust;
+		uint pad0;
 	};
 
 	ID3D11ComputeShader* updateCubemapCS = nullptr;
@@ -68,7 +68,7 @@ public:
 	ID3D11ShaderResourceView* defaultCubemap = nullptr;
 
 	bool activeReflections = false;
-	bool resetCapture = true;
+	bool resetCapture[2] = { true, true };
 	bool recompileFlag = false;
 
 	enum class NextTask

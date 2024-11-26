@@ -202,8 +202,11 @@ RE::BSEventNotifyControl MenuOpenCloseEventHandler::ProcessEvent(const RE::MenuO
 {
 	// When entering a new cell, reset the capture
 	if (a_event->menuName == RE::LoadingMenu::MENU_NAME) {
-		if (!a_event->opening)
-			DynamicCubemaps::GetSingleton()->resetCapture = true;
+		if (!a_event->opening) {
+			auto dynamicCubemaps = DynamicCubemaps::GetSingleton();
+			dynamicCubemaps->resetCapture[0] = true;
+			dynamicCubemaps->resetCapture[1] = true;
+		}
 	}
 	return RE::BSEventNotifyControl::kContinue;
 }
@@ -302,6 +305,8 @@ void DynamicCubemaps::UpdateCubemapCapture(bool a_reflections)
 	ID3D11ShaderResourceView* srvs[2] = { depth.depthSRV, main.SRV };
 	context->CSSetShaderResources(0, 2, srvs);
 
+	uint index = a_reflections ? 1 : 0;
+
 	ID3D11UnorderedAccessView* uavs[3];
 	if (a_reflections) {
 		uavs[0] = envCaptureReflectionsTexture->uav.get();
@@ -313,27 +318,30 @@ void DynamicCubemaps::UpdateCubemapCapture(bool a_reflections)
 		uavs[2] = envCapturePositionTexture->uav.get();
 	}
 
+	if (resetCapture[index])
+	{
+		float clearColor[4]{ 0, 0, 0, 0 };
+		context->ClearUnorderedAccessViewFloat(uavs[0], clearColor);
+		context->ClearUnorderedAccessViewFloat(uavs[1], clearColor);
+		context->ClearUnorderedAccessViewFloat(uavs[2], clearColor);
+		resetCapture[index] = false;
+	}
+
 	context->CSSetUnorderedAccessViews(0, 3, uavs, nullptr);
 
-	ID3D11Buffer* buffers[2];
-	context->PSGetConstantBuffers(12, 1, buffers);
-
 	UpdateCubemapCB updateData{};
-	updateData.Reset = resetCapture;
 
-	static float3 cameraPreviousPosAdjust = { 0, 0, 0 };
-	updateData.CameraPreviousPosAdjust = cameraPreviousPosAdjust;
+	static float3 cameraPreviousPosAdjust[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
+	updateData.CameraPreviousPosAdjust = cameraPreviousPosAdjust[index];
 
 	auto eyePosition = Util::GetEyePosition(0);
 
-	cameraPreviousPosAdjust = { eyePosition.x, eyePosition.y, eyePosition.z };
+	cameraPreviousPosAdjust[index] = { eyePosition.x, eyePosition.y, eyePosition.z };
 
 	updateCubemapCB->Update(updateData);
-	buffers[1] = updateCubemapCB->CB();
 
-	context->CSSetConstantBuffers(0, 2, buffers);
-
-	resetCapture = false;
+	ID3D11Buffer* buffer = updateCubemapCB->CB();
+	context->CSSetConstantBuffers(0, 1, &buffer);
 
 	context->CSSetSamplers(0, 1, &computeSampler);
 
@@ -350,9 +358,8 @@ void DynamicCubemaps::UpdateCubemapCapture(bool a_reflections)
 	srvs[1] = nullptr;
 	context->CSSetShaderResources(0, 2, srvs);
 
-	buffers[0] = nullptr;
-	buffers[1] = nullptr;
-	context->CSSetConstantBuffers(0, 2, buffers);
+	buffer = nullptr;
+	context->CSSetConstantBuffers(0, 1, &buffer);
 
 	context->CSSetShader(nullptr, nullptr, 0);
 
