@@ -318,8 +318,7 @@ void DynamicCubemaps::UpdateCubemapCapture(bool a_reflections)
 		uavs[2] = envCapturePositionTexture->uav.get();
 	}
 
-	if (resetCapture[index])
-	{
+	if (resetCapture[index]) {
 		float clearColor[4]{ 0, 0, 0, 0 };
 		context->ClearUnorderedAccessViewFloat(uavs[0], clearColor);
 		context->ClearUnorderedAccessViewFloat(uavs[1], clearColor);
