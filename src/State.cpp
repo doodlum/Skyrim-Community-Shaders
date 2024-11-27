@@ -36,7 +36,6 @@ const RE::hkpCapsuleShape* GetNodeCapsuleShape(RE::bhkNiCollisionObject* a_colli
 	return nullptr;
 }
 
-
 void State::Draw()
 {
 	const auto& shaderCache = SIE::ShaderCache::Instance();
@@ -690,7 +689,7 @@ bool GetCapsuleParams(RE::NiAVObject* a_node, State::Capsule& a_outCapsule)
 				auto radius = hkpCapsuleShape->radius * bhkInvWorldScale;
 				auto a = (HkVectorToNiPoint(hkpCapsuleShape->vertexA) * bhkInvWorldScale);
 				auto b = (HkVectorToNiPoint(hkpCapsuleShape->vertexB) * bhkInvWorldScale);
-				
+
 				auto& hkTransform = hkpRigidBody->motion.motionState.transform;
 				RE::NiTransform transform = HkTransformToNiTransform(hkTransform);
 
@@ -714,11 +713,11 @@ bool GetCapsuleParams(RE::NiAVObject* a_node, State::Capsule& a_outCapsule)
 void State::UpdateSharedData()
 {
 	{
-		SharedDataCB data{};	
-		
+		SharedDataCB data{};
+
 		int numCapsules = 0;
 		auto eyePosition = Util::GetEyePosition(0);
-		
+
 		if (auto player = RE::PlayerCharacter::GetSingleton()) {
 			if (auto root = player->Get3D(false)) {
 				RE::BSVisit::TraverseScenegraphObjects(root, [&](RE::NiAVObject* a_node) -> RE::BSVisit::BSVisitControl {
@@ -737,7 +736,7 @@ void State::UpdateSharedData()
 					return RE::BSVisit::BSVisitControl::kContinue;
 				});
 			}
-		}	
+		}
 
 		data.CapsuleInfo.x = (float)numCapsules;
 
