@@ -19,6 +19,24 @@
 #include "Streamline.h"
 #include "Upscaling.h"
 
+const RE::hkpCapsuleShape* GetNodeCapsuleShape(RE::bhkNiCollisionObject* a_collisionObject)
+{
+	RE::bhkRigidBody* rigidBody = a_collisionObject->body.get() ? a_collisionObject->body.get()->AsBhkRigidBody() : nullptr;
+
+	if (rigidBody && rigidBody->referencedObject) {
+		RE::hkpRigidBody* hkpRigidBody = static_cast<RE::hkpRigidBody*>(rigidBody->referencedObject.get());
+		const RE::hkpShape* hkpShape = hkpRigidBody->collidable.shape;
+		if (hkpShape->type == RE::hkpShapeType::kCapsule) {
+			auto hkpCapsuleShape = static_cast<const RE::hkpCapsuleShape*>(hkpShape);
+
+			return hkpCapsuleShape;
+		}
+	}
+
+	return nullptr;
+}
+
+
 void State::Draw()
 {
 	const auto& shaderCache = SIE::ShaderCache::Instance();
@@ -629,10 +647,99 @@ void State::SetAdapterDescription(const std::wstring& description)
 	adapterDescription = converter.to_bytes(description);
 }
 
+[[nodiscard]] inline RE::NiPoint3 HkVectorToNiPoint(const RE::hkVector4& vec) { return { vec.quad.m128_f32[0], vec.quad.m128_f32[1], vec.quad.m128_f32[2] }; }
+
+void HkMatrixToNiMatrix(const RE::hkMatrix3& a_hkMat, RE::NiMatrix3& a_niMat)
+{
+	a_niMat.entry[0][0] = a_hkMat.col0.quad.m128_f32[0];
+	a_niMat.entry[1][0] = a_hkMat.col0.quad.m128_f32[1];
+	a_niMat.entry[2][0] = a_hkMat.col0.quad.m128_f32[2];
+
+	a_niMat.entry[0][1] = a_hkMat.col1.quad.m128_f32[0];
+	a_niMat.entry[1][1] = a_hkMat.col1.quad.m128_f32[1];
+	a_niMat.entry[2][1] = a_hkMat.col1.quad.m128_f32[2];
+
+	a_niMat.entry[0][2] = a_hkMat.col2.quad.m128_f32[0];
+	a_niMat.entry[1][2] = a_hkMat.col2.quad.m128_f32[1];
+	a_niMat.entry[2][2] = a_hkMat.col2.quad.m128_f32[2];
+}
+
+RE::NiTransform HkTransformToNiTransform(const RE::hkTransform& a_hkTransform)
+{
+	RE::NiTransform result;
+	HkMatrixToNiMatrix(a_hkTransform.rotation, result.rotate);
+	result.translate = HkVectorToNiPoint(a_hkTransform.translation * RE::bhkWorld::GetWorldScaleInverse());
+	result.scale = 1.f;
+
+	return result;
+}
+
+bool GetCapsuleParams(RE::NiAVObject* a_node, State::Capsule& a_outCapsule)
+{
+	if (a_node && a_node->collisionObject) {
+		auto collisionObject = static_cast<RE::bhkCollisionObject*>(a_node->collisionObject.get());
+		auto rigidBody = collisionObject->GetRigidBody();
+
+		if (rigidBody && rigidBody->referencedObject) {
+			RE::hkpRigidBody* hkpRigidBody = static_cast<RE::hkpRigidBody*>(rigidBody->referencedObject.get());
+			const RE::hkpShape* hkpShape = hkpRigidBody->collidable.shape;
+			if (hkpShape->type == RE::hkpShapeType::kCapsule) {
+				auto hkpCapsuleShape = static_cast<const RE::hkpCapsuleShape*>(hkpShape);
+				float bhkInvWorldScale = RE::bhkWorld::GetWorldScaleInverse();
+
+				auto radius = hkpCapsuleShape->radius * bhkInvWorldScale;
+				auto a = (HkVectorToNiPoint(hkpCapsuleShape->vertexA) * bhkInvWorldScale);
+				auto b = (HkVectorToNiPoint(hkpCapsuleShape->vertexB) * bhkInvWorldScale);
+				
+				auto& hkTransform = hkpRigidBody->motion.motionState.transform;
+				RE::NiTransform transform = HkTransformToNiTransform(hkTransform);
+
+				a = transform * a;
+				b = transform * b;
+
+				//a += a_node->world.translate;
+				//b += a_node->world.translate;
+
+				a_outCapsule.TopPosRadius = { a.x, a.y, a.z, radius };
+				a_outCapsule.BottomPos = { b.x, b.y, b.z, 0.0f };
+
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 void State::UpdateSharedData()
 {
 	{
-		SharedDataCB data{};
+		SharedDataCB data{};	
+		
+		int numCapsules = 0;
+		auto eyePosition = Util::GetEyePosition(0);
+		
+		if (auto player = RE::PlayerCharacter::GetSingleton()) {
+			if (auto root = player->Get3D(false)) {
+				RE::BSVisit::TraverseScenegraphObjects(root, [&](RE::NiAVObject* a_node) -> RE::BSVisit::BSVisitControl {
+					if (GetCapsuleParams(a_node, data.Capsules[numCapsules])) {
+						data.Capsules[numCapsules].TopPosRadius.x -= eyePosition.x;
+						data.Capsules[numCapsules].TopPosRadius.y -= eyePosition.y;
+						data.Capsules[numCapsules].TopPosRadius.z -= eyePosition.z;
+
+						data.Capsules[numCapsules].BottomPos.x -= eyePosition.x;
+						data.Capsules[numCapsules].BottomPos.y -= eyePosition.y;
+						data.Capsules[numCapsules].BottomPos.z -= eyePosition.z;
+
+						numCapsules++;
+					}
+
+					return RE::BSVisit::BSVisitControl::kContinue;
+				});
+			}
+		}	
+
+		data.CapsuleInfo.x = (float)numCapsules;
 
 		const auto& shaderManager = RE::BSShaderManager::State::GetSingleton();
 		const RE::NiTransform& dalcTransform = shaderManager.directionalAmbientTransform;

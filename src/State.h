@@ -49,6 +49,12 @@ public:
 		TEST
 	};
 
+	struct Capsule
+	{
+		float4 TopPosRadius;
+		float4 BottomPos;
+	};
+
 	void Draw();
 	void Reset();
 	void Setup();
@@ -139,6 +145,8 @@ public:
 
 	struct alignas(16) SharedDataCB
 	{
+		Capsule Capsules[32];
+		float4 CapsuleInfo;
 		float4 WaterData[25];
 		DirectX::XMFLOAT3X4 DirectionalAmbient;
 		float4 DirLightDirection;
