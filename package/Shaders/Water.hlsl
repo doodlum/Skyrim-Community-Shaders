@@ -379,7 +379,7 @@ cbuffer PerGeometry : register(b2)
 #		endif  //VR
 }
 
-#	if defined(VR)
+#		if defined(VR)
 /**
 Calculates the depthMultiplier as used in Water.hlsl
 
