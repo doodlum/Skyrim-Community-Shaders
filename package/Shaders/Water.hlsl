@@ -379,12 +379,7 @@ cbuffer PerGeometry : register(b2)
 #		endif  //VR
 }
 
-#		ifdef VR
-float GetStencil(float2 uv)
-{
-	return DepthTex.Load(int3(uv * BufferDim.xy * DynamicResolutionParams1.xy, 0)).g;
-}
-
+#	if defined(VR)
 /**
 Calculates the depthMultiplier as used in Water.hlsl
 
@@ -577,11 +572,15 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 			float3 dynamicCubemap = specularTexture.SampleLevel(CubeMapSampler, R, 0);
 #				endif
 
-			reflectionColor =
-#				if defined(VR)  // use stencil to ignore player character
-				GetStencil(R.xy) == 0 ? CubeMapTex.SampleLevel(CubeMapSampler, R, 0).xyz :
+#				if defined(VR)
+			// Reflection cubemap is incorrect for interiors in VR, ignore it
+			if (PixelShaderDescriptor & WaterFlags::Interior)
+				reflectionColor = dynamicCubemap.xyz;
+			else
+				reflectionColor = lerp(dynamicCubemap.xyz, CubeMapTex.SampleLevel(CubeMapSampler, R, 0).xyz, saturate(length(input.WPosition.xyz) / 1024.0));
+#				else
+			reflectionColor = lerp(dynamicCubemap.xyz, CubeMapTex.SampleLevel(CubeMapSampler, R, 0).xyz, saturate(length(input.WPosition.xyz) / 1024.0));
 #				endif
-										lerp(dynamicCubemap.xyz, CubeMapTex.SampleLevel(CubeMapSampler, R, 0).xyz, saturate(length(input.WPosition.xyz) * 0.0001));
 #			else
 			reflectionColor = CubeMapTex.SampleLevel(CubeMapSampler, R, 0).xyz;
 #			endif
@@ -616,8 +615,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 #			endif
 
 		float3 finalReflectionColor = Color::LinearToGamma(lerp(Color::GammaToLinear(reflectionColor), Color::GammaToLinear(finalSsrReflectionColor), ssrFraction));
-
-		return lerp(ReflectionColor.xyz, finalReflectionColor, VarAmounts.y);
+		return finalReflectionColor;
 	}
 	return ReflectionColor.xyz * VarAmounts.y;
 }
