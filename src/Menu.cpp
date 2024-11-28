@@ -951,35 +951,39 @@ void Menu::DrawDisableAtBootSettings()
 
 void Menu::DrawDisplaySettings()
 {
-	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
+	if (!State::GetSingleton()->upscalerLoaded) {
+		auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
-	const std::vector<std::pair<std::string, std::function<void()>>> features = {
-		{ "Upscaling", []() { Upscaling::GetSingleton()->DrawSettings(); } },
-		{ "Frame Generation", []() { Streamline::GetSingleton()->DrawSettings(); } }
-	};
+		const std::vector<std::pair<std::string, std::function<void()>>> features = {
+			{ "Upscaling", []() { Upscaling::GetSingleton()->DrawSettings(); } },
+			{ "Frame Generation", []() { Streamline::GetSingleton()->DrawSettings(); } }
+		};
 
-	for (const auto& [featureName, drawFunc] : features) {
-		bool isDisabled = State::GetSingleton()->IsFeatureDisabled(featureName);
+		for (const auto& [featureName, drawFunc] : features) {
+			bool isDisabled = State::GetSingleton()->IsFeatureDisabled(featureName);
 
-		if (featureName == "Frame Generation" && REL::Module::IsVR()) {
-			isDisabled = true;
-		}
-
-		if (!isDisabled) {
-			if (ImGui::CollapsingHeader(featureName.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
-				drawFunc();
+			if (featureName == "Frame Generation" && REL::Module::IsVR()) {
+				isDisabled = true;
 			}
-		} else {
-			ImGui::PushStyleColor(ImGuiCol_Text, themeSettings.StatusPalette.Disable);
-			ImGui::CollapsingHeader(featureName.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen);
-			ImGui::PopStyleColor();
-			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text(
-					"%s has been disabled at boot. "
-					"Reenable in the Advanced -> Disable at Boot Menu.",
-					featureName.c_str());
+
+			if (!isDisabled) {
+				if (ImGui::CollapsingHeader(featureName.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+					drawFunc();
+				}
+			} else {
+				ImGui::PushStyleColor(ImGuiCol_Text, themeSettings.StatusPalette.Disable);
+				ImGui::CollapsingHeader(featureName.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen);
+				ImGui::PopStyleColor();
+				if (auto _tt = Util::HoverTooltipWrapper()) {
+					ImGui::Text(
+						"%s has been disabled at boot. "
+						"Reenable in the Advanced -> Disable at Boot Menu.",
+						featureName.c_str());
+				}
 			}
 		}
+	} else {
+		ImGui::Text("Display options disabled due to Skyrim Upscaler");
 	}
 }
 
