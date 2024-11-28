@@ -201,7 +201,12 @@ VS_OUTPUT main(VS_INPUT input)
 #		endif  // RENDER_DEPTH
 
 	float perInstanceFade = dot(cb8[(asuint(cb7[0].x) >> 2)].xyzw, Math::IdentityMatrix[(asint(cb7[0].x) & 3)].xyzw);
-	float distanceFade = 1 - saturate((length(mul(WorldViewProj[0], msPosition).xyz) - AlphaParam1) / AlphaParam2);
+
+#		if defined(VR)
+	float distanceFade = 1 - saturate((length(mul(World[0], msPosition).xyz) - AlphaParam1) / AlphaParam2);
+#		else
+	float distanceFade = 1 - saturate((length(projSpacePosition.xyz) - AlphaParam1) / AlphaParam2);
+#		endif
 
 	// Note: input.Color.w is used for wind speed
 	vsout.VertexColor.xyz = input.Color.xyz * input.InstanceData1.www;
@@ -266,7 +271,12 @@ VS_OUTPUT main(VS_INPUT input)
 	float3 diffuseMultiplier = input.InstanceData1.www * input.Color.xyz;
 
 	float perInstanceFade = dot(cb8[(asuint(cb7[0].x) >> 2)].xyzw, Math::IdentityMatrix[(asint(cb7[0].x) & 3)].xyzw);
+
+#		if defined(VR)
+	float distanceFade = 1 - saturate((length(mul(World[0], msPosition).xyz) - AlphaParam1) / AlphaParam2);
+#		else
 	float distanceFade = 1 - saturate((length(projSpacePosition.xyz) - AlphaParam1) / AlphaParam2);
+#		endif
 
 	vsout.DiffuseColor.xyz = diffuseMultiplier;
 	vsout.DiffuseColor.w = distanceFade * perInstanceFade;
