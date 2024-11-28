@@ -10,9 +10,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 void VolumetricLighting::DrawSettings()
 {
 	if (ImGui::TreeNodeEx("Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-		if (!State::GetSingleton()->isVR) {
-			RenderImGuiSettingsTree(VLSettings, "Skyrim Settings");
-		} else {
+		if (State::GetSingleton()->isVR) {
 			if (ImGui::Checkbox("Enable Volumetric Lighting in VR", reinterpret_cast<bool*>(&settings.EnabledVL))) {
 				if (auto _tt = Util::HoverTooltipWrapper()) {
 					ImGui::Text("Enable Volumetric Lighting in VR");
@@ -21,7 +19,6 @@ void VolumetricLighting::DrawSettings()
 			}
 			if (settings.EnabledVL) {
 				RenderImGuiSettingsTree(VLSettings, "Skyrim Settings");
-				RenderImGuiSettingsTree(hiddenVRSettings, "hiddenVR");
 			}
 		}
 		ImGui::Spacing();
