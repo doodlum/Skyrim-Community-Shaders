@@ -11,7 +11,7 @@ struct ScreenSpaceShadows : Feature
 		return &singleton;
 	}
 
-	virtual inline std::string GetName() override { return "Screen-Space Shadows"; }
+	virtual inline std::string GetName() override { return "Screen Space Shadows"; }
 	virtual inline std::string GetShortName() override { return "ScreenSpaceShadows"; }
 	virtual inline std::string_view GetShaderDefineName() override { return "SCREEN_SPACE_SHADOWS"; }
 	bool HasShaderDefine(RE::BSShader::Type shaderType) override;
