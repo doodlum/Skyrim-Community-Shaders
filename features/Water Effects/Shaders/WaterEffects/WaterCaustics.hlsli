@@ -1,6 +1,6 @@
 Texture2D<float4> WaterCaustics : register(t70);
 
-namespace WaterLighting
+namespace WaterEffects
 {
 	float2 PanCausticsUV(float2 uv, float speed, float tiling)
 	{
