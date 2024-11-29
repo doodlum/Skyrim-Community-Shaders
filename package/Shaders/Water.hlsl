@@ -433,12 +433,12 @@ float3 GetFlowmapNormal(PS_INPUT input, float2 uvShift, float multiplier, float 
 #			endif
 
 #			if (defined(FLOWMAP) && !defined(BLEND_NORMALS)) || defined(LOD)
-#				undef WATER_LIGHTING
+#				undef WATER_EFFECTS
 #			endif
 
-#			if defined(WATER_LIGHTING) && !defined(VC)
+#			if defined(WATER_EFFECTS) && !defined(VC)
 #				define WATER_PARALLAX
-#				include "WaterLighting/WaterParallax.hlsli"
+#				include "WaterEffects/WaterParallax.hlsli"
 #			endif
 
 #			if defined(DYNAMIC_CUBEMAPS)
@@ -450,7 +450,7 @@ float3 GetWaterNormal(PS_INPUT input, float distanceFactor, float normalsDepthFa
 	float3 normalScalesRcp = rcp(input.NormalsScale.xyz);
 
 #			if defined(WATER_PARALLAX)
-	float2 parallaxOffset = WaterLighting::GetParallaxOffset(input, normalScalesRcp);
+	float2 parallaxOffset = WaterEffects::GetParallaxOffset(input, normalScalesRcp);
 #			endif
 
 #			if defined(FLOWMAP)

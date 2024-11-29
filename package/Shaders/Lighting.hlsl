@@ -928,7 +928,7 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		undef LIGHT_LIMIT_FIX
 #		undef WETNESS_EFFECTS
 #		undef DYNAMIC_CUBEMAPS
-#		undef WATER_LIGHTING
+#		undef WATER_EFFECTS
 #	endif
 
 #	if defined(WORLD_MAP)
@@ -936,8 +936,8 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		undef SKYLIGHTING
 #	endif
 
-#	if defined(WATER_LIGHTING)
-#		include "WaterLighting/WaterCaustics.hlsli"
+#	if defined(WATER_EFFECTS)
+#		include "WaterEffects/WaterCaustics.hlsli"
 #	endif
 
 #	if defined(EYE)
@@ -1853,6 +1853,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 dirLightColor = DirLightColor.xyz;
 	float3 dirLightColorMultiplier = 1;
+<<<<<<< Updated upstream
+=======
+
+#	if defined(WATER_EFFECTS)
+	dirLightColorMultiplier *= WaterEffects::ComputeCaustics(waterData, input.WorldPosition.xyz, worldSpaceNormal);
+#	endif
+
+>>>>>>> Stashed changes
 	float selfShadowFactor = 1.0f;
 
 	float3 normalizedDirLightDirectionWS = DirLightDirection;
