@@ -27,7 +27,7 @@ namespace WaterLighting
 			float2 causticsUV2 = PanCausticsUV(causticsUV, 1.0 * 0.2, -0.5);
 
 			float3 causticsHigh = 1.0;
-			
+
 			if (causticsFade > 0.0)
 				causticsHigh = min(SampleCaustics(causticsUV1), SampleCaustics(causticsUV2)) * 4.0;
 
