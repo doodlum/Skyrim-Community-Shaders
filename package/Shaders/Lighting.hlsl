@@ -1818,7 +1818,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 wetnessNormal = worldSpaceNormal;
 
-	float3 puddleCoords = ((input.WorldPosition.xyz + CameraPosAdjust[0].xyz) * 0.5 + 0.5) * 0.01 / wetnessEffectsSettings.PuddleRadius;
+	float3 puddleCoords = ((input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz) * 0.5 + 0.5) * 0.01 / wetnessEffectsSettings.PuddleRadius;
 	float puddle = wetness;
 	if (wetness > 0.0 || puddleWetness > 0) {
 #		if !defined(SKINNED)
