@@ -1853,11 +1853,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 dirLightColor = DirLightColor.xyz;
 	float3 dirLightColorMultiplier = 1;
-
-#	if defined(WATER_LIGHTING)
-	dirLightColorMultiplier *= WaterLighting::ComputeCaustics(waterData, input.WorldPosition.xyz, eyeIndex);
-#	endif
-
 	float selfShadowFactor = 1.0f;
 
 	float3 normalizedDirLightDirectionWS = DirLightDirection;
@@ -1958,13 +1953,21 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		dirShadow *= terrainShadow;
 		inDirShadow = inDirShadow || dirShadow == 0.0;
 #	endif
-	}
 
 #	if defined(CLOUD_SHADOWS)
-	if (!inDirShadow) {
-		dirShadow *= CloudShadows::GetCloudShadowMult(input.WorldPosition.xyz, SampColorSampler);
-	}
+		if (!inDirShadow) {
+			dirShadow *= CloudShadows::GetCloudShadowMult(input.WorldPosition.xyz, SampColorSampler);
+			inDirShadow = inDirShadow || dirShadow == 0.0;
+		}
 #	endif
+
+#	if defined(WATER_LIGHTING)
+		if (!inDirShadow) {
+			float4 waterData = SharedData::GetWaterData(input.WorldPosition.xyz);
+			dirShadow *= WaterLighting::ComputeCaustics(waterData, input.WorldPosition.xyz, eyeIndex);
+		}
+#	endif
+	}
 
 	dirLightColorMultiplier *= dirShadow;
 

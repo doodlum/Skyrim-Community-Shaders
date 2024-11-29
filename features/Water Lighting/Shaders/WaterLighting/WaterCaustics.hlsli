@@ -29,7 +29,7 @@ namespace WaterLighting
 			float3 causticsHigh = 1.0;
 			
 			if (causticsFade > 0.0)
-				causticsHigh = min(SampleCaustics(causticsUV1), SampleCaustics(causticsUV2));
+				causticsHigh = min(SampleCaustics(causticsUV1), SampleCaustics(causticsUV2)) * 4.0;
 
 			causticsUV *= 0.5;
 
@@ -39,9 +39,9 @@ namespace WaterLighting
 			float3 causticsLow = 1.0;
 
 			if (causticsFade < 1.0)
-				causticsLow = min(SampleCaustics(causticsUV1), SampleCaustics(causticsUV2));
+				causticsLow = min(SampleCaustics(causticsUV1), SampleCaustics(causticsUV2)) * 4.0;
 
-			return lerp(causticsLow * 4.0, causticsHigh * 4.0, causticsFade);
+			return lerp(causticsLow, causticsHigh, causticsFade);
 		}
 
 		return 1.0;
