@@ -50,7 +50,7 @@ float3 GetTonemapFactorHejlBurgessDawson(float3 luminance)
 	       pow(((tmp * 6.2 + 0.5) * tmp) / (tmp * (tmp * 6.2 + 1.7) + 0.06), Color::GammaCorrectionValue);
 }
 
-#	include "Common/DICETonemapper.hlsli"
+#	include "Common/DisplayMapping.hlsli"
 
 PS_OUTPUT main(PS_INPUT input)
 {
@@ -107,11 +107,10 @@ PS_OUTPUT main(PS_INPUT input)
 		inputColor *= avgValue.y / avgValue.x;
 
 		float3 blendedColor;
-		float3 blendFactor;
-		if (Param.z > 0.5) {
-			blendedColor = HuePreservingHejlBurgessDawson(inputColor);
+		[branch] if (Param.z > 0.5) {
+			blendedColor = DisplayMapping::HuePreservingHejlBurgessDawson(inputColor);
 		} else {
-			blendedColor = HuePreservingReinhard(inputColor);
+			blendedColor = DisplayMapping::HuePreservingReinhard(inputColor);
 		}
 
 		blendedColor += saturate(Param.x - blendedColor) * bloomColor;
@@ -120,11 +119,10 @@ PS_OUTPUT main(PS_INPUT input)
 
 		float blendedLuminance = Color::RGBToLuminance(blendedColor);
 
-		float3 linearColor = Cinematic.w * lerp(lerp(blendedLuminance, float4(blendedColor, 1), Cinematic.x), blendedLuminance * Tint, Tint.w).xyz;
+		float3 linearColor = Cinematic.w * lerp(lerp(blendedLuminance, blendedColor, Cinematic.x), blendedLuminance * Tint, Tint.w).xyz;
 
 		linearColor = lerp(avgValue.x, linearColor, Cinematic.z);
 
-		gameSdrColor = max(0, gameSdrColor);
 		ppColor = max(0, linearColor);
 	}
 
