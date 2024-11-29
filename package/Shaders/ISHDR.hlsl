@@ -107,9 +107,12 @@ PS_OUTPUT main(PS_INPUT input)
 		inputColor *= avgValue.y / avgValue.x;
 
 		float3 blendedColor;
-		[branch] if (Param.z > 0.5) {
+		[branch] if (Param.z > 0.5)
+		{
 			blendedColor = DisplayMapping::HuePreservingHejlBurgessDawson(inputColor);
-		} else {
+		}
+		else
+		{
 			blendedColor = DisplayMapping::HuePreservingReinhard(inputColor);
 		}
 
