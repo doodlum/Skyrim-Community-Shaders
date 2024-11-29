@@ -68,7 +68,7 @@ float smoothbumpstep(float edge0, float edge1, float x)
 	float3 viewDirection = FrameBuffer::WorldToView(captureDirection, false);
 	float2 uv = FrameBuffer::ViewToUV(viewDirection, false);
 
-	if (!FrameBuffer::isOutsideFrame(uv) && viewDirection.z < 0.0) {  // Check that the view direction exists in screenspace and that it is in front of the camera
+	if (!FrameBuffer::IsOutsideFrame(uv) && viewDirection.z < 0.0) {  // Check that the view direction exists in screenspace and that it is in front of the camera
 		float3 color = 0.0;
 		float3 position = 0.0;
 		float weight = 0.0;

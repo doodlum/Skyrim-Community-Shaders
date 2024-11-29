@@ -129,7 +129,7 @@ namespace FrameBuffer
 	* @param[in] dynamicres Optional flag indicating whether dynamic resolution is applied. Default is false.
 	* @return True if the UV coordinates are outside the frame, false otherwise.
 	*/
-	bool isOutsideFrame(float2 uv, bool dynamicres = false)
+	bool IsOutsideFrame(float2 uv, bool dynamicres = false)
 	{
 		float2 max = dynamicres ? DynamicResolutionParams1.xy : float2(1, 1);
 		return any(uv < float2(0, 0) || uv > max.xy);

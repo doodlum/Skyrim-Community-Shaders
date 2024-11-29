@@ -55,7 +55,7 @@ float4 GetReflectionColor(
 		prevRaySample = raySample;
 		raySample = projPosition + (float(i) / float(iterations)) * projReflectionDirection;
 
-		if (FrameBuffer::isOutsideFrame(raySample.xy))
+		if (FrameBuffer::IsOutsideFrame(raySample.xy))
 			return 0.0;
 
 		float iterationDepth = DepthTex.SampleLevel(DepthSampler, ConvertRaySample(raySample.xy, eyeIndex), 0);
@@ -126,7 +126,7 @@ float4 GetReflectionColor(
 				float4 alpha = 0.0;
 
 				// Check that the reprojected data is within the frame
-				if (!FrameBuffer::isOutsideFrame(reprojectedRaySample.xy))
+				if (!FrameBuffer::IsOutsideFrame(reprojectedRaySample.xy))
 					alpha = float4(AlphaTex.SampleLevel(AlphaSampler, ConvertRaySamplePrevious(reprojectedRaySample.xy, eyeIndex), 0).xyz, 1.0);
 
 				float3 reflectionColor = color + SSRParams.z * alpha.xyz * alpha.w;

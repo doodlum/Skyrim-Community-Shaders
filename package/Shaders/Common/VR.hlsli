@@ -261,12 +261,12 @@ namespace Stereo
 		float3 resultUV = monoUV;
 #		ifdef VR
 		// Check if the UV coordinates are outside the frame
-		if (FrameBuffer::isOutsideFrame(resultUV.xy, false)) {
+		if (FrameBuffer::IsOutsideFrame(resultUV.xy, false)) {
 			// Transition to the other eye
 			float3 otherEyeUV = ConvertMonoUVToOtherEye(resultUV, eyeIndex);
 
 			// Check if the other eye's UV coordinates are within the frame
-			if (!FrameBuffer::isOutsideFrame(otherEyeUV.xy, false)) {
+			if (!FrameBuffer::IsOutsideFrame(otherEyeUV.xy, false)) {
 				resultUV = ConvertToStereoUV(otherEyeUV, 1 - eyeIndex);
 				fromOtherEye = true;  // Indicate that the result is from the other eye
 			}
@@ -328,9 +328,9 @@ namespace Stereo
 		bool dynamicres = false)
 	{
 		// Check validity for color1
-		bool validColor1 = IsNonZeroColor(color1) && !FrameBuffer::isOutsideFrame(uv1.xy, dynamicres);
+		bool validColor1 = IsNonZeroColor(color1) && !FrameBuffer::IsOutsideFrame(uv1.xy, dynamicres);
 		// Check validity for color2
-		bool validColor2 = IsNonZeroColor(color2) && !FrameBuffer::isOutsideFrame(uv2.xy, dynamicres);
+		bool validColor2 = IsNonZeroColor(color2) && !FrameBuffer::IsOutsideFrame(uv2.xy, dynamicres);
 
 		// Calculate alpha values
 		float alpha1 = validColor1 ? color1.a : 0.0f;
