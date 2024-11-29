@@ -412,6 +412,10 @@ cbuffer AlphaTestRefCB : register(b11)
 #		include "Skylighting/Skylighting.hlsli"
 #	endif
 
+#	if defined(WATER_LIGHTING)
+#		include "WaterLighting/WaterCaustics.hlsli"
+#	endif
+
 #	ifdef GRASS_LIGHTING
 #		if defined(TRUE_PBR)
 
@@ -540,7 +544,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float dirShadow = !InInterior ? shadowColor.x : 1.0;
 	float dirDetailShadow = 1.0;
 
-	if (dirShadow > 0.0) {
+	if (dirShadow > 0.0 && !InInterior) {
 		if (dirLightAngle > 0.0) {
 #			if defined(SCREEN_SPACE_SHADOWS)
 			dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
@@ -555,10 +559,17 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			endif  // TERRAIN_SHADOWS
 
 #			if defined(CLOUD_SHADOWS)
-		if (dirShadow != 0.0) {
+		if (dirShadow > 0.0) {
 			dirShadow *= CloudShadows::GetCloudShadowMult(input.WorldPosition.xyz, SampBaseSampler);
 		}
 #			endif  // CLOUD_SHADOWS
+
+#			if defined(WATER_LIGHTING)
+		if (dirShadow > 0.0) {
+			float4 waterData = SharedData::GetWaterData(input.WorldPosition.xyz);
+			dirShadow *= WaterLighting::ComputeCaustics(waterData, input.WorldPosition.xyz, eyeIndex);
+		}
+#			endif
 	}
 
 	float3 diffuseColor = 0;
@@ -764,10 +775,9 @@ PS_OUTPUT main(PS_INPUT input)
 	float4 shadowColor = TexShadowMaskSampler.Load(int3(input.HPosition.xy, 0));
 
 	float dirShadow = !InInterior ? shadowColor.x : 1.0;
-
 	float dirDetailShadow = 1.0;
 
-	if (dirShadow > 0.0) {
+	if (dirShadow > 0.0 && !InInterior) {
 #			if defined(SCREEN_SPACE_SHADOWS)
 		dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
 #			endif  // SCREEN_SPACE_SHADOWS
@@ -780,10 +790,17 @@ PS_OUTPUT main(PS_INPUT input)
 #			endif  // TERRAIN_SHADOWS
 
 #			if defined(CLOUD_SHADOWS)
-		if (dirShadow != 0.0) {
+		if (dirShadow > 0.0) {
 			dirShadow *= CloudShadows::GetCloudShadowMult(input.WorldPosition.xyz, SampBaseSampler);
 		}
 #			endif  // CLOUD_SHADOWS
+
+#			if defined(WATER_LIGHTING)
+		if (dirShadow > 0.0) {
+			float4 waterData = SharedData::GetWaterData(input.WorldPosition.xyz);
+			dirShadow *= WaterLighting::ComputeCaustics(waterData, input.WorldPosition.xyz, eyeIndex);
+		}
+#			endif
 	}
 
 	float3 diffuseColor = DirLightColorShared.xyz * dirShadow * lerp(dirDetailShadow, 1.0, 0.5) * 0.5;
