@@ -105,6 +105,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 ppColor = 0.0;
 	{
 		inputColor *= avgValue.y / avgValue.x;
+		inputColor = max(0, inputColor);
 
 		float3 blendedColor;
 		[branch] if (Param.z > 0.5)

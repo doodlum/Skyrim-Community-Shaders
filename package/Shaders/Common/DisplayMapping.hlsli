@@ -130,8 +130,6 @@ namespace DisplayMapping
 
 	float3 HuePreservingHejlBurgessDawson(float3 col)
 	{
-		col = max(asfloat(0x00800000), col);
-
 		float3 ictcp = RGBToICtCp(col);
 
 		// Hue-preserving range compression requires desaturation in order to achieve a natural look. We adaptively desaturate the input based on its luminance.
@@ -167,8 +165,6 @@ namespace DisplayMapping
 
 	float3 HuePreservingReinhard(float3 col)
 	{
-		col = max(asfloat(0x00800000), col);
-
 		float3 ictcp = RGBToICtCp(col);
 
 		// Hue-preserving range compression requires desaturation in order to achieve a natural look. We adaptively desaturate the input based on its luminance.
