@@ -4,20 +4,20 @@
 
 #include "Feature.h"
 
-struct WaterEffects : Feature
+struct WaterLighting : Feature
 {
 public:
-	static WaterEffects* GetSingleton()
+	static WaterLighting* GetSingleton()
 	{
-		static WaterEffects singleton;
+		static WaterLighting singleton;
 		return &singleton;
 	}
 
 	winrt::com_ptr<ID3D11ShaderResourceView> causticsView;
 
-	virtual inline std::string GetName() override { return "Water Effects"; }
-	virtual inline std::string GetShortName() override { return "WaterEffects"; }
-	virtual inline std::string_view GetShaderDefineName() override { return "WATER_EFFECTS"; }
+	virtual inline std::string GetName() override { return "Water Lighting"; }
+	virtual inline std::string GetShortName() override { return "WaterLighting"; }
+	virtual inline std::string_view GetShaderDefineName() override { return "WATER_LIGHTING"; }
 
 	bool HasShaderDefine(RE::BSShader::Type shaderType) override;
 

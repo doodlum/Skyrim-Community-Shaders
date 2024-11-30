@@ -14,7 +14,7 @@
 #include "Features/TerrainBlending.h"
 #include "Features/TerrainShadows.h"
 #include "Features/VolumetricLighting.h"
-#include "Features/WaterEffects.h"
+#include "Features/WaterLighting.h"
 #include "Features/WetnessEffects.h"
 
 #include "State.h"
@@ -127,7 +127,7 @@ const std::vector<Feature*>& Feature::GetFeatureList()
 		LightLimitFix::GetSingleton(),
 		DynamicCubemaps::GetSingleton(),
 		CloudShadows::GetSingleton(),
-		WaterEffects::GetSingleton(),
+		WaterLighting::GetSingleton(),
 		SubsurfaceScattering::GetSingleton(),
 		TerrainShadows::GetSingleton(),
 		ScreenSpaceGI::GetSingleton(),
