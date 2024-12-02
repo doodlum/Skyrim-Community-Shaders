@@ -2348,8 +2348,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	if (dynamicCubemap) {
 #			if defined(EMAT)
-		envRoughness = lerp(envRoughness, Color::GammaToLinear(1.0 - complexMaterialColor.y), (float)complexMaterial);
-		F0 = lerp(F0, Color::GammaToLinear(complexSpecular), (float)complexMaterial);
+		float complexMaterialRoughness = 1.0 - complexMaterialColor.y;
+		envRoughness = lerp(envRoughness, complexMaterialRoughness * complexMaterialRoughness, complexMaterial);
+		F0 = lerp(F0, Color::GammaToLinear(complexSpecular), complexMaterial);
 #			endif
 
 		if (any(F0 > 0.0))
