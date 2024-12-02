@@ -163,12 +163,12 @@ VS_OUTPUT main(VS_INPUT input)
 #		if defined(SKINNED)
 	precise int4 boneIndices = 765.01.xxxx * input.BoneIndices.xyzw;
 
-	float3x4 worldMatrix = Skinned::GetBoneTransformMatrix(Bones, boneIndices, CameraPosAdjust[eyeIndex].xyz, input.BoneWeights);
+	float3x4 worldMatrix = Skinned::GetBoneTransformMatrix(Bones, boneIndices, FrameBuffer::CameraPosAdjust[eyeIndex].xyz, input.BoneWeights);
 	precise float4 positionWS = float4(mul(positionMS, transpose(worldMatrix)), 1);
 
-	positionCS = mul(CameraViewProj[eyeIndex], positionWS);
+	positionCS = mul(FrameBuffer::CameraViewProj[eyeIndex], positionWS);
 #		else
-	precise float4x4 modelViewProj = mul(CameraViewProj[eyeIndex], World[eyeIndex]);
+	precise float4x4 modelViewProj = mul(FrameBuffer::CameraViewProj[eyeIndex], World[eyeIndex]);
 	positionCS = mul(modelViewProj, positionMS);
 #		endif
 
@@ -193,9 +193,9 @@ VS_OUTPUT main(VS_INPUT input)
 #			if defined(SKINNED)
 	float3x3 boneRSMatrix = Skinned::GetBoneRSMatrix(Bones, boneIndices, input.BoneWeights);
 	normalMS = normalize(mul(normalMS, transpose(boneRSMatrix)));
-	normalVS = mul(CameraView[eyeIndex], float4(normalMS, 0)).xyz;
+	normalVS = mul(FrameBuffer::CameraView[eyeIndex], float4(normalMS, 0)).xyz;
 #			else
-	normalVS = mul(mul(CameraView[eyeIndex], World[eyeIndex]), float4(normalMS, 0)).xyz;
+	normalVS = mul(mul(FrameBuffer::CameraView[eyeIndex], World[eyeIndex]), float4(normalMS, 0)).xyz;
 #			endif
 #			if defined(RENDER_NORMAL_CLAMP)
 	normalVS = max(min(normalVS, 0.1), -0.1);
@@ -513,9 +513,9 @@ PS_OUTPUT main(PS_INPUT input)
 	TexStencilSampler.GetDimensions(0, stencilDimensions.x, stencilDimensions.y, stencilDimensions.z);
 	stencilValue = TexStencilSampler.Load(float3(stencilDimensions.xy * depthUv, 0)).x;
 #			endif
-	depthUv = Stereo::ConvertFromStereoUV(depthUv * DynamicResolutionParams2.xy, eyeIndex);
+	depthUv = Stereo::ConvertFromStereoUV(depthUv * FrameBuffer::DynamicResolutionParams2.xy, eyeIndex);
 	float4 positionCS = float4(2 * float2(depthUv.x, -depthUv.y + 1) - 1, depth, 1);
-	float4 positionMS = mul(CameraViewProjInverse[eyeIndex], positionCS);
+	float4 positionMS = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], positionCS);
 	positionMS.xyz = positionMS.xyz / positionMS.w;
 
 	float fadeFactor = 1 - pow(saturate(dot(positionMS.xyz, positionMS.xyz) / ShadowLightParam.z), 8);

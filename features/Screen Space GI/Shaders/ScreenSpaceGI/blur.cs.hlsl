@@ -124,7 +124,7 @@ float2x3 getKernelBasis(float3 D, float3 N, float roughness = 1.0, float anisoFa
 		float2 poissonOffset = g_Poisson8[i].xy;
 
 		float3 posOffset = TvBv[0] * poissonOffset.x + TvBv[1] * poissonOffset.y;
-		float4 screenPosSample = mul(CameraProj[eyeIndex], float4(pos + posOffset, 1));
+		float4 screenPosSample = mul(FrameBuffer::CameraProj[eyeIndex], float4(pos + posOffset, 1));
 		screenPosSample.xy /= screenPosSample.w;
 		screenPosSample.y = -screenPosSample.y;
 		screenPosSample.xy = screenPosSample.xy * .5 + .5;

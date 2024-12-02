@@ -30,7 +30,7 @@ namespace ShadowSampling
 {
 	float GetShadowDepth(float3 positionWS, uint eyeIndex)
 	{
-		float4 positionCSShifted = mul(CameraViewProj[eyeIndex], float4(positionWS, 1));
+		float4 positionCSShifted = mul(FrameBuffer::CameraViewProj[eyeIndex], float4(positionWS, 1));
 		return positionCSShifted.z / positionCSShifted.w;
 	}
 
@@ -145,7 +145,7 @@ namespace ShadowSampling
 	{
 		float worldShadow = 1.0;
 #if defined(TERRAIN_SHADOWS)
-		float terrainShadow = TerrainShadows::GetTerrainShadow(positionWS + offset + CameraPosAdjust[eyeIndex].xyz, LinearSampler);
+		float terrainShadow = TerrainShadows::GetTerrainShadow(positionWS + offset + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, LinearSampler);
 		worldShadow = terrainShadow;
 		if (worldShadow == 0.0)
 			return 0.0;

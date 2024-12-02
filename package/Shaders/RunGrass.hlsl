@@ -479,7 +479,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 viewDirection = -normalize(input.WorldPosition.xyz);
 	float3 normal = normalize(input.VertexNormal.xyz);
 
-	float3 viewPosition = mul(CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
+	float3 viewPosition = mul(FrameBuffer::CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
 	float screenNoise = Random::InterleavedGradientNoise(input.HPosition.xy, FrameCount);
 
@@ -553,7 +553,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #			if defined(TERRAIN_SHADOWS)
 		if (dirShadow > 0.0) {
-			float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz, SampBaseSampler);
+			float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, SampBaseSampler);
 			dirShadow *= terrainShadow;
 		}
 #			endif  // TERRAIN_SHADOWS
@@ -688,7 +688,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #					if defined(SKYLIGHTING)
 #						if defined(VR)
-	float3 positionMSSkylight = input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
+	float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #						else
 	float3 positionMSSkylight = input.WorldPosition.xyz;
 #						endif
@@ -768,7 +768,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	uint eyeIndex = Stereo::GetEyeIndexPS(input.HPosition, VPOSOffset);
 
-	float3 viewPosition = mul(CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
+	float3 viewPosition = mul(FrameBuffer::CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
 	float screenNoise = Random::InterleavedGradientNoise(input.HPosition.xy, FrameCount);
 
@@ -784,7 +784,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 #			if defined(TERRAIN_SHADOWS)
 		if (dirShadow > 0.0) {
-			float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz, SampBaseSampler);
+			float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, SampBaseSampler);
 			dirShadow *= terrainShadow;
 		}
 #			endif  // TERRAIN_SHADOWS

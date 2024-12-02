@@ -207,7 +207,7 @@ PS_OUTPUT main(PS_INPUT input)
 	}
 
 #		if defined(DEFERRED)
-	float3 viewPosition = mul(CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
+	float3 viewPosition = mul(FrameBuffer::CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
 	float screenNoise = Random::InterleavedGradientNoise(input.Position.xy, FrameCount);
 
@@ -219,7 +219,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 #			if defined(TERRAIN_SHADOWS)
 	if (dirShadow > 0.0) {
-		float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz, SampDiffuse);
+		float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, SampDiffuse);
 		dirShadow = min(dirShadow, terrainShadow);
 	}
 #			endif

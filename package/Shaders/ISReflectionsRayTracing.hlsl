@@ -64,14 +64,14 @@ float4 GetReflectionColor(
 			float3 binaryMinRaySample = prevRaySample;
 			float3 binaryMaxRaySample = raySample;
 			float3 binaryRaySample = raySample;
-			uint2 binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim);
+			uint2 binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim.xy);
 			uint2 prevBinaryRaySampleCoords;
 			float depthThicknessFactor;
 
 			for (int k = 0; k < binaryIterations; k++) {
 				prevBinaryRaySampleCoords = binaryRaySampleCoords;
 				binaryRaySample = lerp(binaryMinRaySample, binaryMaxRaySample, 0.5);
-				binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim);
+				binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim.xy);
 
 				// Check if the optimal sampling location has already been found
 				if (all(binaryRaySampleCoords == prevBinaryRaySampleCoords))
@@ -114,7 +114,7 @@ float4 GetReflectionColor(
 
 				// Final sample to world-space
 				float4 positionWS = float4(float2(binaryRaySample.x, 1.0 - binaryRaySample.y) * 2.0 - 1.0, iterationDepth, 1.0);
-				positionWS = mul(CameraViewProjInverse[eyeIndex], positionWS);
+				positionWS = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], positionWS);
 				positionWS.xyz = positionWS.xyz / positionWS.w;
 				positionWS.w = 1.0;
 
@@ -166,7 +166,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float depth = DepthTex.SampleLevel(DepthSampler, screenPosition, 0).x;
 
 	float4 positionVS = float4(float2(uv.x, 1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
-	positionVS = mul(CameraProjInverse[eyeIndex], positionVS);
+	positionVS = mul(FrameBuffer::CameraProjInverse[eyeIndex], positionVS);
 	positionVS.xyz = positionVS.xyz / positionVS.w;
 
 	float3 viewPosition = positionVS;
@@ -180,7 +180,7 @@ PS_OUTPUT main(PS_INPUT input)
 	}
 
 	float4 reflectionPosition = float4(viewPosition + reflectionDirection, 1.0);
-	float4 projReflectionPosition = mul(CameraProj[eyeIndex], reflectionPosition);
+	float4 projReflectionPosition = mul(FrameBuffer::CameraProj[eyeIndex], reflectionPosition);
 	projReflectionPosition /= projReflectionPosition.w;
 	projReflectionPosition.xy = projReflectionPosition.xy * float2(0.5, -0.5) + float2(0.5, 0.5);
 

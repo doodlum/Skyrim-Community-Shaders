@@ -1,3 +1,5 @@
+#include "Common/FrameBuffer.hlsli"
+
 Texture2D<float4> WaterCaustics : register(t70);
 
 namespace WaterEffects
@@ -21,7 +23,7 @@ namespace WaterEffects
 			float causticsFade = 1.0 - saturate(causticsDistToWater / 1024.0);
 			causticsFade *= causticsFade;
 
-			float2 causticsUV = (worldPosition.xy + CameraPosAdjust[eyeIndex].xy) * 0.005;
+			float2 causticsUV = (worldPosition.xy + FrameBuffer::CameraPosAdjust[eyeIndex].xy) * 0.005;
 
 			float2 causticsUV1 = PanCausticsUV(causticsUV, 0.5 * 0.2, 1.0);
 			float2 causticsUV2 = PanCausticsUV(causticsUV, 1.0 * 0.2, -0.5);

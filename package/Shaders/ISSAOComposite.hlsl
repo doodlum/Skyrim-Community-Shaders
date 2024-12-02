@@ -182,9 +182,9 @@ PS_OUTPUT main(PS_INPUT input)
 
 		float4 vsPosition = float4(2 * input.TexCoord.x - 1, 1 - 2 * input.TexCoord.y, depth, 1);
 
-		float4 csPosition = mul(CameraViewProjInverse[0], vsPosition);
+		float4 csPosition = mul(FrameBuffer::CameraViewProjInverse[0], vsPosition);
 		csPosition.xyz /= csPosition.w;
-		csPosition.xyz += CameraPosAdjust[0].xyz;
+		csPosition.xyz += FrameBuffer::CameraPosAdjust[0].xyz;
 
 		float3 noiseSeed = 0.07 * (SparklesParameters2.x * csPosition.xyz);
 		float noiseValue = 0.5 * (SimplexNoise(noiseSeed) + 1);

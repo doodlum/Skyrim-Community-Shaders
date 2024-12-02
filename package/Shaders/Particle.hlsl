@@ -250,7 +250,7 @@ PS_OUTPUT main(PS_INPUT input)
 #	if defined(ENVCUBE)
 	float2 precipitationOcclusionUV = (input.PrecipitationOcclusionTexCoord.xy * 0.5 + 0.5) * TextureSize.x;
 #		ifdef VR
-	precipitationOcclusionUV *= DynamicResolutionParams1.x;  // only difference in VR
+	precipitationOcclusionUV *= FrameBuffer::DynamicResolutionParams1.x;  // only difference in VR
 #		endif
 	float precipitationOcclusion = -input.PrecipitationOcclusionTexCoord.z + TexPrecipitationOcclusionTexture.Load(float3(precipitationOcclusionUV, 0)).x;
 	float2 underwaterMaskUv = TextureSize.yz * input.Position.xy;

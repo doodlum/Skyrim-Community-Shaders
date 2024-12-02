@@ -34,7 +34,7 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 								: SV_DispatchThreadID) {
 	half2 uv = half2(dispatchID.xy + 0.5) * BufferDim.zw;
 	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
-	uv *= DynamicResolutionParams2.xy;  // adjust for dynamic res
+	uv *= FrameBuffer::DynamicResolutionParams2.xy;  // adjust for dynamic res
 	uv = Stereo::ConvertFromStereoUV(uv, eyeIndex);
 
 	half3 normalGlossiness = NormalRoughnessTexture[dispatchID.xy];
@@ -46,7 +46,7 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 
 	half pbrWeight = masks2.z;
 
-	half3 normalWS = normalize(mul(CameraViewInverse[eyeIndex], half4(normalVS, 0)).xyz);
+	half3 normalWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], half4(normalVS, 0)).xyz);
 
 	half3 directionalAmbientColor = mul(DirectionalAmbientShared, half4(normalWS, 1.0));
 
@@ -60,10 +60,10 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 #if defined(SKYLIGHTING)
 	float rawDepth = DepthTexture[dispatchID.xy];
 	float4 positionCS = float4(2 * float2(uv.x, -uv.y + 1) - 1, rawDepth, 1);
-	float4 positionMS = mul(CameraViewProjInverse[eyeIndex], positionCS);
+	float4 positionMS = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], positionCS);
 	positionMS.xyz = positionMS.xyz / positionMS.w;
 #	if defined(VR)
-	positionMS.xyz += CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
+	positionMS.xyz += FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #	endif
 
 	sh2 skylighting = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);

@@ -1006,7 +1006,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	PS_OUTPUT psout;
 	uint eyeIndex = Stereo::GetEyeIndexPS(input.Position, VPOSOffset);
 
-	float3 viewPosition = mul(CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
+	float3 viewPosition = mul(FrameBuffer::CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
 	float screenNoise = Random::InterleavedGradientNoise(input.Position.xy, FrameCount);
 
@@ -1534,7 +1534,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float2 baseShadowUV = 1.0.xx;
 	float4 shadowColor = 1.0;
 	if ((PixelShaderDescriptor & LightingFlags::DefShadow) && ((PixelShaderDescriptor & LightingFlags::ShadowDir) || inWorld) || numShadowLights > 0) {
-		baseShadowUV = input.Position.xy * DynamicResolutionParams2.xy;
+		baseShadowUV = input.Position.xy * FrameBuffer::DynamicResolutionParams2.xy;
 		float2 adjustedShadowUV = baseShadowUV * VPOSOffset.xy + VPOSOffset.zw;
 		float2 shadowUV = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(adjustedShadowUV);
 		shadowColor = TexShadowMaskSampler.Sample(SampShadowMaskSampler, shadowUV);
@@ -1741,7 +1741,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if defined(SKYLIGHTING)
 #		if defined(VR)
-	float3 positionMSSkylight = input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
+	float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #		else
 	float3 positionMSSkylight = input.WorldPosition.xyz;
 #		endif
@@ -1793,9 +1793,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		if defined(SKINNED)
 				raindropInfo = WetnessEffects::GetRainDrops(input.ModelPosition.xyz, wetnessEffectsSettings.Time, worldSpaceNormal);
 #		elif defined(DEFERRED)
-				raindropInfo = WetnessEffects::GetRainDrops(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz, wetnessEffectsSettings.Time, worldSpaceNormal);
+				raindropInfo = WetnessEffects::GetRainDrops(input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, wetnessEffectsSettings.Time, worldSpaceNormal);
 #		else
-				raindropInfo = WetnessEffects::GetRainDrops(!FrameParams.y ? input.ModelPosition.xyz : input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz, wetnessEffectsSettings.Time, worldSpaceNormal);
+				raindropInfo = WetnessEffects::GetRainDrops(!FrameBuffer::FrameParams.y ? input.ModelPosition.xyz : input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, wetnessEffectsSettings.Time, worldSpaceNormal);
 #		endif
 		}
 	}
@@ -1818,7 +1818,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 wetnessNormal = worldSpaceNormal;
 
-	float3 puddleCoords = ((input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz) * 0.5 + 0.5) * 0.01 / wetnessEffectsSettings.PuddleRadius;
+	float3 puddleCoords = ((input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz) * 0.5 + 0.5) * 0.01 / wetnessEffectsSettings.PuddleRadius;
 	float puddle = wetness;
 	if (wetness > 0.0 || puddleWetness > 0) {
 #		if !defined(SKINNED)
@@ -1954,7 +1954,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				// (MODELSPACENORMALS))
 
 #	if defined(TERRAIN_SHADOWS)
-		float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + CameraPosAdjust[eyeIndex].xyz, SampColorSampler);
+		float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, SampColorSampler);
 		dirShadow *= terrainShadow;
 		inDirShadow = inDirShadow || dirShadow == 0.0;
 #	endif
@@ -2153,7 +2153,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		float contactShadow = 1.0;
 		[branch] if (
-			inWorld && !FrameParams.z &&
+			inWorld && !FrameBuffer::FrameParams.z &&
 			lightLimitFixSettings.EnableContactShadows &&
 			!(light.lightFlags & LightFlags::Simple) &&
 			shadowComponent != 0.0 &&
@@ -2547,7 +2547,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif  // defined(LOD_LAND_BLEND) && defined(TRUE_PBR)
 
 #	if !defined(DEFERRED)
-	if (FrameParams.y && FrameParams.z)
+	if (FrameBuffer::FrameParams.y && FrameBuffer::FrameParams.z)
 		color.xyz = lerp(color.xyz, input.FogParam.xyz, input.FogParam.w);
 #	endif
 
@@ -2670,7 +2670,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	psout.ScreenSpaceNormals.w = smoothstep(-1e-5 + SSRParams.x, SSRParams.y, ssrMask) * SSRParams.w;
 
 	// Green reflections fix
-	if (FrameParams.z)
+	if (FrameBuffer::FrameParams.z)
 		psout.ScreenSpaceNormals.w = 0.0;
 
 	screenSpaceNormal.z = max(0.001, sqrt(8 + -8 * screenSpaceNormal.z));

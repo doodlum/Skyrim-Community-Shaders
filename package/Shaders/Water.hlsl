@@ -395,7 +395,7 @@ float CalculateDepthMultFromUV(float2 uv, float depth, uint eyeIndex = 0)
 	temp.xy = (uv * 2 - 1);
 	temp.z = depth;
 	temp.w = 1;
-	temp = mul(CameraProjInverse[eyeIndex], temp.xyzw);
+	temp = mul(FrameBuffer::CameraProjInverse[eyeIndex], temp.xyzw);
 	temp.xyz /= temp.w;
 	return length(temp.xyz);
 }
@@ -541,7 +541,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 #			if defined(DYNAMIC_CUBEMAPS)
 #				if defined(SKYLIGHTING)
 #					if defined(VR)
-			float3 positionMSSkylight = input.WPosition.xyz + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
+			float3 positionMSSkylight = input.WPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #					else
 			float3 positionMSSkylight = input.WPosition.xyz;
 #					endif
@@ -600,7 +600,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 			float pointingDirection = dot(viewDirection, R);
 			float pointingAlignment = dot(reflect(viewDirection, float3(0, 0, 1)), R);
 			if (SSRParams.x > 0.0 && pointingDirection > 0.0 && pointingAlignment > 0.0) {
-				float2 ssrReflectionUv = ((DynamicResolutionParams2.xy * input.HPosition.xy) * SSRParams.zw) + SSRParams2.x * normal.xy;
+				float2 ssrReflectionUv = ((FrameBuffer::DynamicResolutionParams2.xy * input.HPosition.xy) * SSRParams.zw) + SSRParams2.x * normal.xy;
 				float2 ssrReflectionUvDR = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(ssrReflectionUv);
 				float4 ssrReflectionColorBlurred = SSRReflectionTex.Sample(SSRReflectionSampler, ssrReflectionUvDR);
 				float4 ssrReflectionColorRaw = RawSSRReflectionTex.Sample(RawSSRReflectionSampler, ssrReflectionUvDR);
@@ -672,9 +672,9 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 	float2 refractionUvRawNoStereo = Stereo::ConvertFromStereoUV(refractionUvRaw, eyeIndex, 1);
 #				endif
 
-	float2 screenPosition = DynamicResolutionParams1.xy * (DynamicResolutionParams2.xy * input.HPosition.xy);
+	float2 screenPosition = FrameBuffer::DynamicResolutionParams1.xy * (FrameBuffer::DynamicResolutionParams2.xy * input.HPosition.xy);
 
-	float2 refractionScreenPosition = DynamicResolutionParams1.xy * (refractionUvRaw / VPOSOffset.xy);
+	float2 refractionScreenPosition = FrameBuffer::DynamicResolutionParams1.xy * (refractionUvRaw / VPOSOffset.xy);
 	float4 refractionWorldPosition = float4(input.WPosition.xyz * depth / viewPosition.z, 0);
 
 #				if defined(DEPTH) && !defined(VERTEX_ALPHA_DEPTH)
@@ -692,14 +692,14 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 	float refractionPlaneMul = (1 - ReflectPlane[eyeIndex].w / refractionViewSurfaceAngle);
 
 	if (refractionPlaneMul < 0.0) {
-		refractionUvRaw = DynamicResolutionParams2.xy * input.HPosition.xy * VPOSOffset.xy + VPOSOffset.zw;  // This value is already stereo converted for VR
+		refractionUvRaw = FrameBuffer::DynamicResolutionParams2.xy * input.HPosition.xy * VPOSOffset.xy + VPOSOffset.zw;  // This value is already stereo converted for VR
 	} else {
 		distanceMul = saturate(refractionPlaneMul * float4(length(refractionDepthAdjustedViewDirection).xx, abs(refractionViewSurfaceAngle).xx) / FogParam.z);
 
 #					if defined(VR)
-		refractionWorldPosition = mul(CameraViewProjInverse[eyeIndex], float4((refractionUvRawNoStereo * 2 - 1) * float2(1, -1), DepthTex.Load(float3(refractionScreenPosition, 0)).x, 1));
+		refractionWorldPosition = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], float4((refractionUvRawNoStereo * 2 - 1) * float2(1, -1), DepthTex.Load(float3(refractionScreenPosition, 0)).x, 1));
 #					else
-		refractionWorldPosition = mul(CameraViewProjInverse[eyeIndex], float4((refractionUvRaw * 2 - 1) * float2(1, -1), DepthTex.Load(float3(refractionScreenPosition, 0)).x, 1));
+		refractionWorldPosition = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], float4((refractionUvRaw * 2 - 1) * float2(1, -1), DepthTex.Load(float3(refractionScreenPosition, 0)).x, 1));
 #					endif
 		refractionWorldPosition.xyz /= refractionWorldPosition.w;
 	}
@@ -714,7 +714,7 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 		float3 skylightingPosition = lerp(input.WPosition.xyz, refractionWorldPosition.xyz, noise);
 
 #					if defined(VR)
-		float3 positionMSSkylight = skylightingPosition + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
+		float3 positionMSSkylight = skylightingPosition + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #					else
 		float3 positionMSSkylight = skylightingPosition;
 #					endif
@@ -775,12 +775,12 @@ PS_OUTPUT main(PS_INPUT input)
 	PS_OUTPUT psout;
 
 	uint eyeIndex = Stereo::GetEyeIndexPS(input.HPosition, VPOSOffset);
-	float2 screenPosition = DynamicResolutionParams1.xy * (DynamicResolutionParams2.xy * input.HPosition.xy);
+	float2 screenPosition = FrameBuffer::DynamicResolutionParams1.xy * (FrameBuffer::DynamicResolutionParams2.xy * input.HPosition.xy);
 
 #		if defined(SIMPLE) || defined(UNDERWATER) || defined(LOD) || defined(SPECULAR)
 	float3 viewDirection = normalize(input.WPosition.xyz);
 
-	float distanceFactor = saturate(lerp(FrameParams.w, 1, (input.WPosition.w - 8192) / (WaterParams.x - 8192)));
+	float distanceFactor = saturate(lerp(FrameBuffer::FrameParams.w, 1, (input.WPosition.w - 8192) / (WaterParams.x - 8192)));
 	float4 distanceMul = saturate(lerp(VarAmounts.z, 1, -(distanceFactor - 1))).xxxx;
 
 	bool isSpecular = false;
@@ -797,7 +797,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	depth = GetScreenDepthWater(screenPosition);
 	float2 depthOffset =
-		DynamicResolutionParams2.xy * input.HPosition.xy * VPOSOffset.xy + VPOSOffset.zw;
+		FrameBuffer::DynamicResolutionParams2.xy * input.HPosition.xy * VPOSOffset.xy + VPOSOffset.zw;
 #					if !defined(VR)
 	float depthMul = length(float3((depthOffset * 2 - 1) * depth / ProjData.xy, depth));
 #					else
@@ -823,7 +823,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float4 depthControl = DepthControl * (distanceMul - 1) + 1;
 #			endif
 
-	float3 viewPosition = mul(CameraView[eyeIndex], float4(input.WPosition.xyz, 1)).xyz;
+	float3 viewPosition = mul(FrameBuffer::CameraView[eyeIndex], float4(input.WPosition.xyz, 1)).xyz;
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
 
 	float3 normal = GetWaterNormal(input, distanceFactor, depthControl.z, viewDirection, depth, eyeIndex);

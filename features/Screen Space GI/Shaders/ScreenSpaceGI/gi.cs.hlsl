@@ -86,8 +86,8 @@ void CalculateGI(
 	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
 	float2 normalizedScreenPos = Stereo::ConvertFromStereoUV(uv, eyeIndex);
 
-	const float rcpNumSlices = rcp(NumSlices);
-	const float rcpNumSteps = rcp(NumSteps);
+	const float rcpNumSlices = rcp((float)NumSlices);
+	const float rcpNumSteps = rcp((float)NumSteps);
 
 	// if the offset is under approx pixel size (pixelTooCloseThreshold), push it out to the minimum distance
 	const float pixelTooCloseThreshold = 1.3;
@@ -327,7 +327,7 @@ void CalculateGI(
 	float2 normalSample = FULLRES_LOAD(srcNormalRoughness, pxCoord, uv * frameScale, samplerLinearClamp).xy;
 	float3 viewspaceNormal = GBuffer::DecodeNormal(normalSample);
 
-	half2 encodedWorldNormal = GBuffer::EncodeNormal(ViewToWorldVector(viewspaceNormal, CameraViewInverse[eyeIndex]));
+	half2 encodedWorldNormal = GBuffer::EncodeNormal(ViewToWorldVector(viewspaceNormal, FrameBuffer::CameraViewInverse[eyeIndex]));
 	outPrevGeo[pxCoord] = half3(viewspaceZ, encodedWorldNormal);
 
 	// Move center pixel slightly towards camera to avoid imprecision artifacts due to depth buffer imprecision; offset depends on depth texture format used

@@ -43,7 +43,7 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 								: SV_DispatchThreadID) {
 	half2 uv = half2(dispatchID.xy + 0.5) * BufferDim.zw;
 	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
-	uv *= DynamicResolutionParams2.xy;  // Adjust for dynamic res
+	uv *= FrameBuffer::DynamicResolutionParams2.xy;  // Adjust for dynamic res
 	uv = Stereo::ConvertFromStereoUV(uv, eyeIndex);
 
 	half3 normalGlossiness = NormalRoughnessTexture[dispatchID.xy];
@@ -56,7 +56,7 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 
 	half depth = DepthTexture[dispatchID.xy];
 	half4 positionWS = half4(2 * half2(uv.x, -uv.y + 1) - 1, depth, 1);
-	positionWS = mul(CameraViewProjInverse[eyeIndex], positionWS);
+	positionWS = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], positionWS);
 	positionWS.xyz = positionWS.xyz / positionWS.w;
 
 	if (depth == 1.0) {
@@ -74,7 +74,7 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 	half3 reflectance = ReflectanceTexture[dispatchID.xy];
 
 	if (reflectance.x > 0.0 || reflectance.y > 0.0 || reflectance.z > 0.0) {
-		half3 normalWS = normalize(mul(CameraViewInverse[eyeIndex], half4(normalVS, 0)).xyz);
+		half3 normalWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], half4(normalVS, 0)).xyz);
 
 		half wetnessMask = MasksTexture[dispatchID.xy].z;
 
@@ -97,7 +97,7 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 		finalIrradiance += specularIrradiance;
 #	elif defined(SKYLIGHTING)
 #		if defined(VR)
-		float3 positionMS = positionWS.xyz + CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[0].xyz;
+		float3 positionMS = positionWS.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #		else
 		float3 positionMS = positionWS.xyz;
 #		endif

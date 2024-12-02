@@ -172,7 +172,7 @@ namespace SharedData
 
 	float4 GetWaterData(float3 worldPosition)
 	{
-		float2 cellF = (((worldPosition.xy + CameraPosAdjust[0].xy)) / 4096.0) + 64.0;  // always positive
+		float2 cellF = (((worldPosition.xy + FrameBuffer::CameraPosAdjust[0].xy)) / 4096.0) + 64.0;  // always positive
 		int2 cellInt;
 		float2 cellFrac = modf(cellF, cellInt);
 

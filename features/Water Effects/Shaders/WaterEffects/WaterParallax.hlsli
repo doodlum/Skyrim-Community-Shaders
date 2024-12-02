@@ -68,7 +68,7 @@ namespace WaterEffects
 		mipLevels = mipLevels + 3;
 #endif
 
-		float stepSize = rcp(16);
+		float stepSize = rcp(16.0);
 		float currBound = 0.0;
 		float currHeight = 1.0;
 		float prevHeight = 1.0;

@@ -163,7 +163,7 @@ namespace Stereo
 #	else
 		float4 stereoUV;
 		stereoUV.xy = position.xy * offset.xy + offset.zw;
-		stereoUV.x = DynamicResolutionParams2.x * stereoUV.x;
+		stereoUV.x = FrameBuffer::DynamicResolutionParams2.x * stereoUV.x;
 		stereoUV.x = (stereoUV.x >= 0.5);
 		uint eyeIndex = (uint)(((int)((uint)StereoEnabled)) * (int)stereoUV.x);
 #	endif
@@ -209,20 +209,20 @@ namespace Stereo
 	{
 		// Convert from dynamic res to true UV space if necessary
 		if (dynamicres)
-			monoUV.xy *= DynamicResolutionParams2.xy;
+			monoUV.xy *= FrameBuffer::DynamicResolutionParams2.xy;
 
 		// Convert UV to Clip Space
 		float4 clipPos = float4(monoUV.xy * float2(2, -2) - float2(1, -1), monoUV.z, 1);
 
 		// Convert Clip Space to World Space for the current eye
-		float4 worldPos = mul(CameraViewProjInverse[eyeIndex], clipPos);
+		float4 worldPos = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], clipPos);
 		worldPos /= worldPos.w;
 
 		// Apply eye offset adjustment in world space
-		worldPos.xyz += CameraPosAdjust[eyeIndex].xyz - CameraPosAdjust[1 - eyeIndex].xyz;
+		worldPos.xyz += FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[1 - eyeIndex].xyz;
 
 		// Convert World Space to Clip Space for the other eye
-		float4 clipPosOtherEye = mul(CameraViewProj[1 - eyeIndex], worldPos);
+		float4 clipPosOtherEye = mul(FrameBuffer::CameraViewProj[1 - eyeIndex], worldPos);
 		clipPosOtherEye /= clipPosOtherEye.w;
 
 		// Convert Clip Space to UV
@@ -230,7 +230,7 @@ namespace Stereo
 
 		// Convert back to dynamic res space if necessary
 		if (dynamicres)
-			monoUVOtherEye.xy *= DynamicResolutionParams1.xy;
+			monoUVOtherEye.xy *= FrameBuffer::DynamicResolutionParams1.xy;
 
 		return monoUVOtherEye;
 	}
@@ -293,7 +293,7 @@ namespace Stereo
 	{
 		// Convert from dynamic res to true UV space
 		if (dynamicres)
-			stereoUV.xy *= DynamicResolutionParams2.xy;
+			stereoUV.xy *= FrameBuffer::DynamicResolutionParams2.xy;
 
 		stereoUV.xy = ConvertFromStereoUV(stereoUV.xy, eyeIndex, true);  // for some reason, the uv.y needs to be inverted before conversion?
 		// Swap eyes
@@ -303,7 +303,7 @@ namespace Stereo
 
 		// Convert back to dynamic res space if necessary
 		if (dynamicres)
-			stereoUV.xy *= DynamicResolutionParams1.xy;
+			stereoUV.xy *= FrameBuffer::DynamicResolutionParams1.xy;
 		return stereoUV;
 	}
 
