@@ -17,7 +17,7 @@ void WaterEffects::Prepass()
 {
 	auto& context = State::GetSingleton()->context;
 	auto srv = causticsView.get();
-	context->PSSetShaderResources(100, 1, &srv);
+	context->PSSetShaderResources(65, 1, &srv);
 }
 
 bool WaterEffects::HasShaderDefine(RE::BSShader::Type)

@@ -2,7 +2,7 @@
 
 namespace WetnessEffects
 {
-	Texture2D<float4> TexPrecipOcclusion : register(t110);
+	Texture2D<float4> TexPrecipOcclusion : register(t70);
 
 	// https://www.unrealengine.com/en-US/blog/physically-based-shading-on-mobile
 	float2 EnvBRDFApproxWater(float3 F0, float Roughness, float NoV)

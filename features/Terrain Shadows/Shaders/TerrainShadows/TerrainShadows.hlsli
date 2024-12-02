@@ -1,4 +1,4 @@
-Texture2D<float2> TexShadowHeight : register(t90);
+Texture2D<float2> TexShadowHeight : register(t60);
 
 namespace TerrainShadows
 {

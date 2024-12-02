@@ -188,7 +188,7 @@ void TerrainBlending::OverrideTerrainWorld()
 
 	// Used to get the distance of the surface to the lowest depth
 	auto view = terrainOffsetTexture->srv.get();
-	context->PSSetShaderResources(80, 1, &view);
+	context->PSSetShaderResources(55, 1, &view);
 }
 
 void TerrainBlending::OverrideTerrainDepth()

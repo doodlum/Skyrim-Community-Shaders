@@ -234,7 +234,7 @@ void ScreenSpaceShadows::Prepass()
 			DrawShadows();
 
 	auto view = screenSpaceShadowsTexture->srv.get();
-	context->PSSetShaderResources(60, 1, &view);
+	context->PSSetShaderResources(45, 1, &view);
 }
 
 void ScreenSpaceShadows::LoadSettings(json& o_json)

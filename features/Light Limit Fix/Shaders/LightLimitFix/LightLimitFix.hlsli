@@ -7,10 +7,10 @@ struct StrictLightData
 	uint pad0[2];
 };
 
-StructuredBuffer<StructuredLight> lights : register(t50);
-StructuredBuffer<uint> lightList : register(t51);       //MAX_CLUSTER_LIGHTS * 16^3
-StructuredBuffer<LightGrid> lightGrid : register(t52);  //16^3
-StructuredBuffer<StrictLightData> strictLights : register(t53);
+StructuredBuffer<StructuredLight> lights : register(t35);
+StructuredBuffer<uint> lightList : register(t36);       //MAX_CLUSTER_LIGHTS * 16^3
+StructuredBuffer<LightGrid> lightGrid : register(t37);  //16^3
+StructuredBuffer<StrictLightData> strictLights : register(t38);
 
 namespace LightLimitFix
 {

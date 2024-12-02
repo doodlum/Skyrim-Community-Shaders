@@ -389,7 +389,7 @@ void LightLimitFix::BSLightingShader_SetupGeometry_After(RE::BSRenderPass*)
 	static Util::FrameChecker frameChecker;
 	if (frameChecker.IsNewFrame()) {
 		ID3D11ShaderResourceView* view = strictLightData->srv.get();
-		context->PSSetShaderResources(53, 1, &view);
+		context->PSSetShaderResources(38, 1, &view);
 	}
 }
 
@@ -458,7 +458,7 @@ void LightLimitFix::Prepass()
 	views[0] = lights->srv.get();
 	views[1] = lightIndexList->srv.get();
 	views[2] = lightGrid->srv.get();
-	context->PSSetShaderResources(50, ARRAYSIZE(views), views);
+	context->PSSetShaderResources(35, ARRAYSIZE(views), views);
 }
 
 bool LightLimitFix::IsValidLight(RE::BSLight* a_light)
