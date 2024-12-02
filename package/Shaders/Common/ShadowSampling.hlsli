@@ -5,7 +5,7 @@
 #include "Common/Random.hlsli"
 #include "Common/SharedData.hlsli"
 
-Texture2DArray<float4> SharedTexShadowMapSampler : register(t25);
+Texture2DArray<float4> SharedTexShadowMapSampler : register(t18);
 
 struct PerGeometry
 {
@@ -24,7 +24,7 @@ struct PerGeometry
 	float4x4 CameraViewProjInverse[2];
 };
 
-StructuredBuffer<PerGeometry> SharedPerShadow : register(t26);
+StructuredBuffer<PerGeometry> SharedPerShadow : register(t19);
 
 namespace ShadowSampling
 {

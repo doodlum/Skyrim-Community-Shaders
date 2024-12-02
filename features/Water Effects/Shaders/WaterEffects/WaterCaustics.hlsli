@@ -1,6 +1,4 @@
-#include "Common/FrameBuffer.hlsli"
-
-Texture2D<float4> WaterCaustics : register(t70);
+Texture2D<float4> WaterCaustics : register(t65);
 
 namespace WaterEffects
 {

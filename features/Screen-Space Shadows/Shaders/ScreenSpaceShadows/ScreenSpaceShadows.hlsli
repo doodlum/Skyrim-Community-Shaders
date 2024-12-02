@@ -1,6 +1,6 @@
 #include "Common/Math.hlsli"
 
-Texture2D<unorm half> ScreenSpaceShadowsTexture : register(t17);
+Texture2D<unorm half> ScreenSpaceShadowsTexture : register(t45);
 
 namespace ScreenSpaceShadows
 {

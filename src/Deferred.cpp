@@ -207,7 +207,7 @@ void Deferred::CopyShadowData()
 			perShadow->srv.get(),
 		};
 
-		context->PSSetShaderResources(25, ARRAYSIZE(srvs), srvs);
+		context->PSSetShaderResources(18, ARRAYSIZE(srvs), srvs);
 	}
 }
 

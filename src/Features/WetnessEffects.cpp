@@ -271,7 +271,7 @@ void WetnessEffects::Prepass()
 	auto state = State::GetSingleton();
 	auto& context = state->context;
 
-	context->PSSetShaderResources(31, 1, &precipOcclusionTexture.depthSRV);
+	context->PSSetShaderResources(70, 1, &precipOcclusionTexture.depthSRV);
 }
 
 void WetnessEffects::LoadSettings(json& o_json)
