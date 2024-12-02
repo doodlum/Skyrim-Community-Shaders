@@ -4,7 +4,7 @@
 #include "Common/Spherical Harmonics/SphericalHarmonics.hlsli"
 
 #ifdef PSHADER
-Texture3D<sh2> SkylightingProbeArray : register(t29);
+Texture3D<sh2> SkylightingProbeArray : register(t70);
 #endif
 
 namespace Skylighting

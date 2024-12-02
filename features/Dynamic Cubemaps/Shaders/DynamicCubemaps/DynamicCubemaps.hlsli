@@ -1,5 +1,5 @@
-TextureCube<float4> specularTexture : register(t64);
-TextureCube<float4> specularTextureNoReflections : register(t65);
+TextureCube<float4> specularTexture : register(t40);
+TextureCube<float4> specularTextureNoReflections : register(t41);
 
 namespace DynamicCubemaps
 {

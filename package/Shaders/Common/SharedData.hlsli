@@ -135,7 +135,7 @@ cbuffer FeatureData : register(b6)
 	SkylightingSettings skylightingSettings;
 };
 
-Texture2D<float4> TexDepthSampler : register(t20);
+Texture2D<float4> TexDepthSampler : register(t17);
 
 namespace SharedData
 {

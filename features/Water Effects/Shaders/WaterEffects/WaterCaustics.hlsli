@@ -1,4 +1,4 @@
-Texture2D<float4> WaterCaustics : register(t70);
+Texture2D<float4> WaterCaustics : register(t100);
 
 namespace WaterEffects
 {

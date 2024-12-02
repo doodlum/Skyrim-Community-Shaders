@@ -64,7 +64,7 @@ void CloudShadows::Prepass()
 	auto& context = State::GetSingleton()->context;
 
 	ID3D11ShaderResourceView* srv = texCubemapCloudOcc->srv.get();
-	context->PSSetShaderResources(27, 1, &srv);
+	context->PSSetShaderResources(30, 1, &srv);
 }
 
 void CloudShadows::SetupResources()

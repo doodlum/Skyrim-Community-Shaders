@@ -1,5 +1,5 @@
 
-TextureCube<float4> cloudShadowsTexture : register(t27);
+TextureCube<float4> cloudShadowsTexture : register(t30);
 
 #define CloudHeight (2e3f / 1.428e-2)
 #define PlanetRadius (6371e3f / 1.428e-2)

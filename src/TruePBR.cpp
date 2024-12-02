@@ -265,7 +265,7 @@ void TruePBR::PrePass()
 	if (!glintsNoiseTexture)
 		SetupGlintsTexture();
 	ID3D11ShaderResourceView* srv = glintsNoiseTexture->srv.get();
-	context->PSSetShaderResources(28, 1, &srv);
+	context->PSSetShaderResources(20, 1, &srv);
 }
 
 void TruePBR::SetupGlintsTexture()

@@ -1,5 +1,5 @@
 
-Texture2D<float4> TerrainBlendingMaskTexture : register(t35);
+Texture2D<float4> TerrainBlendingMaskTexture : register(t80);
 
 namespace TerrainBlending
 {

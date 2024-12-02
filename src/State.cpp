@@ -694,7 +694,7 @@ void State::UpdateSharedData()
 	auto terrainBlending = TerrainBlending::GetSingleton();
 	auto srv = (terrainBlending->loaded ? terrainBlending->blendedDepthTexture16->srv.get() : depth.depthSRV);
 
-	context->PSSetShaderResources(20, 1, &srv);
+	context->PSSetShaderResources(17, 1, &srv);
 }
 
 void State::ClearDisabledFeatures()
