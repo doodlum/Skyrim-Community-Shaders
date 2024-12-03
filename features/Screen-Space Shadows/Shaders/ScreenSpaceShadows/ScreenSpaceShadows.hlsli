@@ -1,9 +1,10 @@
 #include "Common/Math.hlsli"
 
-Texture2D<unorm half> ScreenSpaceShadowsTexture : register(t45);
-
 namespace ScreenSpaceShadows
 {
+	
+	Texture2D<unorm half> ScreenSpaceShadowsTexture : register(t45);
+
 	float4 GetBlurWeights(float4 depths, float centerDepth)
 	{
 		centerDepth += 1.0;
@@ -27,7 +28,7 @@ namespace ScreenSpaceShadows
 #	if defined(DEFERRED) && !defined(DO_ALPHA_TEST)
 		depthSamples[0] = screenPosition.z;
 #	else
-		depthSamples[0] = TexDepthSampler.Load(int3(screenPosition.xy, 0));
+		depthSamples[0] = SharedData::DepthTexture.Load(int3(screenPosition.xy, 0));
 #	endif
 
 		shadowSamples[0] = ScreenSpaceShadowsTexture.Load(int3(screenPosition.xy, 0));
@@ -47,7 +48,7 @@ namespace ScreenSpaceShadows
 
 			int3 sampleCoord = SharedData::ConvertUVToSampleCoord(sampleUV, eyeIndex);
 
-			depthSamples[i] = TexDepthSampler.Load(sampleCoord).x;
+			depthSamples[i] = SharedData::DepthTexture.Load(sampleCoord).x;
 			shadowSamples[i] = ScreenSpaceShadowsTexture.Load(sampleCoord);
 		}
 

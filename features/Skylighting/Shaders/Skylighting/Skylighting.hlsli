@@ -3,12 +3,12 @@
 #include "Common/SharedData.hlsli"
 #include "Common/Spherical Harmonics/SphericalHarmonics.hlsli"
 
-#ifdef PSHADER
-Texture3D<sh2> SkylightingProbeArray : register(t50);
-#endif
-
 namespace Skylighting
 {
+#ifdef PSHADER
+	Texture3D<sh2> SkylightingProbeArray : register(t50);
+#endif
+
 	const static uint3 ARRAY_DIM = uint3(256, 256, 128);
 	const static float3 ARRAY_SIZE = 4096.f * 3.f * float3(1, 1, 0.5);
 	const static float3 CELL_SIZE = ARRAY_SIZE / ARRAY_DIM;
@@ -21,17 +21,17 @@ namespace Skylighting
 		return saturate(edgeDist * 20);
 	}
 
-	float mixDiffuse(SkylightingSettings params, float visibility)
+	float mixDiffuse(SharedData::SkylightingSettings params, float visibility)
 	{
 		return lerp(params.MinDiffuseVisibility, 1.0, saturate(visibility));
 	}
 
-	float mixSpecular(SkylightingSettings params, float visibility)
+	float mixSpecular(SharedData::SkylightingSettings params, float visibility)
 	{
 		return lerp(params.MinSpecularVisibility, 1.0, saturate(visibility));
 	}
 
-	sh2 sample(SkylightingSettings params, Texture3D<sh2> probeArray, float3 positionMS, float3 normalWS)
+	sh2 sample(SharedData::SkylightingSettings params, Texture3D<sh2> probeArray, float3 positionMS, float3 normalWS)
 	{
 		const static sh2 unitSH = float4(sqrt(4 * Math::PI), 0, 0, 0);
 		sh2 scaledUnitSH = unitSH / 1e-10;
@@ -81,7 +81,7 @@ namespace Skylighting
 		return SphericalHarmonics::Scale(sum, rcp(wsum + 1e-10));
 	}
 
-	float getVL(SkylightingSettings params, Texture3D<sh2> probeArray, float3 startPosWS, float3 endPosWS, float2 pxCoord)
+	float getVL(SharedData::SkylightingSettings params, Texture3D<sh2> probeArray, float3 startPosWS, float3 endPosWS, float2 pxCoord)
 	{
 		const static uint nSteps = 16;
 		const static float step = 1.0 / float(nSteps);
@@ -89,7 +89,7 @@ namespace Skylighting
 		float3 worldDir = endPosWS - startPosWS;
 		float3 worldDirNormalised = normalize(worldDir);
 
-		float noise = Random::InterleavedGradientNoise(pxCoord, FrameCount);
+		float noise = Random::InterleavedGradientNoise(pxCoord, SharedData::FrameCount);
 
 		float vl = 0;
 
