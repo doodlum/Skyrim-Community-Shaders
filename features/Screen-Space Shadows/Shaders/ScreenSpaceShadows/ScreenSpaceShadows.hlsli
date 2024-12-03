@@ -2,7 +2,7 @@
 
 namespace ScreenSpaceShadows
 {
-	
+
 	Texture2D<unorm half> ScreenSpaceShadowsTexture : register(t45);
 
 	float4 GetBlurWeights(float4 depths, float centerDepth)
