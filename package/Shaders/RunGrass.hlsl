@@ -47,8 +47,7 @@ struct VS_OUTPUT
 #	endif  // RENDER_DEPTH
 	float4 WorldPosition : POSITION1;
 	float4 PreviousWorldPosition : POSITION2;
-	float3 VertexNormal : POSITION4;
-	float4 SphereNormal : POSITION5;
+	float4 VertexNormal : POSITION4;
 #	ifdef VR
 	float ClipDistance : SV_ClipDistance0;
 	float CullDistance : SV_CullDistance0;
@@ -234,8 +233,7 @@ VS_OUTPUT main(VS_INPUT input)
 
 	// Vertex normal needs to be transformed to world-space for lighting calculations.
 	vsout.VertexNormal.xyz = mul(world3x3, input.Normal.xyz * 2.0 - 1.0);
-	vsout.SphereNormal.xyz = mul(world3x3, normalize(input.Position.xyz));
-	vsout.SphereNormal.w = saturate(sqrt(input.Color.w));
+	vsout.VertexNormal.w = saturate(sqrt(input.Color.w));
 
 	return vsout;
 }
@@ -487,8 +485,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (!frontFace)
 		normal = -normal;
 
-	normal = normalize(lerp(normal, normalize(input.SphereNormal.xyz), input.SphereNormal.w * input.SphereNormal.w));
-
 	float3x3 tbn = 0;
 
 #			if !defined(TRUE_PBR)
@@ -591,7 +587,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	dirLightColor *= dirLightColorMultiplier;
 	dirLightColor *= dirShadow;
 
-	float wrapAmount = saturate(input.SphereNormal.w);
+	float wrapAmount = saturate(input.VertexNormal.w);
 	float wrapMultiplier = rcp((1.0 + wrapAmount) * (1.0 + wrapAmount));
 
 	float dirDiffuse = (dirLightAngle + wrapAmount) * wrapMultiplier;
@@ -599,7 +595,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 albedo = max(0, baseColor.xyz * input.VertexColor.xyz);
 
-	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * input.SphereNormal.w * input.SphereNormal.w;
+	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * input.VertexNormal.w;
 
 	float dirLightBacklighting = 1.0 + saturate(dot(viewDirection, -DirLightDirectionShared.xyz));
 	float3 sss = dirLightColor * saturate(-dirLightAngle) * dirLightBacklighting;
