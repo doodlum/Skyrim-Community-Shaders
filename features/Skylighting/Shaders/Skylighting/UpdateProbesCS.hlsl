@@ -12,7 +12,7 @@ SamplerState samplerPointClamp : register(s0);
 								: SV_DispatchThreadID) {
 	const float fadeInThreshold = 255;
 	const static sh2 unitSH = float4(sqrt(4.0 * Math::PI), 0, 0, 0);
-	const SkylightingSettings settings = skylightingSettings;
+	const SharedData::SkylightingSettings settings = SharedData::skylightingSettings;
 
 	uint3 cellID = (int3(dtid) - settings.ArrayOrigin.xyz) % Skylighting::ARRAY_DIM;
 	bool isValid = all(cellID >= max(0, settings.ValidMargin.xyz)) && all(cellID <= Skylighting::ARRAY_DIM - 1 + min(0, settings.ValidMargin.xyz));  // check if the cell is newly added
