@@ -1,8 +1,8 @@
 
 namespace LightLimitFix
 {
-	
-	#include "LightLimitFix/Common.hlsli"
+
+#include "LightLimitFix/Common.hlsli"
 
 	struct StrictLightData
 	{
