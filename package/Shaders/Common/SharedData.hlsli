@@ -4,141 +4,140 @@
 #include "Common/FrameBuffer.hlsli"
 #include "Common/VR.hlsli"
 
-#if defined(PSHADER) || defined(COMPUTESHADER)
-cbuffer SharedData : register(b5)
-{
-	float4 WaterData[25];
-	row_major float3x4 DirectionalAmbientShared;
-	float4 DirLightDirectionShared;
-	float4 DirLightColorShared;
-	float4 CameraData;
-	float4 BufferDim;
-	float Timer;
-	uint FrameCount;
-	uint FrameCountAlwaysActive;
-	bool InInterior;  // If the area lacks a directional shadow light e.g. the sun or moon
-	bool InMapMenu;   // If the world/local map is open (note that the renderer is still deferred here)
-	float3 pad0;
-};
-
-struct GrassLightingSettings
-{
-	float Glossiness;
-	float SpecularStrength;
-	float SubsurfaceScatteringAmount;
-	bool OverrideComplexGrassSettings;
-
-	float BasicGrassBrightness;
-	float3 pad0;
-};
-
-struct CPMSettings
-{
-	bool EnableComplexMaterial;
-	bool EnableParallax;
-	bool EnableTerrainParallax;
-	bool EnableHeightBlending;
-	bool EnableShadows;
-	bool ExtendShadows;
-	float2 pad0;
-};
-
-struct CubemapCreatorSettings
-{
-	uint Enabled;
-	float3 pad0;
-
-	float4 CubemapColor;
-};
-
-struct TerraOccSettings
-{
-	bool EnableTerrainShadow;
-	float3 Scale;
-	float2 ZRange;
-	float2 Offset;
-};
-
-struct LightLimitFixSettings
-{
-	uint EnableContactShadows;
-	uint EnableLightsVisualisation;
-	uint LightsVisualisationMode;
-	float LightsFar;
-	uint4 ClusterSize;
-};
-
-struct WetnessEffectsSettings
-{
-	row_major float4x4 OcclusionViewProj;
-
-	float Time;
-	float Raining;
-	float Wetness;
-	float PuddleWetness;
-
-	bool EnableWetnessEffects;
-	float MaxRainWetness;
-	float MaxPuddleWetness;
-	float MaxShoreWetness;
-
-	uint ShoreRange;
-	float PuddleRadius;
-	float PuddleMaxAngle;
-	float PuddleMinWetness;
-
-	float MinRainWetness;
-	float SkinWetness;
-	float WeatherTransitionSpeed;
-	bool EnableRaindropFx;
-
-	bool EnableSplashes;
-	bool EnableRipples;
-	float RaindropGridSizeRcp;
-	float RaindropIntervalRcp;
-
-	float RaindropChance;
-	float SplashesLifetime;
-	float SplashesStrength;
-	float SplashesMinRadius;
-
-	float SplashesMaxRadius;
-	float RippleStrength;
-	float RippleRadius;
-	float RippleBreadth;
-
-	float RippleLifetimeRcp;
-};
-
-struct SkylightingSettings
-{
-	row_major float4x4 OcclusionViewProj;
-	float4 OcclusionDir;
-
-	float4 PosOffset;   // xyz: cell origin in camera model space
-	uint4 ArrayOrigin;  // xyz: array origin
-	int4 ValidMargin;
-
-	float MinDiffuseVisibility;
-	float MinSpecularVisibility;
-	uint pad0[2];
-};
-
-cbuffer FeatureData : register(b6)
-{
-	GrassLightingSettings grassLightingSettings;
-	CPMSettings extendedMaterialSettings;
-	CubemapCreatorSettings cubemapCreatorSettings;
-	TerraOccSettings terraOccSettings;
-	LightLimitFixSettings lightLimitFixSettings;
-	WetnessEffectsSettings wetnessEffectsSettings;
-	SkylightingSettings skylightingSettings;
-};
-
-Texture2D<float4> TexDepthSampler : register(t17);
-
 namespace SharedData
 {
+
+#if defined(PSHADER) || defined(COMPUTESHADER)
+	cbuffer SharedData : register(b5)
+	{
+		float4 WaterData[25];
+		row_major float3x4 DirectionalAmbientShared;
+		float4 DirLightDirectionShared;
+		float4 DirLightColorShared;
+		float4 CameraData;
+		float4 BufferDim;
+		float Timer;
+		uint FrameCount;
+		uint FrameCountAlwaysActive;
+		bool InInterior;  // If the area lacks a directional shadow light e.g. the sun or moon
+		bool InMapMenu;   // If the world/local map is open (note that the renderer is still deferred here)
+	};
+
+	struct GrassLightingSettings
+	{
+		float Glossiness;
+		float SpecularStrength;
+		float SubsurfaceScatteringAmount;
+		bool OverrideComplexGrassSettings;
+
+		float BasicGrassBrightness;
+		float3 pad0;
+	};
+
+	struct CPMSettings
+	{
+		bool EnableComplexMaterial;
+		bool EnableParallax;
+		bool EnableTerrainParallax;
+		bool EnableHeightBlending;
+		bool EnableShadows;
+		bool ExtendShadows;
+		float2 pad0;
+	};
+
+	struct CubemapCreatorSettings
+	{
+		uint Enabled;
+		float3 pad0;
+
+		float4 CubemapColor;
+	};
+
+	struct TerraOccSettings
+	{
+		bool EnableTerrainShadow;
+		float3 Scale;
+		float2 ZRange;
+		float2 Offset;
+	};
+
+	struct LightLimitFixSettings
+	{
+		uint EnableContactShadows;
+		uint EnableLightsVisualisation;
+		uint LightsVisualisationMode;
+		float LightsFar;
+		uint4 ClusterSize;
+	};
+
+	struct WetnessEffectsSettings
+	{
+		row_major float4x4 OcclusionViewProj;
+
+		float Time;
+		float Raining;
+		float Wetness;
+		float PuddleWetness;
+
+		bool EnableWetnessEffects;
+		float MaxRainWetness;
+		float MaxPuddleWetness;
+		float MaxShoreWetness;
+
+		uint ShoreRange;
+		float PuddleRadius;
+		float PuddleMaxAngle;
+		float PuddleMinWetness;
+
+		float MinRainWetness;
+		float SkinWetness;
+		float WeatherTransitionSpeed;
+		bool EnableRaindropFx;
+
+		bool EnableSplashes;
+		bool EnableRipples;
+		float RaindropGridSizeRcp;
+		float RaindropIntervalRcp;
+
+		float RaindropChance;
+		float SplashesLifetime;
+		float SplashesStrength;
+		float SplashesMinRadius;
+
+		float SplashesMaxRadius;
+		float RippleStrength;
+		float RippleRadius;
+		float RippleBreadth;
+
+		float RippleLifetimeRcp;
+	};
+
+	struct SkylightingSettings
+	{
+		row_major float4x4 OcclusionViewProj;
+		float4 OcclusionDir;
+
+		float4 PosOffset;   // xyz: cell origin in camera model space
+		uint4 ArrayOrigin;  // xyz: array origin
+		int4 ValidMargin;
+
+		float MinDiffuseVisibility;
+		float MinSpecularVisibility;
+		uint pad0[2];
+	};
+
+	cbuffer FeatureData : register(b6)
+	{
+		GrassLightingSettings grassLightingSettings;
+		CPMSettings extendedMaterialSettings;
+		CubemapCreatorSettings cubemapCreatorSettings;
+		TerraOccSettings terraOccSettings;
+		LightLimitFixSettings lightLimitFixSettings;
+		WetnessEffectsSettings wetnessEffectsSettings;
+		SkylightingSettings skylightingSettings;
+	};
+
+	Texture2D<float4> TexDepthSampler : register(t17);
 
 	// Get a int3 to be used as texture sample coord. [0,1] in uv space
 	int3 ConvertUVToSampleCoord(float2 uv, uint a_eyeIndex)
@@ -190,8 +189,6 @@ namespace SharedData
 		return waterData;
 	}
 
-}
-
 #endif  // PSHADER
-
+}
 #endif  // __SHARED_DATA_DEPENDENCY_HLSL__

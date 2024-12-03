@@ -524,16 +524,16 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 
 	float3 color = DLightColor.xyz;
 
-	if ((ExtraShaderDescriptor & ExtraFlags::EffectShadows) && !InMapMenu && !InInterior) {
-		float3 dirLightColor = DirLightColorShared * 0.5;
-		float3 ambientColor = mul(DirectionalAmbientShared, float4(0, 0, 1, 1));
+	if ((Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::EffectShadows) && !SharedData::InMapMenu && !SharedData::InInterior) {
+		float3 dirLightColor = SharedData::DirLightColorShared * 0.5;
+		float3 ambientColor = mul(SharedData::DirectionalAmbientShared, float4(0, 0, 1, 1));
 
 		color = ambientColor;
 		color += dirLightColor * ShadowSampling::GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
 	}
 
 #		if defined(LIGHT_LIMIT_FIX)
-	if (!(ExtraShaderDescriptor & ExtraFlags::InWorld))
+	if (!(Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::InWorld))
 #		endif
 	{
 		color.x += dot(PLightColorR * lightFadeMul, 1.0.xxxx);
@@ -609,7 +609,7 @@ PS_OUTPUT main(PS_INPUT input)
 	if (LightingInfluence.x > 0.0) {
 		float3 viewPosition = mul(FrameBuffer::CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
 		float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
-		bool inWorld = ExtraShaderDescriptor & ExtraFlags::InWorld;
+		bool inWorld = Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::InWorld;
 
 		uint clusterIndex = 0;
 		if (inWorld && LightLimitFix::GetClusterIndex(screenUV, viewPosition.z, clusterIndex)) {
@@ -640,12 +640,12 @@ PS_OUTPUT main(PS_INPUT input)
 	float4 baseTexColor = float4(1, 1, 1, 1);
 	float4 baseColor = float4(1, 1, 1, 1);
 #	if !defined(TEXTURE)
-	[branch] if (PixelShaderDescriptor & EffectFlags::GrayscaleToColor || PixelShaderDescriptor & EffectFlags::GrayscaleToAlpha)
+	[branch] if (Permutation::PixelShaderDescriptor & Permutation::EffectFlags::GrayscaleToColor || Permutation::PixelShaderDescriptor & Permutation::EffectFlags::GrayscaleToAlpha)
 #	endif
 	{
 		baseTexColor = TexBaseSampler.Sample(SampBaseSampler, input.TexCoord0.xy);
 		baseColor *= baseTexColor;
-		if (PixelShaderDescriptor & EffectFlags::IgnoreTexAlpha || PixelShaderDescriptor & EffectFlags::GrayscaleToAlpha) {
+		if (Permutation::PixelShaderDescriptor & Permutation::EffectFlags::IgnoreTexAlpha || Permutation::PixelShaderDescriptor & Permutation::EffectFlags::GrayscaleToAlpha) {
 			baseColor.w = 1;
 		}
 	}
@@ -699,10 +699,10 @@ PS_OUTPUT main(PS_INPUT input)
 	baseColorScale = MembraneVars.z;
 #	endif
 
-	if (PixelShaderDescriptor & EffectFlags::GrayscaleToAlpha)
+	if (Permutation::PixelShaderDescriptor & Permutation::EffectFlags::GrayscaleToAlpha)
 		alpha = TexGrayscaleSampler.Sample(SampGrayscaleSampler, float2(baseTexColor.w, alpha)).w;
 
-	[branch] if (PixelShaderDescriptor & EffectFlags::GrayscaleToColor)
+	[branch] if (Permutation::PixelShaderDescriptor & Permutation::EffectFlags::GrayscaleToColor)
 	{
 		float2 grayscaleToColorUv = float2(baseTexColor.y, baseColorMul.x);
 #	if defined(MEMBRANE)
@@ -739,10 +739,10 @@ PS_OUTPUT main(PS_INPUT input)
 #	endif
 	psout.Diffuse = finalColor;
 #	if defined(LIGHTING) && defined(LIGHT_LIMIT_FIX) && defined(LLFDEBUG)
-	if (lightLimitFixSettings.EnableLightsVisualisation) {
-		if (lightLimitFixSettings.LightsVisualisationMode == 0) {
+	if (SharedData::lightLimitFixSettings.EnableLightsVisualisation) {
+		if (SharedData::lightLimitFixSettings.LightsVisualisationMode == 0) {
 			psout.Diffuse.xyz = LightLimitFix::TurboColormap(0.0);
-		} else if (lightLimitFixSettings.LightsVisualisationMode == 1) {
+		} else if (SharedData::lightLimitFixSettings.LightsVisualisationMode == 1) {
 			psout.Diffuse.xyz = LightLimitFix::TurboColormap(0.0);
 		} else {
 			psout.Diffuse.xyz = LightLimitFix::TurboColormap((float)lightCount / MAX_CLUSTER_LIGHTS);
@@ -783,7 +783,7 @@ PS_OUTPUT main(PS_INPUT input)
 	psout.ScreenSpaceNormals.xy = screenSpaceNormal.xy + 0.5.xx;
 	psout.ScreenSpaceNormals.zw = 0.0.xx;
 #	else
-	psout.Normal = float4(!(ExtraShaderDescriptor & ExtraFlags::EffectShadows), 0, 0, finalColor.w);
+	psout.Normal = float4(!(Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::EffectShadows), 0, 0, finalColor.w);
 	psout.Color2 = finalColor;
 #	endif
 

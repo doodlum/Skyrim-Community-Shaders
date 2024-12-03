@@ -41,7 +41,7 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 
 [numthreads(8, 8, 1)] void main(uint3 dispatchID
 								: SV_DispatchThreadID) {
-	half2 uv = half2(dispatchID.xy + 0.5) * BufferDim.zw;
+	half2 uv = half2(dispatchID.xy + 0.5) * SharedData::BufferDim.zw;
 	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
 	uv *= FrameBuffer::DynamicResolutionParams2.xy;  // Adjust for dynamic res
 	uv = Stereo::ConvertFromStereoUV(uv, eyeIndex);
@@ -102,11 +102,11 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 		float3 positionMS = positionWS.xyz;
 #		endif
 
-		sh2 skylighting = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
+		sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
 		sh2 specularLobe = Skylighting::fauxSpecularLobeSH(normalWS, -V, roughness);
 
 		half skylightingSpecular = SphericalHarmonics::FuncProductIntegral(skylighting, specularLobe);
-		skylightingSpecular = Skylighting::mixSpecular(skylightingSettings, skylightingSpecular);
+		skylightingSpecular = Skylighting::mixSpecular(SharedData::skylightingSettings, skylightingSpecular);
 
 		half3 specularIrradiance = 1;
 
@@ -131,11 +131,11 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 
 #	if defined(SSGI)
 #		if defined(VR)
-		float3 uvF = float3((dispatchID.xy + 0.5) * BufferDim.zw, DepthTexture[dispatchID.xy]);  // calculate high precision uv of initial eye
+		float3 uvF = float3((dispatchID.xy + 0.5) * SharedData::BufferDim.zw, DepthTexture[dispatchID.xy]);  // calculate high precision uv of initial eye
 		float3 uv2 = Stereo::ConvertStereoUVToOtherEyeStereoUV(uvF, eyeIndex, false);            // calculate other eye uv
 		float3 uv1Mono = Stereo::ConvertFromStereoUV(uvF, eyeIndex);
 		float3 uv2Mono = Stereo::ConvertFromStereoUV(uv2, (1 - eyeIndex));
-		uint2 pixCoord2 = (uint2)(uv2.xy / BufferDim.zw - 0.5);
+		uint2 pixCoord2 = (uint2)(uv2.xy / SharedData::BufferDim.zw - 0.5);
 #		endif
 
 		half4 ssgiSpecular = SpecularSSGITexture[dispatchID.xy];

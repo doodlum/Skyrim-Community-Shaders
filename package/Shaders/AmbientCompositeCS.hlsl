@@ -48,7 +48,7 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 
 	half3 normalWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], half4(normalVS, 0)).xyz);
 
-	half3 directionalAmbientColor = mul(DirectionalAmbientShared, half4(normalWS, 1.0));
+	half3 directionalAmbientColor = mul(SharedData::DirectionalAmbientShared, half4(normalWS, 1.0));
 
 	half3 linAlbedo = Color::GammaToLinear(albedo) / Color::AlbedoPreMult;
 	half3 linDirectionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
@@ -66,9 +66,9 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 	positionMS.xyz += FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #	endif
 
-	sh2 skylighting = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
+	sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
 	half skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylighting, SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5))) / Math::PI;
-	skylightingDiffuse = Skylighting::mixDiffuse(skylightingSettings, skylightingDiffuse);
+	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
 
 	visibility = skylightingDiffuse;
 #endif

@@ -143,10 +143,10 @@ namespace Random
 		return frac(magic.z * frac(dot(pxCoord, magic.xy)));
 	}
 
-	float InterleavedGradientNoise(float2 pxCoord, uint frameCount)
+	float InterleavedGradientNoise(float2 pxCoord, uint frame)
 	{
 		// Temporal factor
-		float frameStep = float(frameCount % 16) * 0.0625f;
+		float frameStep = float(frame % 16) * 0.0625f;
 		pxCoord.x += frameStep * 4.7526;
 		pxCoord.y += frameStep * 3.1914;
 

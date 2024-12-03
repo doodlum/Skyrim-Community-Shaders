@@ -479,7 +479,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 viewPosition = mul(FrameBuffer::CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
-	float screenNoise = Random::InterleavedGradientNoise(input.HPosition.xy, FrameCount);
+	float screenNoise = Random::InterleavedGradientNoise(input.HPosition.xy, SharedData::FrameCount);
 
 	// Swaps direction of the backfaces otherwise they seem to get lit from the wrong direction.
 	if (!frontFace)
@@ -499,8 +499,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 
 #			if !defined(TRUE_PBR)
-	if (!complex || grassLightingSettings.OverrideComplexGrassSettings)
-		baseColor.xyz *= grassLightingSettings.BasicGrassBrightness;
+	if (!complex || SharedData::grassLightingSettings.OverrideComplexGrassSettings)
+		baseColor.xyz *= SharedData::grassLightingSettings.BasicGrassBrightness;
 #			endif  // !TRUE_PBR
 
 #			if defined(TRUE_PBR)
@@ -530,17 +530,17 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 transmissionColor = 0;
 #			endif  // TRUE_PBR
 
-	float3 dirLightColor = DirLightColorShared.xyz;
+	float3 dirLightColor = SharedData::DirLightColorShared.xyz;
 	float3 dirLightColorMultiplier = 1;
 
-	float dirLightAngle = dot(normal, DirLightDirectionShared.xyz);
+	float dirLightAngle = dot(normal, SharedData::DirLightDirectionShared.xyz);
 
 	float4 shadowColor = TexShadowMaskSampler.Load(int3(input.HPosition.xy, 0));
 
-	float dirShadow = !InInterior ? shadowColor.x : 1.0;
+	float dirShadow = !SharedData::InInterior ? shadowColor.x : 1.0;
 	float dirDetailShadow = 1.0;
 
-	if (dirShadow > 0.0 && !InInterior) {
+	if (dirShadow > 0.0 && !SharedData::InInterior) {
 		if (dirLightAngle > 0.0) {
 #			if defined(SCREEN_SPACE_SHADOWS)
 			dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
@@ -576,7 +576,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #			if defined(TRUE_PBR)
 	{
-		PBR::LightProperties lightProperties = PBR::InitLightProperties(DirLightColorShared.xyz, dirLightColorMultiplier * dirShadow, 1);
+		PBR::LightProperties lightProperties = PBR::InitLightProperties(SharedData::DirLightColorShared.xyz, dirLightColorMultiplier * dirShadow, 1);
 		float3 dirDiffuseColor, coatDirDiffuseColor, dirTransmissionColor, dirSpecularColor;
 		PBR::GetDirectLightInput(dirDiffuseColor, coatDirDiffuseColor, dirTransmissionColor, dirSpecularColor, normal, normal, viewDirection, viewDirection, DirLightDirection, DirLightDirection, lightProperties, pbrSurfaceProperties, tbn, input.TexCoord.xy);
 		lightsDiffuseColor += dirDiffuseColor;
@@ -597,11 +597,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * input.VertexNormal.w;
 
-	float dirLightBacklighting = 1.0 + saturate(dot(viewDirection, -DirLightDirectionShared.xyz));
+	float dirLightBacklighting = 1.0 + saturate(dot(viewDirection, -SharedData::DirLightDirectionShared.xyz));
 	float3 sss = dirLightColor * saturate(-dirLightAngle) * dirLightBacklighting;
 
 	if (complex)
-		lightsSpecularColor += GrassLighting::GetLightSpecularInput(DirLightDirection, viewDirection, normal, dirLightColor, grassLightingSettings.Glossiness);
+		lightsSpecularColor += GrassLighting::GetLightSpecularInput(DirLightDirection, viewDirection, normal, dirLightColor, SharedData::grassLightingSettings.Glossiness);
 #			endif
 
 #			if defined(LIGHT_LIMIT_FIX)
@@ -660,7 +660,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				lightsDiffuseColor += lightDiffuseColor;
 
 				if (complex)
-					lightsSpecularColor += GrassLighting::GetLightSpecularInput(normalizedLightDirection, viewDirection, normal, lightColor, grassLightingSettings.Glossiness) * intensityMultiplier;
+					lightsSpecularColor += GrassLighting::GetLightSpecularInput(normalizedLightDirection, viewDirection, normal, lightColor, SharedData::grassLightingSettings.Glossiness) * intensityMultiplier;
 #				endif
 			}
 		}
@@ -680,7 +680,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			else
 
 #				if !defined(SSGI)
-	float3 directionalAmbientColor = mul(DirectionalAmbientShared, float4(normal, 1.0));
+	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbientShared, float4(normal, 1.0));
 
 #					if defined(SKYLIGHTING)
 #						if defined(VR)
@@ -689,10 +689,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 positionMSSkylight = input.WorldPosition.xyz;
 #						endif
 
-	sh2 skylightingSH = Skylighting::sample(skylightingSettings, SkylightingProbeArray, positionMSSkylight, normal);
+	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMSSkylight, normal);
 	float skylighting = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(normal.xy, normal.z * 0.5 + 0.5))) / Math::PI;
 	skylighting = lerp(1.0, skylighting, Skylighting::getFadeOutFactor(input.WorldPosition));
-	skylighting = Skylighting::mixDiffuse(skylightingSettings, skylighting);
+	skylighting = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylighting);
 
 	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
 	directionalAmbientColor *= skylighting;
@@ -703,17 +703,17 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #				endif      // !SSGI
 
 	diffuseColor *= albedo;
-	diffuseColor += max(0, sss * subsurfaceColor * grassLightingSettings.SubsurfaceScatteringAmount);
+	diffuseColor += max(0, sss * subsurfaceColor * SharedData::grassLightingSettings.SubsurfaceScatteringAmount);
 
 	specularColor += lightsSpecularColor;
-	specularColor *= specColor.w * grassLightingSettings.SpecularStrength;
+	specularColor *= specColor.w * SharedData::grassLightingSettings.SpecularStrength;
 #			endif
 
 #			if defined(LIGHT_LIMIT_FIX) && defined(LLFDEBUG)
-	if (lightLimitFixSettings.EnableLightsVisualisation) {
-		if (lightLimitFixSettings.LightsVisualisationMode == 0) {
+	if (SharedData::lightLimitFixSettings.EnableLightsVisualisation) {
+		if (SharedData::lightLimitFixSettings.LightsVisualisationMode == 0) {
 			diffuseColor.xyz = LightLimitFix::TurboColormap(0);
-		} else if (lightLimitFixSettings.LightsVisualisationMode == 1) {
+		} else if (SharedData::lightLimitFixSettings.LightsVisualisationMode == 1) {
 			diffuseColor.xyz = LightLimitFix::TurboColormap(0);
 		} else {
 			diffuseColor.xyz = LightLimitFix::TurboColormap((float)lightCount / MAX_CLUSTER_LIGHTS);
@@ -766,14 +766,14 @@ PS_OUTPUT main(PS_INPUT input)
 
 	float3 viewPosition = mul(FrameBuffer::CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
-	float screenNoise = Random::InterleavedGradientNoise(input.HPosition.xy, FrameCount);
+	float screenNoise = Random::InterleavedGradientNoise(input.HPosition.xy, SharedData::FrameCount);
 
 	float4 shadowColor = TexShadowMaskSampler.Load(int3(input.HPosition.xy, 0));
 
-	float dirShadow = !InInterior ? shadowColor.x : 1.0;
+	float dirShadow = !SharedData::InInterior ? shadowColor.x : 1.0;
 	float dirDetailShadow = 1.0;
 
-	if (dirShadow > 0.0 && !InInterior) {
+	if (dirShadow > 0.0 && !SharedData::InInterior) {
 #			if defined(SCREEN_SPACE_SHADOWS)
 		dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
 #			endif  // SCREEN_SPACE_SHADOWS
@@ -799,7 +799,7 @@ PS_OUTPUT main(PS_INPUT input)
 #			endif
 	}
 
-	float3 diffuseColor = DirLightColorShared.xyz * dirShadow * lerp(dirDetailShadow, 1.0, 0.5) * 0.5;
+	float3 diffuseColor = SharedData::DirLightColorShared.xyz * dirShadow * lerp(dirDetailShadow, 1.0, 0.5) * 0.5;
 
 #			if defined(LIGHT_LIMIT_FIX)
 	uint clusterIndex = 0;
@@ -847,7 +847,7 @@ PS_OUTPUT main(PS_INPUT input)
 	normal = float3(normal.xy, normal.z * 0.5 + 0.5);
 
 #			if !defined(SSGI)
-	float3 directionalAmbientColor = mul(DirectionalAmbientShared, float4(normal, 1.0));
+	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbientShared, float4(normal, 1.0));
 	diffuseColor += directionalAmbientColor;
 #			endif  // !SSGI
 

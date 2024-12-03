@@ -5,29 +5,30 @@
 #include "Common/Random.hlsli"
 #include "Common/SharedData.hlsli"
 
-Texture2DArray<float4> SharedTexShadowMapSampler : register(t18);
-
-struct PerGeometry
-{
-	float4 VPOSOffset;
-	float4 ShadowSampleParam;    // fPoissonRadiusScale / iShadowMapResolution in z and w
-	float4 EndSplitDistances;    // cascade end distances int xyz, cascade count int z
-	float4 StartSplitDistances;  // cascade start ditances int xyz, 4 int z
-	float4 FocusShadowFadeParam;
-	float4 DebugColor;
-	float4 PropertyColor;
-	float4 AlphaTestRef;
-	float4 ShadowLightParam;  // Falloff in x, ShadowDistance squared in z
-	float4x3 FocusShadowMapProj[4];
-	// Since PerGeometry is passed between c++ and hlsl, can't have different defines due to strong typing
-	float4x3 ShadowMapProj[2][3];
-	float4x4 CameraViewProjInverse[2];
-};
-
-StructuredBuffer<PerGeometry> SharedPerShadow : register(t19);
-
 namespace ShadowSampling
 {
+
+	Texture2DArray<float4> SharedShadowMap : register(t18);
+
+	struct PerGeometry
+	{
+		float4 VPOSOffset;
+		float4 ShadowSampleParam;    // fPoissonRadiusScale / iShadowMapResolution in z and w
+		float4 EndSplitDistances;    // cascade end distances int xyz, cascade count int z
+		float4 StartSplitDistances;  // cascade start ditances int xyz, 4 int z
+		float4 FocusShadowFadeParam;
+		float4 DebugColor;
+		float4 PropertyColor;
+		float4 AlphaTestRef;
+		float4 ShadowLightParam;  // Falloff in x, ShadowDistance squared in z
+		float4x3 FocusShadowMapProj[4];
+		// Since PerGeometry is passed between c++ and hlsl, can't have different defines due to strong typing
+		float4x3 ShadowMapProj[2][3];
+		float4x4 CameraViewProjInverse[2];
+	};
+
+	StructuredBuffer<PerGeometry> SharedPerShadow : register(t19);
+
 	float GetShadowDepth(float3 positionWS, uint eyeIndex)
 	{
 		float4 positionCSShifted = mul(FrameBuffer::CameraViewProj[eyeIndex], float4(positionWS, 1));
@@ -55,7 +56,7 @@ namespace ShadowSampling
 		float shadow = 0.0;
 		if (sD.EndSplitDistances.z >= GetShadowDepth(positionWS, eyeIndex)) {
 			for (uint i = 0; i < sampleCount; i++) {
-				float3 rnd = Random::R3Modified(i + FrameCount * sampleCount, seed / 4294967295.f);
+				float3 rnd = Random::R3Modified(i + SharedData::FrameCount * sampleCount, seed / 4294967295.f);
 
 				// https://stats.stackexchange.com/questions/8021/how-to-generate-uniformly-distributed-points-in-the-3-d-unit-ball
 				float phi = rnd.x * Math::TAU;
@@ -71,7 +72,7 @@ namespace ShadowSampling
 
 				float3 positionLS = mul(transpose(sD.ShadowMapProj[eyeIndex][cascadeIndex]), float4(positionWS + sampleOffset, 1));
 
-				float4 depths = SharedTexShadowMapSampler.GatherRed(LinearSampler, float3(saturate(positionLS.xy), cascadeIndex), 0);
+				float4 depths = SharedShadowMap.GatherRed(LinearSampler, float3(saturate(positionLS.xy), cascadeIndex), 0);
 				shadow += dot(depths > compareValue[cascadeIndex], 0.25);
 			}
 		} else {
@@ -98,7 +99,7 @@ namespace ShadowSampling
 
 			float2 sampleUV = layerIndexRcp * sampleOffset * sampleOffsetScale + baseUV;
 
-			float4 depths = SharedTexShadowMapSampler.GatherRed(LinearSampler, float3(saturate(sampleUV), cascadeIndex), 0);
+			float4 depths = SharedShadowMap.GatherRed(LinearSampler, float3(saturate(sampleUV), cascadeIndex), 0);
 			visibility += dot(depths > compareValue, 0.25);
 		}
 
@@ -171,7 +172,7 @@ namespace ShadowSampling
 
 		shadow = worldShadow;
 
-		float phase = dot(normalize(startPosWS.xyz), DirLightDirectionShared.xyz) * 0.5 + 0.5;
+		float phase = dot(normalize(startPosWS.xyz), SharedData::DirLightDirectionShared.xyz) * 0.5 + 0.5;
 
 		worldShadow *= phase;
 
@@ -219,7 +220,7 @@ namespace ShadowSampling
 
 			samplePositionLS.xy += 8.0 * sampleOffset * rcp(shadowRange);
 
-			float4 depths = SharedTexShadowMapSampler.GatherRed(LinearSampler, float3(saturate(samplePositionLS.xy), cascadeIndex), 0);
+			float4 depths = SharedShadowMap.GatherRed(LinearSampler, float3(saturate(samplePositionLS.xy), cascadeIndex), 0);
 
 			vlShadow += dot(depths > (samplePositionLS.z - 0.0005), 0.25);
 		}

@@ -1,9 +1,10 @@
 #include "Common/Math.hlsli"
 
-Texture2D<float4> _Glint2023NoiseMap : register(t20);
 
 namespace Glints
 {
+	Texture2D<float4> Glint2023NoiseMap : register(t20);
+
 	//=======================================================================================
 	// TOOLS
 	//=======================================================================================
@@ -236,7 +237,7 @@ namespace Glints
 		slopeLerp = frac(slope2);
 		uint2 slopeCoord = uint2(floor(slope2)) % size;
 
-		float4 packedRead = _Glint2023NoiseMap[slopeCoord];
+		float4 packedRead = Glint2023NoiseMap[slopeCoord];
 		UnpackFloatParallel4(packedRead, outUniform, outGaussian);
 	}
 

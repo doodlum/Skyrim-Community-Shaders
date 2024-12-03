@@ -64,14 +64,14 @@ float4 GetReflectionColor(
 			float3 binaryMinRaySample = prevRaySample;
 			float3 binaryMaxRaySample = raySample;
 			float3 binaryRaySample = raySample;
-			uint2 binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim.xy);
+			uint2 binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * SharedData::BufferDim.xy);
 			uint2 prevBinaryRaySampleCoords;
 			float depthThicknessFactor;
 
 			for (int k = 0; k < binaryIterations; k++) {
 				prevBinaryRaySampleCoords = binaryRaySampleCoords;
 				binaryRaySample = lerp(binaryMinRaySample, binaryMaxRaySample, 0.5);
-				binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * BufferDim.xy);
+				binaryRaySampleCoords = round(ConvertRaySample(binaryRaySample.xy, eyeIndex) * SharedData::BufferDim.xy);
 
 				// Check if the optimal sampling location has already been found
 				if (all(binaryRaySampleCoords == prevBinaryRaySampleCoords))

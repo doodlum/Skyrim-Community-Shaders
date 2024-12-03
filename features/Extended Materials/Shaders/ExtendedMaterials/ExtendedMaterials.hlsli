@@ -187,14 +187,14 @@ namespace ExtendedMaterials
 #if defined(LANDSCAPE)
 // When CPM flag is disabled, will use linear blending as before.
 #	if defined(TRUE_PBR)
-		float blendFactor = extendedMaterialSettings.EnableHeightBlending ? sqrt(saturate(1 - nearBlendToFar)) : 0;
+		float blendFactor = SharedData::extendedMaterialSettings.EnableHeightBlending ? sqrt(saturate(1 - nearBlendToFar)) : 0;
 		float4 w1 = lerp(input.LandBlendWeights1, smoothstep(0, 1, input.LandBlendWeights1), blendFactor);
 		float2 w2 = lerp(input.LandBlendWeights2.xy, smoothstep(0, 1, input.LandBlendWeights2.xy), blendFactor);
 		float scale = max(params[0].HeightScale * w1.x, max(params[1].HeightScale * w1.y, max(params[2].HeightScale * w1.z, max(params[3].HeightScale * w1.w, max(params[4].HeightScale * w2.x, params[5].HeightScale * w2.y)))));
 		float scalercp = rcp(scale);
 		float maxHeight = 0.1 * scale;
 #	else
-		float blendFactor = extendedMaterialSettings.EnableHeightBlending ? saturate(1 - nearBlendToFar) : INV_HEIGHT_POWER;
+		float blendFactor = SharedData::extendedMaterialSettings.EnableHeightBlending ? saturate(1 - nearBlendToFar) : INV_HEIGHT_POWER;
 		float scale = 1;
 		float maxHeight = 0.1 * scale;
 #	endif
