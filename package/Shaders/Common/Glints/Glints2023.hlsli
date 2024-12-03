@@ -1,6 +1,5 @@
 #include "Common/Math.hlsli"
 
-
 namespace Glints
 {
 	Texture2D<float4> Glint2023NoiseMap : register(t20);
