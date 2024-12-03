@@ -609,14 +609,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	uint lightCount = 0;
 
 	if (LightLimitFix::GetClusterIndex(screenUV, viewPosition.z, clusterIndex)) {
-		lightCount = lightGrid[clusterIndex].lightCount;
+		lightCount = LightLimitFix::lightGrid[clusterIndex].lightCount;
 		if (lightCount) {
-			uint lightOffset = lightGrid[clusterIndex].offset;
+			uint lightOffset = LightLimitFix::lightGrid[clusterIndex].offset;
 
 			[loop] for (uint i = 0; i < lightCount; i++)
 			{
-				uint light_index = lightList[lightOffset + i];
-				StructuredLight light = lights[light_index];
+				uint light_index = LightLimitFix::lightList[lightOffset + i];
+				LightLimitFix::Light light = LightLimitFix::lights[light_index];
 
 				float3 lightDirection = light.positionWS[eyeIndex].xyz - input.WorldPosition.xyz;
 				float lightDist = length(lightDirection);
@@ -630,7 +630,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				float lightShadow = 1.0;
 
 				float shadowComponent = 1.0;
-				if (light.lightFlags & LightFlags::Shadow) {
+				if (light.lightFlags & LightLimitFix::LightFlags::Shadow) {
 					shadowComponent = shadowColor[light.shadowLightIndex];
 					lightShadow *= shadowComponent;
 				}
@@ -689,7 +689,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 positionMSSkylight = input.WorldPosition.xyz;
 #						endif
 
-	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMSSkylight, normal);
+	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, positionMSSkylight, normal);
 	float skylighting = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(normal.xy, normal.z * 0.5 + 0.5))) / Math::PI;
 	skylighting = lerp(1.0, skylighting, Skylighting::getFadeOutFactor(input.WorldPosition));
 	skylighting = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylighting);
@@ -808,12 +808,12 @@ PS_OUTPUT main(PS_INPUT input)
 	if (LightLimitFix::GetClusterIndex(screenUV, viewPosition.z, clusterIndex)) {
 		lightCount = lightGrid[clusterIndex].lightCount;
 		if (lightCount) {
-			uint lightOffset = lightGrid[clusterIndex].offset;
+			uint lightOffset = LightLimitFix::lightGrid[clusterIndex].offset;
 
 			[loop] for (uint i = 0; i < lightCount; i++)
 			{
-				uint light_index = lightList[lightOffset + i];
-				StructuredLight light = lights[light_index];
+				uint light_index = LightLimitFix::lightList[lightOffset + i];
+				Light light = LightLimitFix::lights[light_index];
 
 				float3 lightDirection = light.positionWS[eyeIndex].xyz - input.WorldPosition.xyz;
 				float lightDist = length(lightDirection);
@@ -827,7 +827,7 @@ PS_OUTPUT main(PS_INPUT input)
 				float lightShadow = 1.0;
 
 				float shadowComponent = 1.0;
-				if (light.lightFlags & LightFlags::Shadow) {
+				if (light.lightFlags & LightLimitFix::LightFlags::Shadow) {
 					shadowComponent = shadowColor[light.shadowLightIndex];
 					lightShadow *= shadowComponent;
 				}

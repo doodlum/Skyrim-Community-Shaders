@@ -137,7 +137,7 @@ namespace SharedData
 		SkylightingSettings skylightingSettings;
 	};
 
-	Texture2D<float4> TexDepthSampler : register(t17);
+	Texture2D<float4> DepthTexture : register(t17);
 
 	// Get a int3 to be used as texture sample coord. [0,1] in uv space
 	int3 ConvertUVToSampleCoord(float2 uv, uint a_eyeIndex)
@@ -150,7 +150,7 @@ namespace SharedData
 	// Get a raw depth from the depth buffer. [0,1] in uv space
 	float GetDepth(float2 uv, uint a_eyeIndex = 0)
 	{
-		return TexDepthSampler.Load(ConvertUVToSampleCoord(uv, a_eyeIndex)).x;
+		return DepthTexture.Load(ConvertUVToSampleCoord(uv, a_eyeIndex)).x;
 	}
 
 	float GetScreenDepth(float depth)

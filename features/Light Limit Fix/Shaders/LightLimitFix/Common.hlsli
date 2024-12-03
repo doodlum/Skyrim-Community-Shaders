@@ -27,7 +27,7 @@ struct LightGrid
 	uint pad0[2];
 };
 
-struct StructuredLight
+struct Light
 {
 	float3 color;
 	float radius;

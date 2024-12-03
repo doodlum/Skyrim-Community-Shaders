@@ -4,7 +4,7 @@ namespace WaterEffects
 {
 	float2 PanCausticsUV(float2 uv, float speed, float tiling)
 	{
-		return frac((float2(1, 0) * Timer * speed) + (uv * tiling));
+		return frac((float2(1, 0) * SharedData::Timer * speed) + (uv * tiling));
 	}
 
 	float3 SampleCaustics(float2 uv)

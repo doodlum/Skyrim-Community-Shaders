@@ -1,16 +1,16 @@
-struct CollisionData
-{
-	float4 centre[2];
-};
-
-cbuffer GrassCollisionPerFrame : register(b5)
-{
-	CollisionData collisionData[256];
-	uint numCollisions;
-}
-
 namespace GrassCollision
 {
+	struct CollisionData
+	{
+		float4 centre[2];
+	};
+
+	cbuffer GrassCollisionPerFrame : register(b5)
+	{
+		CollisionData collisionData[256];
+		uint numCollisions;
+	}
+
 	float3 GetDisplacedPosition(float3 position, float alpha, uint eyeIndex = 0)
 	{
 		float3 worldPosition = mul(World[eyeIndex], float4(position, 1.0)).xyz;

@@ -613,13 +613,13 @@ PS_OUTPUT main(PS_INPUT input)
 
 		uint clusterIndex = 0;
 		if (inWorld && LightLimitFix::GetClusterIndex(screenUV, viewPosition.z, clusterIndex)) {
-			lightCount = lightGrid[clusterIndex].lightCount;
-			uint lightOffset = lightGrid[clusterIndex].offset;
+			lightCount = LightLimitFix::lightGrid[clusterIndex].lightCount;
+			uint lightOffset = LightLimitFix::lightGrid[clusterIndex].offset;
 			[loop] for (uint i = 0; i < lightCount; i++)
 			{
-				uint light_index = lightList[lightOffset + i];
-				StructuredLight light = lights[light_index];
-				if (LightLimitFix::IsLightIgnored(light) || light.lightFlags & LightFlags::Shadow) {
+				uint light_index = LightLimitFix::lightList[lightOffset + i];
+				LightLimitFix::Light light = LightLimitFix::lights[light_index];
+				if (LightLimitFix::IsLightIgnored(light) || light.lightFlags & LightLimitFix::LightFlags::Shadow) {
 					continue;
 				}
 				float3 lightDirection = light.positionWS[eyeIndex].xyz - input.WorldPosition.xyz;

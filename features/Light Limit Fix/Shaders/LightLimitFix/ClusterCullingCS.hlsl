@@ -9,13 +9,13 @@ cbuffer PerFrame : register(b0)
 //https://github.com/pezcode/Cluster
 
 StructuredBuffer<ClusterAABB> clusters : register(t0);
-StructuredBuffer<StructuredLight> lights : register(t1);
+StructuredBuffer<Light> lights : register(t1);
 
 RWStructuredBuffer<uint> lightIndexCounter : register(u0);
 RWStructuredBuffer<uint> lightIndexList : register(u1);
 RWStructuredBuffer<LightGrid> lightGrid : register(u2);
 
-groupshared StructuredLight sharedLights[GROUP_SIZE];
+groupshared Light sharedLights[GROUP_SIZE];
 
 bool LightIntersectsCluster(float3 position, float radius, ClusterAABB cluster)
 {
@@ -45,14 +45,14 @@ bool LightIntersectsCluster(float3 position, float radius, ClusterAABB cluster)
 
 	if (groupIndex < LightCount) {
 		uint lightIndex = groupIndex;
-		StructuredLight light = lights[lightIndex];
+		Light light = lights[lightIndex];
 		sharedLights[groupIndex] = light;
 	}
 
 	GroupMemoryBarrierWithGroupSync();
 
 	for (uint i = 0; i < LightCount; i++) {
-		StructuredLight light = lights[i];
+		Light light = lights[i];
 
 		float radius = light.radius * light.radius;
 

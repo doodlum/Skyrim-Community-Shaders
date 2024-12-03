@@ -1747,9 +1747,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 
 #		if defined(DEFERRED)
-	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMSSkylight, worldSpaceNormal);
+	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, positionMSSkylight, worldSpaceNormal);
 #		else
-	sh2 skylightingSH = inWorld ? Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMSSkylight, worldSpaceNormal) : float4(sqrt(4.0 * Math::PI), 0, 0, 0);
+	sh2 skylightingSH = inWorld ? Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, positionMSSkylight, worldSpaceNormal) : float4(sqrt(4.0 * Math::PI), 0, 0, 0);
 #		endif
 
 #	endif
@@ -1926,7 +1926,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		if (useScreenSpaceShadows) {
 			dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.Position.xyz, screenUV, screenNoise, eyeIndex);
 #		if defined(TREE_ANIM)
-			PerGeometry sD = SharedPerShadow[0];
+			ShadowSampling::ShadowData sD = ShadowSampling::SharedShadowData[0];
 			dirDetailShadow = lerp(1.0, dirDetailShadow, saturate(viewPosition.z / sqrt(sD.ShadowLightParam.z)));
 #		endif
 		}
@@ -2107,27 +2107,27 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			endif
 
 	uint numClusteredLights = 0;
-	uint totalLightCount = strictLights[0].NumStrictLights;
+	uint totalLightCount = LightLimitFix::strictLights[0].NumStrictLights;
 	uint clusterIndex = 0;
 	uint lightOffset = 0;
 	if (inWorld && LightLimitFix::GetClusterIndex(screenUV, viewPosition.z, clusterIndex)) {
-		numClusteredLights = lightGrid[clusterIndex].lightCount;
+		numClusteredLights = LightLimitFix::lightGrid[clusterIndex].lightCount;
 		totalLightCount += numClusteredLights;
-		lightOffset = lightGrid[clusterIndex].offset;
+		lightOffset = LightLimitFix::lightGrid[clusterIndex].offset;
 	}
 
 	uint contactShadowSteps = round(4.0 * (1.0 - saturate(viewPosition.z / 1024.0)));
 
 	[loop] for (uint lightIndex = 0; lightIndex < totalLightCount; lightIndex++)
 	{
-		StructuredLight light;
-		if (lightIndex < strictLights[0].NumStrictLights) {
-			light = strictLights[0].StrictLights[lightIndex];
+		LightLimitFix::Light light;
+		if (lightIndex < LightLimitFix::strictLights[0].NumStrictLights) {
+			light = LightLimitFix::strictLights[0].StrictLights[lightIndex];
 		} else {
-			uint clusteredLightIndex = lightList[lightOffset + (lightIndex - strictLights[0].NumStrictLights)];
-			light = lights[clusteredLightIndex];
+			uint clusteredLightIndex = LightLimitFix::lightList[lightOffset + (lightIndex - LightLimitFix::strictLights[0].NumStrictLights)];
+			light = LightLimitFix::lights[clusteredLightIndex];
 
-			if (LightLimitFix::IsLightIgnored(light) || (!(Permutation::PixelShaderDescriptor & Permutation::LightingFlags::DefShadow) && light.lightFlags & LightFlags::Shadow)) {
+			if (LightLimitFix::IsLightIgnored(light) || (!(Permutation::PixelShaderDescriptor & Permutation::LightingFlags::DefShadow) && light.lightFlags & LightLimitFix::LightFlags::Shadow)) {
 				continue;
 			}
 		}
@@ -2143,7 +2143,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		float lightShadow = 1.0;
 
 		float shadowComponent = 1.0;
-		if (light.lightFlags & LightFlags::Shadow) {
+		if (light.lightFlags & LightLimitFix::LightFlags::Shadow) {
 			shadowComponent = shadowColor[light.shadowLightIndex];
 			lightShadow *= shadowComponent;
 		}
@@ -2155,7 +2155,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		[branch] if (
 			inWorld && !FrameBuffer::FrameParams.z &&
 			SharedData::lightLimitFixSettings.EnableContactShadows &&
-			!(light.lightFlags & LightFlags::Simple) &&
+			!(light.lightFlags & LightLimitFix::LightFlags::Simple) &&
 			shadowComponent != 0.0 &&
 			lightAngle > 0.0)
 		{
@@ -2176,7 +2176,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			if defined(EMAT)
 		[branch] if (
 			SharedData::extendedMaterialSettings.EnableShadows &&
-			!(light.lightFlags & LightFlags::Simple) &&
+			!(light.lightFlags & LightLimitFix::LightFlags::Simple) &&
 			lightAngle > 0.0 &&
 			shadowComponent != 0.0 &&
 			contactShadow != 0.0)

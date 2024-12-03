@@ -10,7 +10,7 @@ namespace ShadowSampling
 
 	Texture2DArray<float4> SharedShadowMap : register(t18);
 
-	struct PerGeometry
+	struct ShadowData
 	{
 		float4 VPOSOffset;
 		float4 ShadowSampleParam;    // fPoissonRadiusScale / iShadowMapResolution in z and w
@@ -22,12 +22,12 @@ namespace ShadowSampling
 		float4 AlphaTestRef;
 		float4 ShadowLightParam;  // Falloff in x, ShadowDistance squared in z
 		float4x3 FocusShadowMapProj[4];
-		// Since PerGeometry is passed between c++ and hlsl, can't have different defines due to strong typing
+		// Since ShadowData is passed between c++ and hlsl, can't have different defines due to strong typing
 		float4x3 ShadowMapProj[2][3];
 		float4x4 CameraViewProjInverse[2];
 	};
 
-	StructuredBuffer<PerGeometry> SharedPerShadow : register(t19);
+	StructuredBuffer<ShadowData> SharedShadowData : register(t19);
 
 	float GetShadowDepth(float3 positionWS, uint eyeIndex)
 	{
@@ -37,7 +37,7 @@ namespace ShadowSampling
 
 	float Get3DFilteredShadow(float3 positionWS, float3 viewDirection, float2 screenPosition, uint eyeIndex)
 	{
-		PerGeometry sD = SharedPerShadow[0];
+		ShadowData sD = SharedShadowData[0];
 
 		float fadeFactor = 1.0 - pow(saturate(dot(positionWS, positionWS) / sD.ShadowLightParam.z), 8);
 		uint sampleCount = ceil(8.0 * (1.0 - saturate(length(positionWS) / sqrt(sD.ShadowLightParam.z))));
@@ -108,7 +108,7 @@ namespace ShadowSampling
 
 	float Get2DFilteredShadow(float noise, float2x2 rotationMatrix, float3 positionWS, uint eyeIndex)
 	{
-		PerGeometry sD = SharedPerShadow[0];
+		ShadowData sD = SharedShadowData[0];
 
 		float shadowMapDepth = GetShadowDepth(positionWS, eyeIndex);
 
@@ -176,7 +176,7 @@ namespace ShadowSampling
 
 		worldShadow *= phase;
 
-		PerGeometry sD = SharedPerShadow[0];
+		ShadowData sD = SharedShadowData[0];
 
 		float fadeFactor = 1.0 - saturate(length(endPosWS) / 4096.0);
 		uint sampleCount = ceil(4.0 * fadeFactor);

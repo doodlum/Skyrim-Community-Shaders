@@ -1,28 +1,31 @@
-#include "LightLimitFix\Common.hlsli"
-struct StrictLightData
-{
-	StructuredLight StrictLights[15];
-	uint NumStrictLights;
-	int RoomIndex;
-	uint pad0[2];
-};
-
-StructuredBuffer<StructuredLight> lights : register(t35);
-StructuredBuffer<uint> lightList : register(t36);       //MAX_CLUSTER_LIGHTS * 16^3
-StructuredBuffer<LightGrid> lightGrid : register(t37);  //16^3
-StructuredBuffer<StrictLightData> strictLights : register(t38);
 
 namespace LightLimitFix
 {
+	
+	#include "LightLimitFix/Common.hlsli"
+
+	struct StrictLightData
+	{
+		Light StrictLights[15];
+		uint NumStrictLights;
+		int RoomIndex;
+		uint pad0[2];
+	};
+
+	StructuredBuffer<Light> lights : register(t35);
+	StructuredBuffer<uint> lightList : register(t36);       //MAX_CLUSTER_LIGHTS * 16^3
+	StructuredBuffer<LightGrid> lightGrid : register(t37);  //16^3
+	StructuredBuffer<StrictLightData> strictLights : register(t38);
+
 	bool GetClusterIndex(in float2 uv, in float z, inout uint clusterIndex)
 	{
-		const uint3 clusterSize = lightLimitFixSettings.ClusterSize.xyz;
+		const uint3 clusterSize = SharedData::lightLimitFixSettings.ClusterSize.xyz;
 
-		if (z < CameraData.y || z > CameraData.x)
+		if (z < SharedData::CameraData.y || z > SharedData::CameraData.x)
 			return false;
 
-		float clampedZ = clamp(z, CameraData.y, CameraData.x);
-		uint clusterZ = uint(max((log2(z) - log2(CameraData.y)) * clusterSize.z / log2(CameraData.x / CameraData.y), 0.0));
+		float clampedZ = clamp(z, SharedData::CameraData.y, SharedData::CameraData.x);
+		uint clusterZ = uint(max((log2(z) - log2(SharedData::CameraData.y)) * clusterSize.z / log2(SharedData::CameraData.x / SharedData::CameraData.y), 0.0));
 		uint3 cluster = uint3(uint2(uv * clusterSize.xy), clusterZ);
 
 		clusterIndex = cluster.x + (clusterSize.x * cluster.y) + (clusterSize.x * clusterSize.y * cluster.z);
@@ -106,7 +109,7 @@ namespace LightLimitFix
 			dot(v4, kBlueVec4) + dot(v2, kBlueVec2));
 	}
 
-	bool IsLightIgnored(StructuredLight light)
+	bool IsLightIgnored(Light light)
 	{
 		bool lightIgnored = false;
 		if ((light.lightFlags & LightFlags::PortalStrict) && strictLights[0].RoomIndex >= 0) {
