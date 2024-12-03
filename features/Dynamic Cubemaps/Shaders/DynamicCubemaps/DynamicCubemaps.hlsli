@@ -1,8 +1,8 @@
-TextureCube<float4> specularTexture : register(t30);
-TextureCube<float4> specularTextureNoReflections : register(t31);
-
 namespace DynamicCubemaps
 {
+	TextureCube<float4> EnvReflectionsTexture : register(t30);
+	TextureCube<float4> EnvTexture : register(t31);
+
 	// https://www.unrealengine.com/en-US/blog/physically-based-shading-on-mobile
 	half2 EnvBRDFApprox(half Roughness, half NoV)
 	{
@@ -26,7 +26,7 @@ namespace DynamicCubemaps
 		float horizon = min(1.0 + dot(R, VN), 1.0);
 		horizon *= horizon * horizon;
 
-		float3 specularIrradiance = specularTexture.SampleLevel(SampColorSampler, R, level).xyz;
+		float3 specularIrradiance = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level).xyz;
 		specularIrradiance *= horizon;
 		specularIrradiance = Color::GammaToLinear(specularIrradiance);
 
@@ -55,7 +55,7 @@ namespace DynamicCubemaps
 #	if defined(DEFERRED)
 		return horizon * ((F0 + S) * specularBRDF.x + specularBRDF.y);
 #	else
-		float3 specularIrradiance = specularTexture.SampleLevel(SampColorSampler, R, level).xyz;
+		float3 specularIrradiance = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level).xyz;
 		specularIrradiance = Color::GammaToLinear(specularIrradiance);
 
 		return specularIrradiance * ((F0 + S) * specularBRDF.x + specularBRDF.y);
@@ -68,7 +68,7 @@ namespace DynamicCubemaps
 		float2 specularBRDF = EnvBRDFApprox(roughness, NoV);
 		if (specularBRDF.y > 0.001) {
 			float3 R = reflect(-V, N);
-			float3 specularIrradiance = specularTexture.SampleLevel(SampColorSampler, R, level).xyz;
+			float3 specularIrradiance = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level).xyz;
 
 			// Horizon specular occlusion
 			// https://marmosetco.tumblr.com/post/81245981087
