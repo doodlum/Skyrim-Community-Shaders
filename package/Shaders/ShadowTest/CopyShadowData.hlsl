@@ -97,7 +97,7 @@ cbuffer PerFrame3 : register(b2)
 #endif  // VR
 }
 
-RWStructuredBuffer<PerGeometry> copiedData : register(u0);
+RWStructuredBuffer<PerGeometry> ShadowData : register(u0);
 
 [numthreads(1, 1, 1)] void main() {
 	PerGeometry perGeometry;
@@ -125,5 +125,5 @@ RWStructuredBuffer<PerGeometry> copiedData : register(u0);
 	perGeometry.StartSplitDistances = StartSplitDistances;
 	perGeometry.FocusShadowFadeParam = FocusShadowFadeParam;
 
-	copiedData[0] = perGeometry;
+	ShadowData[0] = perGeometry;
 }
