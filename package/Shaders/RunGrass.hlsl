@@ -530,10 +530,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 transmissionColor = 0;
 #			endif  // TRUE_PBR
 
-	float3 dirLightColor = SharedData::DirLightColorShared.xyz;
+	float3 dirLightColor = SharedData::DirLightColor.xyz;
 	float3 dirLightColorMultiplier = 1;
 
-	float dirLightAngle = dot(normal, SharedData::DirLightDirectionShared.xyz);
+	float dirLightAngle = dot(normal, SharedData::DirLightDirection.xyz);
 
 	float4 shadowColor = TexShadowMaskSampler.Load(int3(input.HPosition.xy, 0));
 
@@ -576,7 +576,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #			if defined(TRUE_PBR)
 	{
-		PBR::LightProperties lightProperties = PBR::InitLightProperties(SharedData::DirLightColorShared.xyz, dirLightColorMultiplier * dirShadow, 1);
+		PBR::LightProperties lightProperties = PBR::InitLightProperties(SharedData::DirLightColor.xyz, dirLightColorMultiplier * dirShadow, 1);
 		float3 dirDiffuseColor, coatDirDiffuseColor, dirTransmissionColor, dirSpecularColor;
 		PBR::GetDirectLightInput(dirDiffuseColor, coatDirDiffuseColor, dirTransmissionColor, dirSpecularColor, normal, normal, viewDirection, viewDirection, DirLightDirection, DirLightDirection, lightProperties, pbrSurfaceProperties, tbn, input.TexCoord.xy);
 		lightsDiffuseColor += dirDiffuseColor;
@@ -597,7 +597,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * input.VertexNormal.w;
 
-	float dirLightBacklighting = 1.0 + saturate(dot(viewDirection, -SharedData::DirLightDirectionShared.xyz));
+	float dirLightBacklighting = 1.0 + saturate(dot(viewDirection, -SharedData::DirLightDirection.xyz));
 	float3 sss = dirLightColor * saturate(-dirLightAngle) * dirLightBacklighting;
 
 	if (complex)
@@ -680,7 +680,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			else
 
 #				if !defined(SSGI)
-	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbientShared, float4(normal, 1.0));
+	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 
 #					if defined(SKYLIGHTING)
 #						if defined(VR)
@@ -799,7 +799,7 @@ PS_OUTPUT main(PS_INPUT input)
 #			endif
 	}
 
-	float3 diffuseColor = SharedData::DirLightColorShared.xyz * dirShadow * lerp(dirDetailShadow, 1.0, 0.5) * 0.5;
+	float3 diffuseColor = SharedData::DirLightColor.xyz * dirShadow * lerp(dirDetailShadow, 1.0, 0.5) * 0.5;
 
 #			if defined(LIGHT_LIMIT_FIX)
 	uint clusterIndex = 0;
@@ -847,7 +847,7 @@ PS_OUTPUT main(PS_INPUT input)
 	normal = float3(normal.xy, normal.z * 0.5 + 0.5);
 
 #			if !defined(SSGI)
-	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbientShared, float4(normal, 1.0));
+	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 	diffuseColor += directionalAmbientColor;
 #			endif  // !SSGI
 

@@ -48,7 +48,7 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 
 	half3 normalWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], half4(normalVS, 0)).xyz);
 
-	half3 directionalAmbientColor = mul(SharedData::DirectionalAmbientShared, half4(normalWS, 1.0));
+	half3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, half4(normalWS, 1.0));
 
 	half3 linAlbedo = Color::GammaToLinear(albedo) / Color::AlbedoPreMult;
 	half3 linDirectionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
@@ -76,7 +76,7 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 #if defined(SSGI)
 #	if defined(VR)
 	float3 uvF = float3((dispatchID.xy + 0.5) * SharedData::BufferDim.zw, DepthTexture[dispatchID.xy]);  // calculate high precision uv of initial eye
-	float3 uv2 = Stereo::ConvertStereoUVToOtherEyeStereoUV(uvF, eyeIndex, false);                        // calculate other eye uv
+	float3 uv2 = Stereo::ConvertStereoUVToOtherEyeStereoUV(uvF, eyeIndex, false);            // calculate other eye uv
 	float3 uv1Mono = Stereo::ConvertFromStereoUV(uvF, eyeIndex);
 	float3 uv2Mono = Stereo::ConvertFromStereoUV(uv2, (1 - eyeIndex));
 	uint2 pixCoord2 = (uint2)(uv2.xy / SharedData::BufferDim.zw - 0.5);

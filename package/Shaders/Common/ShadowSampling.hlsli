@@ -172,7 +172,7 @@ namespace ShadowSampling
 
 		shadow = worldShadow;
 
-		float phase = dot(normalize(startPosWS.xyz), SharedData::DirLightDirectionShared.xyz) * 0.5 + 0.5;
+		float phase = dot(normalize(startPosWS.xyz), SharedData::DirLightDirection.xyz) * 0.5 + 0.5;
 
 		worldShadow *= phase;
 

@@ -19,7 +19,7 @@ namespace CloudShadows
 
 	float GetCloudShadowMult(float3 worldPosition, SamplerState textureSampler)
 	{
-		float3 cloudSampleDir = GetCloudShadowSampleDir(worldPosition, SharedData::DirLightDirectionShared.xyz).xyz;
+		float3 cloudSampleDir = GetCloudShadowSampleDir(worldPosition, SharedData::DirLightDirection.xyz).xyz;
 		float cloudCubeSample = CloudShadowsTexture.SampleLevel(textureSampler, cloudSampleDir, 0).w;
 		return 1.0 - saturate(cloudCubeSample);
 	}

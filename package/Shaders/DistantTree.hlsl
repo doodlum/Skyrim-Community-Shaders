@@ -230,14 +230,14 @@ PS_OUTPUT main(PS_INPUT input)
 	}
 #			endif
 
-	float3 diffuseColor = SharedData::DirLightColorShared.xyz * dirShadow * 0.5;
+	float3 diffuseColor = SharedData::DirLightColor.xyz * dirShadow * 0.5;
 
 	float3 ddx = ddx_coarse(input.WorldPosition.xyz);
 	float3 ddy = ddy_coarse(input.WorldPosition.xyz);
 	float3 normal = normalize(cross(ddx, ddy));
 
 #			if !defined(SSGI)
-	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbientShared, float4(normal, 1.0));
+	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 	diffuseColor += directionalAmbientColor;
 #			endif
 
@@ -252,13 +252,13 @@ PS_OUTPUT main(PS_INPUT input)
 	psout.Albedo = float4(baseColor.xyz, 1);
 	psout.Masks = float4(0, 0, 1, 0);
 #		else
-	float3 diffuseColor = SharedData::DirLightColorShared.xyz * 0.5;
+	float3 diffuseColor = SharedData::DirLightColor.xyz * 0.5;
 
 	float3 ddx = ddx_coarse(input.WorldPosition.xyz);
 	float3 ddy = ddy_coarse(input.WorldPosition.xyz);
 	float3 normal = normalize(cross(ddx, ddy));
 
-	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbientShared, float4(normal, 1.0));
+	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 	diffuseColor += directionalAmbientColor;
 
 	float3 color = diffuseColor * baseColor.xyz;
