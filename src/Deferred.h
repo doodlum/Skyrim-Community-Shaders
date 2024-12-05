@@ -107,17 +107,18 @@ public:
 		{
 			static void thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags)
 			{
-				// After this point, deferred blended decals
+				// Deferred blended decals
 				GetSingleton()->inBlendedDecals = true;
 				func(This, RenderFlags);
 				GetSingleton()->inBlendedDecals = false;
 
 				GetSingleton()->EndDeferred();
 
-				// After this point, blended decals start rendering
+				// Blended decals
 				GetSingleton()->inDecals = true;
 				func(This, RenderFlags);
 				GetSingleton()->inDecals = false;
+
 				// After this point, water starts rendering
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
