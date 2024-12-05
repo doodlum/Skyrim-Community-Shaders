@@ -7,12 +7,12 @@ namespace WaterEffects
 		return frac((float2(1, 0) * SharedData::Timer * speed) + (uv * tiling));
 	}
 
-	float3 SampleCaustics(float2 uv)
+	float SampleCaustics(float2 uv)
 	{
-		return WaterCaustics.Sample(SampColorSampler, uv).r;
+		return WaterCaustics.Sample(SampColorSampler, uv).x;
 	}
 
-	float3 ComputeCaustics(float4 waterData, float3 worldPosition, uint eyeIndex)
+	float ComputeCaustics(float4 waterData, float3 worldPosition, uint eyeIndex)
 	{
 		float causticsDistToWater = waterData.w - worldPosition.z;
 		float shoreFactorCaustics = saturate(causticsDistToWater / 64.0);
@@ -26,7 +26,7 @@ namespace WaterEffects
 			float2 causticsUV1 = PanCausticsUV(causticsUV, 0.5 * 0.2, 1.0);
 			float2 causticsUV2 = PanCausticsUV(causticsUV, 1.0 * 0.2, -0.5);
 
-			float3 causticsHigh = 1.0;
+			float causticsHigh = 1.0;
 
 			if (causticsFade > 0.0)
 				causticsHigh = min(SampleCaustics(causticsUV1), SampleCaustics(causticsUV2)) * 4.0;
@@ -36,12 +36,14 @@ namespace WaterEffects
 			causticsUV1 = PanCausticsUV(causticsUV, 0.5 * 0.1, 1.0);
 			causticsUV2 = PanCausticsUV(causticsUV, 1.0 * 0.1, -0.5);
 
-			float3 causticsLow = 1.0;
+			float causticsLow = 1.0;
 
 			if (causticsFade < 1.0)
 				causticsLow = min(SampleCaustics(causticsUV1), SampleCaustics(causticsUV2)) * 4.0;
 
-			return lerp(causticsLow, causticsHigh, causticsFade);
+			float caustics = lerp(causticsLow, causticsHigh, causticsFade);
+
+			return lerp(1.0, caustics, shoreFactorCaustics);
 		}
 
 		return 1.0;
