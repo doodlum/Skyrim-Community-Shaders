@@ -690,7 +690,7 @@ struct BSLightingShaderProperty_GetRenderPasses
 				}
 				lightingTechnique = (static_cast<uint32_t>(lightingType) << 24) | lightingFlags;
 				currentPass->passEnum = lightingTechnique + LightingTechniqueStart;
-				
+
 				// Deferred fix
 				if (currentPass->accumulationHint == 3 && currentPass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kZBufferWrite)) {
 					currentPass->accumulationHint = 16;

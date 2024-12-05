@@ -169,7 +169,7 @@ public:
 			stl::write_thunk_call<Main_RenderWorld>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x831, 0x841, 0x791));
 			stl::write_thunk_call<Main_RenderWorld_Start>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x8E, 0x84));
 			stl::write_thunk_call<Main_RenderWorld_Decals>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x319, 0x308, 0x321));
-			
+
 			stl::write_thunk_call<BSShaderAccumulator_BlendedDecals_RenderGeometryGroup>(REL::RelocationID(99942, 99942).address() + REL::Relocate(0x111, 0x308, 0x321));
 			stl::write_thunk_call<BSShaderAccumulator_ShadowMapOrMask>(REL::RelocationID(99947, 99947).address() + REL::Relocate(0x107, 0x308, 0x321));
 			stl::write_thunk_call<BSShaderAccumulator_FirstPerson>(REL::RelocationID(99947, 99947).address() + REL::Relocate(0x107, 0x308, 0x321));
