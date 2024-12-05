@@ -49,6 +49,7 @@ public:
 	ID3D11ComputeShader* mainCompositeInteriorCS = nullptr;
 
 	bool inWorld = false;
+	bool inBlendedDecals = false;
 	bool inDecals = false;
 	bool deferredPass = false;
 
@@ -106,7 +107,13 @@ public:
 		{
 			static void thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags)
 			{
+				// After this point, deferred blended decals
+				GetSingleton()->inBlendedDecals = true;
+				func(This, RenderFlags);
+				GetSingleton()->inBlendedDecals = false;
+
 				GetSingleton()->EndDeferred();
+
 				// After this point, blended decals start rendering
 				GetSingleton()->inDecals = true;
 				func(This, RenderFlags);
@@ -116,11 +123,56 @@ public:
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
+		struct BSShaderAccumulator_BlendedDecals_RenderGeometryGroup
+		{
+			static void thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRanges, uint32_t RenderFlags, int GeometryGroup)
+			{
+				if (GetSingleton()->inBlendedDecals) {
+					func(This, StartRange, EndRanges, RenderFlags, 12);
+				} else {
+					func(This, StartRange, EndRanges, RenderFlags, GeometryGroup);
+				}
+			}
+
+			static inline REL::Relocation<decltype(thunk)> func;
+		};
+
+		struct BSShaderAccumulator_ShadowMapOrMask
+		{
+			static void thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags)
+			{
+				GetSingleton()->inBlendedDecals = true;
+				func(This, RenderFlags);
+				GetSingleton()->inBlendedDecals = false;
+				func(This, RenderFlags);
+				GetSingleton()->inDecals = false;
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+		};
+
+		struct BSShaderAccumulator_FirstPerson
+		{
+			static void thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags)
+			{
+				GetSingleton()->inBlendedDecals = true;
+				func(This, RenderFlags);
+				GetSingleton()->inBlendedDecals = false;
+				func(This, RenderFlags);
+				GetSingleton()->inDecals = false;
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+		};
+
 		static void Install()
 		{
 			stl::write_thunk_call<Main_RenderWorld>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x831, 0x841, 0x791));
 			stl::write_thunk_call<Main_RenderWorld_Start>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x8E, 0x84));
 			stl::write_thunk_call<Main_RenderWorld_Decals>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x319, 0x308, 0x321));
+			
+			stl::write_thunk_call<BSShaderAccumulator_BlendedDecals_RenderGeometryGroup>(REL::RelocationID(99942, 99942).address() + REL::Relocate(0x111, 0x308, 0x321));
+			stl::write_thunk_call<BSShaderAccumulator_ShadowMapOrMask>(REL::RelocationID(99947, 99947).address() + REL::Relocate(0x107, 0x308, 0x321));
+			stl::write_thunk_call<BSShaderAccumulator_FirstPerson>(REL::RelocationID(99947, 99947).address() + REL::Relocate(0x107, 0x308, 0x321));
+
 			logger::info("[Deferred] Installed hooks");
 		}
 	};
