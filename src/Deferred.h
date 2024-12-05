@@ -170,10 +170,10 @@ public:
 			stl::write_thunk_call<Main_RenderWorld_Start>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x8E, 0x84));
 			stl::write_thunk_call<Main_RenderWorld_BlendedDecals>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x319, 0x308, 0x321));
 
-			stl::write_thunk_call<BSShaderAccumulator_BlendedDecals_RenderGeometryGroup>(REL::RelocationID(99942, 106587).address() + REL::Relocate(0x111, 0x112, 0x321));
+			stl::write_thunk_call<BSShaderAccumulator_BlendedDecals_RenderGeometryGroup>(REL::RelocationID(99942, 106587).address() + REL::Relocate(0x111, 0x112));
 
-			stl::write_thunk_call<BSShaderAccumulator_FirstPerson_BlendedDecals>(REL::RelocationID(99943, 106588).address() + REL::Relocate(0x107, 0xF4, 0x321));
-			stl::write_thunk_call<BSShaderAccumulator_ShadowMapOrMask_BlendedDecals>(REL::RelocationID(99947, 106592).address() + REL::Relocate(0x107, 0x107, 0x321));
+			stl::write_thunk_call<BSShaderAccumulator_FirstPerson_BlendedDecals>(REL::RelocationID(99943, 106588).address() + REL::Relocate(0xFE, 0xF4));
+			stl::write_thunk_call<BSShaderAccumulator_ShadowMapOrMask_BlendedDecals>(REL::RelocationID(99947, 106592).address() + 0x107);
 
 			logger::info("[Deferred] Installed hooks");
 		}
