@@ -105,12 +105,9 @@ PS_OUTPUT main(PS_INPUT input)
 
 		float luminance = max(1e-5, Color::RGBToLuminance(inputColor));
 		float blendFactor;
-		if (Param.z > 0.5)
-		{
+		if (Param.z > 0.5) {
 			blendFactor = GetTonemapFactorHejlBurgessDawson(luminance);
-		}
-		else
-		{
+		} else {
 			blendFactor = GetTonemapFactorReinhard(luminance);
 		}
 
@@ -123,7 +120,6 @@ PS_OUTPUT main(PS_INPUT input)
 		srgbColor = lerp(avgValue.x, srgbColor, Cinematic.z);
 		srgbColor = max(0, srgbColor);
 	}
-
 
 #		if defined(FADE)
 	srgbColor = lerp(srgbColor, Fade.xyz, Fade.w);
