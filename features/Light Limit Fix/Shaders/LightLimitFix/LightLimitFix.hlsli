@@ -18,8 +18,10 @@ namespace LightLimitFix
 	bool GetClusterIndex(in float2 uv, in float z, inout uint clusterIndex)
 	{
 		const uint3 clusterSize = SharedData::lightLimitFixSettings.ClusterSize.xyz;
+		
+		z = max(z, SharedData::CameraData.y);
 
-		if (z < SharedData::CameraData.y || z > SharedData::CameraData.x)
+		if (z > SharedData::CameraData.x)
 			return false;
 
 		float clampedZ = clamp(z, SharedData::CameraData.y, SharedData::CameraData.x);
