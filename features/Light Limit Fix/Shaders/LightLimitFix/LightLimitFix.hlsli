@@ -47,7 +47,7 @@ namespace LightLimitFix
 		if (contactShadowSteps == 0)
 			return 1.0;
 
-		float2 depthDeltaMult = float2(1.0, 0.05);
+		float2 depthDeltaMult = float2(0.20, 0.05);
 
 		// Extend contact shadow distance
 		lightDirectionVS *= 2.0;
@@ -73,10 +73,12 @@ namespace LightLimitFix
 			// Difference between the current ray distance and the marched light
 			float depthDelta = viewPosition.z - rayDepth;
 			if (rayDepth > 16.5)  // First person
-				contactShadow += saturate(depthDelta * depthDeltaMult.x) - saturate(depthDelta * depthDeltaMult.y);
+				contactShadow = max(contactShadow, saturate(depthDelta * depthDeltaMult.x) - saturate(depthDelta * depthDeltaMult.y));
+			if (contactShadow == 1.0)
+				break;
 		}
 
-		return 1.0 - saturate(contactShadow * 0.5);
+		return 1.0 - saturate(contactShadow);
 	}
 
 	// Copyright 2019 Google LLC.
