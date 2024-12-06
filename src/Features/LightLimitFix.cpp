@@ -229,21 +229,7 @@ void LightLimitFix::SetupResources()
 	}
 
 	{
-		D3D11_BUFFER_DESC sbDesc{};
-		sbDesc.Usage = D3D11_USAGE_DYNAMIC;
-		sbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		sbDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-		sbDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-		sbDesc.StructureByteStride = sizeof(StrictLightData);
-		sbDesc.ByteWidth = sizeof(StrictLightData);
-		strictLightData = std::make_unique<Buffer>(sbDesc);
-
-		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-		srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-		srvDesc.Buffer.FirstElement = 0;
-		srvDesc.Buffer.NumElements = 1;
-		strictLightData->CreateSRV(srvDesc);
+		strictLightDataCB = new ConstantBuffer(ConstantBufferDesc<StrictLightDataCB>());
 	}
 }
 
@@ -375,12 +361,7 @@ void LightLimitFix::BSLightingShader_SetupGeometry_After(RE::BSRenderPass*)
 	const int roomIndex = strictLightDataTemp.RoomIndex;
 
 	if (!isEmpty || (isEmpty && !wasEmpty) || isWorld != wasWorld || previousRoomIndex != roomIndex) {
-		D3D11_MAPPED_SUBRESOURCE mapped;
-		DX::ThrowIfFailed(context->Map(strictLightData->resource.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
-		size_t bytes = sizeof(StrictLightData);
-		memcpy_s(mapped.pData, bytes, &strictLightDataTemp, bytes);
-		context->Unmap(strictLightData->resource.get(), 0);
-
+		strictLightDataCB->Update(strictLightDataTemp);
 		wasEmpty = isEmpty;
 		wasWorld = isWorld;
 		previousRoomIndex = roomIndex;
@@ -388,8 +369,8 @@ void LightLimitFix::BSLightingShader_SetupGeometry_After(RE::BSRenderPass*)
 
 	static Util::FrameChecker frameChecker;
 	if (frameChecker.IsNewFrame()) {
-		ID3D11ShaderResourceView* view = strictLightData->srv.get();
-		context->PSSetShaderResources(38, 1, &view);
+		ID3D11Buffer* buffer = { strictLightDataCB->CB() };
+		context->PSSetConstantBuffers(3, 1, &buffer);
 	}
 }
 

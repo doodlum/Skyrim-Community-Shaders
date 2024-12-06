@@ -2107,7 +2107,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			endif
 
 	uint numClusteredLights = 0;
-	uint totalLightCount = LightLimitFix::strictLights[0].NumStrictLights;
+	uint totalLightCount = LightLimitFix::NumStrictLights;
 	uint clusterIndex = 0;
 	uint lightOffset = 0;
 	if (inWorld && LightLimitFix::GetClusterIndex(screenUV, viewPosition.z, clusterIndex)) {
@@ -2121,10 +2121,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	[loop] for (uint lightIndex = 0; lightIndex < totalLightCount; lightIndex++)
 	{
 		LightLimitFix::Light light;
-		if (lightIndex < LightLimitFix::strictLights[0].NumStrictLights) {
-			light = LightLimitFix::strictLights[0].StrictLights[lightIndex];
+		if (lightIndex < LightLimitFix::NumStrictLights) {
+			light = LightLimitFix::StrictLights[lightIndex];
 		} else {
-			uint clusteredLightIndex = LightLimitFix::lightList[lightOffset + (lightIndex - LightLimitFix::strictLights[0].NumStrictLights)];
+			uint clusteredLightIndex = LightLimitFix::lightList[lightOffset + (lightIndex - LightLimitFix::NumStrictLights)];
 			light = LightLimitFix::lights[clusteredLightIndex];
 
 			if (LightLimitFix::IsLightIgnored(light) || (!(Permutation::PixelShaderDescriptor & Permutation::LightingFlags::DefShadow) && light.lightFlags & LightLimitFix::LightFlags::Shadow)) {
@@ -2634,9 +2634,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(LIGHT_LIMIT_FIX) && defined(LLFDEBUG)
 	if (SharedData::lightLimitFixSettings.EnableLightsVisualisation) {
 		if (SharedData::lightLimitFixSettings.LightsVisualisationMode == 0) {
-			psout.Diffuse.xyz = LightLimitFix::TurboColormap(strictLights[0].NumStrictLights >= 7.0);
+			psout.Diffuse.xyz = LightLimitFix::TurboColormap(NumStrictLights >= 7.0);
 		} else if (SharedData::lightLimitFixSettings.LightsVisualisationMode == 1) {
-			psout.Diffuse.xyz = LightLimitFix::TurboColormap((float)strictLights[0].NumStrictLights / 15.0);
+			psout.Diffuse.xyz = LightLimitFix::TurboColormap((float)NumStrictLights / 15.0);
 		} else if (SharedData::lightLimitFixSettings.LightsVisualisationMode == 2) {
 			psout.Diffuse.xyz = LightLimitFix::TurboColormap((float)numClusteredLights / MAX_CLUSTER_LIGHTS);
 		} else {

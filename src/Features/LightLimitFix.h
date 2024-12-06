@@ -88,15 +88,15 @@ public:
 
 	PerFrame GetCommonBufferData();
 
-	struct alignas(16) StrictLightData
+	struct alignas(16) StrictLightDataCB
 	{
-		LightData StrictLights[15];
 		uint NumStrictLights;
 		int RoomIndex;
 		uint pad0[2];
+		LightData StrictLights[15];
 	};
 
-	StrictLightData strictLightDataTemp;
+	StrictLightDataCB strictLightDataTemp;
 
 	struct CachedParticleLight
 	{
@@ -105,7 +105,7 @@ public:
 		float radius;
 	};
 
-	std::unique_ptr<Buffer> strictLightData = nullptr;
+	ConstantBuffer* strictLightDataCB = nullptr;
 
 	int eyeCount = !REL::Module::IsVR() ? 1 : 2;
 	bool previousEnableLightsVisualisation = settings.EnableLightsVisualisation;
