@@ -141,7 +141,7 @@ void Deferred::SetupResources()
 		uavDesc.Buffer.NumElements = numElements;
 		perShadow->CreateUAV(uavDesc);
 
-		copyShadowCS = static_cast<ID3D11ComputeShader*>(Util::CompileShader(L"Data\\Shaders\\ShadowTest\\CopyShadowData.hlsl", {}, "cs_5_0"));
+		copyShadowCS = static_cast<ID3D11ComputeShader*>(Util::CompileShader(L"Data\\Shaders\\CopyShadowDataCS.hlsl", {}, "cs_5_0"));
 	}
 
 	{
