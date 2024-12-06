@@ -44,9 +44,8 @@ void VolumetricLighting::RestoreDefaultSettings()
 {
 	settings = {};
 	Util::ResetGameSettingsToDefaults(VLSettings);
-	if (State::GetSingleton()->isVR) {
+	if (State::GetSingleton()->isVR)
 		Util::ResetGameSettingsToDefaults(hiddenVRSettings);
-	}
 }
 
 void VolumetricLighting::DataLoaded()
