@@ -38,19 +38,17 @@ cbuffer PerGeometry : register(b2)
 	float4 BlurOffsets[16] : packoffset(c7);
 };
 
-float3 GetTonemapFactorReinhard(float3 luminance)
+float GetTonemapFactorReinhard(float luminance)
 {
 	return (luminance * (luminance * Param.y + 1)) / (luminance + 1);
 }
 
-float3 GetTonemapFactorHejlBurgessDawson(float3 luminance)
+float GetTonemapFactorHejlBurgessDawson(float luminance)
 {
-	float3 tmp = max(0, luminance - 0.004);
+	float tmp = max(0, luminance - 0.004);
 	return Param.y *
 	       pow(((tmp * 6.2 + 0.5) * tmp) / (tmp * (tmp * 6.2 + 1.7) + 0.06), Color::GammaCorrectionValue);
 }
-
-#	include "Common/DisplayMapping.hlsli"
 
 PS_OUTPUT main(PS_INPUT input)
 {
@@ -100,37 +98,32 @@ PS_OUTPUT main(PS_INPUT input)
 
 	float2 avgValue = AvgTex.Sample(AvgSampler, input.TexCoord.xy).xy;
 
-	// Vanilla tonemapping and post-processing
-	float3 gameSdrColor = 0.0;
-	float3 ppColor = 0.0;
+	float3 srgbColor;
 	{
 		inputColor *= avgValue.y / avgValue.x;
 		inputColor = max(0, inputColor);
 
-		float3 blendedColor;
-		[branch] if (Param.z > 0.5)
+		float luminance = max(1e-5, Color::RGBToLuminance(inputColor));
+		float blendFactor;
+		if (Param.z > 0.5)
 		{
-			blendedColor = DisplayMapping::HuePreservingHejlBurgessDawson(inputColor);
+			blendFactor = GetTonemapFactorHejlBurgessDawson(luminance);
 		}
 		else
 		{
-			blendedColor = DisplayMapping::HuePreservingReinhard(inputColor);
+			blendFactor = GetTonemapFactorReinhard(luminance);
 		}
 
-		blendedColor += saturate(Param.x - blendedColor) * bloomColor;
-
-		gameSdrColor = blendedColor;
+		float3 blendedColor = inputColor * (blendFactor / luminance);
+		blendedColor += saturate(Param.x - blendFactor) * bloomColor;
 
 		float blendedLuminance = Color::RGBToLuminance(blendedColor);
 
-		float3 linearColor = Cinematic.w * lerp(lerp(blendedLuminance, blendedColor, Cinematic.x), blendedLuminance * Tint, Tint.w).xyz;
-
-		linearColor = lerp(avgValue.x, linearColor, Cinematic.z);
-
-		ppColor = max(0, linearColor);
+		srgbColor = Cinematic.w * lerp(lerp(blendedLuminance, blendedColor, Cinematic.x), blendedLuminance * Tint, Tint.w);
+		srgbColor = lerp(avgValue.x, srgbColor, Cinematic.z);
+		srgbColor = max(0, srgbColor);
 	}
 
-	float3 srgbColor = ppColor;
 
 #		if defined(FADE)
 	srgbColor = lerp(srgbColor, Fade.xyz, Fade.w);
