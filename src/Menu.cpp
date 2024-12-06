@@ -498,16 +498,24 @@ void Menu::DrawSettings()
 			menuList.push_back("Core Features"s);
 			std::ranges::copy(
 				sortedFeatureList | std::ranges::views::filter([](Feature* feat) {
-					return feat->IsCore();
+					return feat->IsCore() && feat->loaded;
 				}),
 				std::back_inserter(menuList));
 
 			menuList.push_back("Features"s);
 			std::ranges::copy(
 				sortedFeatureList | std::ranges::views::filter([](Feature* feat) {
-					return !feat->IsCore();
+					return !feat->IsCore() && feat->loaded;
 				}),
 				std::back_inserter(menuList));
+
+			auto unloadedFeatures = sortedFeatureList | std::ranges::views::filter([](Feature* feat) {
+				return !feat->loaded;
+			});
+			if (std::ranges::distance(unloadedFeatures) != 0) {
+				menuList.push_back("Unloaded Features"s);
+				std::ranges::copy(unloadedFeatures, std::back_inserter(menuList));
+			}
 
 			ImGui::TableNextColumn();
 			ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
