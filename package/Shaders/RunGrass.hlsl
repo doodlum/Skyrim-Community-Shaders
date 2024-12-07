@@ -615,8 +615,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 			[loop] for (uint i = 0; i < lightCount; i++)
 			{
-				uint light_index = LightLimitFix::lightList[lightOffset + i];
-				LightLimitFix::Light light = LightLimitFix::lights[light_index];
+				uint clusteredLightIndex = LightLimitFix::lightList[lightOffset + i];
+				LightLimitFix::Light light = LightLimitFix::lights[clusteredLightIndex];
 
 				float3 lightDirection = light.positionWS[eyeIndex].xyz - input.WorldPosition.xyz;
 				float lightDist = length(lightDirection);
@@ -806,14 +806,14 @@ PS_OUTPUT main(PS_INPUT input)
 	uint lightCount = 0;
 
 	if (LightLimitFix::GetClusterIndex(screenUV, viewPosition.z, clusterIndex)) {
-		lightCount = lightGrid[clusterIndex].lightCount;
+		lightCount = LightLimitFix::lightGrid[clusterIndex].lightCount;
 		if (lightCount) {
 			uint lightOffset = LightLimitFix::lightGrid[clusterIndex].offset;
 
 			[loop] for (uint i = 0; i < lightCount; i++)
 			{
-				uint light_index = LightLimitFix::lightList[lightOffset + i];
-				Light light = LightLimitFix::lights[light_index];
+				uint clusteredLightIndex = LightLimitFix::lightList[lightOffset + i];
+				LightLimitFix::Light light = LightLimitFix::lights[clusteredLightIndex];
 
 				float3 lightDirection = light.positionWS[eyeIndex].xyz - input.WorldPosition.xyz;
 				float lightDist = length(lightDirection);

@@ -617,8 +617,8 @@ PS_OUTPUT main(PS_INPUT input)
 			uint lightOffset = LightLimitFix::lightGrid[clusterIndex].offset;
 			[loop] for (uint i = 0; i < lightCount; i++)
 			{
-				uint light_index = LightLimitFix::lightList[lightOffset + i];
-				LightLimitFix::Light light = LightLimitFix::lights[light_index];
+				uint clusteredLightIndex = LightLimitFix::lightList[lightOffset + i];
+				LightLimitFix::Light light = LightLimitFix::lights[clusteredLightIndex];
 				if (LightLimitFix::IsLightIgnored(light) || light.lightFlags & LightLimitFix::LightFlags::Shadow) {
 					continue;
 				}
