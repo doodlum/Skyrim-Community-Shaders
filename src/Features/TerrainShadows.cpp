@@ -381,7 +381,7 @@ void TerrainShadows::Prepass()
 
 	UpdateShadow();
 
-	{
+	if (IsHeightMapReady()) {
 		auto context = State::GetSingleton()->context;
 
 		std::array<ID3D11ShaderResourceView*, 1> srvs = { texShadowHeight->srv.get() };
