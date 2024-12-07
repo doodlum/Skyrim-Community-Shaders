@@ -110,6 +110,8 @@ namespace SharedData
 		float RippleBreadth;
 
 		float RippleLifetimeRcp;
+
+		float3 pad0;
 	};
 
 	struct SkylightingSettings
@@ -123,7 +125,7 @@ namespace SharedData
 
 		float MinDiffuseVisibility;
 		float MinSpecularVisibility;
-		uint pad0[2];
+		uint2 pad0;
 	};
 
 	cbuffer FeatureData : register(b6)
