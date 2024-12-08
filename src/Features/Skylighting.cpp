@@ -259,7 +259,7 @@ void Skylighting::PostPostLoad()
 	stl::write_vfunc<0x2D, BSLightingShaderProperty_GetPrecipitationOcclusionMapRenderPassesImpl>(RE::VTABLE_BSLightingShaderProperty[0]);
 	stl::write_thunk_call<Main_Precipitation_RenderOcclusion>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x3A1, 0x3A1, 0x2FA));
 	stl::write_thunk_call<SetViewFrustum>(REL::RelocationID(25643, 26185).address() + REL::Relocate(0x5D9, 0x59D, 0x5DC));
-	stl::write_vfunc<0x6, BSUtilityShader_SetupGeometry>(RE::VTABLE_BSUtilityShader[0]);
+//	stl::write_vfunc<0x6, BSUtilityShader_SetupGeometry>(RE::VTABLE_BSUtilityShader[0]);
 	MenuOpenCloseEventHandler::Register();
 }
 
@@ -368,13 +368,29 @@ RE::BSLightingShaderProperty::Data* Skylighting::BSLightingShaderProperty_GetPre
 			stl::enumeration<RE::BSUtilityShader::Flags> technique;
 			technique.set(RenderDepth);
 
-			auto pass = precipitationOcclusionMapRenderPassList->EmplacePass(
+			if (property->flags.any(kVertexColors)) {
+				technique.set(Vc);
+			}
+
+			const auto alphaProperty = static_cast<RE::NiAlphaProperty*>(geometry->GetGeometryRuntimeData().properties[0].get());
+			if (alphaProperty && alphaProperty->GetAlphaTesting()) {
+				technique.set(Texture);
+				technique.set(AlphaTest);
+			}
+
+			if (property->flags.any(kLODObjects, kHDLODObjects)) {
+				technique.set(LodObject);
+			}
+
+			if (property->flags.any(kTreeAnim)) {
+				technique.set(TreeAnim);
+			}
+
+			precipitationOcclusionMapRenderPassList->EmplacePass(
 				RE::BSUtilityShader::GetSingleton(),
 				property,
 				geometry,
 				technique.underlying() + static_cast<uint32_t>(ShaderTechnique::UtilityGeneralStart));
-			if (property->flags.any(kTreeAnim))
-				pass->accumulationHint = 11;
 		}
 	}
 	return precipitationOcclusionMapRenderPassList;
