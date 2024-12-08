@@ -48,28 +48,6 @@ void Skylighting::DrawSettings()
 		ImGui::Text("Smaller angles creates more focused top-down shadow.");
 }
 
-ID3D11PixelShader* Skylighting::GetFoliagePS()
-{
-	if (!foliagePixelShader) {
-		logger::debug("Compiling Utility.hlsl");
-		foliagePixelShader = (ID3D11PixelShader*)Util::CompileShader(L"Data\\Shaders\\Utility.hlsl", { { "RENDER_DEPTH", "" }, { "FOLIAGE", "" } }, "ps_5_0");
-	}
-	return foliagePixelShader;
-}
-
-void Skylighting::SkylightingShaderHacks()
-{
-	if (inOcclusion) {
-		auto& context = State::GetSingleton()->context;
-
-		if (foliage) {
-			context->PSSetShader(GetFoliagePS(), NULL, NULL);
-		} else {
-			context->PSSetShader(nullptr, NULL, NULL);
-		}
-	}
-}
-
 void Skylighting::SetupResources()
 {
 	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
@@ -156,10 +134,6 @@ void Skylighting::ClearShaderCache()
 		shader = nullptr;
 
 	CompileComputeShaders();
-	if (foliagePixelShader) {
-		foliagePixelShader->Release();
-		foliagePixelShader = nullptr;
-	}
 }
 
 void Skylighting::CompileComputeShaders()
@@ -259,7 +233,6 @@ void Skylighting::PostPostLoad()
 	stl::write_vfunc<0x2D, BSLightingShaderProperty_GetPrecipitationOcclusionMapRenderPassesImpl>(RE::VTABLE_BSLightingShaderProperty[0]);
 	stl::write_thunk_call<Main_Precipitation_RenderOcclusion>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x3A1, 0x3A1, 0x2FA));
 	stl::write_thunk_call<SetViewFrustum>(REL::RelocationID(25643, 26185).address() + REL::Relocate(0x5D9, 0x59D, 0x5DC));
-	//	stl::write_vfunc<0x6, BSUtilityShader_SetupGeometry>(RE::VTABLE_BSUtilityShader[0]);
 	MenuOpenCloseEventHandler::Register();
 }
 
@@ -513,23 +486,11 @@ void Skylighting::Main_Precipitation_RenderOcclusion::thunk()
 					PrecipitationShaderDirection = originalParticleShaderDirection;
 
 					precipitation = precipitationCopy;
-
-					singleton->foliage = false;
 				}
 			}
 		}
 	}
 	State::GetSingleton()->EndPerfEvent();
-}
-
-void Skylighting::BSUtilityShader_SetupGeometry::thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
-{
-	auto& feat = *GetSingleton();
-	if (feat.inOcclusion) {
-		feat.foliage = Pass->shaderProperty->flags.any(RE::BSShaderProperty::EShaderPropertyFlag::kTreeAnim);
-	}
-
-	func(This, Pass, RenderFlags);
 }
 
 void Skylighting::SetViewFrustum::thunk(RE::NiCamera* a_camera, RE::NiFrustum* a_frustum)

@@ -444,12 +444,6 @@ PS_OUTPUT main(PS_INPUT input)
 	}
 #	endif
 
-#	if defined(FOLIAGE)
-	float checkerboard = Random::InterleavedGradientNoise(input.PositionCS.xy, 0);
-	if (checkerboard > 0.75)
-		discard;
-#	endif
-
 	float2 baseTexCoord = 0;
 #	if !(defined(RENDER_DEPTH) && defined(RENDER_SHADOWMASK_ANY)) && SHADOWFILTER != 2
 #		if (defined(RENDER_DEPTH) || defined(RENDER_SHADOWMAP)) && defined(ALPHA_TEST) && !defined(RENDER_SHADOWMAP_PB)

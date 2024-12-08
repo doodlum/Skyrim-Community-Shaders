@@ -34,9 +34,6 @@ struct Skylighting : Feature
 
 	virtual void PostPostLoad() override;
 
-	ID3D11PixelShader* GetFoliagePS();
-	void SkylightingShaderHacks();  // referenced in State.cpp
-
 	//////////////////////////////////////////////////////////////////////////////////
 
 	struct Settings
@@ -74,8 +71,6 @@ struct Skylighting : Feature
 
 	winrt::com_ptr<ID3D11ComputeShader> probeUpdateCompute = nullptr;
 
-	ID3D11PixelShader* foliagePixelShader = nullptr;
-
 	// misc parameters
 	bool doOcclusion = true;
 	uint probeArrayDims[3] = { 256, 256, 128 };
@@ -83,7 +78,6 @@ struct Skylighting : Feature
 
 	// cached variables
 	bool inOcclusion = false;
-	bool foliage = false;
 	REX::W32::XMFLOAT4X4 OcclusionTransform;
 	float4 OcclusionDir;
 	uint forceFrames = 255 * 4;
@@ -103,12 +97,6 @@ struct Skylighting : Feature
 	struct Main_Precipitation_RenderOcclusion
 	{
 		static void thunk();
-		static inline REL::Relocation<decltype(thunk)> func;
-	};
-
-	struct BSUtilityShader_SetupGeometry
-	{
-		static void thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags);
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
