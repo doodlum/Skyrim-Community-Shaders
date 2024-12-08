@@ -54,7 +54,7 @@ struct ScreenSpaceGI : Feature
 		bool HalfRate = true;
 		// visual
 		float MinScreenRadius = 0.01f;
-		float AORadius = 50.f;
+		float AORadius = 100.f;
 		float GIRadius = 500.f;
 		float Thickness = 75.f;
 		float2 DepthFadeRange = { 4e4, 5e4 };
@@ -71,8 +71,8 @@ struct ScreenSpaceGI : Feature
 		bool EnableBlur = true;
 		float DepthDisocclusion = .03f;
 		float NormalDisocclusion = .1f;
-		uint MaxAccumFrames = 16;
-		float BlurRadius = 15.f;
+		uint MaxAccumFrames = 10;
+		float BlurRadius = 10.f;
 		uint BlurPasses = 1;
 		float DistanceNormalisation = 2.f;
 	} settings;

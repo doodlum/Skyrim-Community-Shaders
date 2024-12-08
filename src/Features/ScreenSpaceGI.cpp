@@ -62,13 +62,13 @@ void ScreenSpaceGI::DrawSettings()
 		if (auto _tt = Util::HoverTooltipWrapper())
 			ImGui::Text("Simulates indirect diffuse lighting.");
 		ImGui::TableNextColumn();
-		{
+		if (showAdvanced) {
 			auto _ = Util::DisableGuard(!settings.EnableGI);
 			recompileFlag |= ImGui::Checkbox("Specular IL", &settings.EnableSpecularGI);
 			if (auto _tt = Util::HoverTooltipWrapper())
 				ImGui::Text(
-					"Reuses diffuse samples to simulate indirect specular lighting.\n"
-					"Doubles the cost of denoisers.\n"
+					"(Experimental) Reuses diffuse samples to simulate indirect specular lighting.\n"
+					"Doubles the cost of denoisers, and very noisy on smooth materials.\n"
 					"Only for Complex Material or TruePBR materials.");
 		}
 
