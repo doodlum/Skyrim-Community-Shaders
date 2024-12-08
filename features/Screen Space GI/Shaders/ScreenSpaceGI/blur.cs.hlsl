@@ -113,7 +113,7 @@ float2x3 getKernelBasis(float3 D, float3 N, float roughness = 1.0, float anisoFa
 
 	float4 gi = srcGI[dtid];
 
-	float4 sum = gi;
+	float3 sum = gi.rgb;
 #if defined(TEMPORAL_DENOISER) && !defined(SPECULAR_BLUR)
 	float fsum = accumFrames;
 #endif
@@ -150,7 +150,7 @@ float2x3 getKernelBasis(float3 D, float3 N, float roughness = 1.0, float anisoFa
 		float roughnessSample = 1 - normalRoughnessSample.z;
 #endif
 
-		float4 giSample = srcGI.SampleLevel(samplerLinearClamp, uvSample * OUT_FRAME_SCALE, 0);
+		float3 giSample = srcGI.SampleLevel(samplerLinearClamp, uvSample * OUT_FRAME_SCALE, 0).rgb;
 
 		// geometry weight
 		w *= saturate(1 - abs(dot(normal, posSample - pos)) * DistanceNormalisation);
@@ -168,7 +168,7 @@ float2x3 getKernelBasis(float3 D, float3 N, float roughness = 1.0, float anisoFa
 		wsum += w;
 	}
 
-	outGI[dtid] = sum / wsum;
+	outGI[dtid] = float4(sum / wsum, gi.a);
 #if defined(TEMPORAL_DENOISER) && !defined(SPECULAR_BLUR)
 	outAccumFrames[dtid] = fsum / wsum;
 #endif
