@@ -349,12 +349,13 @@ void Deferred::DeferredPasses()
 	auto skylighting = Skylighting::GetSingleton();
 
 	auto ssgi = ScreenSpaceGI::GetSingleton();
+	if (ssgi->loaded)
+		ssgi->DrawSSGI(prevDiffuseAmbientTexture);
+	auto [ssgi_ao, ssgi_y, ssgi_cocg] = ssgi->GetOutputTextures();
 
 	auto dispatchCount = Util::GetScreenDispatchCount();
 
 	if (ssgi->loaded) {
-		ssgi->DrawSSGI(prevDiffuseAmbientTexture);
-
 		// Ambient Composite
 		{
 			TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Ambient Composite");
@@ -365,9 +366,9 @@ void Deferred::DeferredPasses()
 				skylighting->loaded || REL::Module::IsVR() ? depth.depthSRV : nullptr,
 				skylighting->loaded ? skylighting->texProbeArray->srv.get() : nullptr,
 				masks2.SRV,
-				ssgi->settings.Enabled ? ssgi->texAo->srv.get() : nullptr,
-				ssgi->settings.Enabled ? ssgi->texIlY[ssgi->outputGIIdx]->srv.get() : nullptr,
-				ssgi->settings.Enabled ? ssgi->texIlCoCg[ssgi->outputGIIdx]->srv.get() : nullptr,
+				ssgi_ao,
+				ssgi_y,
+				ssgi_cocg,
 			};
 
 			context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
@@ -418,8 +419,8 @@ void Deferred::DeferredPasses()
 			dynamicCubemaps->loaded ? dynamicCubemaps->envTexture->srv.get() : nullptr,
 			dynamicCubemaps->loaded ? dynamicCubemaps->envReflectionsTexture->srv.get() : nullptr,
 			dynamicCubemaps->loaded && skylighting->loaded ? skylighting->texProbeArray->srv.get() : nullptr,
-			ssgi->settings.Enabled ? ssgi->texIlY[ssgi->outputGIIdx]->srv.get() : nullptr,
-			ssgi->settings.Enabled ? ssgi->texIlCoCg[ssgi->outputGIIdx]->srv.get() : nullptr,
+			ssgi_y,
+			ssgi_cocg,
 		};
 
 		if (dynamicCubemaps->loaded)

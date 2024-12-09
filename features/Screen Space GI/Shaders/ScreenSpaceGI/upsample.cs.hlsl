@@ -4,12 +4,18 @@
 #include "ScreenSpaceGI/common.hlsli"
 
 Texture2D<half> srcDepth : register(t0);
-Texture2D<half4> srcGI : register(t1);  // half-res
+Texture2D<half> srcAo : register(t1);       // half-res
+Texture2D<half4> srcIlY : register(t2);     // half-res
+Texture2D<half2> srcIlCoCg : register(t3);  // half-res
 
-RWTexture2D<half4> outGI : register(u0);
+RWTexture2D<half> outAo : register(u0);
+RWTexture2D<half4> outIlY : register(u1);
+RWTexture2D<half2> outIlCoCg : register(u2);
 
 #define min4(v) min(min(v.x, v.y), min(v.z, v.w))
 #define max4(v) max(max(v.x, v.y), max(v.z, v.w))
+
+#define BLEND_WEIGHT(a, b, c, d, w, sumw) ((a * w.x + b * w.y + c * w.z + d * w.w) / max(sumw, 1e-5))
 
 [numthreads(8, 8, 1)] void main(const uint2 dtid
 								: SV_DispatchThreadID) {
@@ -31,15 +37,12 @@ RWTexture2D<half4> outGI : register(u0);
 	float avg = dot(d, 0.25.xxxx);
 	bool d_edge = (diffd / avg) < 0.1;
 
-	float4 atten;
+	float ao;
+	float4 y;
+	float2 coCg;
 
 	[branch] if (d_edge)
 	{
-		float4 gisample0 = srcGI[px00];
-		float4 gisample1 = srcGI[px01];
-		float4 gisample2 = srcGI[px10];
-		float4 gisample3 = srcGI[px11];
-
 		float bgdepth = srcDepth[dtid];
 
 		//note: depth weighing from https://www.ppsloan.org/publications/ProxyPG.pdf#page=5
@@ -47,12 +50,19 @@ RWTexture2D<half4> outGI : register(u0);
 		float4 w = 1.0 / (dd + 0.00001);
 		float sumw = w.x + w.y + w.z + w.w;
 
-		atten = (gisample0 * w.x + gisample1 * w.y + gisample2 * w.z + gisample3 * w.w) / (sumw + 0.00001);
+		ao = BLEND_WEIGHT(srcAo[px00], srcAo[px01], srcAo[px10], srcAo[px11], w, sumw);
+		y = BLEND_WEIGHT(srcIlY[px00], srcIlY[px01], srcIlY[px10], srcIlY[px11], w, sumw);
+		coCg = BLEND_WEIGHT(srcIlCoCg[px00], srcIlCoCg[px01], srcIlCoCg[px10], srcIlCoCg[px11], w, sumw);
 	}
 	else
 	{
-		atten = srcGI.SampleLevel(samplerLinearClamp, (dtid + .5) * RcpFrameDim * OUT_FRAME_DIM * RcpTexDim, 0);
+		float2 uv = (dtid + .5) * RcpFrameDim * OUT_FRAME_DIM * RcpTexDim;
+		ao = srcAo.SampleLevel(samplerLinearClamp, uv, 0);
+		y = srcIlY.SampleLevel(samplerLinearClamp, uv, 0);
+		coCg = srcIlCoCg.SampleLevel(samplerLinearClamp, uv, 0);
 	}
 
-	outGI[dtid] = atten;
+	outAo[dtid] = ao;
+	outIlY[dtid] = y;
+	outIlCoCg[dtid] = coCg;
 }

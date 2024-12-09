@@ -41,8 +41,9 @@ Texture2D<float4> srcNormalRoughness : register(t1);
 Texture2D<float3> srcRadiance : register(t2);  // maybe half-res
 Texture2D<unorm float2> srcNoise : register(t3);
 Texture2D<unorm float> srcAccumFrames : register(t4);  // maybe half-res
-Texture2D<float4> srcPrevY : register(t5);             // maybe half-res
-Texture2D<float2> srcPrevCoCg : register(t6);          // maybe half-res
+Texture2D<float> srcPrevAo : register(t5);             // maybe half-res
+Texture2D<float4> srcPrevY : register(t6);             // maybe half-res
+Texture2D<float2> srcPrevCoCg : register(t7);          // maybe half-res
 
 RWTexture2D<unorm float> outAo : register(u0);
 RWTexture2D<float4> outY : register(u1);

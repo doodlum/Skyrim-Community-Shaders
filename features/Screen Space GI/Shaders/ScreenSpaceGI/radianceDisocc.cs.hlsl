@@ -11,13 +11,15 @@ Texture2D<half3> srcPrevGeo : register(t3);  // maybe half-res
 Texture2D<float4> srcMotionVec : register(t4);
 Texture2D<half3> srcPrevAmbient : register(t5);
 Texture2D<unorm float> srcAccumFrames : register(t6);  // maybe half-res
-Texture2D<half4> srcPrevIlY : register(t7);            // maybe half-res
-Texture2D<half2> srcPrevIlCoCg : register(t8);         // maybe half-res
+Texture2D<half> srcPrevAo : register(t7);              // maybe half-res
+Texture2D<half4> srcPrevIlY : register(t8);            // maybe half-res
+Texture2D<half2> srcPrevIlCoCg : register(t9);         // maybe half-res
 
 RWTexture2D<float3> outRadianceDisocc : register(u0);
 RWTexture2D<unorm float> outAccumFrames : register(u1);
-RWTexture2D<float4> outRemappedIlY : register(u2);
-RWTexture2D<float2> outRemappedIlCoCg : register(u3);
+RWTexture2D<float> outRemappedAo : register(u2);
+RWTexture2D<float4> outRemappedIlY : register(u3);
+RWTexture2D<float2> outRemappedIlCoCg : register(u4);
 
 #if (defined(GI) && defined(GI_BOUNCE)) || defined(TEMPORAL_DENOISER) || defined(HALF_RATE)
 #	define REPROJECTION

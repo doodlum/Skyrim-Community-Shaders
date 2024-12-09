@@ -40,7 +40,8 @@ struct ScreenSpaceGI : Feature
 	//////////////////////////////////////////////////////////////////////////////////
 
 	bool recompileFlag = false;
-	uint outputGIIdx = 0;
+	uint outputAoIdx = 0;
+	uint outputIlIdx = 0;
 
 	struct Settings
 	{
@@ -49,7 +50,7 @@ struct ScreenSpaceGI : Feature
 		// performance/quality
 		uint NumSlices = 2;
 		uint NumSteps = 4;
-		bool HalfRes = false;
+		bool HalfRes = true;
 		// visual
 		float MinScreenRadius = 0.01f;
 		float AORadius = 100.f;
@@ -122,9 +123,16 @@ struct ScreenSpaceGI : Feature
 	eastl::unique_ptr<Texture2D> texPrevGeo = nullptr;
 	eastl::unique_ptr<Texture2D> texRadiance = nullptr;
 	eastl::unique_ptr<Texture2D> texAccumFrames[2] = { nullptr };
-	eastl::unique_ptr<Texture2D> texAo = { nullptr };
+	eastl::unique_ptr<Texture2D> texAo[2] = { nullptr };
 	eastl::unique_ptr<Texture2D> texIlY[2] = { nullptr };
 	eastl::unique_ptr<Texture2D> texIlCoCg[2] = { nullptr };
+
+	inline auto GetOutputTextures()
+	{
+		return (loaded && settings.Enabled) ?
+		           std::make_tuple(texAo[outputAoIdx]->srv.get(), texIlY[outputIlIdx]->srv.get(), texIlCoCg[outputIlIdx]->srv.get()) :
+		           std::make_tuple(nullptr, nullptr, nullptr);
+	}
 
 	winrt::com_ptr<ID3D11SamplerState> linearClampSampler = nullptr;
 	winrt::com_ptr<ID3D11SamplerState> pointClampSampler = nullptr;

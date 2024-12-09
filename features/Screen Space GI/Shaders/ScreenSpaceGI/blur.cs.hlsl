@@ -75,6 +75,8 @@ float2x3 getKernelBasis(float3 D, float3 N, float roughness = 1.0, float anisoFa
 	return float2x3(T, B);
 }
 
+// TODO: spinning blur
+
 [numthreads(8, 8, 1)] void main(const uint2 dtid
 								: SV_DispatchThreadID) {
 	const float2 frameScale = FrameDim * RcpTexDim;
