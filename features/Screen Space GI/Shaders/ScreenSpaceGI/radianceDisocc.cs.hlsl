@@ -27,7 +27,7 @@ RWTexture2D<float2> outRemappedIlCoCg : register(u4);
 
 void readHistory(
 	uint eyeIndex, float curr_depth, float3 curr_pos, int2 pixCoord, float bilinear_weight,
-	inout half4 prev_y, inout half2 prev_co_cg, inout half3 prev_ambient, inout float accum_frames, inout float wsum)
+	inout half prev_ao, inout half4 prev_y, inout half2 prev_co_cg, inout half3 prev_ambient, inout float accum_frames, inout float wsum)
 {
 	const float2 uv = (pixCoord + .5) * RCP_OUT_FRAME_DIM;
 	const float2 screen_pos = Stereo::ConvertFromStereoUV(uv, eyeIndex);
@@ -52,6 +52,7 @@ void readHistory(
 		prev_ambient += srcPrevAmbient[pixCoord] * bilinear_weight;
 #endif
 #ifdef TEMPORAL_DENOISER
+		prev_ao += srcPrevAo[pixCoord] * bilinear_weight;
 		prev_y += srcPrevIlY[pixCoord] * bilinear_weight;
 		prev_co_cg += srcPrevIlCoCg[pixCoord] * bilinear_weight;
 		accum_frames += srcAccumFrames[pixCoord] * bilinear_weight;
@@ -75,6 +76,7 @@ void readHistory(
 	float2 prev_uv = Stereo::ConvertToStereoUV(prev_screen_pos, eyeIndex);
 
 	half3 prev_ambient = 0;
+	half prev_ao = 0;
 	half4 prev_y = 0;
 	half2 prev_co_cg = 0;
 	float accum_frames = 0;
@@ -103,20 +105,21 @@ void readHistory(
 
 		readHistory(eyeIndex, curr_depth, curr_pos,
 			prev_px_lu, (1 - bilinear_weights.x) * (1 - bilinear_weights.y),
-			prev_y, prev_co_cg, prev_ambient, accum_frames, wsum);
+			prev_ao, prev_y, prev_co_cg, prev_ambient, accum_frames, wsum);
 		readHistory(eyeIndex, curr_depth, curr_pos,
 			prev_px_lu + int2(1, 0), bilinear_weights.x * (1 - bilinear_weights.y),
-			prev_y, prev_co_cg, prev_ambient, accum_frames, wsum);
+			prev_ao, prev_y, prev_co_cg, prev_ambient, accum_frames, wsum);
 		readHistory(eyeIndex, curr_depth, curr_pos,
 			prev_px_lu + int2(0, 1), (1 - bilinear_weights.x) * bilinear_weights.y,
-			prev_y, prev_co_cg, prev_ambient, accum_frames, wsum);
+			prev_ao, prev_y, prev_co_cg, prev_ambient, accum_frames, wsum);
 		readHistory(eyeIndex, curr_depth, curr_pos,
 			prev_px_lu + int2(1, 1), bilinear_weights.x * bilinear_weights.y,
-			prev_y, prev_co_cg, prev_ambient, accum_frames, wsum);
+			prev_ao, prev_y, prev_co_cg, prev_ambient, accum_frames, wsum);
 
 		if (wsum > 1e-2) {
 			float rcpWsum = rcp(wsum + 1e-10);
 #	ifdef TEMPORAL_DENOISER
+			prev_ao *= rcpWsum;
 			prev_y *= rcpWsum;
 			prev_co_cg *= rcpWsum;
 			accum_frames *= rcpWsum;
@@ -146,6 +149,7 @@ void readHistory(
 
 	accum_frames = max(1, min(accum_frames * 255 + useHistory, MaxAccumFrames));
 	outAccumFrames[pixCoord] = accum_frames / 255.0;
+	outRemappedAo[pixCoord] = prev_ao;
 	outRemappedIlY[pixCoord] = prev_y;
 	outRemappedIlCoCg[pixCoord] = prev_co_cg;
 #endif

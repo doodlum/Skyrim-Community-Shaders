@@ -73,15 +73,12 @@ void ScreenSpaceGI::DrawSettings()
 			recompileFlag = true;
 		}
 		if (auto _tt = Util::HoverTooltipWrapper())
-			ImGui::Text(
-				"1 Slice, 6 Steps, no blur, no GI\n"
-				"Try smaller effect radius :)");
+			ImGui::Text("1 Slice, 6 Steps, no blur, no GI\n");
 
 		ImGui::TableNextColumn();
 		if (ImGui::Button("Low", { -1, 0 })) {
 			settings.NumSlices = 2;
 			settings.NumSteps = 4;
-			settings.EnableBlur = true;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
@@ -92,7 +89,6 @@ void ScreenSpaceGI::DrawSettings()
 		if (ImGui::Button("Medium", { -1, 0 })) {
 			settings.NumSlices = 3;
 			settings.NumSteps = 6;
-			settings.EnableBlur = true;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
@@ -103,7 +99,6 @@ void ScreenSpaceGI::DrawSettings()
 		if (ImGui::Button("High", { -1, 0 })) {
 			settings.NumSlices = 4;
 			settings.NumSteps = 8;
-			settings.EnableBlur = true;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
@@ -114,7 +109,6 @@ void ScreenSpaceGI::DrawSettings()
 		if (ImGui::Button("Ultra", { -1, 0 })) {
 			settings.NumSlices = 6;
 			settings.NumSteps = 10;
-			settings.EnableBlur = true;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
