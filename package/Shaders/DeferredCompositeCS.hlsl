@@ -159,7 +159,7 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out half3 il)
 #		if defined(VR)
 		half3 ssgiIlSpecular2;
 		SampleSSGISpecular(pixCoord2, specularLobe, ssgiIlSpecular2);
-		ssgiIlSpecular = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiIlSpecular, uv2Mono, (float4)ssgiIlSpecular2).rgb;
+		ssgiIlSpecular = Stereo::BlendEyeColors(uv1Mono, float4(ssgiIlSpecular, 0), uv2Mono, float4(ssgiIlSpecular2, 0)).rgb;
 #		endif
 
 		finalIrradiance += ssgiIlSpecular;
