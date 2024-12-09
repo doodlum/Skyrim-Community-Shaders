@@ -3,6 +3,7 @@
 #include "Common/GBuffer.hlsli"
 #include "Common/Math.hlsli"
 #include "Common/SharedData.hlsli"
+#include "Common/Spherical Harmonics/SphericalHarmonics.hlsli"
 #include "Common/VR.hlsli"
 
 Texture2D<unorm half3> AlbedoTexture : register(t0);
@@ -19,11 +20,13 @@ Texture3D<sh2> SkylightingProbeArray : register(t3);
 Texture2D<unorm float> DepthTexture : register(t2);
 #endif
 
-#if defined(SSGI)
-Texture2D<half4> SSGITexture : register(t4);
-#endif
+Texture2D<unorm half3> Masks2Texture : register(t4);
 
-Texture2D<unorm half3> Masks2Texture : register(t5);
+#if defined(SSGI)
+Texture2D<half> SsgiAoTexture : register(t5);
+Texture2D<half4> SsgiYTexture : register(t6);
+Texture2D<half2> SsgiCoCgTexture : register(t7);
+#endif
 
 RWTexture2D<half3> MainRW : register(u0);
 #if defined(SSGI)
@@ -83,22 +86,27 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 	uint2 pixCoord2 = (uint2)(uv2.xy / SharedData::BufferDim.zw - 0.5);
 #	endif
 
-	half4 ssgiDiffuse = SSGITexture[dispatchID.xy];
-#	if defined(VR)
-	half4 ssgiDiffuse2 = SSGITexture[pixCoord2];
-	ssgiDiffuse = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiDiffuse, uv2Mono, (float4)ssgiDiffuse2);
-#	endif
-	ssgiDiffuse.rgb *= linAlbedo;
-	ssgiDiffuse.a = 1 - ssgiDiffuse.a;
+	half ssgiAo = 1 - SsgiAoTexture[dispatchID.xy];
+	half4 ssgiIlYSh = SsgiYTexture[dispatchID.xy];
+	// half ssgiIlY = SphericalHarmonics::FuncProductIntegral(ssgiIlYSh, SphericalHarmonics::EvaluateCosineLobe(normalWS));
+	half ssgiIlY = SphericalHarmonics::SHHallucinateZH3Irradiance(ssgiIlYSh, normalWS);
+	half2 ssgiIlCoCg = SsgiCoCgTexture[dispatchID.xy];
+	half3 ssgiIl = Color::YCoCgToRGB(float3(ssgiIlY, ssgiIlCoCg));
 
-	visibility *= ssgiDiffuse.a;
+	// TODO: VR Blending
+	// #	if defined(VR)
+	// 	half4 ssgiDiffuse2 = SSGITexture[pixCoord2];
+	// 	ssgiDiffuse = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiDiffuse, uv2Mono, (float4)ssgiDiffuse2);
+	// #	endif
 
-	DiffuseAmbientRW[dispatchID.xy] = linAlbedo * linDirectionalAmbientColor + ssgiDiffuse.rgb;
-
+	visibility *= ssgiAo;
 #	if defined(INTERIOR)
-	linDiffuseColor *= ssgiDiffuse.a;
+	linDiffuseColor *= ssgiAo;
 #	endif
-	linDiffuseColor += ssgiDiffuse.rgb;
+
+	ssgiIl *= linAlbedo;
+	DiffuseAmbientRW[dispatchID.xy] = linAlbedo * linDirectionalAmbientColor + ssgiIl;
+	linDiffuseColor += ssgiIl;
 #endif
 
 	linAmbient *= visibility;

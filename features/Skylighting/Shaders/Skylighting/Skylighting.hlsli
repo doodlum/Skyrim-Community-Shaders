@@ -108,25 +108,4 @@ namespace Skylighting
 		}
 		return vl * step;
 	}
-
-	sh2 fauxSpecularLobeSH(float3 N, float3 V, float roughness)
-	{
-		// https://www.gdcvault.com/play/1026701/Fast-Denoising-With-Self-Stabilizing
-		// get dominant ggx reflection direction
-		float f = (1 - roughness) * (sqrt(1 - roughness) + roughness);
-		float3 R = reflect(-V, N);
-		float3 D = lerp(N, R, f);
-		float3 dominantDir = normalize(D);
-
-		// lobe half angle
-		// credit: Olivier Therrien
-		float roughness2 = roughness * roughness;
-		float halfAngle = clamp(4.1679 * roughness2 * roughness2 - 9.0127 * roughness2 * roughness + 4.6161 * roughness2 + 1.7048 * roughness + 0.1, 0, Math::HALF_PI);
-		float lerpFactor = halfAngle / Math::HALF_PI;
-		sh2 directional = SphericalHarmonics::Evaluate(dominantDir);
-		sh2 cosineLobe = SphericalHarmonics::EvaluateCosineLobe(dominantDir) / Math::PI;
-		sh2 result = SphericalHarmonics::Add(SphericalHarmonics::Scale(directional, lerpFactor), SphericalHarmonics::Scale(cosineLobe, 1 - lerpFactor));
-
-		return result;
-	}
 }

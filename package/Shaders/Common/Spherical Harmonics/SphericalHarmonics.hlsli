@@ -199,6 +199,49 @@ namespace SphericalHarmonics
 		result.yzw *= 2.0943951023931954923f;
 		return result;
 	}
+
+	// Author: ProfJack
+	// Constructs the SH of an approximate specular lobe
+	sh2 FauxSpecularLobe(float3 N, float3 V, float roughness)
+	{
+		// https://www.gdcvault.com/play/1026701/Fast-Denoising-With-Self-Stabilizing
+		// get dominant ggx reflection direction
+		float f = (1 - roughness) * (sqrt(1 - roughness) + roughness);
+		float3 R = reflect(-V, N);
+		float3 D = lerp(N, R, f);
+		float3 dominantDir = normalize(D);
+
+		// lobe half angle
+		// credit: Olivier Therrien
+		float roughness2 = roughness * roughness;
+		float halfAngle = clamp(4.1679 * roughness2 * roughness2 - 9.0127 * roughness2 * roughness + 4.6161 * roughness2 + 1.7048 * roughness + 0.1, 0, Math::HALF_PI);
+		float lerpFactor = halfAngle / Math::HALF_PI;
+		sh2 directional = SphericalHarmonics::Evaluate(dominantDir);
+		sh2 cosineLobe = SphericalHarmonics::EvaluateCosineLobe(dominantDir) / Math::PI;
+		sh2 result = SphericalHarmonics::Add(SphericalHarmonics::Scale(directional, lerpFactor), SphericalHarmonics::Scale(cosineLobe, 1 - lerpFactor));
+
+		return result;
+	}
+
+	// Hallucinate zonal harmonics for diffuse lighting with more contrast
+	// http://torust.me/ZH3.pdf
+	float SHHallucinateZH3Irradiance(sh2 inSH, float3 direction)
+	{
+		float3 zonalAxis = normalize(float3(inSH.w, inSH.y, inSH.z));
+		float ratio = 0.0;
+		ratio = abs(dot(float3(-inSH.w, -inSH.y, inSH.z), zonalAxis));
+		ratio /= inSH.x;
+		float zonalL2Coeff = inSH.x * (0.08f * ratio + 0.6f * ratio * ratio);  // Curve-fit; Section 3.4.3
+		float fZ = dot(zonalAxis, direction);
+		float zhDir = sqrt(5.0f / (16.0f * Math::PI)) * (3.0f * fZ * fZ - 1.0f);
+		// Convolve inSH with the normalized cosine kernel (multiply the L1 band by the zonal scale 2/3), then dot with
+		// inSH(direction) for linear inSH (Equation 5).
+		float result = SphericalHarmonics::FuncProductIntegral(inSH, SphericalHarmonics::EvaluateCosineLobe(direction));
+		// Add irradiance from the ZH3 term. zonalL2Coeff is the ZH3 coefficient for a radiance signal, so we need to
+		// multiply by 1/4 (the L2 zonal scale for a normalized clamped cosine kernel) to evaluate irradiance.
+		result += 0.25f * zonalL2Coeff * zhDir;
+		return max(0, result);
+	}
 }
 
 #endif  // __SPHERICAL_HARMONICS_DEPENDENCY_HLSL__

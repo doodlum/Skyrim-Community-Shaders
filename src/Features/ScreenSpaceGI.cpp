@@ -310,10 +310,11 @@ void ScreenSpaceGI::DrawSettings()
 		BUFFER_VIEWER_NODE(texWorkingDepth, debugRescale)
 		BUFFER_VIEWER_NODE(texPrevGeo, debugRescale)
 		BUFFER_VIEWER_NODE(texRadiance, debugRescale)
-		BUFFER_VIEWER_NODE(texGI[0], debugRescale)
-		BUFFER_VIEWER_NODE(texGI[1], debugRescale)
-		BUFFER_VIEWER_NODE(texGISpecular[0], debugRescale)
-		BUFFER_VIEWER_NODE(texGISpecular[1], debugRescale)
+		BUFFER_VIEWER_NODE(texAo, debugRescale)
+		BUFFER_VIEWER_NODE(texIlY[0], debugRescale)
+		BUFFER_VIEWER_NODE(texIlY[1], debugRescale)
+		BUFFER_VIEWER_NODE(texIlCoCg[0], debugRescale)
+		BUFFER_VIEWER_NODE(texIlCoCg[1], debugRescale)
 
 		BUFFER_VIEWER_NODE(deferred->prevDiffuseAmbientTexture, debugRescale)
 
@@ -398,25 +399,31 @@ void ScreenSpaceGI::SetupResources()
 		texDesc.MipLevels = srvDesc.Texture2D.MipLevels = 1;
 		srvDesc.Format = uavDesc.Format = texDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 		{
-			texGI[0] = eastl::make_unique<Texture2D>(texDesc);
-			texGI[0]->CreateSRV(srvDesc);
-			texGI[0]->CreateUAV(uavDesc);
+			texIlY[0] = eastl::make_unique<Texture2D>(texDesc);
+			texIlY[0]->CreateSRV(srvDesc);
+			texIlY[0]->CreateUAV(uavDesc);
 
-			texGI[1] = eastl::make_unique<Texture2D>(texDesc);
-			texGI[1]->CreateSRV(srvDesc);
-			texGI[1]->CreateUAV(uavDesc);
+			texIlY[1] = eastl::make_unique<Texture2D>(texDesc);
+			texIlY[1]->CreateSRV(srvDesc);
+			texIlY[1]->CreateUAV(uavDesc);
+		}
+		srvDesc.Format = uavDesc.Format = texDesc.Format = DXGI_FORMAT_R16G16_FLOAT;
+		{
+			texIlCoCg[0] = eastl::make_unique<Texture2D>(texDesc);
+			texIlCoCg[0]->CreateSRV(srvDesc);
+			texIlCoCg[0]->CreateUAV(uavDesc);
 
-			texGISpecular[0] = eastl::make_unique<Texture2D>(texDesc);
-			texGISpecular[0]->CreateSRV(srvDesc);
-			texGISpecular[0]->CreateUAV(uavDesc);
-
-			texGISpecular[1] = eastl::make_unique<Texture2D>(texDesc);
-			texGISpecular[1]->CreateSRV(srvDesc);
-			texGISpecular[1]->CreateUAV(uavDesc);
+			texIlCoCg[1] = eastl::make_unique<Texture2D>(texDesc);
+			texIlCoCg[1]->CreateSRV(srvDesc);
+			texIlCoCg[1]->CreateUAV(uavDesc);
 		}
 
 		srvDesc.Format = uavDesc.Format = texDesc.Format = DXGI_FORMAT_R8_UNORM;
 		{
+			texAo = eastl::make_unique<Texture2D>(texDesc);
+			texAo->CreateSRV(srvDesc);
+			texAo->CreateUAV(uavDesc);
+
 			texAccumFrames[0] = eastl::make_unique<Texture2D>(texDesc);
 			texAccumFrames[0]->CreateSRV(srvDesc);
 			texAccumFrames[0]->CreateUAV(uavDesc);
@@ -613,10 +620,10 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 	auto& context = State::GetSingleton()->context;
 
 	if (!(settings.Enabled && ShadersOK())) {
-		FLOAT clr[4] = { 0., 0., 0., 0. };
-		context->ClearUnorderedAccessViewFloat(texGI[outputGIIdx]->uav.get(), clr);
-		context->ClearUnorderedAccessViewFloat(texGISpecular[outputGIIdx]->uav.get(), clr);
-
+		FLOAT clr[4] = { 0.f, 0.f, 0.f, 0.f };
+		context->ClearUnorderedAccessViewFloat(texAo->uav.get(), clr);
+		context->ClearUnorderedAccessViewFloat(texIlY[outputGIIdx]->uav.get(), clr);
+		context->ClearUnorderedAccessViewFloat(texIlCoCg[outputGIIdx]->uav.get(), clr);
 		return;
 	}
 
@@ -633,8 +640,6 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 		ClearShaderCache();
 
 	UpdateSB();
-
-	bool doSpecular = settings.EnableGI && settings.EnableSpecularGI;
 
 	//////////////////////////////////////////////////////
 
@@ -685,19 +690,19 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 
 		resetViews();
 		srvs.at(0) = rts[deferred->forwardRenderTargets[0]].SRV;
-		srvs.at(1) = texGI[inputGITexIdx]->srv.get();
-		srvs.at(2) = doSpecular ? texGISpecular[inputGITexIdx]->srv.get() : nullptr;
-		srvs.at(3) = texWorkingDepth->srv.get();
-		srvs.at(4) = rts[NORMALROUGHNESS].SRV;
-		srvs.at(5) = texPrevGeo->srv.get();
-		srvs.at(6) = rts[RE::RENDER_TARGET::kMOTION_VECTOR].SRV;
-		srvs.at(7) = srcPrevAmbient->srv.get();
-		srvs.at(8) = texAccumFrames[lastFrameAccumTexIdx]->srv.get();
+		srvs.at(1) = texWorkingDepth->srv.get();
+		srvs.at(2) = rts[NORMALROUGHNESS].SRV;
+		srvs.at(3) = texPrevGeo->srv.get();
+		srvs.at(4) = rts[RE::RENDER_TARGET::kMOTION_VECTOR].SRV;
+		srvs.at(5) = srcPrevAmbient->srv.get();
+		srvs.at(6) = texAccumFrames[lastFrameAccumTexIdx]->srv.get();
+		srvs.at(7) = texIlY[inputGITexIdx]->srv.get();
+		srvs.at(8) = texIlCoCg[inputGITexIdx]->srv.get();
 
 		uavs.at(0) = texRadiance->uav.get();
 		uavs.at(1) = texAccumFrames[!lastFrameAccumTexIdx]->uav.get();
-		uavs.at(2) = texGI[!inputGITexIdx]->uav.get();
-		uavs.at(3) = doSpecular ? texGISpecular[!inputGITexIdx]->uav.get() : nullptr;
+		uavs.at(2) = texIlY[!inputGITexIdx]->uav.get();
+		uavs.at(3) = texIlCoCg[!inputGITexIdx]->uav.get();
 
 		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
 		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
@@ -720,12 +725,12 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 		srvs.at(2) = texRadiance->srv.get();
 		srvs.at(3) = texNoise->srv.get();
 		srvs.at(4) = texAccumFrames[lastFrameAccumTexIdx]->srv.get();
-		srvs.at(5) = texGI[inputGITexIdx]->srv.get();
-		srvs.at(6) = texGISpecular[inputGITexIdx]->srv.get();
+		srvs.at(5) = texIlY[inputGITexIdx]->srv.get();
+		srvs.at(6) = texIlCoCg[inputGITexIdx]->srv.get();
 
-		uavs.at(0) = texGI[!inputGITexIdx]->uav.get();
-		uavs.at(1) = texGISpecular[!inputGITexIdx]->uav.get();
-		uavs.at(2) = nullptr;
+		uavs.at(0) = texAo->uav.get();
+		uavs.at(1) = texIlY[!inputGITexIdx]->uav.get();
+		uavs.at(2) = texIlCoCg[!inputGITexIdx]->uav.get();
 		uavs.at(3) = texPrevGeo->uav.get();
 
 		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
@@ -738,75 +743,45 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 	}
 
 	// blur
-	if (settings.EnableBlur) {
-		for (uint i = 0; i < settings.BlurPasses; i++) {
-			if (doSpecular) {
-				TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSGI - Specular Blur");
-				resetViews();
-				srvs.at(0) = texGISpecular[inputGITexIdx]->srv.get();
-				srvs.at(1) = texAccumFrames[lastFrameAccumTexIdx]->srv.get();
-				srvs.at(2) = texWorkingDepth->srv.get();
-				srvs.at(3) = rts[NORMALROUGHNESS].SRV;
+	// if (settings.EnableBlur) {
+	// 	for (uint i = 0; i < settings.BlurPasses; i++) {
+	// 		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSGI - Diffuse Blur");
 
-				uavs.at(0) = texGISpecular[!inputGITexIdx]->uav.get();
-				uavs.at(1) = nullptr;
+	// 		resetViews();
+	// 		srvs.at(0) = texIlY[inputGITexIdx]->srv.get();
+	// 		srvs.at(1) = texAccumFrames[lastFrameAccumTexIdx]->srv.get();
+	// 		srvs.at(2) = texWorkingDepth->srv.get();
+	// 		srvs.at(3) = rts[NORMALROUGHNESS].SRV;
 
-				context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
-				context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
-				context->CSSetShader(blurSpecularCompute.get(), nullptr, 0);
-				context->Dispatch((internalRes[0] + 7u) >> 3, (internalRes[1] + 7u) >> 3, 1);
-			}
+	// 		uavs.at(0) = texIlY[!inputGITexIdx]->uav.get();
+	// 		uavs.at(1) = texAccumFrames[!lastFrameAccumTexIdx]->uav.get();
 
-			TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSGI - Diffuse Blur");
+	// 		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
+	// 		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
+	// 		context->CSSetShader(blurCompute.get(), nullptr, 0);
+	// 		context->Dispatch((internalRes[0] + 7u) >> 3, (internalRes[1] + 7u) >> 3, 1);
 
-			resetViews();
-			srvs.at(0) = texGI[inputGITexIdx]->srv.get();
-			srvs.at(1) = texAccumFrames[lastFrameAccumTexIdx]->srv.get();
-			srvs.at(2) = texWorkingDepth->srv.get();
-			srvs.at(3) = rts[NORMALROUGHNESS].SRV;
-
-			uavs.at(0) = texGI[!inputGITexIdx]->uav.get();
-			uavs.at(1) = texAccumFrames[!lastFrameAccumTexIdx]->uav.get();
-
-			context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
-			context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
-			context->CSSetShader(blurCompute.get(), nullptr, 0);
-			context->Dispatch((internalRes[0] + 7u) >> 3, (internalRes[1] + 7u) >> 3, 1);
-
-			inputGITexIdx = !inputGITexIdx;
-			lastFrameGITexIdx = inputGITexIdx;
-			lastFrameAccumTexIdx = !lastFrameAccumTexIdx;
-		}
-	}
+	// 		inputGITexIdx = !inputGITexIdx;
+	// 		lastFrameGITexIdx = inputGITexIdx;
+	// 		lastFrameAccumTexIdx = !lastFrameAccumTexIdx;
+	// 	}
+	// }
 
 	// upsasmple
-	if (settings.HalfRes) {
-		resetViews();
-		srvs.at(0) = texWorkingDepth->srv.get();
-		srvs.at(1) = texGI[inputGITexIdx]->srv.get();
+	// if (settings.HalfRes) {
+	// 	resetViews();
+	// 	srvs.at(0) = texWorkingDepth->srv.get();
+	// 	srvs.at(1) = texIlY[inputGITexIdx]->srv.get();
 
-		uavs.at(0) = texGI[!inputGITexIdx]->uav.get();
+	// 	uavs.at(0) = texIlY[!inputGITexIdx]->uav.get();
 
-		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
-		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
-		context->CSSetShader(upsampleCompute.get(), nullptr, 0);
-		context->Dispatch((resolution[0] + 7u) >> 3, (resolution[1] + 7u) >> 3, 1);
+	// 	context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
+	// 	context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
+	// 	context->CSSetShader(upsampleCompute.get(), nullptr, 0);
+	// 	context->Dispatch((resolution[0] + 7u) >> 3, (resolution[1] + 7u) >> 3, 1);
 
-		if (doSpecular) {
-			resetViews();
-			srvs.at(0) = texWorkingDepth->srv.get();
-			srvs.at(1) = texGISpecular[inputGITexIdx]->srv.get();
-
-			uavs.at(0) = texGISpecular[!inputGITexIdx]->uav.get();
-
-			context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
-			context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
-			context->CSSetShader(upsampleCompute.get(), nullptr, 0);
-			context->Dispatch((resolution[0] + 7u) >> 3, (resolution[1] + 7u) >> 3, 1);
-		}
-
-		inputGITexIdx = !inputGITexIdx;
-	}
+	// 	inputGITexIdx = !inputGITexIdx;
+	// }
 
 	outputGIIdx = inputGITexIdx;
 

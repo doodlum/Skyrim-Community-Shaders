@@ -359,13 +359,15 @@ void Deferred::DeferredPasses()
 		{
 			TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Ambient Composite");
 
-			ID3D11ShaderResourceView* srvs[6]{
+			ID3D11ShaderResourceView* srvs[8]{
 				albedo.SRV,
 				normalRoughness.SRV,
 				skylighting->loaded || REL::Module::IsVR() ? depth.depthSRV : nullptr,
 				skylighting->loaded ? skylighting->texProbeArray->srv.get() : nullptr,
-				ssgi->settings.Enabled ? ssgi->texGI[ssgi->outputGIIdx]->srv.get() : nullptr,
 				masks2.SRV,
+				ssgi->settings.Enabled ? ssgi->texAo->srv.get() : nullptr,
+				ssgi->settings.Enabled ? ssgi->texIlY[ssgi->outputGIIdx]->srv.get() : nullptr,
+				ssgi->settings.Enabled ? ssgi->texIlCoCg[ssgi->outputGIIdx]->srv.get() : nullptr,
 			};
 
 			context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
@@ -405,9 +407,7 @@ void Deferred::DeferredPasses()
 	{
 		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Deferred Composite");
 
-		bool doSSGISpecular = ssgi->loaded && ssgi->settings.Enabled && ssgi->settings.EnableGI && ssgi->settings.EnableSpecularGI;
-
-		ID3D11ShaderResourceView* srvs[11]{
+		ID3D11ShaderResourceView* srvs[12]{
 			specular.SRV,
 			albedo.SRV,
 			normalRoughness.SRV,
@@ -418,7 +418,8 @@ void Deferred::DeferredPasses()
 			dynamicCubemaps->loaded ? dynamicCubemaps->envTexture->srv.get() : nullptr,
 			dynamicCubemaps->loaded ? dynamicCubemaps->envReflectionsTexture->srv.get() : nullptr,
 			dynamicCubemaps->loaded && skylighting->loaded ? skylighting->texProbeArray->srv.get() : nullptr,
-			doSSGISpecular ? ssgi->texGISpecular[ssgi->outputGIIdx]->srv.get() : nullptr,
+			ssgi->settings.Enabled ? ssgi->texIlY[ssgi->outputGIIdx]->srv.get() : nullptr,
+			ssgi->settings.Enabled ? ssgi->texIlCoCg[ssgi->outputGIIdx]->srv.get() : nullptr,
 		};
 
 		if (dynamicCubemaps->loaded)

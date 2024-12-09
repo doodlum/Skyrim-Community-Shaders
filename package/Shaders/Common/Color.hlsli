@@ -22,6 +22,25 @@ namespace Color
 		return dot(color, float3(0.299, 0.587, 0.114));
 	}
 
+	float3 RGBToYCoCg(float3 color)
+	{
+		float tmp = 0.25 * (color.r + color.b);
+		return float3(
+			tmp + 0.5 * color.g,        // Y
+			0.5 * (color.r - color.b),  // Co
+			-tmp + 0.5 * color.g        //Cg
+		);
+	}
+
+	float3 YCoCgToRGB(float3 color)
+	{
+		float tmp = color.x - color.z;
+		return float3(
+			tmp + color.y,
+			color.x + color.z,
+			tmp - color.y);
+	}
+
 	const static float AlbedoPreMult = 1 / 1.7;                        // greater value -> brighter pbr
 	const static float LightPreMult = 1 / (Math::PI * AlbedoPreMult);  // ensure 1/PI as product
 

@@ -50,8 +50,8 @@ struct ScreenSpaceGI : Feature
 		// performance/quality
 		uint NumSlices = 2;
 		uint NumSteps = 4;
-		bool HalfRes = true;
-		bool HalfRate = true;
+		bool HalfRes = false;
+		bool HalfRate = false;
 		// visual
 		float MinScreenRadius = 0.01f;
 		float AORadius = 100.f;
@@ -65,7 +65,7 @@ struct ScreenSpaceGI : Feature
 		float GIDistanceCompensation = 0.f;
 		// mix
 		float AOPower = 2.f;
-		float GIStrength = 3.f;
+		float GIStrength = 1.f;
 		// denoise
 		bool EnableTemporalDenoiser = true;
 		bool EnableBlur = true;
@@ -125,8 +125,9 @@ struct ScreenSpaceGI : Feature
 	eastl::unique_ptr<Texture2D> texPrevGeo = nullptr;
 	eastl::unique_ptr<Texture2D> texRadiance = nullptr;
 	eastl::unique_ptr<Texture2D> texAccumFrames[2] = { nullptr };
-	eastl::unique_ptr<Texture2D> texGI[2] = { nullptr };
-	eastl::unique_ptr<Texture2D> texGISpecular[2] = { nullptr };
+	eastl::unique_ptr<Texture2D> texAo = { nullptr };
+	eastl::unique_ptr<Texture2D> texIlY[2] = { nullptr };
+	eastl::unique_ptr<Texture2D> texIlCoCg[2] = { nullptr };
 
 	winrt::com_ptr<ID3D11SamplerState> linearClampSampler = nullptr;
 	winrt::com_ptr<ID3D11SamplerState> pointClampSampler = nullptr;

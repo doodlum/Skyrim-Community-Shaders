@@ -4,6 +4,7 @@
 #include "Common/GBuffer.hlsli"
 #include "Common/MotionBlur.hlsli"
 #include "Common/SharedData.hlsli"
+#include "Common/Spherical Harmonics/SphericalHarmonics.hlsli"
 #include "Common/VR.hlsli"
 
 Texture2D<half3> SpecularTexture : register(t0);
@@ -36,7 +37,8 @@ Texture3D<sh2> SkylightingProbeArray : register(t9);
 #endif
 
 #if defined(SSGI)
-Texture2D<half4> SpecularSSGITexture : register(t10);
+Texture2D<half4> SsgiYTexture : register(t10);
+Texture2D<half4> SsgiCoCgTexture : register(t11);
 #endif
 
 [numthreads(8, 8, 1)] void main(uint3 dispatchID
@@ -88,6 +90,8 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 		half roughness = 1.0 - glossiness;
 		half level = roughness * 7.0;
 
+		sh2 specularLobe = SphericalHarmonics::FauxSpecularLobe(normalWS, -V, roughness);
+
 		half3 finalIrradiance = 0;
 
 #	if defined(INTERIOR)
@@ -103,7 +107,6 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 #		endif
 
 		sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
-		sh2 specularLobe = Skylighting::fauxSpecularLobeSH(normalWS, -V, roughness);
 
 		half skylightingSpecular = SphericalHarmonics::FuncProductIntegral(skylighting, specularLobe);
 		skylightingSpecular = Skylighting::mixSpecular(SharedData::skylightingSettings, skylightingSpecular);
@@ -138,12 +141,18 @@ Texture2D<half4> SpecularSSGITexture : register(t10);
 		uint2 pixCoord2 = (uint2)(uv2.xy / SharedData::BufferDim.zw - 0.5);
 #		endif
 
-		half4 ssgiSpecular = SpecularSSGITexture[dispatchID.xy];
-#		if defined(VR)
-		half4 ssgiSpecular2 = SpecularSSGITexture[pixCoord2];
-		ssgiSpecular = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiSpecular, uv2Mono, (float4)ssgiSpecular2);
-#		endif
-		finalIrradiance = finalIrradiance * (1 - ssgiSpecular.a) + ssgiSpecular.rgb;
+		half4 ssgiIlYSh = SsgiYTexture[dispatchID.xy];
+		half ssgiIlY = SphericalHarmonics::FuncProductIntegral(ssgiIlYSh, specularLobe);
+		half2 ssgiIlCoCg = SsgiCoCgTexture[dispatchID.xy];
+		half3 ssgiIlSpecular = Color::YCoCgToRGB(float3(ssgiIlY, ssgiIlCoCg));
+
+		// TODO: VR Blending (this doesn't make sense tho, because specular is very sensitive to view shifts)
+		// #		if defined(VR)
+		// 		half4 ssgiSpecular2 = SpecularSSGITexture[pixCoord2];
+		// 		ssgiSpecular = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiSpecular, uv2Mono, (float4)ssgiSpecular2);
+		// #		endif
+
+		finalIrradiance += ssgiIlSpecular;
 #	endif
 
 		color += reflectance * finalIrradiance;
