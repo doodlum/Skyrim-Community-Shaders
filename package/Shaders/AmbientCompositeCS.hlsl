@@ -91,7 +91,7 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 	// half ssgiIlY = SphericalHarmonics::FuncProductIntegral(ssgiIlYSh, SphericalHarmonics::EvaluateCosineLobe(normalWS));
 	half ssgiIlY = SphericalHarmonics::SHHallucinateZH3Irradiance(ssgiIlYSh, normalWS);
 	half2 ssgiIlCoCg = SsgiCoCgTexture[dispatchID.xy];
-	half3 ssgiIl = Color::YCoCgToRGB(float3(ssgiIlY, ssgiIlCoCg));
+	half3 ssgiIl = max(0, Color::YCoCgToRGB(float3(ssgiIlY, ssgiIlCoCg)));
 
 	// TODO: VR Blending
 	// #	if defined(VR)

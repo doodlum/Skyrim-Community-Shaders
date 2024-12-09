@@ -144,7 +144,10 @@ Texture2D<half4> SsgiCoCgTexture : register(t11);
 		half4 ssgiIlYSh = SsgiYTexture[dispatchID.xy];
 		half ssgiIlY = SphericalHarmonics::FuncProductIntegral(ssgiIlYSh, specularLobe);
 		half2 ssgiIlCoCg = SsgiCoCgTexture[dispatchID.xy];
-		half3 ssgiIlSpecular = Color::YCoCgToRGB(float3(ssgiIlY, ssgiIlCoCg));
+		half3 ssgiIlSpecular = max(0, Color::YCoCgToRGB(float3(ssgiIlY, ssgiIlCoCg / Math::PI)));
+		// pi to compensate for the /pi in specularLobe
+		// i don't think there really should be a 1/PI but without it the specular is too strong
+		// reflectance being ambient reflectance doesn't help either
 
 		// TODO: VR Blending (this doesn't make sense tho, because specular is very sensitive to view shifts)
 		// #		if defined(VR)

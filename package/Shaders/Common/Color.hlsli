@@ -28,7 +28,7 @@ namespace Color
 		return float3(
 			tmp + 0.5 * color.g,        // Y
 			0.5 * (color.r - color.b),  // Co
-			-tmp + 0.5 * color.g        //Cg
+			-tmp + 0.5 * color.g        // Cg
 		);
 	}
 

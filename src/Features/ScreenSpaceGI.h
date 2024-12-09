@@ -46,12 +46,10 @@ struct ScreenSpaceGI : Feature
 	{
 		bool Enabled = true;
 		bool EnableGI = true;
-		bool EnableSpecularGI = false;
 		// performance/quality
 		uint NumSlices = 2;
 		uint NumSteps = 4;
 		bool HalfRes = false;
-		bool HalfRate = false;
 		// visual
 		float MinScreenRadius = 0.01f;
 		float AORadius = 100.f;
@@ -72,8 +70,7 @@ struct ScreenSpaceGI : Feature
 		float DepthDisocclusion = .03f;
 		float NormalDisocclusion = .1f;
 		uint MaxAccumFrames = 10;
-		float BlurRadius = 10.f;
-		uint BlurPasses = 1;
+		float BlurRadius = 5.f;
 		float DistanceNormalisation = 2.f;
 	} settings;
 
@@ -136,6 +133,5 @@ struct ScreenSpaceGI : Feature
 	winrt::com_ptr<ID3D11ComputeShader> radianceDisoccCompute = nullptr;
 	winrt::com_ptr<ID3D11ComputeShader> giCompute = nullptr;
 	winrt::com_ptr<ID3D11ComputeShader> blurCompute = nullptr;
-	winrt::com_ptr<ID3D11ComputeShader> blurSpecularCompute = nullptr;
 	winrt::com_ptr<ID3D11ComputeShader> upsampleCompute = nullptr;
 };

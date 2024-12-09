@@ -11,8 +11,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	ScreenSpaceGI::Settings,
 	Enabled,
 	EnableGI,
-	EnableSpecularGI,
-	HalfRate,
 	HalfRes,
 	EnableTemporalDenoiser,
 	NumSlices,
@@ -32,7 +30,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	NormalDisocclusion,
 	MaxAccumFrames,
 	BlurRadius,
-	BlurPasses,
 	DistanceNormalisation)
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -54,23 +51,11 @@ void ScreenSpaceGI::DrawSettings()
 
 	ImGui::Checkbox("Show Advanced Options", &showAdvanced);
 
-	if (ImGui::BeginTable("Toggles", 3)) {
+	if (ImGui::BeginTable("Toggles", 2)) {
 		ImGui::TableNextColumn();
 		ImGui::Checkbox("Enabled", &settings.Enabled);
 		ImGui::TableNextColumn();
-		recompileFlag |= ImGui::Checkbox("Diffuse IL", &settings.EnableGI);
-		if (auto _tt = Util::HoverTooltipWrapper())
-			ImGui::Text("Simulates indirect diffuse lighting.");
-		ImGui::TableNextColumn();
-		if (showAdvanced) {
-			auto _ = Util::DisableGuard(!settings.EnableGI);
-			recompileFlag |= ImGui::Checkbox("Specular IL", &settings.EnableSpecularGI);
-			if (auto _tt = Util::HoverTooltipWrapper())
-				ImGui::Text(
-					"(Experimental) Reuses diffuse samples to simulate indirect specular lighting.\n"
-					"Doubles the cost of denoisers, and very noisy on smooth materials.\n"
-					"Only for Complex Material or TruePBR materials.");
-		}
+		recompileFlag |= ImGui::Checkbox("Indirect Lighting (IL)", &settings.EnableGI);
 
 		ImGui::EndTable();
 	}
@@ -153,11 +138,6 @@ void ScreenSpaceGI::DrawSettings()
 
 	if (ImGui::BeginTable("Less Work", 2)) {
 		ImGui::TableNextColumn();
-		recompileFlag |= ImGui::Checkbox("Half Rate", &settings.HalfRate);
-		if (auto _tt = Util::HoverTooltipWrapper())
-			ImGui::Text("Shading only half the pixels per frame. Cheaper for higher settings but has more ghosting, and takes twice as long to converge.");
-
-		ImGui::TableNextColumn();
 		recompileFlag |= ImGui::Checkbox("Half Resolution", &settings.HalfRes);
 		if (auto _tt = Util::HoverTooltipWrapper())
 			ImGui::Text("Rendering internally with half resolution. Vastly cheaper but quite more noise.");
@@ -172,7 +152,7 @@ void ScreenSpaceGI::DrawSettings()
 
 	{
 		auto _ = Util::DisableGuard(!settings.EnableGI);
-		ImGui::SliderFloat("IL Source Brightness", &settings.GIStrength, 0.f, 10.f, "%.2f");
+		ImGui::SliderFloat("IL Source Brightness", &settings.GIStrength, 0.f, 6.f, "%.2f");
 	}
 
 	ImGui::Separator();
@@ -283,10 +263,6 @@ void ScreenSpaceGI::DrawSettings()
 		{
 			auto _ = Util::DisableGuard(!settings.EnableBlur);
 			ImGui::SliderFloat("Blur Radius", &settings.BlurRadius, 0.f, 30.f, "%.1f px");
-
-			ImGui::SliderInt("Blur Passes", (int*)&settings.BlurPasses, 1, 3, "%d", ImGuiSliderFlags_AlwaysClamp);
-			if (auto _tt = Util::HoverTooltipWrapper())
-				ImGui::Text("Blurring repeatedly for x times.");
 
 			if (showAdvanced) {
 				ImGui::SliderFloat("Geometry Weight", &settings.DistanceNormalisation, 0.f, 5.f, "%.2f");
@@ -498,7 +474,7 @@ void ScreenSpaceGI::SetupResources()
 void ScreenSpaceGI::ClearShaderCache()
 {
 	static const std::vector<winrt::com_ptr<ID3D11ComputeShader>*> shaderPtrs = {
-		&prefilterDepthsCompute, &radianceDisoccCompute, &giCompute, &blurCompute, &blurSpecularCompute, &upsampleCompute
+		&prefilterDepthsCompute, &radianceDisoccCompute, &giCompute, &blurCompute, &upsampleCompute
 	};
 
 	for (auto shader : shaderPtrs)
@@ -522,22 +498,18 @@ void ScreenSpaceGI::CompileComputeShaders()
 			{ &radianceDisoccCompute, "radianceDisocc.cs.hlsl", {} },
 			{ &giCompute, "gi.cs.hlsl", {} },
 			{ &blurCompute, "blur.cs.hlsl", {} },
-			{ &blurSpecularCompute, "blur.cs.hlsl", { { "SPECULAR_BLUR", "" } } },
 			{ &upsampleCompute, "upsample.cs.hlsl", {} },
 		};
 	for (auto& info : shaderInfos) {
 		if (REL::Module::IsVR())
 			info.defines.push_back({ "VR", "" });
-		if (settings.HalfRes)
-			info.defines.push_back({ "HALF_RES", "" });
-		if (settings.HalfRate)
-			info.defines.push_back({ "HALF_RATE", "" });
+		// TODO
+		// if (settings.HalfRes)
+		// 	info.defines.push_back({ "HALF_RES", "" });
 		if (settings.EnableTemporalDenoiser)
 			info.defines.push_back({ "TEMPORAL_DENOISER", "" });
 		if (settings.EnableGI)
 			info.defines.push_back({ "GI", "" });
-		if (settings.EnableSpecularGI)
-			info.defines.push_back({ "GI_SPECULAR", "" });
 		if (settings.EnableGIBounce)
 			info.defines.push_back({ "GI_BOUNCE", "" });
 	}
@@ -553,7 +525,7 @@ void ScreenSpaceGI::CompileComputeShaders()
 
 bool ScreenSpaceGI::ShadersOK()
 {
-	return texNoise && prefilterDepthsCompute && radianceDisoccCompute && giCompute && blurCompute && blurSpecularCompute && upsampleCompute;
+	return texNoise && prefilterDepthsCompute && radianceDisoccCompute && giCompute && blurCompute && upsampleCompute;
 }
 
 void ScreenSpaceGI::UpdateSB()
@@ -743,29 +715,29 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 	}
 
 	// blur
-	// if (settings.EnableBlur) {
-	// 	for (uint i = 0; i < settings.BlurPasses; i++) {
-	// 		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSGI - Diffuse Blur");
+	if (settings.EnableBlur) {
+		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSGI - Diffuse Blur");
 
-	// 		resetViews();
-	// 		srvs.at(0) = texIlY[inputGITexIdx]->srv.get();
-	// 		srvs.at(1) = texAccumFrames[lastFrameAccumTexIdx]->srv.get();
-	// 		srvs.at(2) = texWorkingDepth->srv.get();
-	// 		srvs.at(3) = rts[NORMALROUGHNESS].SRV;
+		resetViews();
+		srvs.at(0) = texWorkingDepth->srv.get();
+		srvs.at(1) = rts[NORMALROUGHNESS].SRV;
+		srvs.at(2) = texAccumFrames[lastFrameAccumTexIdx]->srv.get();
+		srvs.at(3) = texIlY[inputGITexIdx]->srv.get();
+		srvs.at(4) = texIlCoCg[inputGITexIdx]->srv.get();
 
-	// 		uavs.at(0) = texIlY[!inputGITexIdx]->uav.get();
-	// 		uavs.at(1) = texAccumFrames[!lastFrameAccumTexIdx]->uav.get();
+		uavs.at(0) = texAccumFrames[!lastFrameAccumTexIdx]->uav.get();
+		uavs.at(1) = texIlY[!inputGITexIdx]->uav.get();
+		uavs.at(2) = texIlCoCg[!inputGITexIdx]->uav.get();
 
-	// 		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
-	// 		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
-	// 		context->CSSetShader(blurCompute.get(), nullptr, 0);
-	// 		context->Dispatch((internalRes[0] + 7u) >> 3, (internalRes[1] + 7u) >> 3, 1);
+		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
+		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
+		context->CSSetShader(blurCompute.get(), nullptr, 0);
+		context->Dispatch((internalRes[0] + 7u) >> 3, (internalRes[1] + 7u) >> 3, 1);
 
-	// 		inputGITexIdx = !inputGITexIdx;
-	// 		lastFrameGITexIdx = inputGITexIdx;
-	// 		lastFrameAccumTexIdx = !lastFrameAccumTexIdx;
-	// 	}
-	// }
+		inputGITexIdx = !inputGITexIdx;
+		lastFrameGITexIdx = inputGITexIdx;
+		lastFrameAccumTexIdx = !lastFrameAccumTexIdx;
+	}
 
 	// upsasmple
 	// if (settings.HalfRes) {

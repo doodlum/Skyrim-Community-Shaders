@@ -199,7 +199,7 @@ void CalculateGI(
 				bool checkGI = validBits;
 
 				if (checkGI) {
-					float giBoost = 1 + GIDistanceCompensation * smoothstep(0, GICompensationMaxDist, s * EffectRadius);
+					float giBoost = 4.0 * Math::PI * (1 + GIDistanceCompensation * smoothstep(0, GICompensationMaxDist, s * EffectRadius));
 
 					// IL
 					float3 normalSample = GBuffer::DecodeNormal(srcNormalRoughness.SampleLevel(samplerPointClamp, sampleUV * frameScale, 0).xy);
@@ -237,7 +237,7 @@ void CalculateGI(
 	visibility = 1 - pow(abs(1 - visibility), AOPower);
 
 #ifdef GI
-	radianceY *= 4.0 * Math::PI * rcpNumSlices;
+	radianceY *= rcpNumSlices;
 	radianceY = lerp(radianceY, 0, depthFade);
 
 	radianceCoCg *= rcpNumSlices;
@@ -253,13 +253,6 @@ void CalculateGI(
 	const float2 frameScale = FrameDim * RcpTexDim;
 
 	uint2 pxCoord = dtid;
-#if defined(HALF_RATE)
-	const uint halfWidth = uint(OUT_FRAME_DIM.x) >> 1;
-	const bool useHistory = dtid.x >= halfWidth;
-	pxCoord.x = (pxCoord.x % halfWidth) * 2 + (dtid.y + FrameIndex + useHistory) % 2;
-#else
-	const static bool useHistory = false;
-#endif
 
 	float2 uv = (pxCoord + .5) * RCP_OUT_FRAME_DIM;
 	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
@@ -281,17 +274,12 @@ void CalculateGI(
 
 	bool needGI = viewspaceZ > FP_Z && viewspaceZ < DepthFadeRange.y;
 	if (needGI) {
-		if (!useHistory)
-			CalculateGI(
-				pxCoord, uv, viewspaceZ, viewspaceNormal,
-				currAo, currY, currCoCg);
+		CalculateGI(
+			pxCoord, uv, viewspaceZ, viewspaceNormal,
+			currAo, currY, currCoCg);
 
 #ifdef TEMPORAL_DENOISER
 		float lerpFactor = rcp(srcAccumFrames[pxCoord] * 255);
-#	if defined(HALF_RATE)
-		if (useHistory && lerpFactor != 1)
-			lerpFactor = 0;
-#	endif
 
 		currY = lerp(srcPrevY[pxCoord], currY, lerpFactor);
 		currCoCg = lerp(srcPrevCoCg[pxCoord], currCoCg, lerpFactor);
