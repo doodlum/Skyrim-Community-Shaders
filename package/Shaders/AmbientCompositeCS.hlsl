@@ -33,6 +33,19 @@ RWTexture2D<half3> MainRW : register(u0);
 RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 #endif
 
+#if defined(SSGI)
+void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
+{
+	ao = 1 - SsgiAoTexture[pixCoord];
+	half4 ssgiIlYSh = SsgiYTexture[pixCoord];
+	// without ZH hallucination
+	// half ssgiIlY = SphericalHarmonics::FuncProductIntegral(ssgiIlYSh, SphericalHarmonics::EvaluateCosineLobe(normalWS));
+	half ssgiIlY = SphericalHarmonics::SHHallucinateZH3Irradiance(ssgiIlYSh, normalWS);
+	half2 ssgiIlCoCg = SsgiCoCgTexture[pixCoord];
+	il = max(0, Color::YCoCgToRGB(float3(ssgiIlY, ssgiIlCoCg)));
+}
+#endif
+
 [numthreads(8, 8, 1)] void main(uint3 dispatchID
 								: SV_DispatchThreadID) {
 	half2 uv = half2(dispatchID.xy + 0.5) * SharedData::BufferDim.zw;
@@ -86,18 +99,19 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 	uint2 pixCoord2 = (uint2)(uv2.xy / SharedData::BufferDim.zw - 0.5);
 #	endif
 
-	half ssgiAo = 1 - SsgiAoTexture[dispatchID.xy];
-	half4 ssgiIlYSh = SsgiYTexture[dispatchID.xy];
-	// half ssgiIlY = SphericalHarmonics::FuncProductIntegral(ssgiIlYSh, SphericalHarmonics::EvaluateCosineLobe(normalWS));
-	half ssgiIlY = SphericalHarmonics::SHHallucinateZH3Irradiance(ssgiIlYSh, normalWS);
-	half2 ssgiIlCoCg = SsgiCoCgTexture[dispatchID.xy];
-	half3 ssgiIl = max(0, Color::YCoCgToRGB(float3(ssgiIlY, ssgiIlCoCg)));
+	half ssgiAo;
+	half3 ssgiIl;
+	SampleSSGI(dispatchID.xy, normalWS, ssgiAo, ssgiIl);
 
-	// TODO: VR Blending
-	// #	if defined(VR)
-	// 	half4 ssgiDiffuse2 = SSGITexture[pixCoord2];
-	// 	ssgiDiffuse = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiDiffuse, uv2Mono, (float4)ssgiDiffuse2);
-	// #	endif
+#	if defined(VR)
+	half ssgiAo2;
+	half3 ssgiIl2;
+	SampleSSGI(pixCoord2, normalWS, ssgiAo, ssgiIl);
+
+	half4 ssgiMixed = Stereo::BlendEyeColors(uv1Mono, float4(ssgiIl, ssgiAo), uv2Mono, float4(ssgiIl2, ssgiAo2));
+	ssgiAo = ssgiMixed.a;
+	ssgiIl = ssgiMixed.rgb;
+#	endif
 
 	visibility *= ssgiAo;
 #	if defined(INTERIOR)

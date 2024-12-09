@@ -39,6 +39,18 @@ Texture3D<sh2> SkylightingProbeArray : register(t9);
 #if defined(SSGI)
 Texture2D<half4> SsgiYTexture : register(t10);
 Texture2D<half4> SsgiCoCgTexture : register(t11);
+
+void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out half3 il)
+{
+	half4 ssgiIlYSh = SsgiYTexture[pixCoord];
+	half ssgiIlY = SphericalHarmonics::FuncProductIntegral(ssgiIlYSh, lobe);
+	half2 ssgiIlCoCg = SsgiCoCgTexture[pixCoord];
+
+	// pi to compensate for the /pi in specularLobe
+	// i don't think there really should be a 1/PI but without it the specular is too strong
+	// reflectance being ambient reflectance doesn't help either
+	il = max(0, Color::YCoCgToRGB(float3(ssgiIlY, ssgiIlCoCg / Math::PI)));
+}
 #endif
 
 [numthreads(8, 8, 1)] void main(uint3 dispatchID
@@ -141,19 +153,14 @@ Texture2D<half4> SsgiCoCgTexture : register(t11);
 		uint2 pixCoord2 = (uint2)(uv2.xy / SharedData::BufferDim.zw - 0.5);
 #		endif
 
-		half4 ssgiIlYSh = SsgiYTexture[dispatchID.xy];
-		half ssgiIlY = SphericalHarmonics::FuncProductIntegral(ssgiIlYSh, specularLobe);
-		half2 ssgiIlCoCg = SsgiCoCgTexture[dispatchID.xy];
-		half3 ssgiIlSpecular = max(0, Color::YCoCgToRGB(float3(ssgiIlY, ssgiIlCoCg / Math::PI)));
-		// pi to compensate for the /pi in specularLobe
-		// i don't think there really should be a 1/PI but without it the specular is too strong
-		// reflectance being ambient reflectance doesn't help either
+		half3 ssgiIlSpecular;
+		SampleSSGISpecular(dispatchID.xy, specularLobe, ssgiIlSpecular);
 
-		// TODO: VR Blending (this doesn't make sense tho, because specular is very sensitive to view shifts)
-		// #		if defined(VR)
-		// 		half4 ssgiSpecular2 = SpecularSSGITexture[pixCoord2];
-		// 		ssgiSpecular = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiSpecular, uv2Mono, (float4)ssgiSpecular2);
-		// #		endif
+#		if defined(VR)
+		half3 ssgiIlSpecular2;
+		SampleSSGISpecular(pixCoord2, specularLobe, ssgiIlSpecular2);
+		ssgiIlSpecular = Stereo::BlendEyeColors(uv1Mono, (float4)ssgiIlSpecular, uv2Mono, (float4)ssgiIlSpecular2).rgb;
+#		endif
 
 		finalIrradiance += ssgiIlSpecular;
 #	endif
