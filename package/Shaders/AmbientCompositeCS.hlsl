@@ -106,7 +106,7 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 #	if defined(VR)
 	half ssgiAo2;
 	half3 ssgiIl2;
-	SampleSSGI(pixCoord2, normalWS, ssgiAo, ssgiIl);
+	SampleSSGI(pixCoord2, normalWS, ssgiAo2, ssgiIl2);
 
 	half4 ssgiMixed = Stereo::BlendEyeColors(uv1Mono, float4(ssgiIl, ssgiAo), uv2Mono, float4(ssgiIl2, ssgiAo2));
 	ssgiAo = ssgiMixed.a;
