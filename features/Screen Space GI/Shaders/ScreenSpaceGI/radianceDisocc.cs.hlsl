@@ -49,7 +49,7 @@ void readHistory(
 	// bool normal_pass = normal_prod * normal_prod > NormalDisocclusion;
 	if (depth_pass) {
 #if defined(GI) && defined(GI_BOUNCE)
-		prev_ambient += srcPrevAmbient[pixCoord] * bilinear_weight;
+		prev_ambient += FULLRES_LOAD(srcPrevAmbient, pixCoord, uv * FrameDim * RcpTexDim, samplerLinearClamp) * bilinear_weight;
 #endif
 #ifdef TEMPORAL_DENOISER
 		prev_ao += srcPrevAo[pixCoord] * bilinear_weight;

@@ -207,7 +207,9 @@ void CalculateGI(
 					float frontBackMult = saturate(-dot(normalSample, sampleHorizonVec));
 					frontBackMult = frontBackMult < 0 ? abs(frontBackMult) * BackfaceStrength : frontBackMult;  // backface
 
-					if (frontBackMult > 0.f) {
+					float NoL = clamp(dot(viewspaceNormal, sampleHorizonVec), 1e-5, 1);
+
+					if (frontBackMult > 0.f && NoL > 0.001f) {
 						float3 sampleHorizonVecWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], half4(sampleHorizonVec, 0)).xyz);
 
 						float3 sampleRadiance = srcRadiance.SampleLevel(samplerPointClamp, sampleUV * OUT_FRAME_SCALE, mipLevel).rgb * frontBackMult * giBoost;
