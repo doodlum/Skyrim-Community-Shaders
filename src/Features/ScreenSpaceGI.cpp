@@ -11,10 +11,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	ScreenSpaceGI::Settings,
 	Enabled,
 	EnableGI,
-	HalfRes,
-	EnableTemporalDenoiser,
 	NumSlices,
 	NumSteps,
+	HalfRes,
 	MinScreenRadius,
 	AORadius,
 	GIRadius,
@@ -26,6 +25,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	GIDistanceCompensation,
 	AOPower,
 	GIStrength,
+	EnableTemporalDenoiser,
+	EnableBlur,
 	DepthDisocclusion,
 	NormalDisocclusion,
 	MaxAccumFrames,
@@ -493,7 +494,7 @@ void ScreenSpaceGI::CompileComputeShaders()
 
 	std::vector<ShaderCompileInfo>
 		shaderInfos = {
-			{ &prefilterDepthsCompute, "prefilterDepths.cs.hlsl", {} },
+			{ &prefilterDepthsCompute, "prefilterDepths.cs.hlsl", { { "LINEAR_FILTER", "" } } },
 			{ &radianceDisoccCompute, "radianceDisocc.cs.hlsl", {} },
 			{ &giCompute, "gi.cs.hlsl", {} },
 			{ &blurCompute, "blur.cs.hlsl", {} },
