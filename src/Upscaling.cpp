@@ -30,7 +30,7 @@ void Upscaling::DrawSettings()
 	bool featureDLSS = streamline->featureDLSS;
 	uint* currentUpscaleMode = featureDLSS ? &settings.upscaleMethod : &settings.upscaleMethodNoDLSS;
 	uint availableModes = (state->isVR && state->upscalerLoaded) ? (featureDLSS ? 2 : 1) : (featureDLSS ? 3 : 2);
-	
+
 	if (State::GetSingleton()->featureLevel != D3D_FEATURE_LEVEL_11_1)
 		availableModes = 1;
 
@@ -132,7 +132,7 @@ Upscaling::UpscaleMethod Upscaling::GetUpscaleMethod()
 	if (State::GetSingleton()->featureLevel != D3D_FEATURE_LEVEL_11_1)
 		return (Upscaling::UpscaleMethod)settings.upscaleMethodNoFSR;
 
-	if(Streamline::GetSingleton()->featureDLSS)
+	if (Streamline::GetSingleton()->featureDLSS)
 		return (Upscaling::UpscaleMethod)settings.upscaleMethod;
 
 	return (Upscaling::UpscaleMethod)settings.upscaleMethodNoDLSS;

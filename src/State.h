@@ -162,7 +162,7 @@ public:
 	ID3D11DeviceContext* context = nullptr;
 	ID3D11Device* device = nullptr;
 	D3D_FEATURE_LEVEL featureLevel;
-	
+
 	TracyD3D11Ctx tracyCtx = nullptr;  // Tracy context
 
 	void ClearDisabledFeatures();
