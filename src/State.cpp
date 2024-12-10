@@ -493,6 +493,8 @@ void State::SetupResources()
 	device = reinterpret_cast<ID3D11Device*>(renderer->GetRuntimeData().forwarder);
 	context->QueryInterface(__uuidof(pPerf), reinterpret_cast<void**>(&pPerf));
 
+	featureLevel = device->GetFeatureLevel();
+
 	tracyCtx = TracyD3D11Context(device, context);
 }
 

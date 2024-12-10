@@ -42,7 +42,8 @@ public:
 	struct Settings
 	{
 		uint upscaleMethod = (uint)UpscaleMethod::kDLSS;
-		uint upscaleMethodNoDLSS = (uint)UpscaleMethod::kFSR;
+		uint upscaleMethodNoDLSS = (uint)UpscaleMethod::kFSR;			
+		uint upscaleMethodNoFSR = (uint)UpscaleMethod::kTAA;
 		float sharpness = 0.5f;
 		uint dlssPreset = (uint)sl::DLSSPreset::ePresetC;
 	};
