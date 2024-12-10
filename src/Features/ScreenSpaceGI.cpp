@@ -296,6 +296,12 @@ void ScreenSpaceGI::DrawSettings()
 void ScreenSpaceGI::LoadSettings(json& o_json)
 {
 	settings = o_json;
+
+	if (auto iniSettingCollection = RE::INIPrefSettingCollection::GetSingleton()) {
+		if (auto setting = iniSettingCollection->GetSetting("bSAOEnable:Display")) {
+			setting->data.b = false;
+		}
+	}
 }
 
 void ScreenSpaceGI::SaveSettings(json& o_json)
