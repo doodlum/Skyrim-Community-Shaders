@@ -204,12 +204,12 @@ void CalculateGI(
 
 					// IL
 					float3 normalSample = GBuffer::DecodeNormal(srcNormalRoughness.SampleLevel(samplerPointClamp, sampleUV * frameScale, 0).xy);
+					if (normalSample.z > 0)
+						normalSample = -normalSample;
 					float frontBackMult = saturate(-dot(normalSample, sampleHorizonVec));
 					frontBackMult = frontBackMult < 0 ? abs(frontBackMult) * BackfaceStrength : frontBackMult;  // backface
 
-					float NoL = clamp(dot(viewspaceNormal, sampleHorizonVec), 1e-5, 1);
-
-					if (frontBackMult > 0.f && NoL > 0.001f) {
+					if (frontBackMult > 0.f) {
 						float3 sampleHorizonVecWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], half4(sampleHorizonVec, 0)).xyz);
 
 						float3 sampleRadiance = srcRadiance.SampleLevel(samplerPointClamp, sampleUV * OUT_FRAME_SCALE, mipLevel).rgb * frontBackMult * giBoost;
@@ -264,6 +264,9 @@ void CalculateGI(
 
 	float2 normalSample = FULLRES_LOAD(srcNormalRoughness, pxCoord, uv * frameScale, samplerLinearClamp).xy;
 	float3 viewspaceNormal = GBuffer::DecodeNormal(normalSample);
+	// foliage has flipped normal
+	if (viewspaceNormal.z > 0)
+		viewspaceNormal = -viewspaceNormal;
 
 	half2 encodedWorldNormal = GBuffer::EncodeNormal(ViewToWorldVector(viewspaceNormal, FrameBuffer::CameraViewInverse[eyeIndex]));
 	outPrevGeo[pxCoord] = half3(viewspaceZ, encodedWorldNormal);
