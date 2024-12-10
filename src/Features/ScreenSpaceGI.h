@@ -68,7 +68,7 @@ struct ScreenSpaceGI : Feature
 		// denoise
 		bool EnableTemporalDenoiser = true;
 		bool EnableBlur = true;
-		float DepthDisocclusion = .03f;
+		float DepthDisocclusion = REL::Module::IsVR() ? .1f : .03f;
 		float NormalDisocclusion = .1f;
 		uint MaxAccumFrames = 10;
 		float BlurRadius = 5.f;

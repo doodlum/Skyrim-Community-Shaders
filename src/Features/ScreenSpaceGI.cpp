@@ -246,7 +246,7 @@ void ScreenSpaceGI::DrawSettings()
 		{
 			auto _ = Util::DisableGuard(!settings.EnableTemporalDenoiser && !(settings.EnableGI || settings.EnableGIBounce));
 
-			Util::PercentageSlider("Movement Disocclusion", &settings.DepthDisocclusion, 0.f, 10.f);
+			Util::PercentageSlider("Movement Disocclusion", &settings.DepthDisocclusion, 0.f, 20.f);
 			if (auto _tt = Util::HoverTooltipWrapper())
 				ImGui::Text(
 					"If a pixel has moved too far from the last frame, its radiance will not be carried to this frame.\n"
