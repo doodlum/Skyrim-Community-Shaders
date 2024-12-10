@@ -31,9 +31,6 @@ Texture2D<half2> SsgiCoCgTexture : register(t7);
 RWTexture2D<half3> MainRW : register(u0);
 #if defined(SSGI)
 RWTexture2D<half3> DiffuseAmbientRW : register(u1);
-#endif
-
-#if defined(SSGI)
 void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 {
 	ao = 1 - SsgiAoTexture[pixCoord];
