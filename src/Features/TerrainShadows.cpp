@@ -90,8 +90,10 @@ void TerrainShadows::SetupResources()
 
 			auto splitstr = pystring::split(filename.stem().string(), ".");
 
-			if (splitstr.size() != 10)
+			if (splitstr.size() != 10) {
 				logger::warn("{} has incorrect number ({} instead of 10) of fields", filename.string(), splitstr.size());
+				continue;
+			}
 
 			if (splitstr[1] == "HeightMap") {
 				HeightMapMetadata metadata;
