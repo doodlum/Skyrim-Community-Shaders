@@ -70,7 +70,7 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 
 	sh2 skylighting = SkylightingTexture[dispatchID.xy];
 	half skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylighting, SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5))) / Math::PI;
-	
+
 	skylightingDiffuse = SphericalHarmonics::Unproject(skylighting, SharedData::DirLightDirection);
 	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(positionMS.xyz));
 	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);

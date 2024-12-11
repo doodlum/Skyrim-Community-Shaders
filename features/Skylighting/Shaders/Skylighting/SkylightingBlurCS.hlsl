@@ -2,12 +2,12 @@
 #include "Common/Color.hlsli"
 #include "Common/FrameBuffer.hlsli"
 #include "Common/GBuffer.hlsli"
+#include "Common/Math.hlsli"
 #include "Common/MotionBlur.hlsli"
+#include "Common/Random.hlsli"
 #include "Common/SharedData.hlsli"
 #include "Common/Spherical Harmonics/SphericalHarmonics.hlsli"
 #include "Common/VR.hlsli"
-#include "Common/Random.hlsli"
-#include "Common/Math.hlsli"
 
 #include "Skylighting/Skylighting.hlsli"
 
@@ -42,9 +42,9 @@ static const float3 g_Poisson8[8] = {
 	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
 	uv *= FrameBuffer::DynamicResolutionParams2.xy;  // Adjust for dynamic res
 	uv = Stereo::ConvertFromStereoUV(uv, eyeIndex);
-	
+
 	float rawDepth = DepthTexture[dispatchID.xy];
-	
+
 	if (rawDepth == 1.0) {
 		return;
 	}
@@ -81,12 +81,10 @@ static const float3 g_Poisson8[8] = {
 	// 	}
 	// }
 
-	if (weight == 0)
-	{
+	if (weight == 0) {
 		skylighting = SkylightingInput[dispatchID.xy];
 		weight = 1;
 	}
 
 	SkylightingOutputRW[dispatchID.xy] = skylighting / weight;
-
 }

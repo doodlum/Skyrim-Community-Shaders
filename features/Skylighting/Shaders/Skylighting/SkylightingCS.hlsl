@@ -3,11 +3,11 @@
 #include "Common/FrameBuffer.hlsli"
 #include "Common/GBuffer.hlsli"
 #include "Common/MotionBlur.hlsli"
+#include "Common/Random.hlsli"
 #include "Common/SharedData.hlsli"
 #include "Common/Spherical Harmonics/SphericalHarmonics.hlsli"
 #include "Common/VR.hlsli"
 #include "Skylighting/Skylighting.hlsli"
-#include "Common/Random.hlsli"
 
 Texture2D<float> DepthTexture : register(t0);
 Texture3D<sh2> SkylightingProbeArray : register(t1);
@@ -25,7 +25,7 @@ SamplerState LinearSampler : register(s0);
 	uv = Stereo::ConvertFromStereoUV(uv, eyeIndex);
 
 	float depth = DepthTexture[dispatchID.xy];
-	
+
 	if (depth == 1.0) {
 		return;
 	}
@@ -33,20 +33,20 @@ SamplerState LinearSampler : register(s0);
 	float4 positionWS = float4(2 * float2(uv.x, -uv.y + 1) - 1, depth, 1);
 	positionWS = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], positionWS);
 	positionWS.xyz = positionWS.xyz / positionWS.w;
-	
+
 	float3 normalGlossiness = NormalRoughnessTexture[dispatchID.xy];
 	float3 normalVS = GBuffer::DecodeNormal(normalGlossiness.xy);
 	float3 normalWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], float4(normalVS, 0)).xyz);
 
-#		if defined(VR)
+#if defined(VR)
 	float3 positionMS = positionWS.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
-#		else
+#else
 	float3 positionMS = positionWS.xyz;
-#		endif
+#endif
 
 	uint3 seed = Random::pcg3d(uint3(dispatchID.xy, dispatchID.x * Math::PI));
 	float3 rnd = Random::R3Modified(SharedData::FrameCount, seed / 4294967295.f);
-	
+
 	// https://stats.stackexchange.com/questions/8021/how-to-generate-uniformly-distributed-points-in-the-3-d-unit-ball
 	float phi = rnd.x * Math::TAU;
 	float cos_theta = rnd.y * 2 - 1;
