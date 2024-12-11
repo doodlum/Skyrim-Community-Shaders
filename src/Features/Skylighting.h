@@ -68,8 +68,10 @@ struct Skylighting : Feature
 	Texture2D* texOcclusion = nullptr;
 	Texture3D* texProbeArray = nullptr;
 	Texture3D* texAccumFramesArray = nullptr;
+	Texture2D* texIBL = nullptr;
 
 	winrt::com_ptr<ID3D11ComputeShader> probeUpdateCompute = nullptr;
+	winrt::com_ptr<ID3D11ComputeShader> IBLCompute = nullptr;
 
 	// misc parameters
 	bool doOcclusion = true;

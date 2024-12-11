@@ -1,5 +1,7 @@
 #include "Skylighting.h"
+
 #include <ShaderCache.h>
+#include <Deferred.h>
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	Skylighting::Settings,
@@ -109,6 +111,37 @@ void Skylighting::SetupResources()
 	}
 
 	{
+		D3D11_TEXTURE2D_DESC texDesc{
+			.Width = 64,
+			.Height = 64,
+			.MipLevels = 1,
+			.ArraySize = 1,
+			.Format = DXGI_FORMAT_R16G16B16A16_FLOAT,
+			.SampleDesc = { 1, 0 },
+			.Usage = D3D11_USAGE_DEFAULT,
+			.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS,
+			.CPUAccessFlags = 0,
+			.MiscFlags = 0
+		};
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+			.Format = texDesc.Format,
+			.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
+			.Texture2D = {
+				.MostDetailedMip = 0,
+				.MipLevels = texDesc.MipLevels }
+		};
+		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {
+			.Format = texDesc.Format,
+			.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D,
+			.Texture2D = { .MipSlice = 0 }
+		};
+
+		texIBL = new Texture2D(texDesc);
+		texIBL->CreateSRV(srvDesc);
+		texIBL->CreateUAV(uavDesc);
+	}
+
+	{
 		D3D11_SAMPLER_DESC samplerDesc = {
 			.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT,
 			.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP,
@@ -127,7 +160,8 @@ void Skylighting::SetupResources()
 void Skylighting::ClearShaderCache()
 {
 	static const std::vector<winrt::com_ptr<ID3D11ComputeShader>*> shaderPtrs = {
-		&probeUpdateCompute
+		&probeUpdateCompute,
+		&IBLCompute
 	};
 
 	for (auto shader : shaderPtrs)
@@ -148,6 +182,7 @@ void Skylighting::CompileComputeShaders()
 	std::vector<ShaderCompileInfo>
 		shaderInfos = {
 			{ &probeUpdateCompute, "UpdateProbesCS.hlsl", {} },
+			{ &IBLCompute, "IBLCS.hlsl", {} },
 		};
 
 	for (auto& info : shaderInfos) {
@@ -206,6 +241,34 @@ void Skylighting::Prepass()
 		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
 		context->CSSetShader(probeUpdateCompute.get(), nullptr, 0);
 		context->Dispatch((probeArrayDims[0] + 7u) >> 3, (probeArrayDims[1] + 7u) >> 3, probeArrayDims[2]);
+	}
+
+	// reset
+	{
+		srvs.fill(nullptr);
+		uavs.fill(nullptr);
+		samplers.fill(nullptr);
+
+		context->CSSetSamplers(0, (uint)samplers.size(), samplers.data());
+		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
+		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
+		context->CSSetShader(nullptr, nullptr, 0);
+	}
+
+	// IBL
+	{
+		auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+		auto reflections = renderer->GetRendererData().cubemapRenderTargets[RE::RENDER_TARGET_CUBEMAP::kREFLECTIONS];
+
+		srvs[0] = reflections.SRV;
+		uavs[0] = texIBL->uav.get();
+		samplers[0] = Deferred::GetSingleton()->linearSampler;
+
+		context->CSSetSamplers(0, (uint)samplers.size(), samplers.data());
+		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
+		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
+		context->CSSetShader(IBLCompute.get(), nullptr, 0);
+		context->Dispatch(1, 1, 1);
 	}
 
 	// reset
