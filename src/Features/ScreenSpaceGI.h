@@ -60,7 +60,7 @@ struct ScreenSpaceGI : Feature
 		// gi
 		float BackfaceStrength = 0.f;
 		bool EnableGIBounce = true;
-		float GIBounceFade = 1.f;
+		float GIBounceFade = .5f;
 		float GIDistanceCompensation = 0.f;
 		// mix
 		float AOPower = 2.f;
