@@ -1,5 +1,8 @@
 #include "Skylighting.h"
+
 #include <ShaderCache.h>
+#include <Deferred.h>
+#include <DDSTextureLoader.h>
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	Skylighting::Settings,
@@ -121,13 +124,47 @@ void Skylighting::SetupResources()
 		DX::ThrowIfFailed(device->CreateSamplerState(&samplerDesc, pointClampSampler.put()));
 	}
 
+	{
+		auto& main = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMAIN];
+
+		D3D11_TEXTURE2D_DESC texDesc{};
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+
+		main.texture->GetDesc(&texDesc);
+		main.SRV->GetDesc(&srvDesc);
+		main.UAV->GetDesc(&uavDesc);
+
+		texDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+
+		srvDesc.Format = texDesc.Format;
+		uavDesc.Format = texDesc.Format;
+
+		texSkylighting = new Texture2D(texDesc);
+		texSkylighting->CreateSRV(srvDesc);
+		texSkylighting->CreateUAV(uavDesc);
+
+		texSkylightingTemp = new Texture2D(texDesc);
+		texSkylightingTemp->CreateSRV(srvDesc);
+		texSkylightingTemp->CreateUAV(uavDesc);
+	}
+
+	{
+		auto& context = State::GetSingleton()->context;
+
+		DirectX::CreateDDSTextureFromFile(device, context, L"Data\\Shaders\\Skylighting\\bluenoise.dds", nullptr, &noiseView);
+	}
+
 	CompileComputeShaders();
 }
 
 void Skylighting::ClearShaderCache()
 {
 	static const std::vector<winrt::com_ptr<ID3D11ComputeShader>*> shaderPtrs = {
-		&probeUpdateCompute
+		&probeUpdateCompute,
+		&skylightingCompute,
+		&skylightingBlurCompute,
+		&skylightingBlurComputeFlip
 	};
 
 	for (auto shader : shaderPtrs)
@@ -148,6 +185,9 @@ void Skylighting::CompileComputeShaders()
 	std::vector<ShaderCompileInfo>
 		shaderInfos = {
 			{ &probeUpdateCompute, "UpdateProbesCS.hlsl", {} },
+			{ &skylightingCompute, "SkylightingCS.hlsl", {} },
+			{ &skylightingBlurCompute, "SkylightingBlurCS.hlsl", {} },
+			{ &skylightingBlurComputeFlip, "SkylightingBlurCS.hlsl", { { "FLIP", "" } } },
 		};
 
 	for (auto& info : shaderInfos) {
@@ -189,13 +229,13 @@ Skylighting::SkylightingCB Skylighting::GetCommonBufferData()
 	};
 }
 
-void Skylighting::Prepass()
+void Skylighting::Render()
 {
 	TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Skylighting - Update Probes");
 
 	auto& context = State::GetSingleton()->context;
 
-	std::array<ID3D11ShaderResourceView*, 1> srvs = { texOcclusion->srv.get() };
+	std::array<ID3D11ShaderResourceView*, 3> srvs = { texOcclusion->srv.get(), nullptr, nullptr };
 	std::array<ID3D11UnorderedAccessView*, 2> uavs = { texProbeArray->uav.get(), texAccumFramesArray->uav.get() };
 	std::array<ID3D11SamplerState*, 1> samplers = { pointClampSampler.get() };
 
@@ -220,10 +260,95 @@ void Skylighting::Prepass()
 		context->CSSetShader(nullptr, nullptr, 0);
 	}
 
-	// set PS shader resource
+	auto dispatchCount = Util::GetScreenDispatchCount();
+
+	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	auto depth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
+	auto normalRoughness = renderer->GetRuntimeData().renderTargets[NORMALROUGHNESS];
+
 	{
-		ID3D11ShaderResourceView* srv = texProbeArray->srv.get();
-		context->PSSetShaderResources(50, 1, &srv);
+		srvs[0] = depth.depthSRV;
+		srvs[1] = texProbeArray->srv.get();
+		srvs[2] = normalRoughness.SRV;
+		uavs[0] = texSkylighting->uav.get();
+		samplers[0] = Deferred::GetSingleton()->linearSampler;
+
+		context->CSSetSamplers(0, (uint)samplers.size(), samplers.data());
+		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
+		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
+		context->CSSetShader(skylightingCompute.get(), nullptr, 0);
+		context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
+	}
+
+	// reset
+	{
+		srvs.fill(nullptr);
+		uavs.fill(nullptr);
+		samplers.fill(nullptr);
+
+		context->CSSetSamplers(0, (uint)samplers.size(), samplers.data());
+		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
+		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
+		context->CSSetShader(nullptr, nullptr, 0);
+	}
+
+	{
+		srvs[0] = depth.depthSRV;
+		srvs[1] = texSkylighting->srv.get();
+		srvs[2] = noiseView;
+		uavs[0] = texSkylightingTemp->uav.get();
+		samplers[0] = Deferred::GetSingleton()->linearSampler;
+
+		context->CSSetSamplers(0, (uint)samplers.size(), samplers.data());
+		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
+		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
+		context->CSSetShader(skylightingBlurCompute.get(), nullptr, 0);
+		context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
+	}
+
+	// reset
+	{
+		srvs.fill(nullptr);
+		uavs.fill(nullptr);
+		samplers.fill(nullptr);
+
+		context->CSSetSamplers(0, (uint)samplers.size(), samplers.data());
+		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
+		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
+		context->CSSetShader(nullptr, nullptr, 0);
+	}
+
+	{
+		srvs[0] = depth.depthSRV;
+		srvs[1] = texSkylightingTemp->srv.get();
+		srvs[2] = noiseView;
+		uavs[0] = texSkylighting->uav.get();
+		samplers[0] = Deferred::GetSingleton()->linearSampler;
+
+		context->CSSetSamplers(0, (uint)samplers.size(), samplers.data());
+		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
+		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
+		context->CSSetShader(skylightingBlurComputeFlip.get(), nullptr, 0);
+		context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
+	}
+
+	// reset
+	{
+		srvs.fill(nullptr);
+		uavs.fill(nullptr);
+		samplers.fill(nullptr);
+
+		context->CSSetSamplers(0, (uint)samplers.size(), samplers.data());
+		context->CSSetShaderResources(0, (uint)srvs.size(), srvs.data());
+		context->CSSetUnorderedAccessViews(0, (uint)uavs.size(), uavs.data(), nullptr);
+		context->CSSetShader(nullptr, nullptr, 0);
+	}
+
+	// set PS shader resources
+	{
+		srvs[0] = texProbeArray->srv.get();
+		srvs[1] = texSkylighting->srv.get();
+		context->PSSetShaderResources(50, (uint)srvs.size(), srvs.data());
 	}
 }
 

@@ -30,7 +30,7 @@ struct Skylighting : Feature
 	virtual void ClearShaderCache() override;
 	void CompileComputeShaders();
 
-	virtual void Prepass() override;
+	void Render();
 
 	virtual void PostPostLoad() override;
 
@@ -69,7 +69,15 @@ struct Skylighting : Feature
 	Texture3D* texProbeArray = nullptr;
 	Texture3D* texAccumFramesArray = nullptr;
 
+	Texture2D* texSkylighting = nullptr;
+	Texture2D* texSkylightingTemp = nullptr;
+
 	winrt::com_ptr<ID3D11ComputeShader> probeUpdateCompute = nullptr;
+	winrt::com_ptr<ID3D11ComputeShader> skylightingCompute = nullptr;
+	winrt::com_ptr<ID3D11ComputeShader> skylightingBlurCompute = nullptr;
+	winrt::com_ptr<ID3D11ComputeShader> skylightingBlurComputeFlip = nullptr;
+
+	ID3D11ShaderResourceView* noiseView = nullptr;
 
 	// misc parameters
 	bool doOcclusion = true;

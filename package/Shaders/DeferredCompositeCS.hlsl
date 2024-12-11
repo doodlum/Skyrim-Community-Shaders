@@ -33,7 +33,7 @@ Texture2D<float> DepthTexture : register(t5);
 #if defined(SKYLIGHTING)
 #	include "Skylighting/Skylighting.hlsli"
 
-Texture3D<sh2> SkylightingProbeArray : register(t9);
+Texture2D<sh2> SkylightingTexture : register(t9);
 #endif
 
 #if defined(SSGI)
@@ -106,7 +106,7 @@ Texture2D<half4> SsgiCoCgTexture : register(t11);
 		float3 positionMS = positionWS.xyz;
 #		endif
 
-		sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
+		sh2 skylighting = SkylightingTexture[dispatchID.xy];
 
 		half skylightingSpecular = SphericalHarmonics::FuncProductIntegral(skylighting, specularLobe);
 		skylightingSpecular = Skylighting::mixSpecular(SharedData::skylightingSettings, skylightingSpecular);

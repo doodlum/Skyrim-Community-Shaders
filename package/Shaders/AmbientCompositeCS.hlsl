@@ -13,7 +13,7 @@ Texture2D<unorm half3> NormalRoughnessTexture : register(t1);
 #	include "Skylighting/Skylighting.hlsli"
 
 Texture2D<unorm float> DepthTexture : register(t2);
-Texture3D<sh2> SkylightingProbeArray : register(t3);
+Texture2D<sh2> SkylightingTexture : register(t3);
 #endif
 
 #if !defined(SKYLIGHTING) && defined(VR)  // VR also needs a depthbuffer
@@ -46,7 +46,6 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 	half3 diffuseColor = MainRW[dispatchID.xy];
 	half3 albedo = AlbedoTexture[dispatchID.xy];
 	half3 masks2 = Masks2Texture[dispatchID.xy];
-
 	half pbrWeight = masks2.z;
 
 	half3 normalWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], half4(normalVS, 0)).xyz);
@@ -69,8 +68,10 @@ RWTexture2D<half3> DiffuseAmbientRW : register(u1);
 	positionMS.xyz += FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #	endif
 
-	sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
+	sh2 skylighting = SkylightingTexture[dispatchID.xy];
 	half skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylighting, SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5))) / Math::PI;
+	
+	skylightingDiffuse = SphericalHarmonics::Unproject(skylighting, SharedData::DirLightDirection);
 	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(positionMS.xyz));
 	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
 

@@ -347,6 +347,8 @@ void Deferred::DeferredPasses()
 		interior = sky->mode.get() != RE::Sky::Mode::kFull;
 
 	auto skylighting = Skylighting::GetSingleton();
+	if (skylighting->loaded)
+		skylighting->Render();
 
 	auto ssgi = ScreenSpaceGI::GetSingleton();
 	if (ssgi->loaded)
@@ -364,7 +366,7 @@ void Deferred::DeferredPasses()
 				albedo.SRV,
 				normalRoughness.SRV,
 				skylighting->loaded || REL::Module::IsVR() ? depth.depthSRV : nullptr,
-				skylighting->loaded ? skylighting->texProbeArray->srv.get() : nullptr,
+				skylighting->loaded ? skylighting->texSkylighting->srv.get() : nullptr,
 				masks2.SRV,
 				ssgi_ao,
 				ssgi_y,
@@ -418,7 +420,7 @@ void Deferred::DeferredPasses()
 			dynamicCubemaps->loaded ? reflectance.SRV : nullptr,
 			dynamicCubemaps->loaded ? dynamicCubemaps->envTexture->srv.get() : nullptr,
 			dynamicCubemaps->loaded ? dynamicCubemaps->envReflectionsTexture->srv.get() : nullptr,
-			dynamicCubemaps->loaded && skylighting->loaded ? skylighting->texProbeArray->srv.get() : nullptr,
+			dynamicCubemaps->loaded && skylighting->loaded ? skylighting->texSkylighting->srv.get() : nullptr,
 			ssgi_y,
 			ssgi_cocg,
 		};
