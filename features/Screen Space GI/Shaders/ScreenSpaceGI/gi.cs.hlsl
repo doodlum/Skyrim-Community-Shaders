@@ -115,7 +115,10 @@ void CalculateGI(
 
 	const float3 pixCenterPos = ScreenToViewPosition(normalizedScreenPos, viewspaceZ, eyeIndex);
 	const float3 viewVec = normalize(-pixCenterPos);
-	const float NoV = clamp(dot(viewVec, viewspaceNormal), 1e-5, 1);
+
+	// flip foliage normal
+	if (dot(viewVec, pixCenterPos) > 0)
+		viewspaceNormal = -viewspaceNormal;
 
 	float visibility = 0;
 	float4 radianceY = 0;
@@ -204,9 +207,9 @@ void CalculateGI(
 
 					// IL
 					float3 normalSample = GBuffer::DecodeNormal(srcNormalRoughness.SampleLevel(samplerPointClamp, sampleUV * frameScale, 0).xy);
-					if (normalSample.z > 0)
+					if (dot(samplePos, normalSample) > 0)
 						normalSample = -normalSample;
-					float frontBackMult = saturate(-dot(normalSample, sampleHorizonVec));
+					float frontBackMult = -dot(normalSample, sampleHorizonVec);
 					frontBackMult = frontBackMult < 0 ? abs(frontBackMult) * BackfaceStrength : frontBackMult;  // backface
 
 					if (frontBackMult > 0.f) {
@@ -264,9 +267,6 @@ void CalculateGI(
 
 	float2 normalSample = FULLRES_LOAD(srcNormalRoughness, pxCoord, uv * frameScale, samplerLinearClamp).xy;
 	float3 viewspaceNormal = GBuffer::DecodeNormal(normalSample);
-	// foliage has flipped normal
-	if (viewspaceNormal.z > 0)
-		viewspaceNormal = -viewspaceNormal;
 
 	half2 encodedWorldNormal = GBuffer::EncodeNormal(ViewToWorldVector(viewspaceNormal, FrameBuffer::CameraViewInverse[eyeIndex]));
 	outPrevGeo[pxCoord] = half3(viewspaceZ, encodedWorldNormal);
