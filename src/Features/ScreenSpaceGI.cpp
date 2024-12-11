@@ -19,7 +19,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	GIRadius,
 	Thickness,
 	DepthFadeRange,
-	BackfaceStrength,
+	GISaturation,
 	EnableGIBounce,
 	GIBounceFade,
 	GIDistanceCompensation,
@@ -194,6 +194,8 @@ void ScreenSpaceGI::DrawSettings()
 			ImGui::Separator();
 		}
 
+		Util::PercentageSlider("IL Saturation", &settings.GISaturation);
+
 		recompileFlag |= ImGui::Checkbox("Ambient Bounce", &settings.EnableGIBounce);
 		if (auto _tt = Util::HoverTooltipWrapper())
 			ImGui::Text(
@@ -207,14 +209,6 @@ void ScreenSpaceGI::DrawSettings()
 			ImGui::Unindent();
 			if (auto _tt = Util::HoverTooltipWrapper())
 				ImGui::Text("How much of this frame's ambient+IL get carried to the next frame as source.");
-		}
-
-		if (showAdvanced) {
-			ImGui::Separator();
-
-			Util::PercentageSlider("Backface Lighting Mix", &settings.BackfaceStrength);
-			if (auto _tt = Util::HoverTooltipWrapper())
-				ImGui::Text("How bright at the back of objects is compared to the front. A small value to make up for foliage translucency.");
 		}
 	}
 
@@ -574,7 +568,7 @@ void ScreenSpaceGI::UpdateSB()
 		data.DepthFadeRange = settings.DepthFadeRange;
 		data.DepthFadeScaleConst = 1 / (settings.DepthFadeRange.y - settings.DepthFadeRange.x);
 
-		data.BackfaceStrength = settings.BackfaceStrength;
+		data.GISaturation = settings.GISaturation;
 		data.GIBounceFade = settings.GIBounceFade;
 		data.GIDistanceCompensation = settings.GIDistanceCompensation;
 		data.GICompensationMaxDist = settings.AORadius;

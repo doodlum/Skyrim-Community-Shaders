@@ -47,7 +47,7 @@ cbuffer SSGICB : register(b1)
 	float2 DepthFadeRange;
 	float DepthFadeScaleConst;
 
-	float BackfaceStrength;
+	float GISaturation;
 	float GIBounceFade;
 	float GIDistanceCompensation;
 	float GICompensationMaxDist;

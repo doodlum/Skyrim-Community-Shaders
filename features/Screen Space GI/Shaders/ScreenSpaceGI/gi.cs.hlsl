@@ -210,7 +210,7 @@ void CalculateGI(
 					if (dot(samplePos, normalSample) > 0)
 						normalSample = -normalSample;
 					float frontBackMult = -dot(normalSample, sampleHorizonVec);
-					frontBackMult = frontBackMult < 0 ? abs(frontBackMult) * BackfaceStrength : frontBackMult;  // backface
+					frontBackMult = frontBackMult < 0 ? 0.0 : frontBackMult;  // backface
 
 					if (frontBackMult > 0.f) {
 						float3 sampleHorizonVecWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], half4(sampleHorizonVec, 0)).xyz);
@@ -246,7 +246,7 @@ void CalculateGI(
 	radianceY *= rcpNumSlices;
 	radianceY = lerp(radianceY, 0, depthFade);
 
-	radianceCoCg *= rcpNumSlices;
+	radianceCoCg *= rcpNumSlices * GISaturation;
 #endif
 
 	o_ao = visibility;
