@@ -5,8 +5,6 @@
 #include "State.h"
 #include "Util.h"
 
-#include <filesystem>
-
 #include <DirectXTex.h>
 #include <pystring/pystring.h>
 
@@ -76,53 +74,81 @@ void TerrainShadows::ClearShaderCache()
 	CompileComputeShaders();
 }
 
+void TerrainShadows::ParseHeightmapPath(std::filesystem::path p, bool xlodgen_style)
+{
+	auto filename = p.filename();
+	if (filename.extension() != ".dds")
+		return;
+	logger::debug("Found dds: {}", filename.string());
+
+	auto splitstr = pystring::split(filename.stem().string(), ".");
+	if (splitstr.size() != (xlodgen_style ? 9 : 10)) {
+		logger::debug("{} has incorrect number ({}) of fields", filename.string(), splitstr.size());
+		return;
+	}
+
+	bool middle_check = xlodgen_style ? ((splitstr[1] == "Terrain") && (splitstr[2] == "HeightMap")) : (splitstr[1] == "HeightMap");
+	if (middle_check) {
+		HeightMapMetadata metadata;
+		try {
+			if (xlodgen_style) {
+				metadata.worldspace = splitstr[0];
+				metadata.pos0.x = std::stoi(splitstr[3]) * 4096.f;
+				metadata.pos1.y = std::stoi(splitstr[4]) * 4096.f;
+				metadata.pos1.x = (std::stoi(splitstr[5]) + 1) * 4096.f;
+				metadata.pos0.y = (std::stoi(splitstr[6]) + 1) * 4096.f;
+				metadata.pos0.z = -32767 * 8.f;
+				metadata.pos1.z = 32767 * 8.f;
+				metadata.zRange.x = std::stoi(splitstr[7]) * 8.f;
+				metadata.zRange.y = std::stoi(splitstr[8]) * 8.f;
+			} else {
+				metadata.worldspace = splitstr[0];
+				metadata.pos0.x = std::stoi(splitstr[2]) * 4096.f;
+				metadata.pos1.y = std::stoi(splitstr[3]) * 4096.f;
+				metadata.pos1.x = (std::stoi(splitstr[4]) + 1) * 4096.f;
+				metadata.pos0.y = (std::stoi(splitstr[5]) + 1) * 4096.f;
+				metadata.pos0.z = std::stoi(splitstr[6]) * 8.f;
+				metadata.pos1.z = std::stoi(splitstr[7]) * 8.f;
+				metadata.zRange.x = std::stoi(splitstr[8]) * 8.f;
+				metadata.zRange.y = std::stoi(splitstr[9]) * 8.f;
+			}
+		} catch (std::exception& e) {
+			logger::debug("Failed to parse {}. Error: {}", filename.string(), e.what());
+			return;
+		}
+
+		metadata.dir = p.parent_path().wstring();
+		metadata.filename = filename.string();
+
+		if (heightmaps.contains(metadata.worldspace))
+			logger::warn("{} has more than one height maps!", metadata.worldspace);
+		heightmaps[metadata.worldspace] = metadata;
+
+		logger::info("{} loaded.", filename.string());
+	} else
+		logger::debug("{} has unknown type ({})", filename.string(), splitstr[1]);
+}
+
 void TerrainShadows::SetupResources()
 {
+	logger::debug("Listing xLODGen height maps...");
+	{
+		std::filesystem::path texture_dir{ L"Data\\textures\\Terrain\\" };
+		for (auto const& dir_entry : std::filesystem::directory_iterator{ texture_dir }) {
+			auto dir_path = dir_entry.path();
+			if (!std::filesystem::is_directory(dir_path))
+				continue;
+
+			for (auto const& sub_dir_entry : std::filesystem::directory_iterator{ dir_path })
+				ParseHeightmapPath(sub_dir_entry.path(), true);
+		}
+	}
+
 	logger::debug("Listing height maps...");
 	{
 		std::filesystem::path texture_dir{ L"Data\\textures\\heightmaps\\" };
-		for (auto const& dir_entry : std::filesystem::directory_iterator{ texture_dir }) {
-			auto filename = dir_entry.path().filename();
-			if (filename.extension() != ".dds")
-				continue;
-
-			logger::debug("Found dds: {}", filename.string());
-
-			auto splitstr = pystring::split(filename.stem().string(), ".");
-
-			if (splitstr.size() != 10) {
-				logger::warn("{} has incorrect number ({} instead of 10) of fields", filename.string(), splitstr.size());
-				continue;
-			}
-
-			if (splitstr[1] == "HeightMap") {
-				HeightMapMetadata metadata;
-				try {
-					metadata.worldspace = splitstr[0];
-					metadata.pos0.x = std::stoi(splitstr[2]) * 4096.f;
-					metadata.pos1.y = std::stoi(splitstr[3]) * 4096.f;
-					metadata.pos1.x = (std::stoi(splitstr[4]) + 1) * 4096.f;
-					metadata.pos0.y = (std::stoi(splitstr[5]) + 1) * 4096.f;
-					metadata.pos0.z = std::stoi(splitstr[6]) * 8.f;
-					metadata.pos1.z = std::stoi(splitstr[7]) * 8.f;
-					metadata.zRange.x = std::stoi(splitstr[8]) * 8.f;
-					metadata.zRange.y = std::stoi(splitstr[9]) * 8.f;
-				} catch (std::exception& e) {
-					logger::warn("Failed to parse {}. Error: {}", filename.string(), e.what());
-					continue;
-				}
-
-				metadata.dir = dir_entry.path().parent_path().wstring();
-				metadata.filename = filename.string();
-
-				if (heightmaps.contains(metadata.worldspace)) {
-					logger::warn("{} has more than one height maps!", metadata.worldspace);
-				} else {
-					heightmaps[metadata.worldspace] = metadata;
-				}
-			} else if (splitstr[1] != "AO" && splitstr[1] != "Cone")
-				logger::warn("{} has unknown type ({})", filename.string(), splitstr[1]);
-		}
+		for (auto const& dir_entry : std::filesystem::directory_iterator{ texture_dir })
+			ParseHeightmapPath(dir_entry.path(), false);
 	}
 
 	logger::debug("Creating constant buffers...");

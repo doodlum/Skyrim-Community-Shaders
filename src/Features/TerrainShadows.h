@@ -3,6 +3,8 @@
 #include "Buffer.h"
 #include "Feature.h"
 
+#include <filesystem>
+
 struct TerrainShadows : public Feature
 {
 	static TerrainShadows* GetSingleton()
@@ -66,6 +68,7 @@ struct TerrainShadows : public Feature
 	bool IsHeightMapReady();
 
 	virtual void SetupResources() override;
+	void ParseHeightmapPath(std::filesystem::path p, bool xlodgen_style);
 	void CompileComputeShaders();
 
 	virtual void DrawSettings() override;
