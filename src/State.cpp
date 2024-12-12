@@ -111,6 +111,8 @@ void State::Setup()
 			feature->SetupResources();
 	Deferred::GetSingleton()->SetupResources();
 	Streamline::GetSingleton()->SetupResources();
+	if (!upscalerLoaded)
+		Upscaling::GetSingleton()->CreateUpscalingResources();
 	if (initialized)
 		return;
 	initialized = true;
