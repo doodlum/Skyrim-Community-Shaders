@@ -38,6 +38,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 void ScreenSpaceGI::RestoreDefaultSettings()
 {
 	settings = {};
+	recompileFlag = true;
 }
 
 void ScreenSpaceGI::DrawSettings()
