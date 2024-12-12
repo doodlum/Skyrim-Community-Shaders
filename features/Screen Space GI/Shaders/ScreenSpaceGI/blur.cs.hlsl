@@ -157,6 +157,8 @@ float2x2 getRotationMatrix(float noise)
 		// normal weight
 		w *= 1 - saturate(FastMath::acosFast4(saturate(dot(normalSample, normal))) / halfAngle);
 
+		w = max(w, 0.01);
+
 		if (w > 1e-8) {
 			ySum += srcIlY.SampleLevel(samplerPointClamp, uvSample * OUT_FRAME_SCALE, 0) * w;
 			coCgSum += srcIlCoCg.SampleLevel(samplerPointClamp, uvSample * OUT_FRAME_SCALE, 0) * w;

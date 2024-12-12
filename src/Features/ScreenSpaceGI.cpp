@@ -82,6 +82,7 @@ void ScreenSpaceGI::DrawSettings()
 			settings.NumSlices = 10;
 			settings.NumSteps = 12;
 			settings.ResolutionMode = 2;
+			settings.EnableBlur = true;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
@@ -93,6 +94,7 @@ void ScreenSpaceGI::DrawSettings()
 			settings.NumSlices = 5;
 			settings.NumSteps = 8;
 			settings.ResolutionMode = 1;
+			settings.EnableBlur = true;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
@@ -104,6 +106,7 @@ void ScreenSpaceGI::DrawSettings()
 			settings.NumSlices = 4;
 			settings.NumSteps = 8;
 			settings.ResolutionMode = 0;
+			settings.EnableBlur = true;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
@@ -112,9 +115,10 @@ void ScreenSpaceGI::DrawSettings()
 
 		ImGui::TableNextColumn();
 		if (ImGui::Button("Ultra", { -1, 0 })) {
-			settings.NumSlices = 6;
+			settings.NumSlices = 8;
 			settings.NumSteps = 10;
 			settings.ResolutionMode = 0;
+			settings.EnableBlur = false;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
@@ -124,17 +128,19 @@ void ScreenSpaceGI::DrawSettings()
 		ImGui::EndTable();
 	}
 
-	ImGui::SliderInt("Slices", (int*)&settings.NumSlices, 1, 10);
-	if (auto _tt = Util::HoverTooltipWrapper())
-		ImGui::Text(
-			"How many directions do the samples take.\n"
-			"Controls noise.");
+	if (showAdvanced) {
+		ImGui::SliderInt("Slices", (int*)&settings.NumSlices, 1, 10);
+		if (auto _tt = Util::HoverTooltipWrapper())
+			ImGui::Text(
+				"How many directions do the samples take.\n"
+				"Controls noise.");
 
-	ImGui::SliderInt("Steps Per Slice", (int*)&settings.NumSteps, 1, 20);
-	if (auto _tt = Util::HoverTooltipWrapper())
-		ImGui::Text(
-			"How many samples does it take in one direction.\n"
-			"Controls accuracy of lighting, and noise when effect radius is large.");
+		ImGui::SliderInt("Steps Per Slice", (int*)&settings.NumSteps, 1, 20);
+		if (auto _tt = Util::HoverTooltipWrapper())
+			ImGui::Text(
+				"How many samples does it take in one direction.\n"
+				"Controls accuracy of lighting, and noise when effect radius is large.");
+	}
 
 	if (ImGui::BeginTable("Less Work", 3)) {
 		ImGui::TableNextColumn();
