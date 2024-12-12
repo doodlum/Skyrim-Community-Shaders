@@ -83,7 +83,7 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 
 	uint3 seed = Random::pcg3d(uint3(dispatchID.xy, dispatchID.x * Math::PI));
 	float3 rnd = Random::R3Modified(SharedData::FrameCount, seed / 4294967295.f);
-	
+
 	// https://stats.stackexchange.com/questions/8021/how-to-generate-uniformly-distributed-points-in-the-3-d-unit-ball
 	float phi = rnd.x * Math::TAU;
 	float cos_theta = rnd.y * 2 - 1;
@@ -98,12 +98,12 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 	sh2 ibl = IBLTexture[int2(0, 0)];
 
 	sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
-    skylighting = lerp(skylighting, SphericalHarmonics::Product(skylighting, ibl), 0.5);
-  
-    half skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylighting, SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5))) / Math::PI;
+	skylighting = lerp(skylighting, SphericalHarmonics::Product(skylighting, ibl), 0.5);
+
+	half skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylighting, SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5))) / Math::PI;
 	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(positionMS.xyz));
 	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
-	
+
 	visibility = skylightingDiffuse;
 #endif
 
@@ -148,5 +148,4 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 
 	MainRW[dispatchID.xy] = diffuseColor;
 	//	MainRW[dispatchID.xy] = Color::LinearToGamma(((ssgiIl / linAlbedo) + linDirectionalAmbientColor * visibility));
-
 };
