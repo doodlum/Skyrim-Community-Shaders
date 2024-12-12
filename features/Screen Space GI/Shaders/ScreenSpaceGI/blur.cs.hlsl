@@ -5,6 +5,7 @@
 #include "Common/FrameBuffer.hlsli"
 #include "Common/GBuffer.hlsli"
 #include "Common/Math.hlsli"
+#include "Common/Random.hlsli"
 #include "Common/VR.hlsli"
 #include "ScreenSpaceGI/common.hlsli"
 
@@ -76,6 +77,12 @@ float2x3 getKernelBasis(float3 D, float3 N, float roughness = 1.0, float anisoFa
 }
 
 // TODO: spinning blur
+float2x2 getRotationMatrix(float noise)
+{
+	float2 sin_cos;
+	sincos(noise * Math::PI * 2, sin_cos.y, sin_cos.x);
+	return float2x2(sin_cos.x, sin_cos.y, -sin_cos.y, sin_cos.x);
+}
 
 [numthreads(8, 8, 1)] void main(const uint2 dtid
 								: SV_DispatchThreadID) {
@@ -99,7 +106,7 @@ float2x3 getKernelBasis(float3 D, float3 N, float roughness = 1.0, float anisoFa
 	const float2 pixelDirRBViewspaceSizeAtCenterZ = depth.xx * (eyeIndex == 0 ? NDCToViewMul.xy : NDCToViewMul.zw) * RCP_OUT_FRAME_DIM;
 	const float worldRadius = radius * pixelDirRBViewspaceSizeAtCenterZ.x;
 	float2x3 TvBv = getKernelBasis(normal, normal);  // D = N
-	float halfAngle = Math::HALF_PI * .5f;
+	float halfAngle = Math::HALF_PI;
 
 	TvBv[0] *= worldRadius;
 	TvBv[1] *= worldRadius;
@@ -139,10 +146,10 @@ float2x3 getKernelBasis(float3 D, float3 N, float roughness = 1.0, float anisoFa
 		float2 uvSample = Stereo::ConvertToStereoUV(screenPosSample.xy, eyeIndex);
 		uvSample = (floor(uvSample * OUT_FRAME_DIM) + 0.5) * RCP_OUT_FRAME_DIM;  // Snap to the pixel centre
 
-		float depthSample = srcDepth.SampleLevel(samplerLinearClamp, uvSample * frameScale, 0);
+		float depthSample = srcDepth.SampleLevel(samplerPointClamp, uvSample * frameScale, RES_MIP);
 		float3 posSample = ScreenToViewPosition(screenPosSample.xy, depthSample, eyeIndex);
 
-		float4 normalRoughnessSample = srcNormalRoughness.SampleLevel(samplerLinearClamp, uvSample * frameScale, 0);
+		float4 normalRoughnessSample = srcNormalRoughness.SampleLevel(samplerPointClamp, uvSample * frameScale, 0);
 		float3 normalSample = GBuffer::DecodeNormal(normalRoughnessSample.xy);
 
 		// geometry weight
@@ -151,13 +158,10 @@ float2x3 getKernelBasis(float3 D, float3 N, float roughness = 1.0, float anisoFa
 		w *= 1 - saturate(FastMath::acosFast4(saturate(dot(normalSample, normal))) / halfAngle);
 
 		if (w > 1e-8) {
-			float4 ySample = srcIlY.SampleLevel(samplerLinearClamp, uvSample * OUT_FRAME_SCALE, 0);
-			float2 coCgSample = srcIlCoCg.SampleLevel(samplerLinearClamp, uvSample * OUT_FRAME_SCALE, 0);
-
-			ySum += ySample * w;
-			coCgSum += coCgSample * w;
+			ySum += srcIlY.SampleLevel(samplerPointClamp, uvSample * OUT_FRAME_SCALE, 0) * w;
+			coCgSum += srcIlCoCg.SampleLevel(samplerPointClamp, uvSample * OUT_FRAME_SCALE, 0) * w;
 #if defined(TEMPORAL_DENOISER)
-			fSum += srcAccumFrames.SampleLevel(samplerLinearClamp, uvSample * OUT_FRAME_SCALE, 0) * w;
+			fSum += srcAccumFrames.SampleLevel(samplerPointClamp, uvSample * OUT_FRAME_SCALE, 0) * w;
 #endif
 			wSum += w;
 		}

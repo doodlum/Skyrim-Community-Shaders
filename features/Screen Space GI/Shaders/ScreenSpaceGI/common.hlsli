@@ -79,18 +79,21 @@ SamplerState samplerLinearClamp : register(s1);
 // texCoord - texture coordinate
 
 #ifdef HALF_RES
-#	define READ_DEPTH(tex, px) tex.Load(int3(px, 1))
+#	define RES_MIP 1
+#	define READ_DEPTH(tex, px) tex.Load(int3(px, RES_MIP))
 #	define FULLRES_LOAD(tex, px, texCoord, samp) tex.SampleLevel(samp, texCoord, 0)
 #	define OUT_FRAME_DIM (FrameDim * 0.5)
 #	define RCP_OUT_FRAME_DIM (RcpFrameDim * 2)
 #	define OUT_FRAME_SCALE (frameScale * 0.5)
 #elif defined(QUARTER_RES)
-#	define READ_DEPTH(tex, px) tex.Load(int3(px, 2))
+#	define RES_MIP 2
+#	define READ_DEPTH(tex, px) tex.Load(int3(px, RES_MIP))
 #	define FULLRES_LOAD(tex, px, texCoord, samp) tex.SampleLevel(samp, texCoord, 0)
 #	define OUT_FRAME_DIM (FrameDim * 0.25)
 #	define RCP_OUT_FRAME_DIM (RcpFrameDim * 4)
 #	define OUT_FRAME_SCALE (frameScale * 0.25)
 #else
+#	define RES_MIP 0
 #	define READ_DEPTH(tex, px) tex[px]
 #	define FULLRES_LOAD(tex, px, texCoord, samp) tex[px]
 #	define OUT_FRAME_DIM FrameDim

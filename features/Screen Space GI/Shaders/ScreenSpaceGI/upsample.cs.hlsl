@@ -29,10 +29,10 @@ RWTexture2D<half2> outIlCoCg : register(u2);
 	int2 px11 = px00 + int2(1, 1);
 
 	float4 d = float4(
-		srcDepth.Load(int3(px00, 1)),
-		srcDepth.Load(int3(px01, 1)),
-		srcDepth.Load(int3(px10, 1)),
-		srcDepth.Load(int3(px11, 1)));
+		srcDepth.Load(int3(px00, RES_MIP)),
+		srcDepth.Load(int3(px01, RES_MIP)),
+		srcDepth.Load(int3(px10, RES_MIP)),
+		srcDepth.Load(int3(px11, RES_MIP)));
 
 	// note: edge-detection
 	float mind = min4(d);

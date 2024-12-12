@@ -48,8 +48,8 @@ struct ScreenSpaceGI : Feature
 		bool Enabled = true;
 		bool EnableGI = true;
 		// performance/quality
-		uint NumSlices = 2;
-		uint NumSteps = 4;
+		uint NumSlices = 5;
+		uint NumSteps = 8;
 		int ResolutionMode = 1;  // 0-full, 1-half, 2-quarter
 		// visual
 		float MinScreenRadius = 0.01f;
@@ -70,8 +70,8 @@ struct ScreenSpaceGI : Feature
 		bool EnableBlur = true;
 		float DepthDisocclusion = .1f;
 		float NormalDisocclusion = .1f;
-		uint MaxAccumFrames = 32;
-		float BlurRadius = 15.f;
+		uint MaxAccumFrames = 16;
+		float BlurRadius = 5.f;
 		float DistanceNormalisation = 2.f;
 	} settings;
 

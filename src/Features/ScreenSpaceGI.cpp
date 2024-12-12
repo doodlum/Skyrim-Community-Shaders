@@ -79,43 +79,47 @@ void ScreenSpaceGI::DrawSettings()
 
 		ImGui::TableNextColumn();
 		if (ImGui::Button("Low", { -1, 0 })) {
-			settings.NumSlices = 2;
-			settings.NumSteps = 4;
+			settings.NumSlices = 10;
+			settings.NumSteps = 12;
+			settings.ResolutionMode = 2;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
 		if (auto _tt = Util::HoverTooltipWrapper())
-			ImGui::Text("2 Slices, 4 Steps");
+			ImGui::Text("Quarter res and blurry.");
 
 		ImGui::TableNextColumn();
 		if (ImGui::Button("Medium", { -1, 0 })) {
-			settings.NumSlices = 3;
-			settings.NumSteps = 6;
+			settings.NumSlices = 5;
+			settings.NumSteps = 8;
+			settings.ResolutionMode = 1;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
 		if (auto _tt = Util::HoverTooltipWrapper())
-			ImGui::Text("3 Slices, 6 Steps");
+			ImGui::Text("Half res and somewhat stable.");
 
 		ImGui::TableNextColumn();
 		if (ImGui::Button("High", { -1, 0 })) {
 			settings.NumSlices = 4;
 			settings.NumSteps = 8;
+			settings.ResolutionMode = 0;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
 		if (auto _tt = Util::HoverTooltipWrapper())
-			ImGui::Text("4 Slices, 8 Steps");
+			ImGui::Text("Full res and clean.");
 
 		ImGui::TableNextColumn();
 		if (ImGui::Button("Ultra", { -1, 0 })) {
 			settings.NumSlices = 6;
 			settings.NumSteps = 10;
+			settings.ResolutionMode = 0;
 			settings.EnableGI = true;
 			recompileFlag = true;
 		}
 		if (auto _tt = Util::HoverTooltipWrapper())
-			ImGui::Text("6 Slices, 10 Steps");
+			ImGui::Text("Reference mode.");
 
 		ImGui::EndTable();
 	}
