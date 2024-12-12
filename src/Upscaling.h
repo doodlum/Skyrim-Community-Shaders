@@ -128,17 +128,6 @@ public:
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	struct BSImageSpacerShader_Render
-	{
-		static void thunk(RE::ImageSpaceManager* a_manager, uint unk1, uint unk2)
-		{
-			func(a_manager, unk1, unk2);
-			auto singleton = GetSingleton();
-			singleton->validTaaPass = false;
-		}
-		static inline REL::Relocation<decltype(thunk)> func;
-	};
-
 	static void InstallHooks()
 	{
 		if (!State::GetSingleton()->upscalerLoaded) {
@@ -148,7 +137,6 @@ public:
 			stl::write_thunk_call<TAA_BeginTechnique>(REL::RelocationID(100540, 107270).address() + REL::Relocate(0x3E9, 0x3EA, 0x448));
 			stl::write_thunk_call<TAA_EndTechnique>(REL::RelocationID(100540, 107270).address() + REL::Relocate(0x3F3, 0x3F4, 0x452));
 			stl::write_thunk_call<BSImageSpacerShader_RenderPassImmediately>(REL::RelocationID(100951, 107733).address() + REL::Relocate(0x82, 0x78, 0x7E));
-			stl::detour_thunk<BSImageSpacerShader_Render>(REL::RelocationID(99023, 105674));
 
 			logger::info("[Upscaling] Installed hooks");
 
