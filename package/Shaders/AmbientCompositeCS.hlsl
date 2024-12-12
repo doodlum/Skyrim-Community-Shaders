@@ -14,6 +14,8 @@ Texture2D<unorm half3> NormalRoughnessTexture : register(t1);
 
 Texture2D<unorm float> DepthTexture : register(t2);
 Texture3D<sh2> SkylightingProbeArray : register(t3);
+Texture2D<float4> IBLTexture : register(t8);
+
 #endif
 
 #if !defined(SKYLIGHTING) && defined(VR)  // VR also needs a depthbuffer
@@ -79,11 +81,29 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 	positionMS.xyz += FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #	endif
 
+	uint3 seed = Random::pcg3d(uint3(dispatchID.xy, dispatchID.x * Math::PI));
+	float3 rnd = Random::R3Modified(SharedData::FrameCount, seed / 4294967295.f);
+	
+	// https://stats.stackexchange.com/questions/8021/how-to-generate-uniformly-distributed-points-in-the-3-d-unit-ball
+	float phi = rnd.x * Math::TAU;
+	float cos_theta = rnd.y * 2 - 1;
+	float sin_theta = sqrt(1 - cos_theta);
+	float r = rnd.z;
+	float4 sincos_phi;
+	sincos(phi, sincos_phi.y, sincos_phi.x);
+
+	float3 offset = float3(r * sin_theta * sincos_phi.x, r * sin_theta * sincos_phi.y, r * cos_theta);
+	positionMS.xyz += offset * 64;
+
+	sh2 ibl = IBLTexture[int2(0, 0)];
+
 	sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
-	half skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylighting, SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5))) / Math::PI;
+    skylighting = lerp(skylighting, SphericalHarmonics::Product(skylighting, ibl), 0.5);
+  
+    half skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylighting, SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5))) / Math::PI;
 	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(positionMS.xyz));
 	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
-
+	
 	visibility = skylightingDiffuse;
 #endif
 
@@ -127,4 +147,6 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 	diffuseColor = lerp(diffuseColor + directionalAmbientColor * albedo, Color::LinearToGamma(linDiffuseColor + linAmbient), pbrWeight);
 
 	MainRW[dispatchID.xy] = diffuseColor;
+	//	MainRW[dispatchID.xy] = Color::LinearToGamma(((ssgiIl / linAlbedo) + linDirectionalAmbientColor * visibility));
+
 };
