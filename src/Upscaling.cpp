@@ -399,7 +399,7 @@ void Upscaling::SharpenTAA()
 	}
 
 	state->EndPerfEvent();
-	
+
 	context->CopyResource(outputTextureResource, upscalingTexture->resource.get());
 }
 
