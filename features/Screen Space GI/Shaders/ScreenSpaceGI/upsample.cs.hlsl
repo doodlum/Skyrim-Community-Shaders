@@ -19,7 +19,11 @@ RWTexture2D<half2> outIlCoCg : register(u2);
 
 [numthreads(8, 8, 1)] void main(const uint2 dtid
 								: SV_DispatchThreadID) {
+#ifdef HALF_RES
 	int2 px00 = (dtid >> 1) + (dtid & 1) - 1;
+#else  // QUARTER_RES
+	int2 px00 = (dtid >> 2) + (dtid & 2) / 2 - 1;
+#endif
 	int2 px10 = px00 + int2(1, 0);
 	int2 px01 = px00 + int2(0, 1);
 	int2 px11 = px00 + int2(1, 1);

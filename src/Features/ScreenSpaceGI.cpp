@@ -13,7 +13,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	EnableGI,
 	NumSlices,
 	NumSteps,
-	HalfRes,
+	ResolutionMode,
 	MinScreenRadius,
 	AORadius,
 	GIRadius,
@@ -131,11 +131,13 @@ void ScreenSpaceGI::DrawSettings()
 			"How many samples does it take in one direction.\n"
 			"Controls accuracy of lighting, and noise when effect radius is large.");
 
-	if (ImGui::BeginTable("Less Work", 2)) {
+	if (ImGui::BeginTable("Less Work", 3)) {
 		ImGui::TableNextColumn();
-		recompileFlag |= ImGui::Checkbox("Half Resolution", &settings.HalfRes);
-		if (auto _tt = Util::HoverTooltipWrapper())
-			ImGui::Text("Rendering internally with half resolution. Vastly cheaper but quite more noise.");
+		recompileFlag |= ImGui::RadioButton("Full Res", &settings.ResolutionMode, 0);
+		ImGui::TableNextColumn();
+		recompileFlag |= ImGui::RadioButton("Half Res", &settings.ResolutionMode, 1);
+		ImGui::TableNextColumn();
+		recompileFlag |= ImGui::RadioButton("Quarter Res", &settings.ResolutionMode, 2);
 
 		ImGui::EndTable();
 	}
@@ -503,8 +505,10 @@ void ScreenSpaceGI::CompileComputeShaders()
 	for (auto& info : shaderInfos) {
 		if (REL::Module::IsVR())
 			info.defines.push_back({ "VR", "" });
-		if (settings.HalfRes)
+		if (settings.ResolutionMode == 1)
 			info.defines.push_back({ "HALF_RES", "" });
+		if (settings.ResolutionMode == 2)
+			info.defines.push_back({ "QUARTER_RES", "" });
 		if (settings.EnableTemporalDenoiser)
 			info.defines.push_back({ "TEMPORAL_DENOISER", "" });
 		if (settings.EnableGI)
@@ -621,9 +625,11 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 	auto deferred = Deferred::GetSingleton();
 
 	float2 size = Util::ConvertToDynamic(State::GetSingleton()->screenSize);
-	uint resolution[2] = { (uint)size.x, (uint)size.y };
-	uint halfRes[2] = { resolution[0] >> 1, resolution[1] >> 1 };
-	auto internalRes = settings.HalfRes ? halfRes : resolution;
+	auto resolution = std::array{ (uint)size.x, (uint)size.y };
+	auto resChoices = std::array{
+		resolution, std::array{ resolution[0] >> 1, resolution[1] >> 1 }, std::array{ resolution[0] >> 2, resolution[1] >> 2 }
+	};
+	auto internalRes = resChoices[settings.ResolutionMode];
 
 	std::array<ID3D11ShaderResourceView*, 10> srvs = { nullptr };
 	std::array<ID3D11UnorderedAccessView*, 5> uavs = { nullptr };
@@ -747,7 +753,7 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 	}
 
 	// upsasmple
-	if (settings.HalfRes) {
+	if (settings.ResolutionMode != 0) {
 		resetViews();
 		srvs.at(0) = texWorkingDepth->srv.get();
 		srvs.at(1) = texAo[inputAoTexIdx]->srv.get();

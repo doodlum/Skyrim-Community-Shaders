@@ -66,7 +66,7 @@ void readHistory(
 	const float2 frameScale = FrameDim * RcpTexDim;
 
 	const float2 uv = (pixCoord + .5) * RCP_OUT_FRAME_DIM;
-	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
+	const uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
 	const float2 screen_pos = Stereo::ConvertFromStereoUV(uv, eyeIndex);
 
 	float2 prev_screen_pos = screen_pos;
@@ -141,13 +141,7 @@ void readHistory(
 #endif
 
 #ifdef TEMPORAL_DENOISER
-#	ifdef HALF_RATE
-	uint useHistory = (pixCoord.x % 2) == (FrameIndex % 2);
-#	else
-	uint useHistory = 1;
-#	endif
-
-	accum_frames = max(1, min(accum_frames * 255 + useHistory, MaxAccumFrames));
+	accum_frames = max(1, min(accum_frames * 255 + 1, MaxAccumFrames));
 	outAccumFrames[pixCoord] = accum_frames / 255.0;
 	outRemappedAo[pixCoord] = prev_ao;
 	outRemappedIlY[pixCoord] = prev_y;

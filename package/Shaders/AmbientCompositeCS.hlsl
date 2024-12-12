@@ -115,8 +115,8 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 	linDiffuseColor *= ssgiAo;
 #	endif
 
-	float clampedLinAlbedo = min(linAlbedo, 0.9);
-	DiffuseAmbientRW[dispatchID.xy] = clampedLinAlbedo * (linDirectionalAmbientColor + ssgiIl);
+	float clampedLinAlbedo = min(linAlbedo, 0.5);
+	DiffuseAmbientRW[dispatchID.xy] = linAlbedo * linDirectionalAmbientColor + clampedLinAlbedo * ssgiIl;
 	linDiffuseColor += ssgiIl * linAlbedo;
 #endif
 

@@ -50,11 +50,11 @@ struct ScreenSpaceGI : Feature
 		// performance/quality
 		uint NumSlices = 2;
 		uint NumSteps = 4;
-		bool HalfRes = true;
+		int ResolutionMode = 1;  // 0-full, 1-half, 2-quarter
 		// visual
 		float MinScreenRadius = 0.01f;
 		float AORadius = 100.f;
-		float GIRadius = 500.f;
+		float GIRadius = 400.f;
 		float Thickness = 75.f;
 		float2 DepthFadeRange = { 4e4, 5e4 };
 		// gi
@@ -64,14 +64,14 @@ struct ScreenSpaceGI : Feature
 		float GIDistanceCompensation = 0.f;
 		// mix
 		float AOPower = 2.f;
-		float GIStrength = 1.f;
+		float GIStrength = 1.5f;
 		// denoise
 		bool EnableTemporalDenoiser = true;
 		bool EnableBlur = true;
-		float DepthDisocclusion = REL::Module::IsVR() ? .1f : .03f;
+		float DepthDisocclusion = .1f;
 		float NormalDisocclusion = .1f;
-		uint MaxAccumFrames = 10;
-		float BlurRadius = 5.f;
+		uint MaxAccumFrames = 32;
+		float BlurRadius = 15.f;
 		float DistanceNormalisation = 2.f;
 	} settings;
 

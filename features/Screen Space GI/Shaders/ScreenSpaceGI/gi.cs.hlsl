@@ -169,6 +169,8 @@ void CalculateGI(
 				float mipLevel = clamp(log2(sampleOffsetLength) - 3.3, 0, 5);
 #ifdef HALF_RES
 				mipLevel = max(mipLevel, 1);
+#elif defined(QUARTER_RES)
+				mipLevel = max(mipLevel, 2);
 #endif
 
 				float SZ = srcWorkingDepth.SampleLevel(samplerPointClamp, sampleUV * frameScale, mipLevel);
