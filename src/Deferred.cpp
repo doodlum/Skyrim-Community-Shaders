@@ -360,7 +360,7 @@ void Deferred::DeferredPasses()
 		{
 			TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Ambient Composite");
 
-			ID3D11ShaderResourceView* srvs[9]{
+			ID3D11ShaderResourceView* srvs[10]{
 				albedo.SRV,
 				normalRoughness.SRV,
 				skylighting->loaded || REL::Module::IsVR() ? depth.depthSRV : nullptr,
@@ -370,6 +370,7 @@ void Deferred::DeferredPasses()
 				ssgi_y,
 				ssgi_cocg,
 				skylighting->loaded ? skylighting->texIBL->srv.get() : nullptr,
+				skylighting->loaded ? skylighting->stbn_vec3_2Dx1D_128x128x64_0.get() : nullptr,
 			};
 
 			context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);

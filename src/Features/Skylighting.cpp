@@ -2,6 +2,7 @@
 
 #include <Deferred.h>
 #include <ShaderCache.h>
+#include <DDSTextureLoader.h>
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	Skylighting::Settings,
@@ -152,6 +153,11 @@ void Skylighting::SetupResources()
 			.MaxLOD = D3D11_FLOAT32_MAX
 		};
 		DX::ThrowIfFailed(device->CreateSamplerState(&samplerDesc, pointClampSampler.put()));
+	}
+
+	{
+		auto& context = State::GetSingleton()->context;
+		DirectX::CreateDDSTextureFromFile(device, context, L"Data\\Shaders\\Skylighting\\stbn_vec3_2Dx1D_128x128x64_0.dds", nullptr, stbn_vec3_2Dx1D_128x128x64_0.put());
 	}
 
 	CompileComputeShaders();

@@ -69,6 +69,7 @@ struct Skylighting : Feature
 	Texture3D* texProbeArray = nullptr;
 	Texture3D* texAccumFramesArray = nullptr;
 	Texture2D* texIBL = nullptr;
+	winrt::com_ptr<ID3D11ShaderResourceView> stbn_vec3_2Dx1D_128x128x64_0;
 
 	winrt::com_ptr<ID3D11ComputeShader> probeUpdateCompute = nullptr;
 	winrt::com_ptr<ID3D11ComputeShader> IBLCompute = nullptr;

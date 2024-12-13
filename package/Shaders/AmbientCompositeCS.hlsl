@@ -15,6 +15,7 @@ Texture2D<unorm half3> NormalRoughnessTexture : register(t1);
 Texture2D<unorm float> DepthTexture : register(t2);
 Texture3D<sh2> SkylightingProbeArray : register(t3);
 Texture2D<float4> IBLTexture : register(t8);
+Texture2DArray<float3> stbn_vec3_2Dx1D_128x128x64_0 : register(t9);
 
 #endif
 
@@ -47,6 +48,10 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 
 [numthreads(8, 8, 1)] void main(uint3 dispatchID
 								: SV_DispatchThreadID) {
+	float rawDepth = DepthTexture[dispatchID.xy];
+	if (rawDepth == 1)
+		return;
+
 	half2 uv = half2(dispatchID.xy + 0.5) * SharedData::BufferDim.zw;
 	uint eyeIndex = Stereo::GetEyeIndexFromTexCoord(uv);
 	uv *= FrameBuffer::DynamicResolutionParams2.xy;  // adjust for dynamic res
@@ -73,7 +78,6 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 
 	half visibility = 1.0;
 #if defined(SKYLIGHTING)
-	float rawDepth = DepthTexture[dispatchID.xy];
 	float4 positionCS = float4(2 * float2(uv.x, -uv.y + 1) - 1, rawDepth, 1);
 	float4 positionMS = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], positionCS);
 	positionMS.xyz = positionMS.xyz / positionMS.w;
@@ -81,29 +85,22 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 	positionMS.xyz += FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #	endif
 
-	uint3 seed = Random::pcg3d(uint3(dispatchID.xy, dispatchID.x * Math::PI));
-	float3 rnd = Random::R3Modified(SharedData::FrameCount, seed / 4294967295.f);
-
-	// https://stats.stackexchange.com/questions/8021/how-to-generate-uniformly-distributed-points-in-the-3-d-unit-ball
-	float phi = rnd.x * Math::TAU;
-	float cos_theta = rnd.y * 2 - 1;
-	float sin_theta = sqrt(1 - cos_theta);
-	float r = rnd.z;
-	float4 sincos_phi;
-	sincos(phi, sincos_phi.y, sincos_phi.x);
-
-	float3 offset = float3(r * sin_theta * sincos_phi.x, r * sin_theta * sincos_phi.y, r * cos_theta);
-	positionMS.xyz += offset * 64;
+	float3 offset = stbn_vec3_2Dx1D_128x128x64_0[int3(dispatchID.xy % 128, SharedData::FrameCount % 64)] * 2.0 - 1.0;
+	positionMS.xyz += offset * 32;
 
 	sh2 ibl = IBLTexture[int2(0, 0)];
 
 	sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
-	skylighting = lerp(skylighting, SphericalHarmonics::Product(skylighting, ibl), 0.5);
+ 	skylighting = lerp(skylighting / Math::PI, SphericalHarmonics::Product(skylighting, ibl), 0.5);
+  
+    sh2 cosineLobe = SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5));
 
-	half skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylighting, SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5))) / Math::PI;
+    cosineLobe = lerp(cosineLobe, SphericalHarmonics::FuncProductIntegral(cosineLobe, ibl), 0.5);
+
+    half skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylighting, cosineLobe);
 	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(positionMS.xyz));
 	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
-
+	
 	visibility = skylightingDiffuse;
 #endif
 
@@ -146,6 +143,7 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 
 	diffuseColor = lerp(diffuseColor + directionalAmbientColor * albedo, Color::LinearToGamma(linDiffuseColor + linAmbient), pbrWeight);
 
-	MainRW[dispatchID.xy] = diffuseColor;
-	//	MainRW[dispatchID.xy] = Color::LinearToGamma(((ssgiIl / linAlbedo) + linDirectionalAmbientColor * visibility));
+	//MainRW[dispatchID.xy] = diffuseColor;
+	MainRW[dispatchID.xy] = Color::LinearToGamma(((ssgiIl / linAlbedo) + linDirectionalAmbientColor * visibility));
+
 };
