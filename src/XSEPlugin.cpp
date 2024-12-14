@@ -162,6 +162,8 @@ bool Load()
 	auto messaging = SKSE::GetMessagingInterface();
 	messaging->RegisterListener("SKSE", MessageHandler);
 
+	SKSE::Translation::ParseTranslation("CommunityShaders");
+
 	auto state = State::GetSingleton();
 	state->Load();
 	auto log = spdlog::default_logger();

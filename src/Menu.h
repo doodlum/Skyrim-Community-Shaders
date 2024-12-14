@@ -164,7 +164,7 @@ private:
 	bool inTestMode = false;       // Whether we're in test mode
 	bool usingTestConfig = false;  // Whether we're using the test config
 
-	std::chrono::steady_clock::time_point lastTestSwitch = high_resolution_clock::now();  // Time of last test switch
+	steady_clock::time_point lastTestSwitch = high_resolution_clock::now();  // Time of last test switch
 
 	Menu() = default;
 	void SetupImGuiStyle() const;

@@ -247,7 +247,7 @@ void Menu::DrawSettings()
 	ImGui::SetNextWindowPos(Util::GetNativeViewportSizeScaled(0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(Util::GetNativeViewportSizeScaled(0.8f), ImGuiCond_FirstUseEver);
 
-	auto title = std::format("Community Shaders {}", Util::GetFormattedVersion(Plugin::VERSION));
+	auto title = std::format(Util::Translate("$Community Shaders {}"), Util::GetFormattedVersion(Plugin::VERSION));
 
 	ImGui::Begin(title.c_str(), &IsEnabled, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	{
@@ -265,38 +265,31 @@ void Menu::DrawSettings()
 
 		if (ImGui::BeginTable("##LeButtons", 4, ImGuiTableFlags_SizingStretchSame)) {
 			ImGui::TableNextColumn();
-			if (ImGui::Button("Save Settings", { -1, 0 })) {
+			if (ImGui::Button(Util::Translate("$Save Settings").c_str(), { -1, 0 })) {
 				State::GetSingleton()->Save();
 			}
 
 			ImGui::TableNextColumn();
-			if (ImGui::Button("Load Settings", { -1, 0 })) {
+			if (ImGui::Button(Util::Translate("$Load Settings").c_str(), { -1, 0 })) {
 				State::GetSingleton()->Load();
 				ParticleLights::GetSingleton()->GetConfigs();
 			}
 
 			ImGui::TableNextColumn();
-			if (ImGui::Button("Clear Shader Cache", { -1, 0 })) {
+			if (ImGui::Button(Util::Translate("$Clear Shader Cache").c_str(), { -1, 0 })) {
 				shaderCache.Clear();
 				// any features should be added to shadercache's clear.
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text(
-					"The Shader Cache is the collection of compiled shaders which replace the vanilla shaders at runtime. "
-					"Clearing the shader cache will mean that shaders are recompiled only when the game re-encounters them. "
-					"This is only needed for hot-loading shaders for development purposes. ");
+				ImGui::Text(Util::Translate("$Clear Shader Cache Description").c_str());
 			}
 
 			ImGui::TableNextColumn();
-			if (ImGui::Button("Clear Disk Cache", { -1, 0 })) {
+			if (ImGui::Button(Util::Translate("$Clear Disk Cache").c_str(), { -1, 0 })) {
 				shaderCache.DeleteDiskCache();
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text(
-					"The Disk Cache is a collection of compiled shaders on disk, which are automatically created when shaders are added to the Shader Cache. "
-					"If you do not have a Disk Cache, or it is outdated or invalid, you will see \"Compiling Shaders\" in the upper-left corner. "
-					"After this has completed you will no longer see this message apart from when loading from the Disk Cache. "
-					"Only delete the Disk Cache manually if you are encountering issues. ");
+				ImGui::Text(Util::Translate("$Clear Disk Cache Description").c_str());
 			}
 
 			if (shaderCache.GetFailedTasks()) {
@@ -1049,7 +1042,7 @@ void Menu::DrawOverlay()
 	auto state = State::GetSingleton();
 	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
-	auto progressTitle = fmt::format("{}Compiling Shaders: {}",
+	auto progressTitle = fmt::format(Util::Translate("${}Compiling Shaders: {}"),
 		shaderCache.backgroundCompilation ? "Background " : "",
 		shaderCache.GetShaderStatsString(!state->IsDeveloperMode()).c_str());
 	auto percent = (float)compiledShaders / (float)totalShaders;
