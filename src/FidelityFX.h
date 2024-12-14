@@ -1,7 +1,9 @@
 #pragma once
 
-#include <FidelityFX/host/backends/dx11/ffx_dx11.h>
+//#include <FidelityFX/host/backends/dx11/ffx_dx11.h>
 #include <FidelityFX/host/backends/dx12/ffx_dx12.h>
+
+#include <FidelityFX/host/ffx_brixelizer.h>
 
 #include <FidelityFX/host/ffx_fsr3.h>
 #include <FidelityFX/host/ffx_interface.h>

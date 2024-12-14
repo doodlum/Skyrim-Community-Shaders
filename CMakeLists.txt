@@ -44,7 +44,8 @@ find_package(unordered_dense CONFIG REQUIRED)
 find_package(efsw CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
 add_subdirectory(${CMAKE_SOURCE_DIR}/cmake/Streamline)
-include(FidelityFX-SDK)
+# include(FidelityFX-SDK)
+include(FidelityFX-SDK-DX12)
 
 target_compile_definitions(
 	${PROJECT_NAME}
