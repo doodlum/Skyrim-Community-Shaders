@@ -247,7 +247,7 @@ void Menu::DrawSettings()
 	ImGui::SetNextWindowPos(Util::GetNativeViewportSizeScaled(0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(Util::GetNativeViewportSizeScaled(0.8f), ImGuiCond_FirstUseEver);
 
-	auto title = std::format(Util::Translate("$Community Shaders {}"), Util::GetFormattedVersion(Plugin::VERSION));
+	auto title = Util::Translate("$Community Shaders {}", Util::GetFormattedVersion(Plugin::VERSION));
 
 	ImGui::Begin(title.c_str(), &IsEnabled, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	{
@@ -1042,7 +1042,7 @@ void Menu::DrawOverlay()
 	auto state = State::GetSingleton();
 	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
-	auto progressTitle = fmt::format(Util::Translate("${}Compiling Shaders: {}"),
+	auto progressTitle = Util::Translate("${}Compiling Shaders: {}",
 		shaderCache.backgroundCompilation ? "Background " : "",
 		shaderCache.GetShaderStatsString(!state->IsDeveloperMode()).c_str());
 	auto percent = (float)compiledShaders / (float)totalShaders;

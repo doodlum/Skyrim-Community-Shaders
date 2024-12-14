@@ -1,10 +1,11 @@
 #include "Translate.h"
 
+#include "SKSE/Translation.h"
+
 namespace Util
 {
-	const std::string& Translate(const std::string& key) {
-		static std::string buffer;
-		buffer.clear();
+	std::string Translate(const std::string& key) {
+		std::string buffer;
 
 		if (SKSE::Translation::Translate(key, buffer)) {
 			return buffer;
