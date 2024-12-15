@@ -295,15 +295,11 @@ void Menu::DrawSettings()
 			if (shaderCache.GetFailedTasks()) {
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
-				if (ImGui::Button("Toggle Error Message", { -1, 0 })) {
+				if (ImGui::Button(Util::Translate("$Toggle Error Message").c_str(), { -1, 0 })) {
 					shaderCache.ToggleErrorMessages();
 				}
 				if (auto _tt = Util::HoverTooltipWrapper()) {
-					ImGui::Text(
-						"Hide or show the shader failure message. "
-						"Your installation is broken and will likely see errors in game. "
-						"Please double check you have updated all features and that your load order is correct. "
-						"See CommunityShaders.log for details and check the Nexus Mods page or Discord server. ");
+					ImGui::Text(Util::Translate("$Toggle Error Message Description").c_str());
 				}
 			}
 			ImGui::EndTable();
@@ -315,8 +311,8 @@ void Menu::DrawSettings()
 
 		float footer_height = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y * 3 + 3.0f;  // text + separator
 
-		ImGui::BeginChild("Menus Table", ImVec2(0, -footer_height));
-		if (ImGui::BeginTable("Menus Table", 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_Resizable)) {
+		ImGui::BeginChild(Util::Translate("$Menus Table").c_str(), ImVec2(0, -footer_height));
+		if (ImGui::BeginTable(Util::Translate("$Menus Table").c_str(), 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_Resizable)) {
 			ImGui::TableSetupColumn("##ListOfMenus", 0, 2);
 			ImGui::TableSetupColumn("##MenuConfig", 0, 8);
 
@@ -377,11 +373,11 @@ void Menu::DrawSettings()
 					// Show tooltip based on the state
 					if (isDisabled) {
 						if (auto _tt = Util::HoverTooltipWrapper()) {
-							ImGui::Text("Disabled at boot. Reenable, save settings, and restart.");
+							ImGui::Text(Util::Translate("$Feature Disabled Description").c_str());
 						}
 					} else if (!isLoaded) {
 						if (auto _tt = Util::HoverTooltipWrapper()) {
-							ImGui::Text(hasFailedMessage ? feat->failedLoadedMessage.c_str() : "Feature pending restart.");
+							ImGui::Text(hasFailedMessage ? feat->failedLoadedMessage.c_str() : Util::Translate("$Feature Loading Description").c_str());
 						}
 					}
 
@@ -429,18 +425,13 @@ void Menu::DrawSettings()
 						}
 						ImGui::PushStyleColor(ImGuiCol_Text, textColor);
 
-						if (ImGui::Button(isDisabled ? "Enable at Boot" : "Disable at Boot", { -1, 0 })) {
+						if (ImGui::Button(isDisabled ? Util::Translate("$Enable at Boot").c_str() : Util::Translate("$Disable at Boot").c_str(), { -1, 0 })) {
 							bool newState = feat->ToggleAtBootSetting();
 							logger::info("{}: {} at boot.", featureName, newState ? "Enabled" : "Disabled");
 						}
 
 						if (auto _tt = Util::HoverTooltipWrapper()) {
-							ImGui::Text(
-								"Current State: %s\n"
-								"%s the feature settings at boot. "
-								"Restart will be required to reenable. "
-								"This is the same as deleting the ini file. "
-								"This should remove any performance impact for the feature.",
+							ImGui::Text(Util::Translate("$Feature State Description").c_str(),
 								isDisabled ? "Disabled" : "Enabled",
 								isDisabled ? "Enable" : "Disable");
 						}
@@ -450,13 +441,11 @@ void Menu::DrawSettings()
 						ImGui::TableNextColumn();
 
 						if (!isDisabled && isLoaded) {
-							if (ImGui::Button("Restore Defaults", { -1, 0 })) {
+							if (ImGui::Button(Util::Translate("$Restore Defaults").c_str(), { -1, 0 })) {
 								feat->RestoreDefaultSettings();
 							}
 							if (auto _tt = Util::HoverTooltipWrapper()) {
-								ImGui::Text(
-									"Restores the feature's settings back to their default values. "
-									"You will still need to Save Settings to make these changes permanent.");
+								ImGui::Text(Util::Translate("$Restore Defaults Description").c_str());
 							}
 						}
 
@@ -548,11 +537,11 @@ void Menu::DrawGeneralSettings()
 	auto& shaderCache = SIE::ShaderCache::Instance();
 	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
-	if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+	if (ImGui::CollapsingHeader(Util::Translate("$General").c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
 		bool useCustomShaders = shaderCache.IsEnabled();
 		if (ImGui::BeginTable("##GeneralToggles", 3, ImGuiTableFlags_SizingStretchSame)) {
 			ImGui::TableNextColumn();
-			if (ImGui::Checkbox("Enable Shaders", &useCustomShaders)) {
+			if (ImGui::Checkbox(Util::Translate("$Enable Shaders").c_str(), &useCustomShaders)) {
 				shaderCache.SetEnabled(useCustomShaders);
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
