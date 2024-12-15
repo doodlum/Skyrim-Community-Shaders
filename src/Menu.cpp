@@ -247,7 +247,7 @@ void Menu::DrawSettings()
 	ImGui::SetNextWindowPos(Util::GetNativeViewportSizeScaled(0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(Util::GetNativeViewportSizeScaled(0.8f), ImGuiCond_FirstUseEver);
 
-	auto title = Util::Translate("$Community Shaders{}", Util::GetFormattedVersion(Plugin::VERSION));
+	const std::string title = "$Community Shaders{}"_i18n(Plugin::VERSION);
 
 	ImGui::Begin(title.c_str(), &IsEnabled, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	{
@@ -265,41 +265,41 @@ void Menu::DrawSettings()
 
 		if (ImGui::BeginTable("##LeButtons", 4, ImGuiTableFlags_SizingStretchSame)) {
 			ImGui::TableNextColumn();
-			if (ImGui::Button(Util::Translate("$Save Settings").c_str(), { -1, 0 })) {
+			if (ImGui::Button("$Save Settings"_i18n, { -1, 0 })) {
 				State::GetSingleton()->Save();
 			}
 
 			ImGui::TableNextColumn();
-			if (ImGui::Button(Util::Translate("$Load Settings").c_str(), { -1, 0 })) {
+			if (ImGui::Button("$Load Settings"_i18n, { -1, 0 })) {
 				State::GetSingleton()->Load();
 				ParticleLights::GetSingleton()->GetConfigs();
 			}
 
 			ImGui::TableNextColumn();
-			if (ImGui::Button(Util::Translate("$Clear Shader Cache").c_str(), { -1, 0 })) {
+			if (ImGui::Button("$Clear Shader Cache"_i18n, { -1, 0 })) {
 				shaderCache.Clear();
 				// any features should be added to shadercache's clear.
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text(Util::Translate("$Clear Shader Cache Description").c_str());
+				ImGui::Text("$Clear Shader Cache Description"_i18n);
 			}
 
 			ImGui::TableNextColumn();
-			if (ImGui::Button(Util::Translate("$Clear Disk Cache").c_str(), { -1, 0 })) {
+			if (ImGui::Button("$Clear Disk Cache"_i18n, { -1, 0 })) {
 				shaderCache.DeleteDiskCache();
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text(Util::Translate("$Clear Disk Cache Description").c_str());
+				ImGui::Text("$Clear Disk Cache Description"_i18n);
 			}
 
 			if (shaderCache.GetFailedTasks()) {
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
-				if (ImGui::Button(Util::Translate("$Toggle Error Message").c_str(), { -1, 0 })) {
+				if (ImGui::Button("$Toggle Error Message"_i18n, { -1, 0 })) {
 					shaderCache.ToggleErrorMessages();
 				}
 				if (auto _tt = Util::HoverTooltipWrapper()) {
-					ImGui::Text(Util::Translate("$Toggle Error Message Description").c_str());
+					ImGui::Text("$Toggle Error Message Description"_i18n);
 				}
 			}
 			ImGui::EndTable();
@@ -373,11 +373,11 @@ void Menu::DrawSettings()
 					// Show tooltip based on the state
 					if (isDisabled) {
 						if (auto _tt = Util::HoverTooltipWrapper()) {
-							ImGui::Text(Util::Translate("$Feature Disabled Description").c_str());
+							ImGui::Text("$Feature Disabled Description"_i18n);
 						}
 					} else if (!isLoaded) {
 						if (auto _tt = Util::HoverTooltipWrapper()) {
-							ImGui::Text(hasFailedMessage ? feat->failedLoadedMessage.c_str() : Util::Translate("$Feature Loading Description").c_str());
+							ImGui::Text(hasFailedMessage ? feat->failedLoadedMessage.c_str() : "$Feature Loading Description"_i18n);
 						}
 					}
 
@@ -425,15 +425,15 @@ void Menu::DrawSettings()
 						}
 						ImGui::PushStyleColor(ImGuiCol_Text, textColor);
 
-						if (ImGui::Button(isDisabled ? Util::Translate("$Enable at Boot").c_str() : Util::Translate("$Disable at Boot").c_str(), { -1, 0 })) {
+						if (ImGui::Button(isDisabled ? "$Enable at Boot"_i18n : "$Disable at Boot"_i18n, { -1, 0 })) {
 							bool newState = feat->ToggleAtBootSetting();
 							logger::info("{}: {} at boot.", featureName, newState ? "Enabled" : "Disabled");
 						}
 
 						if (auto _tt = Util::HoverTooltipWrapper()) {
-							ImGui::Text(Util::Translate("$Feature State Description").c_str(),
-								isDisabled ? "Disabled" : "Enabled",
-								isDisabled ? "Enable" : "Disable");
+							ImGui::Text("$Feature State Description"_i18n,
+								isDisabled ? "$Disabled"_i18n : "$Enabled"_i18n,
+								isDisabled ? "$Enable"_i18n : "$Disable"_i18n);
 						}
 
 						ImGui::PopStyleColor();
@@ -441,11 +441,11 @@ void Menu::DrawSettings()
 						ImGui::TableNextColumn();
 
 						if (!isDisabled && isLoaded) {
-							if (ImGui::Button(Util::Translate("$Restore Defaults").c_str(), { -1, 0 })) {
+							if (ImGui::Button("$Restore Defaults"_i18n, { -1, 0 })) {
 								feat->RestoreDefaultSettings();
 							}
 							if (auto _tt = Util::HoverTooltipWrapper()) {
-								ImGui::Text(Util::Translate("$Restore Defaults Description").c_str());
+								ImGui::Text("$Restore Defaults Description"_i18n);
 							}
 						}
 
@@ -537,45 +537,45 @@ void Menu::DrawGeneralSettings()
 	auto& shaderCache = SIE::ShaderCache::Instance();
 	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
-	if (ImGui::CollapsingHeader(Util::Translate("$General").c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+	if (ImGui::CollapsingHeader("$General"_i18n, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
 		bool useCustomShaders = shaderCache.IsEnabled();
 		if (ImGui::BeginTable("##GeneralToggles", 3, ImGuiTableFlags_SizingStretchSame)) {
 			ImGui::TableNextColumn();
-			if (ImGui::Checkbox(Util::Translate("$Enable Shaders").c_str(), &useCustomShaders)) {
+			if (ImGui::Checkbox("$Enable Shaders"_i18n, &useCustomShaders)) {
 				shaderCache.SetEnabled(useCustomShaders);
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text(Util::Translate("$Enable Shaders Description").c_str());
+				ImGui::Text("$Enable Shaders Description"_i18n);
 			}
 
 			bool useDiskCache = shaderCache.IsDiskCache();
 			ImGui::TableNextColumn();
-			if (ImGui::Checkbox(Util::Translate("$Enable Disk Cache").c_str(), &useDiskCache)) {
+			if (ImGui::Checkbox("$Enable Disk Cache"_i18n, &useDiskCache)) {
 				shaderCache.SetDiskCache(useDiskCache);
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text(Util::Translate("$Enable Disk Cache Description").c_str());
+				ImGui::Text("$Enable Disk Cache Description"_i18n);
 			}
 
 			bool useAsync = shaderCache.IsAsync();
 			ImGui::TableNextColumn();
-			if (ImGui::Checkbox(Util::Translate("$Enable Async").c_str(), &useAsync)) {
+			if (ImGui::Checkbox("$Enable Async"_i18n, &useAsync)) {
 				shaderCache.SetAsync(useAsync);
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text(Util::Translate("$Enable Async Description").c_str());
+				ImGui::Text("$Enable Async Description"_i18n);
 			}
 
 			ImGui::EndTable();
 		}
 	}
 
-	if (ImGui::CollapsingHeader(Util::Translate("$Keybindings").c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+	if (ImGui::CollapsingHeader("$Keybindings"_i18n, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
 		if (settingToggleKey) {
-			ImGui::Text(Util::Translate("$Toggle Keybinding Description").c_str());
+			ImGui::Text("$Toggle Keybinding Description"_i18n);
 		} else {
 			ImGui::AlignTextToFramePadding();
-			ImGui::Text(Util::Translate("$Toggle Keybinding").c_str());
+			ImGui::Text("$Toggle Keybinding"_i18n);
 			ImGui::SameLine();
 			ImGui::AlignTextToFramePadding();
 			ImGui::TextColored(themeSettings.StatusPalette.CurrentHotkey, "%s", KeyIdToString(settings.ToggleKey));
@@ -587,10 +587,10 @@ void Menu::DrawGeneralSettings()
 			}
 		}
 		if (settingsEffectsToggle) {
-			ImGui::Text(Util::Translate("$Effect Toggle Keybinding Description").c_str());
+			ImGui::Text("$Effect Toggle Keybinding Description"_i18n);
 		} else {
 			ImGui::AlignTextToFramePadding();
-			ImGui::Text(Util::Translate("$Effect Toggle Keybinding").c_str());
+			ImGui::Text("$Effect Toggle Keybinding"_i18n);
 			ImGui::SameLine();
 			ImGui::AlignTextToFramePadding();
 			ImGui::TextColored(themeSettings.StatusPalette.CurrentHotkey, "%s", KeyIdToString(settings.EffectToggleKey));
@@ -602,10 +602,10 @@ void Menu::DrawGeneralSettings()
 			}
 		}
 		if (settingSkipCompilationKey) {
-			ImGui::Text(Util::Translate("$Skip Compilation Keybinding Description").c_str());
+			ImGui::Text("$Skip Compilation Keybinding Description"_i18n);
 		} else {
 			ImGui::AlignTextToFramePadding();
-			ImGui::Text(Util::Translate("$Skip Compilation Keybinding").c_str());
+			ImGui::Text("$Skip Compilation Keybinding"_i18n);
 			ImGui::SameLine();
 			ImGui::AlignTextToFramePadding();
 			ImGui::TextColored(themeSettings.StatusPalette.CurrentHotkey, "%s", KeyIdToString(settings.SkipCompilationKey));
@@ -618,91 +618,91 @@ void Menu::DrawGeneralSettings()
 		}
 	}
 
-	if (ImGui::CollapsingHeader(Util::Translate("$Theme").c_str(), ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+	if (ImGui::CollapsingHeader("$Theme"_i18n, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
 		auto& style = themeSettings.Style;
 		auto& colors = themeSettings.FullPalette;
 
 		if (ImGui::BeginTabBar("##tabs", ImGuiTabBarFlags_None)) {
-			if (ImGui::BeginTabItem(Util::Translate("$Sizes").c_str())) {
-				if (ImGui::SliderFloat(Util::Translate("$Global Scale").c_str(), &themeSettings.GlobalScale, -1.f, 1.f, "%.2f")) {
+			if (ImGui::BeginTabItem("$Sizes"_i18n)) {
+				if (ImGui::SliderFloat("$Global Scale"_i18n, &themeSettings.GlobalScale, -1.f, 1.f, "%.2f")) {
 					float trueScale = exp2(themeSettings.GlobalScale);
 
 					auto& io = ImGui::GetIO();
 					io.FontGlobalScale = trueScale;
 				}
 
-				ImGui::SeparatorText(Util::Translate("$Main").c_str());
-				ImGui::SliderFloat2(Util::Translate("$Window Padding").c_str(), (float*)&style.WindowPadding, 0.0f, 20.0f, "%.0f");
-				ImGui::SliderFloat2(Util::Translate("$Frame Padding").c_str(), (float*)&style.FramePadding, 0.0f, 20.0f, "%.0f");
-				ImGui::SliderFloat2(Util::Translate("$Item Spacing").c_str(), (float*)&style.ItemSpacing, 0.0f, 20.0f, "%.0f");
-				ImGui::SliderFloat2(Util::Translate("$Item Inner Spacing").c_str(), (float*)&style.ItemInnerSpacing, 0.0f, 20.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Indent Spacing").c_str(), &style.IndentSpacing, 0.0f, 30.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Scrollbar Size").c_str(), &style.ScrollbarSize, 1.0f, 20.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Grab Min Size").c_str(), &style.GrabMinSize, 1.0f, 20.0f, "%.0f");
+				ImGui::SeparatorText("$Main"_i18n);
+				ImGui::SliderFloat2("$Window Padding"_i18n, (float*)&style.WindowPadding, 0.0f, 20.0f, "%.0f");
+				ImGui::SliderFloat2("$Frame Padding"_i18n, (float*)&style.FramePadding, 0.0f, 20.0f, "%.0f");
+				ImGui::SliderFloat2("$Item Spacing"_i18n, (float*)&style.ItemSpacing, 0.0f, 20.0f, "%.0f");
+				ImGui::SliderFloat2("$Item Inner Spacing"_i18n, (float*)&style.ItemInnerSpacing, 0.0f, 20.0f, "%.0f");
+				ImGui::SliderFloat("$Indent Spacing"_i18n, &style.IndentSpacing, 0.0f, 30.0f, "%.0f");
+				ImGui::SliderFloat("$Scrollbar Size"_i18n, &style.ScrollbarSize, 1.0f, 20.0f, "%.0f");
+				ImGui::SliderFloat("$Grab Min Size"_i18n, &style.GrabMinSize, 1.0f, 20.0f, "%.0f");
 
-				ImGui::SeparatorText(Util::Translate("$Borders").c_str());
-				ImGui::SliderFloat(Util::Translate("$Window Border Size").c_str(), &style.WindowBorderSize, 0.0f, 5.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Child Border Size").c_str(), &style.ChildBorderSize, 0.0f, 5.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Popup Border Size").c_str(), &style.PopupBorderSize, 0.0f, 5.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Frame Border Size").c_str(), &style.FrameBorderSize, 0.0f, 5.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Tab Border Size").c_str(), &style.TabBorderSize, 0.0f, 5.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Tab Bar Border Size").c_str(), &style.TabBarBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SeparatorText("$Borders"_i18n);
+				ImGui::SliderFloat("$Window Border Size"_i18n, &style.WindowBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SliderFloat("$Child Border Size"_i18n, &style.ChildBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SliderFloat("$Popup Border Size"_i18n, &style.PopupBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SliderFloat("$Frame Border Size"_i18n, &style.FrameBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SliderFloat("$Tab Border Size"_i18n, &style.TabBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SliderFloat("$Tab Bar Border Size"_i18n, &style.TabBarBorderSize, 0.0f, 5.0f, "%.0f");
 
-				ImGui::SeparatorText(Util::Translate("$Rounding").c_str());
-				ImGui::SliderFloat(Util::Translate("$Window Rounding").c_str(), &style.WindowRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Child Rounding").c_str(), &style.ChildRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Frame Rounding").c_str(), &style.FrameRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Popup Rounding").c_str(), &style.PopupRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Scrollbar Rounding").c_str(), &style.ScrollbarRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Grab Rounding").c_str(), &style.GrabRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Tab Rounding").c_str(), &style.TabRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SeparatorText("$Rounding"_i18n);
+				ImGui::SliderFloat("$Window Rounding"_i18n, &style.WindowRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Child Rounding"_i18n, &style.ChildRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Frame Rounding"_i18n, &style.FrameRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Popup Rounding"_i18n, &style.PopupRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Scrollbar Rounding"_i18n, &style.ScrollbarRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Grab Rounding"_i18n, &style.GrabRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Tab Rounding"_i18n, &style.TabRounding, 0.0f, 12.0f, "%.0f");
 
-				ImGui::SeparatorText(Util::Translate("$Tables").c_str());
-				ImGui::SliderFloat2(Util::Translate("$Cell Padding").c_str(), (float*)&style.CellPadding, 0.0f, 20.0f, "%.0f");
-				ImGui::SliderAngle(Util::Translate("$Table Angled Headers Angle").c_str(), &style.TableAngledHeadersAngle, -50.0f, +50.0f);
+				ImGui::SeparatorText("$Tables"_i18n);
+				ImGui::SliderFloat2("$Cell Padding"_i18n, (float*)&style.CellPadding, 0.0f, 20.0f, "%.0f");
+				ImGui::SliderAngle("$Table Angled Headers Angle"_i18n, &style.TableAngledHeadersAngle, -50.0f, +50.0f);
 
-				ImGui::SeparatorText(Util::Translate("$Widgets").c_str());
-				ImGui::Combo(Util::Translate("$ColorButtonPosition").c_str(), (int*)&style.ColorButtonPosition, Util::Translate("$Left\0$Right\0").c_str());
-				ImGui::SliderFloat2(Util::Translate("$Button Text Align").c_str(), (float*)&style.ButtonTextAlign, 0.0f, 1.0f, "%.2f");
+				ImGui::SeparatorText("$Widgets"_i18n);
+				ImGui::Combo("$ColorButtonPosition"_i18n, (int*)&style.ColorButtonPosition, "$Left\0$Right\0"_i18n);
+				ImGui::SliderFloat2("$Button Text Align"_i18n, (float*)&style.ButtonTextAlign, 0.0f, 1.0f, "%.2f");
 				if (auto _tt = Util::HoverTooltipWrapper())
-					ImGui::Text(Util::Translate("$Button Text Align Description").c_str());
-				ImGui::SliderFloat2(Util::Translate("$Selectable Text Align").c_str(), (float*)&style.SelectableTextAlign, 0.0f, 1.0f, "%.2f");
+					ImGui::Text("$Button Text Align Description"_i18n);
+				ImGui::SliderFloat2("$Selectable Text Align"_i18n, (float*)&style.SelectableTextAlign, 0.0f, 1.0f, "%.2f");
 				if (auto _tt = Util::HoverTooltipWrapper())
-					ImGui::Text(Util::Translate("$Selectable Text Align Description").c_str());
-				ImGui::SliderFloat(Util::Translate("$Separator Text Border Size").c_str(), &style.SeparatorTextBorderSize, 0.0f, 10.0f, "%.0f");
-				ImGui::SliderFloat2(Util::Translate("$Separator Text Align").c_str(), (float*)&style.SeparatorTextAlign, 0.0f, 1.0f, "%.2f");
-				ImGui::SliderFloat2(Util::Translate("$Separator Text Padding").c_str(), (float*)&style.SeparatorTextPadding, 0.0f, 40.0f, "%.0f");
-				ImGui::SliderFloat(Util::Translate("$Log Slider Deadzone").c_str(), &style.LogSliderDeadzone, 0.0f, 12.0f, "%.0f");
+					ImGui::Text("$Selectable Text Align Description"_i18n);
+				ImGui::SliderFloat("$Separator Text Border Size"_i18n, &style.SeparatorTextBorderSize, 0.0f, 10.0f, "%.0f");
+				ImGui::SliderFloat2("$Separator Text Align"_i18n, (float*)&style.SeparatorTextAlign, 0.0f, 1.0f, "%.2f");
+				ImGui::SliderFloat2("$Separator Text Padding"_i18n, (float*)&style.SeparatorTextPadding, 0.0f, 40.0f, "%.0f");
+				ImGui::SliderFloat("$Log Slider Deadzone"_i18n, &style.LogSliderDeadzone, 0.0f, 12.0f, "%.0f");
 
-				ImGui::SeparatorText(Util::Translate("$Docking").c_str());
-				ImGui::SliderFloat(Util::Translate("$Docking Splitter Size").c_str(), &style.DockingSeparatorSize, 0.0f, 12.0f, "%.0f");
+				ImGui::SeparatorText("$Docking"_i18n);
+				ImGui::SliderFloat("$Docking Splitter Size"_i18n, &style.DockingSeparatorSize, 0.0f, 12.0f, "%.0f");
 
 				ImGui::EndTabItem();
 			}
 
-			if (ImGui::BeginTabItem(Util::Translate("$Colors").c_str())) {
-				ImGui::SeparatorText(Util::Translate("$Status").c_str());
+			if (ImGui::BeginTabItem("$Colors"_i18n)) {
+				ImGui::SeparatorText("$Status"_i18n);
 
-				ImGui::ColorEdit4(Util::Translate("$Disabled Text").c_str(), (float*)&themeSettings.StatusPalette.Disable);
-				ImGui::ColorEdit4(Util::Translate("$Error Text").c_str(), (float*)&themeSettings.StatusPalette.Error);
-				ImGui::ColorEdit4(Util::Translate("$Restart Needed Text").c_str(), (float*)&themeSettings.StatusPalette.RestartNeeded);
-				ImGui::ColorEdit4(Util::Translate("$Current Hotkey Text").c_str(), (float*)&themeSettings.StatusPalette.CurrentHotkey);
+				ImGui::ColorEdit4("$Disabled Text"_i18n, (float*)&themeSettings.StatusPalette.Disable);
+				ImGui::ColorEdit4("$Error Text"_i18n, (float*)&themeSettings.StatusPalette.Error);
+				ImGui::ColorEdit4("$Restart Needed Text"_i18n, (float*)&themeSettings.StatusPalette.RestartNeeded);
+				ImGui::ColorEdit4("$Current Hotkey Text"_i18n, (float*)&themeSettings.StatusPalette.CurrentHotkey);
 
-				ImGui::SeparatorText(Util::Translate("$Palette").c_str());
+				ImGui::SeparatorText("$Palette"_i18n);
 
-				if (ImGui::RadioButton(Util::Translate("$Simple Palette").c_str(), themeSettings.UseSimplePalette))
+				if (ImGui::RadioButton("$Simple Palette"_i18n, themeSettings.UseSimplePalette))
 					themeSettings.UseSimplePalette = true;
 				ImGui::SameLine();
-				if (ImGui::RadioButton(Util::Translate("$Full Palette").c_str(), !themeSettings.UseSimplePalette))
+				if (ImGui::RadioButton("$Full Palette"_i18n, !themeSettings.UseSimplePalette))
 					themeSettings.UseSimplePalette = false;
 
 				if (themeSettings.UseSimplePalette) {
-					ImGui::ColorEdit4(Util::Translate("$Background").c_str(), (float*)&themeSettings.Palette.Background);
-					ImGui::ColorEdit4(Util::Translate("$Text").c_str(), (float*)&themeSettings.Palette.Text);
-					ImGui::ColorEdit4(Util::Translate("$Border").c_str(), (float*)&themeSettings.Palette.Border);
+					ImGui::ColorEdit4("$Background"_i18n, (float*)&themeSettings.Palette.Background);
+					ImGui::ColorEdit4("$Text"_i18n, (float*)&themeSettings.Palette.Text);
+					ImGui::ColorEdit4("$Border"_i18n, (float*)&themeSettings.Palette.Border);
 				} else {
 					static ImGuiTextFilter filter;
-					filter.Draw(Util::Translate("$Filter colors").c_str(), ImGui::GetFontSize() * 16);
+					filter.Draw("$Filter colors"_i18n, ImGui::GetFontSize() * 16);
 
 					for (int i = 0; i < ImGuiCol_COUNT; i++) {
 						const char* name = ImGui::GetStyleColorName(i);
@@ -1031,8 +1031,8 @@ void Menu::DrawOverlay()
 	auto state = State::GetSingleton();
 	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
-	auto progressTitle = Util::Translate(shaderCache.backgroundCompilation ? "$Background Compiling Shaders{}" : "$Compiling Shaders{}",
-		shaderCache.GetShaderStatsString(!state->IsDeveloperMode()).c_str());
+	auto shaderStates = shaderCache.GetShaderStatsString(!state->IsDeveloperMode());
+	auto progressTitle = shaderCache.backgroundCompilation ? "$Background Compiling Shaders{}"_i18n(shaderStates) : "$Compiling Shaders{}"_i18n(shaderStates);
 	auto percent = (float)compiledShaders / (float)totalShaders;
 	auto progressOverlay = fmt::format("{}/{} ({:2.1f}%)", compiledShaders, totalShaders, 100 * percent);
 	if (shaderCache.IsCompiling()) {
@@ -1044,9 +1044,9 @@ void Menu::DrawOverlay()
 		ImGui::TextUnformatted(progressTitle.c_str());
 		ImGui::ProgressBar(percent, ImVec2(0.0f, 0.0f), progressOverlay.c_str());
 		if (!shaderCache.backgroundCompilation && shaderCache.menuLoaded) {
-			auto skipShadersText = Util::Translate("$Skip Compilation{}", KeyIdToString(settings.SkipCompilationKey));
+			auto skipShadersText = "$Skip Compilation{}"_i18n(KeyIdToString(settings.SkipCompilationKey));
 			ImGui::TextUnformatted(skipShadersText.c_str());
-			ImGui::TextUnformatted(Util::Translate("$Skip Compilation Description").c_str());
+			ImGui::TextUnformatted("$Skip Compilation Description"_i18n);
 		}
 
 		ImGui::End();
