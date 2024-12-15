@@ -4,7 +4,8 @@
 
 namespace Util
 {
-	std::string Translate(const std::string& key) {
+	std::string Translate(const std::string& key)
+	{
 		std::string buffer;
 
 		if (SKSE::Translation::Translate(key, buffer)) {
