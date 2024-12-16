@@ -37,7 +37,7 @@ interface DECLSPEC_UUID("9f251514-9d4d-4902-9d60-18988ab7d4b5") DECLSPEC_NOVTABL
 // this sample we allocate a buffer to be used as scratch space. Here we have chosen
 // a somewhat arbitrary large size for use as scratch space, in a real application this
 // value should be tuned to what is required by Brixelizer.
-#define GPU_SCRATCH_BUFFER_SIZE (1 << 30)
+constexpr UINT64 GPU_SCRATCH_BUFFER_SIZE = 1ull << 30;
 
 class Raytracing
 {
@@ -65,10 +65,7 @@ public:
 	FfxBrixelizerContext brixelizerContext = {};
 	FfxBrixelizerBakedUpdateDescription brixelizerBakedUpdateDesc = {};
 	FfxBrixelizerStats stats = {};
-	FfxBrixelizerUpdateDescription updateDesc = {};
 	FfxBrixelizerBakedUpdateDescription bakedUpdateDesc = {};
-
-	std::vector<D3D12_RESOURCE_BARRIER> barriers;
 
 	winrt::com_ptr<ID3D12Resource> sdfAtlas;
 	winrt::com_ptr<ID3D12Resource> brickAABBs;
@@ -84,7 +81,7 @@ public:
 	void DrawSettings();
 	void InitD3D12(IDXGIAdapter* a_adapter);
 
-	winrt::com_ptr<ID3D12Resource> CreateBuffer(UINT size, D3D12_RESOURCE_STATES resourceState, D3D12_RESOURCE_FLAGS flags);
+	winrt::com_ptr<ID3D12Resource> CreateBuffer(UINT64 size, D3D12_RESOURCE_STATES resourceState, D3D12_RESOURCE_FLAGS flags);
 
 	void InitBrixelizer();
 
@@ -121,11 +118,13 @@ public:
 	void TransitionResources(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
 	void InitFenceAndEvent();
-	void WaitForGPU();
+	void WaitForD3D11();
+	void WaitForD3D12();
 
-	void SetupDebugVisualization(FfxBrixelizerDebugVisualizationDescription& debugVisDesc);
+	FfxBrixelizerDebugVisualizationDescription GetDebugVisualization();
 
 	void FrameUpdate();
+	void PopulateCommandList();
 
 	struct RenderTargetDataD3D12
 	{

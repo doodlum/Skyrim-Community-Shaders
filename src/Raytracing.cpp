@@ -2,6 +2,9 @@
 
 #include "Deferred.h"
 
+#include <chrono>
+#include <thread>
+
 void Raytracing::DrawSettings()
 {
 	ImGui::Text("Debug capture requires that PIX is attached.");
@@ -50,6 +53,7 @@ void Raytracing::InitD3D12(IDXGIAdapter* a_adapter)
 	DX::ThrowIfFailed(d3d12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator)));
 
 	DX::ThrowIfFailed(d3d12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.get(), nullptr, IID_PPV_ARGS(&commandList)));
+	DX::ThrowIfFailed(commandList->Close());
 
 	InitFenceAndEvent();
 
@@ -57,7 +61,7 @@ void Raytracing::InitD3D12(IDXGIAdapter* a_adapter)
 }
 
 // Helper function to create a committed resource
-winrt::com_ptr<ID3D12Resource> Raytracing::CreateBuffer(UINT size, D3D12_RESOURCE_STATES resourceState = D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE)
+winrt::com_ptr<ID3D12Resource> Raytracing::CreateBuffer(UINT64 size, D3D12_RESOURCE_STATES resourceState = D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE)
 {
 	winrt::com_ptr<ID3D12Resource> buffer;
 	CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
@@ -94,7 +98,7 @@ void Raytracing::InitBrixelizer()
 	float voxelSize = 0.2f;
 	for (uint32_t i = 0; i < NUM_BRIXELIZER_CASCADES; ++i) {
 		FfxBrixelizerCascadeDescription* cascadeDesc = &initializationParameters.cascadeDescs[i];
-		cascadeDesc->flags = (FfxBrixelizerCascadeFlag)(FFX_BRIXELIZER_CASCADE_STATIC | FFX_BRIXELIZER_CASCADE_DYNAMIC);
+		cascadeDesc->flags = FFX_BRIXELIZER_CASCADE_DYNAMIC;
 		cascadeDesc->voxelSize = voxelSize;
 		voxelSize *= 2.0f;
 	}
@@ -444,6 +448,8 @@ void Raytracing::RegisterIndexBuffer(const D3D11_BUFFER_DESC* pDesc, const D3D11
 
 void Raytracing::TransitionResources(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
 {
+	std::vector<D3D12_RESOURCE_BARRIER> barriers;
+
 	// Transition the SDF Atlas
 	barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
 		sdfAtlas.get(),
@@ -492,33 +498,41 @@ void Raytracing::InitFenceAndEvent()
 	}
 }
 
-// WaitForGPU Function
-void Raytracing::WaitForGPU()
+void Raytracing::WaitForD3D11()
+{
+	auto state = State::GetSingleton();
+
+	D3D11_QUERY_DESC queryDesc = { .Query = D3D11_QUERY_EVENT, .MiscFlags = 0 };
+	winrt::com_ptr<ID3D11Query> query;
+	DX::ThrowIfFailed(state->device->CreateQuery(&queryDesc, query.put()));
+
+	// https://github.com/niessner/VoxelHashing/blob/master/DepthSensingCUDA/Source/GlobalAppState.cpp
+	state->context->Flush();
+	state->context->End(query.get());
+	state->context->Flush();
+
+	while (state->context->GetData(query.get(), nullptr, 0, 0) != S_OK) {}
+}
+
+// WaitForD3D12 Function
+void Raytracing::WaitForD3D12()
 {
 	// Increment the fence value
-	const UINT64 currentFenceValue = ++fenceValue;
-
-	// Signal the command queue with the current fence value
-	HRESULT hr = commandQueue->Signal(fence.get(), currentFenceValue);
-	if (FAILED(hr)) {
-		throw std::runtime_error("Failed to signal the command queue.");
-	}
+	const UINT64 currentFenceValue = fenceValue;
+	DX::ThrowIfFailed(commandQueue->Signal(fence.get(), currentFenceValue));
+	fenceValue++;
 
 	// Check if the fence has been reached
 	if (fence->GetCompletedValue() < currentFenceValue) {
-		// Wait until the fence is signaled
-		hr = fence->SetEventOnCompletion(currentFenceValue, fenceEvent);
-		if (FAILED(hr)) {
-			throw std::runtime_error("Failed to set event on fence completion.");
-		}
-
-		// Block the CPU until the event is signaled
+		DX::ThrowIfFailed(fence->SetEventOnCompletion(currentFenceValue, fenceEvent));
 		WaitForSingleObject(fenceEvent, INFINITE);
 	}
 }
 
-void Raytracing::SetupDebugVisualization(FfxBrixelizerDebugVisualizationDescription& debugVisDesc)
+FfxBrixelizerDebugVisualizationDescription Raytracing::GetDebugVisualization()
 {
+	FfxBrixelizerDebugVisualizationDescription debugVisDesc;
+
 	auto camera = Util::GetCameraData(0);
 	auto inverseView = camera.viewMat.Invert();
 	auto inverseProjection = camera.projMat.Invert();
@@ -526,7 +540,7 @@ void Raytracing::SetupDebugVisualization(FfxBrixelizerDebugVisualizationDescript
 	memcpy(&debugVisDesc.inverseViewMatrix, &inverseView, sizeof(debugVisDesc.inverseViewMatrix));
 	memcpy(&debugVisDesc.inverseProjectionMatrix, &inverseProjection, sizeof(debugVisDesc.inverseProjectionMatrix));
 
-	debugVisDesc.debugState = FFX_BRIXELIZER_TRACE_DEBUG_MODE_DISTANCE;
+	debugVisDesc.debugState = FFX_BRIXELIZER_TRACE_DEBUG_MODE_GRAD;
 
 	uint32_t cascadeIndexOffset = 0;
 	uint32_t m_StartCascadeIdx = 0;
@@ -545,54 +559,43 @@ void Raytracing::SetupDebugVisualization(FfxBrixelizerDebugVisualizationDescript
 	debugVisDesc.renderHeight = 1080;
 	debugVisDesc.output = ffxGetResourceDX12(debugRenderTarget, ffxGetResourceDescriptionDX12(debugRenderTarget, FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
-	FfxBrixelizerPopulateDebugAABBsFlags populateDebugAABBFlags = FFX_BRIXELIZER_POPULATE_AABBS_STATIC_INSTANCES;
-
-	updateDesc.debugVisualizationDesc = &debugVisDesc;
-	updateDesc.populateDebugAABBsFlags = populateDebugAABBFlags;
+	return debugVisDesc;
 }
 
-void Raytracing::FrameUpdate()
+void Raytracing::PopulateCommandList()
 {
-	if (debugAvailable && debugCapture)
-		ga->BeginCapture();
+	DX::ThrowIfFailed(commandAllocator->Reset());
+	DX::ThrowIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
 
 	// Transition all resources to resource state expected by Brixelizer
 	TransitionResources(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-	updateDesc.debugVisualizationDesc = nullptr;
-	updateDesc.populateDebugAABBsFlags = FFX_BRIXELIZER_POPULATE_AABBS_NONE;
+	FfxBrixelizerDebugVisualizationDescription debugVisDesc = GetDebugVisualization();
 
-	FfxBrixelizerDebugVisualizationDescription debugVisDesc = {};
-	SetupDebugVisualization(debugVisDesc);
+	// update desc
+	auto eyePosition = Util::GetEyePosition(0);
+	size_t scratchBufferSize = 0;
 
-	// Fill out the Brixelizer update description.
+	FfxBrixelizerUpdateDescription updateDesc = {
+		.frameIndex = RE::BSGraphics::State::GetSingleton()->frameCount,
+		.sdfCenter = { eyePosition.x, eyePosition.y, eyePosition.z },
+		.populateDebugAABBsFlags = FFX_BRIXELIZER_POPULATE_AABBS_INSTANCES,
+		.debugVisualizationDesc = &debugVisDesc,
+		.maxReferences = 32 * (1 << 20),
+		.triangleSwapSize = 300 * (1 << 20),
+		.maxBricksPerBake = 1 << 14,
+		.outScratchBufferSize = &scratchBufferSize,
+		.outStats = &stats,
+	};
+
+	// Fill out the Brixelizer update description resources.
 	// Pass in the externally created output resources as FfxResource objects.
 	updateDesc.resources.sdfAtlas = ffxGetResourceDX12(sdfAtlas.get(), ffxGetResourceDescriptionDX12(sdfAtlas.get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
-
 	updateDesc.resources.brickAABBs = ffxGetResourceDX12(brickAABBs.get(), ffxGetResourceDescriptionDX12(brickAABBs.get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
-	updateDesc.resources.brickAABBs.description.stride = FFX_BRIXELIZER_BRICK_AABBS_STRIDE;
-
 	for (uint32_t i = 0; i < NUM_BRIXELIZER_CASCADES; ++i) {
 		updateDesc.resources.cascadeResources[i].aabbTree = ffxGetResourceDX12(cascadeAABBTrees[i].get(), ffxGetResourceDescriptionDX12(cascadeAABBTrees[i].get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
-		updateDesc.resources.cascadeResources[i].aabbTree.description.stride = FFX_BRIXELIZER_CASCADE_AABB_TREE_STRIDE;
-
 		updateDesc.resources.cascadeResources[i].brickMap = ffxGetResourceDX12(cascadeBrickMaps[i].get(), ffxGetResourceDescriptionDX12(cascadeBrickMaps[i].get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
-		updateDesc.resources.cascadeResources[i].brickMap.description.stride = FFX_BRIXELIZER_CASCADE_BRICK_MAP_STRIDE;
 	}
-
-	updateDesc.frameIndex = RE::BSGraphics::State::GetSingleton()->frameCount;
-	updateDesc.maxReferences = 32 * (1 << 20);
-	updateDesc.maxBricksPerBake = 1 << 14;
-	updateDesc.triangleSwapSize = 300 * (1 << 20);
-	updateDesc.outStats = &stats;
-
-	auto eyePosition = Util::GetEyePosition(0);
-	updateDesc.sdfCenter[0] = eyePosition.x;
-	updateDesc.sdfCenter[1] = eyePosition.y;
-	updateDesc.sdfCenter[2] = eyePosition.z;
-
-	size_t scratchBufferSize = 0;
-	updateDesc.outScratchBufferSize = &scratchBufferSize;
 
 	FfxErrorCode error = ffxBrixelizerBakeUpdate(&brixelizerContext, &updateDesc, &bakedUpdateDesc);
 	if (error != FFX_OK)
@@ -609,7 +612,18 @@ void Raytracing::FrameUpdate()
 	// Transition all resources to the Non-Pixel Shader Resource state after the Brixelizer
 	TransitionResources(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-	commandList->Close();
+	DX::ThrowIfFailed(commandList->Close());
+}
+
+void Raytracing::FrameUpdate()
+{
+	WaitForD3D11();
+
+	if (debugAvailable && debugCapture)
+		ga->BeginCapture();
+
+	PopulateCommandList();
+
 	ID3D12CommandList* ppCommandLists[] = { commandList.get() };
 	commandQueue->ExecuteCommandLists(1, ppCommandLists);
 
@@ -617,7 +631,7 @@ void Raytracing::FrameUpdate()
 		ga->EndCapture();
 
 	// Wait for the GPU to finish executing the commands
-	WaitForGPU();
+	WaitForD3D12();
 
 	debugCapture = false;
 }
