@@ -2,9 +2,6 @@
 
 #include "Deferred.h"
 
-#include <chrono>
-#include <thread>
-
 void Raytracing::DrawSettings()
 {
 	ImGui::Text("Debug capture requires that PIX is attached.");
