@@ -22,15 +22,17 @@ namespace Util
 		{
 			return Translate(std::string(key));
 		}
-
-		operator const char*() const noexcept
-		{
-			return Translate(std::string(key)).c_str();
-		}
 	};
 }
 
 inline Util::Translatable operator"" _i18n(const char* key, std::size_t) noexcept
 {
 	return Util::Translatable{ std::string_view(key) };
+}
+
+inline const char* operator"" _i18n_cs(const char* key, std::size_t) noexcept
+{
+	thread_local std::string translation;
+	translation = Util::Translate(std::string(key));
+	return translation.c_str();
 }
