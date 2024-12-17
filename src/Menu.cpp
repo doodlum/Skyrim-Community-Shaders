@@ -224,7 +224,7 @@ void Menu::Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceCon
 	builder.BuildRanges(&ranges);
 
 	imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\CommunityShaders.ttf", 24, nullptr, ranges.Data);
-	imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\Jost-Regular.ttf", 36, &font_config); // Override Latin character
+	imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\Jost-Regular.ttf", 36, &font_config);  // Override Latin character
 	imgui_io.Fonts->Build();
 
 	DXGI_SWAP_CHAIN_DESC desc;
