@@ -134,7 +134,8 @@ void TerrainShadows::SetupResources()
 	logger::debug("Listing xLODGen height maps...");
 	{
 		std::filesystem::path texture_dir{ L"Data\\textures\\Terrain\\" };
-		for (auto const& dir_entry : std::filesystem::directory_iterator{ texture_dir }) {
+		std::error_code ec;
+		for (auto const& dir_entry : std::filesystem::directory_iterator{ texture_dir, ec }) {
 			auto dir_path = dir_entry.path();
 			if (!std::filesystem::is_directory(dir_path))
 				continue;
@@ -147,7 +148,8 @@ void TerrainShadows::SetupResources()
 	logger::debug("Listing height maps...");
 	{
 		std::filesystem::path texture_dir{ L"Data\\textures\\heightmaps\\" };
-		for (auto const& dir_entry : std::filesystem::directory_iterator{ texture_dir })
+		std::error_code ec;
+		for (auto const& dir_entry : std::filesystem::directory_iterator{ texture_dir, ec })
 			ParseHeightmapPath(dir_entry.path(), false);
 	}
 
