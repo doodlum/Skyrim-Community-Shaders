@@ -99,9 +99,12 @@ def main():
     if not unique_chars:
         sys.exit("No characters found. Exiting.")
 
-    print(f"Collected {len(unique_chars)} unique characters.")
+    basic_latin = {chr(c) for c in range(0x0020, 0x0100)}
+    combined_chars = unique_chars | basic_latin
 
-    subset_font(original_font, args.output, ''.join(unique_chars), args.font_number)
+    print(f"Total characters to include in subset: {len(combined_chars)}.")
+
+    subset_font(original_font, args.output, ''.join(combined_chars), args.font_number)
 
 if __name__ == "__main__":
     main()
