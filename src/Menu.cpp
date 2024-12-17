@@ -441,7 +441,8 @@ void Menu::DrawSettings()
 
 						if (auto _tt = Util::HoverTooltipWrapper()) {
 							ImGui::Text("$Feature State Description{}{}"_i18n(
-								isDisabled ? "$Disabled" : "$Enabled", isDisabled ? "$Enable" : "$Disable").c_str());
+								isDisabled ? "$Disabled" : "$Enabled", isDisabled ? "$Enable" : "$Disable")
+											.c_str());
 						}
 
 						ImGui::PopStyleColor();
