@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-import os
 import argparse
-import sys
 import subprocess
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
@@ -16,33 +15,33 @@ except ImportError:
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
-        description="Automate collecting unique characters and font tool."
+        description="Automate collecting unique characters and generate font subset."
     )
     parser.add_argument(
         "--input",
         type=str,
-        required=False,
         default="https://github.com/adobe-fonts/source-han-sans/raw/release/Variable/OTC/SourceHanSans-VF.ttf.ttc",
         help="Path or URL to the original font file (e.g., C:/Windows/Fonts/msyh.ttc)."
     )
     parser.add_argument(
         "--output",
         type=str,
-        required=False,
         default="package/Interface/CommunityShaders/Fonts/CommunityShaders.ttf",
         help="Path for the output subset font file (e.g., SubsetFont.ttf)."
     )
     parser.add_argument(
         "--text_dir",
         type=str,
-        required=False,
         default="package/Interface/Translations",
         help="Directory to scan for translated files."
     )
+    parser.add_argument(
+        "--font_number",
+        type=int,
+        default=0,
+        help="Font number of the font file (default: 0)."
+    )
     return parser.parse_args()
-
-def is_printable(char):
-    return char.isprintable()
 
 def is_url(path):
     try:
@@ -57,83 +56,52 @@ def get_cache_dir():
     return cache_path
 
 def download_font(url):
-    try:
-        filename = url.split('/')[-1]
-        download_path = get_cache_dir() / filename
+    download_path = get_cache_dir() / Path(url).name
+    if not download_path.is_file():
         print(f"Downloading font from '{url}' to '{download_path}'...")
-        urlretrieve(url, download_path)
-        print(f"Downloaded font to '{download_path}'.")
-        return str(download_path)
-    except Exception as e:
-        print(f"Error downloading font from '{url}': {e}", file=sys.stderr)
-        sys.exit(1)
+        try:
+            urlretrieve(url, download_path)
+        except Exception as e:
+            sys.exit(f"Error downloading font: {e}")
+    return str(download_path)
 
-def collect_unique_chars(input_dir, extensions, exclude_dirs):
+def collect_unique_chars(input_dir, extension=".txt"):
     unique_chars = set()
-    input_path = Path(input_dir)
-    if not input_path.is_dir():
-        print(f"Error: Input directory '{input_dir}' does not exist or is not a directory.", file=sys.stderr)
-        sys.exit(1)
-
-    for root, dirs, files in os.walk(input_dir):
-        dirs[:] = [d for d in dirs if d not in exclude_dirs]
-        for file in files:
-            if any(file.endswith(ext) for ext in extensions):
-                file_path = Path(root) / file
-                try:
-                    with open(file_path, 'r', encoding='utf-16-le') as f:
-                        content = f.read()
-                        for char in content:
-                            if is_printable(char):
-                                unique_chars.add(char)
-                except UnicodeDecodeError:
-                    print(f"Warning: Could not decode '{file_path}'. Skipping.", file=sys.stderr)
-                except Exception as e:
-                    print(f"Error reading '{file_path}': {e}", file=sys.stderr)
+    for file in Path(input_dir).rglob(f"*{extension}"):
+        try:
+            with file.open('r', encoding='utf-16-le', errors='ignore') as f:
+                unique_chars.update(c for c in f.read() if c.isprintable())
+        except Exception as e:
+            print(f"Error reading '{file}': {e}", file=sys.stderr)
     return unique_chars
 
-def subset_font(original_path, subset_path, text):
+def subset_font(original_path, subset_path, text, font_number):
     try:
-        options = subset.Options(
-            font_number = 0
-        )
-
+        options = subset.Options(font_number = font_number)
         subsetter = subset.Subsetter(options=options)
         subsetter.populate(text=text)
 
-        font = subset.load_font(str(original_path), options)
-        subsetter.subset(font)
-
-        subset.save_font(font, str(subset_path), options)
-
-        font.close()
+        with subset.load_font(str(original_path), options) as font:
+            subsetter.subset(font)
+            subset.save_font(font, str(subset_path), options)
+        print(f"Subset font saved to '{subset_path}'.")
     except Exception as e:
-        print(f"Unexpected error during font subsetting: {e}", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(f"Error during font subsetting: {e}")
 
 def main():
     args = parse_arguments()
 
-    original_font = args.input
-    output_font = args.output
-    text_dir = args.text_dir
-
-    if is_url(original_font):
-        original_font = download_font(original_font)
-
+    original_font = download_font(args.input) if is_url(args.input) else args.input
     if not Path(original_font).is_file():
-        print(f"Error: Font file '{original_font}' does not exist.", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(f"Error: Font file '{original_font}' does not exist.")
 
-    print("Collecting unique characters from source files...")
-    unique_chars = collect_unique_chars(text_dir, ".txt", [])
-    num_chars = len(unique_chars)
-    print(f"Collected {num_chars} unique characters.")
+    unique_chars = collect_unique_chars(args.text_dir)
+    if not unique_chars:
+        sys.exit("No characters found. Exiting.")
 
-    text = ''.join(unique_chars)
+    print(f"Collected {len(unique_chars)} unique characters.")
 
-    print("Generating subset font...")
-    subset_font(original_font, output_font, text)
+    subset_font(original_font, args.output, ''.join(unique_chars), args.font_number)
 
 if __name__ == "__main__":
     main()

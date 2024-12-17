@@ -18,6 +18,11 @@ jobs:
           with:
             submodules: recursive
 
+        - uses: actions/setup-python@v5
+          with:
+            python-version: "3.13"
+            cache: "pip"
+
         - uses: ilammy/msvc-dev-cmd@v1.10.0
 
         - uses: lukka/run-vcpkg@v11.5

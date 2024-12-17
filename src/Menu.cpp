@@ -212,9 +212,8 @@ void Menu::Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceCon
 	imgui_io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
 	imgui_io.BackendFlags = ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_RendererHasVtxOffset;
 
-	ImFontConfig font_config;
-	font_config.GlyphExtraSpacing.x = -0.5;
-	font_config.MergeMode = true;
+	// ImFontConfig font_config;
+	// font_config.GlyphExtraSpacing.x = -0.5;
 
 	ImVector<ImWchar> ranges;
 	ImFontGlyphRangesBuilder builder;
@@ -224,8 +223,8 @@ void Menu::Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceCon
 	builder.BuildRanges(&ranges);
 
 	imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\CommunityShaders.ttf", 24, nullptr, ranges.Data);
-	imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\Jost-Regular.ttf", 36, &font_config);  // Override Latin character
-	imgui_io.Fonts->Build();
+	// imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\Jost-Regular.ttf", 36, &font_config);  // Override Latin character
+	// imgui_io.Fonts->Build();
 
 	DXGI_SWAP_CHAIN_DESC desc;
 	swapchain->GetDesc(&desc);
@@ -257,7 +256,7 @@ void Menu::DrawSettings()
 	ImGui::SetNextWindowPos(Util::GetNativeViewportSizeScaled(0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(Util::GetNativeViewportSizeScaled(0.8f), ImGuiCond_FirstUseEver);
 
-	const std::string title = "$Community Shaders{}"_i18n(Util::GetFormattedVersion(Plugin::VERSION));
+	const std::string title = "$Community Shaders Version"_i18n(Util::GetFormattedVersion(Plugin::VERSION));
 
 	ImGui::Begin(title.c_str(), &IsEnabled, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	{
@@ -441,9 +440,8 @@ void Menu::DrawSettings()
 						}
 
 						if (auto _tt = Util::HoverTooltipWrapper()) {
-							ImGui::Text("$Feature State Description"_i18n_cs,
-								isDisabled ? "$Disabled"_i18n_cs : "$Enabled"_i18n_cs,
-								isDisabled ? "$Enable"_i18n_cs : "$Disable"_i18n_cs);
+							ImGui::Text("$Feature State Description{}{}"_i18n(
+								isDisabled ? "$Disabled" : "$Enabled", isDisabled ? "$Enable" : "$Disable").c_str());
 						}
 
 						ImGui::PopStyleColor();
@@ -812,7 +810,7 @@ void Menu::DrawAdvancedSettings()
 			Util::DumpSettingsOptions();
 		}
 		if (!shaderCache.blockedKey.empty()) {
-			const std::string blockingButtonString = "$Stop Blocking Shaders{}"_i18n(shaderCache.blockedIDs.size());
+			const std::string blockingButtonString = "$Stop Blocking Shaders"_i18n(shaderCache.blockedIDs.size());
 			if (ImGui::Button(blockingButtonString.c_str(), { -1, 0 })) {
 				shaderCache.DisableShaderBlocking();
 			}
@@ -948,7 +946,7 @@ void Menu::DrawDisplaySettings()
 				ImGui::CollapsingHeader(featureName.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen);
 				ImGui::PopStyleColor();
 				if (auto _tt = Util::HoverTooltipWrapper()) {
-					ImGui::Text("$Display Feature Description{}"_i18n(featureName.c_str()).c_str());
+					ImGui::Text("$Display Feature Description"_i18n(featureName.c_str()).c_str());
 				}
 			}
 		}
@@ -959,9 +957,9 @@ void Menu::DrawDisplaySettings()
 
 void Menu::DrawFooter()
 {
-	ImGui::BulletText("$Game Version{}{}"_i18n(magic_enum::enum_name(REL::Module::GetRuntime()), Util::GetFormattedVersion(REL::Module::get().version())).c_str());
+	ImGui::BulletText("$Game Version"_i18n(magic_enum::enum_name(REL::Module::GetRuntime()), Util::GetFormattedVersion(REL::Module::get().version())).c_str());
 	ImGui::SameLine();
-	ImGui::BulletText("$D3D12 Interop{}"_i18n(Streamline::GetSingleton()->featureDLSSG && !REL::Module::IsVR() ? "$Active"_i18n_cs : "$Inactive"_i18n_cs).c_str());
+	ImGui::BulletText("$D3D12 Interop"_i18n(Streamline::GetSingleton()->featureDLSSG && !REL::Module::IsVR() ? "$Active"_i18n_cs : "$Inactive"_i18n_cs).c_str());
 	ImGui::SameLine();
 	ImGui::BulletText(std::format("GPU: {}", State::GetSingleton()->adapterDescription.c_str()).c_str());
 
@@ -1012,7 +1010,7 @@ void Menu::DrawOverlay()
 	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
 	auto shaderStates = shaderCache.GetShaderStatsString(!state->IsDeveloperMode());
-	auto progressTitle = shaderCache.backgroundCompilation ? "$Background Compiling Shaders{}"_i18n(shaderStates) : "$Compiling Shaders{}"_i18n(shaderStates);
+	auto progressTitle = shaderCache.backgroundCompilation ? "$Background Compiling Shaders"_i18n(shaderStates) : "$Compiling Shaders"_i18n(shaderStates);
 	auto percent = (float)compiledShaders / (float)totalShaders;
 	auto progressOverlay = fmt::format("{}/{} ({:2.1f}%)", compiledShaders, totalShaders, 100 * percent);
 	if (shaderCache.IsCompiling()) {
@@ -1024,7 +1022,7 @@ void Menu::DrawOverlay()
 		ImGui::TextUnformatted(progressTitle.c_str());
 		ImGui::ProgressBar(percent, ImVec2(0.0f, 0.0f), progressOverlay.c_str());
 		if (!shaderCache.backgroundCompilation && shaderCache.menuLoaded) {
-			auto skipShadersText = "$Skip Compilation{}"_i18n(KeyIdToString(settings.SkipCompilationKey));
+			auto skipShadersText = "$Skip Compilation"_i18n(KeyIdToString(settings.SkipCompilationKey));
 			ImGui::TextUnformatted(skipShadersText.c_str());
 			ImGui::TextUnformatted("$Skip Compilation Description"_i18n_cs);
 		}
