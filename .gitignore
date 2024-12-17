@@ -6,3 +6,4 @@ dist/
 CMakeUserPresets.json
 shadertoolsconfig.json
 .vscode
+fonts/
