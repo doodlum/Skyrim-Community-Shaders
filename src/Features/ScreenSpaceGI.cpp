@@ -317,6 +317,8 @@ void ScreenSpaceGI::LoadSettings(json& o_json)
 			setting->data.b = false;
 		}
 	}
+
+	recompileFlag = true;
 }
 
 void ScreenSpaceGI::SaveSettings(json& o_json)
