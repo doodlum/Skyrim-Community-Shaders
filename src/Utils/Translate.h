@@ -3,6 +3,7 @@
 #include <fmt/core.h>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace Util
 {
@@ -36,7 +37,7 @@ namespace Util
 			auto processArg = [&](auto&& arg) {
 				if constexpr (std::is_convertible_v<decltype(arg), std::string_view>) {
 					if (std::string_view argView(arg); argView.starts_with('$'))
-						keyArgs.emplace_back(argView.substr(1));
+						keyArgs.emplace_back(argView);
 					else
 						otherArgs.emplace_back(argView);
 				} else {
