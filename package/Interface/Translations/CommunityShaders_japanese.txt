@@ -1,0 +1,152 @@
+; Menu::DrawSettings
+
+$Community Shaders Version	Community Shaders {}
+$Save Settings	設定を保存
+$Load Settings	設定を読み込み
+$Clear Shader Cache	シェーダーキャッシュをクリア
+$Clear Shader Cache Description	シェーダーキャッシュは、実行時にバニラのシェーダーを置き換えるコンパイル済みシェーダーのコレクションです。クリアすると、ゲームが再度シェーダーに遭遇したときのみシェーダーが再コンパイルされます。これは、開発目的でシェーダーをホットロードする場合にのみ必要です。
+$Clear Disk Cache	ディスクキャッシュをクリア
+$Clear Disk Cache Description	ディスクキャッシュはディスク上のコンパイル済みシェーダーのコレクションで、シェーダーがシェーダーキャッシュに追加されると自動的に作成されます。ディスクキャッシュがない場合、または古くなっているか無効な場合は、左上隅に「シェーダーをコンパイル中」と表示されます。これが完了すると、ディスクキャッシュから読み込むとき以外はこのメッセージは表示されなくなります。問題が発生している場合のみ、ディスクキャッシュを手動で削除してください。
+$Toggle Error Message	エラーメッセージを切り替え
+$Toggle Error Message Description	シェーダー失敗メッセージを隠すまたは表示します。インストールが壊れており、ゲーム内でエラーが発生する可能性があります。すべての機能が更新されていることと、ロード順が正しいことを再確認してください。詳細はCommunityShaders.logを参照し、Nexus ModsページまたはDiscordサーバーを確認してください。
+$Feature Disabled Description	起動時に無効化されています。再有効化し、設定を保存して再起動してください。
+$Feature Loading Description	機能は再起動を待っています。
+$Enable at Boot	起動時に有効化
+$Disable at Boot	起動時に無効化
+$$Enabled	有効
+$Disabled	無効
+$Enable	有効化
+$Disable	無効化
+$Feature State Description{}{}	現在の状態: {}。起動時に機能設定を{}します。再有効化するには再起動が必要です。これはiniファイルを削除するのと同じです。これにより、機能のパフォーマンスへの影響が除去されるはずです。
+$Restore Defaults	デフォルトを復元
+$Restore Defaults Description	機能の設定をデフォルト値に戻します。これらの変更を永続化するには、設定を保存する必要があります。
+$General	一般
+$Advanced	詳細
+$Display	表示
+$Core Features	コア機能
+$Features	機能
+$Unloaded Features	未ロード機能
+$Menu Description	左側の項目を選択してください。
+
+; Menu::DrawGeneralSettings
+
+$Enable Shaders	シェーダーを有効化
+$Enable Shaders Description	これを無効にすると、すべての機能が実質的に無効になります。
+$Enable Disk Cache	ディスクキャッシュを有効化
+$Enable Disk Cache Description	これを無効にすると、シェーダーがディスクから読み込まれなくなり、シェーダーの保存も停止します。
+$Enable Async	非同期を有効化
+$Enable Async Description	まだコンパイルされていないシェーダーの置き換えをスキップします。また、コンパイルを非常に高速にします！
+$Keybindings	キーバインディング
+$Toggle Keybinding Description	トグルキーとして設定するキーを押してください...
+$Toggle Keybinding	トグルキー:
+$Effect Toggle Keybinding Description	すべてのエフェクトのトグルキーとして設定するキーを押してください...
+$Effect Toggle Keybinding	エフェクトトグルキー:
+$Skip Compilation Keybinding Description	コンパイルをスキップするキーを設定するにはキーを押してください...
+$Skip Compilation Keybinding	コンパイルスキップキー:
+$Theme	テーマ
+$Sizes	サイズ
+$Global Scale	グローバルスケール
+$Main	メイン
+$Window Padding	ウィンドウパディング
+$Frame Padding	フレームパディング
+$Item Spacing	アイテム間隔
+$Item Inner Spacing	アイテム内間隔
+$Indent Spacing	インデント間隔
+$Scrollbar Size	スクロールバーサイズ
+$Grab Min Size	グラブ最小サイズ
+$Borders	ボーダー
+$Window Border Size	ウィンドウボーダーサイズ
+$Child Border Size	子ボーダーサイズ
+$Popup Border Size	ポップアップボーダーサイズ
+$Frame Border Size	フレームボーダーサイズ
+$Tab Border Size	タブボーダーサイズ
+$Tab Bar Border Size	タブバーボーダーサイズ
+$Rounding	丸み
+$Window Rounding	ウィンドウ丸み
+$Child Rounding	子丸み
+$Frame Rounding	フレーム丸み
+$Popup Rounding	ポップアップ丸み
+$Scrollbar Rounding	スクロールバー丸み
+$Grab Rounding	グラブ丸み	
+$Tab Rounding	タブ丸み
+$Tables	テーブル
+$Cell Padding	セルパディング
+$Table Angled Headers Angle	テーブル角ヘッダー角度
+$Widgets	ウィジェット
+$Color Button Position	Color Button位置
+$Color Button Position Option	左\0右\0
+$Button Text Align	ボタンテキスト揃え
+$Button Text Align Description	ボタンがテキストコンテンツより大きい場合に適用されます。
+$Selectable Text Align	選択可能テキスト揃え
+$Selectable Text Align Description	選択可能項目がテキストコンテンツより大きい場合に適用されます。
+$Separator Text Border Size	セパレータテキストボーダーサイズ
+$Separator Text Align	セパレータテキスト揃え
+$Separator Text Padding	セパレータテキストパディング
+$Log Slider Deadzone	Log Sliderデッドゾーン
+$Docking	ドッキング
+$Docking Splitter Size	ドッキングスプリッターサイズ
+$Colors	色
+$Status	ステータス
+$Disabled Text	無効テキスト
+$Error Text	エラーテキスト
+$Restart Needed Text	再起動が必要なテキスト
+$Current Hotkey Text	現在のホットキー
+$Palette	パレット
+$Simple Palette	シンプルパレット
+$Full Palette	フルパレット
+$Background	背景
+$Text	テキスト
+$Border	ボーダー
+$Filter colors	色をフィルタ
+
+; Menu::DrawAdvancedSettings
+
+$Dump Shaders	Dump Shaders
+$Dump Shaders Description	起動時にシェーダーをダンプします。これはシェーダーをリバースエンジニアリングする場合にのみ使用してください。通常のユーザーには必要ありません。
+$Log Level	ログレベル
+$Log Level Description	ログレベル。トレースが最も詳細です。デフォルトは情報です。
+$Shader Defines	シェーダー定義
+$Shader Defines Description	シェーダーコンパイラ用の定義。セミコロン「;」で区切ります。スペースでクリアします。変更後にシェーダーを再構築してください。コンピュートシェーダーは再コンパイルのために再起動が必要です。
+$Compiler Threads	コンパイラスレッド
+$Compiler Threads Description	シェーダーをコンパイルするために使用するスレッド数。スレッド数が多いほどコンパイルは速く終了しますが、システムの応答性が低下する可能性があります。
+$Background Compiler Threads	バックグラウンドコンパイラスレッド
+$Background Compiler Threads Description	ゲームをプレイ中にシェーダーをコンパイルするために使用するスレッド数。これは起動時のコンパイルがスキップされた場合に有効になります。スレッド数が多いほどコンパイルは速く終了しますが、システムの応答性が低下する可能性があります。
+$Test Interval	テスト間隔
+$Test Interval Description	デフォルトのUSERとTEST設定間を切り替える秒数を設定します。0は無効化します。非ゼロの場合はテストモードを有効にします。これにより現在の設定がTEST設定として保存されます。設定が変更されていない場合は影響しません。
+$Enable File Watcher	ファイルウォッチャーを有効化
+$Enable File Watcher Description	ファイル変更時にシェーダーを自動的に再コンパイルします。開発用です。
+$Dump Ini Settings	Ini設定をダンプ
+$Stop Blocking Shaders	{}シェーダーのブロッキングを停止
+$Stop Blocking Shaders Description	Community Shadersのシェーダーのブロッキングを停止します。ブロッキングはゲーム内でシェーダーエラーをデバッグする際に、どのシェーダーに問題があるかを特定するのに役立ちます。開発者モードでPAGEUPおよびPAGEDOWNを押すとブロッキングが有効になります。特定のシェーダーがログファイルに出力されます。
+$Statistics	統計
+$Replace Original Shaders	オリジナルシェーダーを置き換え
+$Vertex Shader Description	頂点シェーダーを置き換えます。無効の場合、上記のタイプのカスタム頂点シェーダーが無効になります。開発者がCSシェーダーがバニラの動作と一致するかをテストするために使用します。
+$Pixel Shader Description	ピクセルシェーダーを置き換えます。無効の場合、上記のタイプのカスタムピクセルシェーダーが無効になります。開発者がCSシェーダーがバニラの動作と一致するかをテストするために使用します。
+$Compute Shader Description	コンピュートシェーダーを置き換えます。無効の場合、上記のタイプのカスタムコンピュートシェーダーが無効になります。開発者がCSシェーダーがバニラの動作と一致するかをテストするために使用します。
+
+; Menu::DrawDisableAtBootSettings
+
+$Disable at Boot	起動時に無効化
+$Disable at Boot Description	起動時に無効化する機能を選択します。これはfeature.iniファイルを削除するのと同じです。再有効化するには再起動が必要です。
+$Special Features	特別機能
+
+; Menu::DrawDisplaySettings
+
+$Display Feature Description{}	{{}}は起動時に無効化されています。詳細 -> 起動時に無効化メニューで再有効化してください。
+$Display Disabled Description	Skyrim Upscalerにより表示オプションが無効化されています
+
+; Menu::DrawFooter
+
+$Game Version	ゲームバージョン: {} {}
+$D3D12 Interop	D3D12インターオペラビリティ: {}
+$Active	アクティブ
+$Inactive	非アクティブ
+
+; Menu::DrawOverlay
+
+$Compiling Shaders	シェーダーをコンパイル中: {}
+$Background Compiling Shaders	バックグラウンドでシェーダーをコンパイル中: {}
+$Shader Compilation Info	シェーダーコンパイル情報
+$Skip Compilation	シェーダーコンパイルを完了せずに続行するには{}を押してください。
+$Skip Compilation Description	警告: コンパイルされていないシェーダーは視覚的なエラーを引き起こすか、読み込み時にスタッタリングを引き起こす可能性があります。
+$Skip Compilation Error Description	エラー: {}個のシェーダーがコンパイルに失敗しました。インストールとCommunityShaders.logログを確認してください。

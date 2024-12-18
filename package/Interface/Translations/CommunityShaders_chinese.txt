@@ -1,0 +1,152 @@
+; Menu::DrawSettings
+
+$Community Shaders Version	Community Shaders {}
+$Save Settings	保存设置
+$Load Settings	加载设置
+$Clear Shader Cache	清除着色器缓存
+$Clear Shader Cache Description	着色器缓存存储已编译的着色器，用于运行时替换默认着色器。 清除着色器缓存会导致在游戏需要加载着色器资源时重新编译。 此选项用于开发者热加载着色器。
+$Clear Disk Cache	清除磁盘缓存
+$Clear Disk Cache Description	磁盘缓存存储已编译的着色器文件，当着色器缓存时会自动创建。 若没有磁盘缓存，或者磁盘缓存已过期或无效，您将在左上角看到“正在编译着色器”。 完成此操作后，除了从磁盘缓存加载时，您将不再看到此消息。 如果您遇到问题，请手动删除磁盘缓存。
+$Toggle Error Message	错误信息
+$Toggle Error Message Description	隐藏或显示着色器错误消息。 若您的安装已损坏，可能会在游戏中看到错误。 请仔细检查您是否已更新所有功能以及您的加载顺序是否正确。 有关详细信息，请参阅CommunityShaders.log并检查Nexus Mods页面或Discord服务器。
+$Feature Disabled Description	启动时已禁用。重新启用后请保存设置并重新启动。
+$Feature Loading Description	功能等待重启生效。
+$Enable at Boot	启动时启用
+$Disable at Boot	启动时禁用
+$$Enabled	启用
+$Disabled	禁用
+$Enable	开启
+$Disable	关闭
+$Feature State Description{}{}	当前状态: {}。 启动时{}功能设置。 需要重启以重新启用。 这与删除 ini 文件相同。 此操作将消除功能对性能的影响。
+$Restore Defaults	恢复默认设置
+$Restore Defaults Description	将功能设置恢复为默认值。 您仍然需要保存设置以使这些更改生效。
+$General	常规
+$Advanced	高级
+$Display	显示
+$Core Features	核心功能
+$Features	功能
+$Unloaded Features	已上传功能
+$Menu Description	请选择左侧的项目。
+
+; Menu::DrawGeneralSettings
+
+$Enable Shaders	开启着色器
+$Enable Shaders Description	关闭此选项将禁用所有功能。
+$Enable Disk Cache	开启磁盘缓存
+$Enable Disk Cache Description	禁用后将无法从磁盘加载或保存着色器缓存。
+$Enable Async	开启异步
+$Enable Async Description	如果着色器尚未编译则跳过并替换，同时大幅加快编译速度。
+$Keybindings	快捷键绑定
+$Toggle Keybinding Description	按任意键设置为切换快捷键...
+$Toggle Keybinding	切换快捷键:
+$Effect Toggle Keybinding Description	按任意键为所有效果设置切换快捷键...
+$Effect Toggle Keybinding	效果切换快捷键:
+$Skip Compilation Keybinding Description	按任意键设置为跳过编译快捷键...
+$Skip Compilation Keybinding	跳过编译快捷键:
+$Theme	主题
+$Sizes	尺寸
+$Global Scale	全局缩放
+$Main	主选项
+$Window Padding	窗口内边距
+$Frame Padding	框架填充
+$Item Spacing	项目间距
+$Item Inner Spacing	项目内部间距
+$Indent Spacing	缩进间距
+$Scrollbar Size	滚动条宽度
+$Grab Min Size	抓取最小尺寸
+$Borders	边框
+$Window Border Size	窗口边框宽度
+$Child Border Size	子窗口边框宽度
+$Popup Border Size	弹出边框宽度
+$Frame Border Size	框架边框宽度
+$Tab Border Size	标签边框宽度
+$Tab Bar Border Size	标签栏边框宽度
+$Rounding	圆角
+$Window Rounding	窗口圆角
+$Child Rounding	子窗口圆角
+$Frame Rounding	框架圆角
+$Popup Rounding	弹窗圆角
+$Scrollbar Rounding	滚动条圆角
+$Grab Rounding	拖拽区域圆角
+$Tab Rounding	标签圆角
+$Tables	表格
+$Cell Padding	单元格填充
+$Table Angled Headers Angle	表格倾斜标题角度
+$Widgets	控件
+$Color Button Position	颜色按钮位置
+$Color Button Position Option	左\0右\0
+$Button Text Align	按钮文本对齐
+$Button Text Align Description	当按钮尺寸大于文本内容时应用对齐。
+$Selectable Text Align	可选文本对齐
+$Selectable Text Align Description	当可选尺寸大于文本内容时应用对齐。
+$Separator Text Border Size	分隔符文本边框宽度
+$Separator Text Align	分隔符文本对齐
+$Separator Text Padding	分隔符文本填充
+$Log Slider Deadzone	日志滑块死区
+$Docking	停靠
+$Docking Splitter Size	停靠分隔符宽度
+$Colors	颜色
+$Status	状态
+$Disabled Text	禁用文本
+$Error Text	错误文本
+$Restart Needed Text	重启需要文本
+$Current Hotkey Text	当前热键文本
+$Palette	调色板
+$Simple Palette	简单调色板
+$Full Palette	完整调色板
+$Background	背景
+$Text	文本
+$Border	边框
+$Filter colors	过滤颜色
+
+; Menu::DrawAdvancedSettings
+
+$Dump Shaders	注入着色器
+$Dump Shaders Description	启动时注入着色器。此选项用于逆向着色器。
+$Log Level	日志等级
+$Log Level Description	日志等级。trace最详细的。默认info。
+$Shader Defines	着色器定义
+$Shader Defines Description	着色器编译的定义。以分号"；"分隔。用空格清除。更改后重建着色器。计算着色器需要重新启动才能重新编译。
+$Compiler Threads	编译器线程
+$Compiler Threads Description	编译器可使用的线程数。线程越多，编译完成的速度越快，但可能会导致系统无响应。
+$Background Compiler Threads	后台编译器线程
+$Background Compiler Threads Description	游戏时编译器可使用的线程数。如果跳过启动编译，则激活该选项。线程越多，编译完成得越快，但可能会导致系统无响应。
+$Test Interval	测试间隔
+$Test Interval Description	设置从默认用户配置切换至测试配置等待的秒数。0表示禁用。非0表示启用测试模式。启用会将当前设置保存为测试配置。如果未更改任何设置，则不会产生任何影响。
+$Enable File Watcher	开启文件监控
+$Enable File Watcher Description	文件更改时自动重新编译着色器，用于开发。
+$Dump Ini Settings	注入Ini配置
+$Stop Blocking Shaders	停止拦截{}个着色器
+$Stop Blocking Shaders Description	停止拦截Community Shaders的着色器。在调试游戏效果遇到错误时候，通过拦截着色器可以更容易确定哪个着色器存在问题时。当处于开发者模式，按PAGEUP和PAGEDOWN，则会启用拦截。指定的着色器将打印到日志文件中。
+$Statistics	统计
+$Replace Original Shaders	替换原有着色器
+$Vertex Shader Description	替换Vertex Shaders。当关闭时，将禁用上述类型的自定义Vertex Shader。供开发人员测试注入着色器是否与原始效果匹配。
+$Pixel Shader Description	替换Pixel Shaders. 当关闭时，将禁用上述类型的自定义Pixel Shader。供开发人员测试注入着色器是否与原始效果匹配。
+$Compute Shader Description	替换Compute Shaders. 当关闭时，将禁用上述类型的自定义Pixel Shader。供开发人员测试注入着色器是否与原始效果匹配。
+
+; Menu::DrawDisableAtBootSettings
+
+$Disable at Boot	启动时禁用
+$Disable at Boot Description	选择要在启动时禁用的功能。这与删除feature.ini文件相同。需要重新启动才能重新启用。
+$Special Features	特殊功能
+
+; Menu::DrawDisplaySettings
+
+$Display Feature Description{}	{{}}已在启动时禁用。在“高级”->“启动时禁用”菜单中重新启用。
+$Display Disabled Description	由于Skyrim Upscaler而禁用显示选项
+
+; Menu::DrawFooter
+
+$Game Version	游戏版本: {} {}
+$D3D12 Interop	D3D12交互: {}
+$Active	开启
+$Inactive	关闭
+
+; Menu::DrawOverlay
+
+$Compiling Shaders	正在编译着色器: {}
+$Background Compiling Shaders	正在后台编译着色器: {}
+$Shader Compilation Info	着色器编译信息
+$Skip Compilation	按{}键跳过着色器编译。
+$Skip Compilation Description	警告: 未编译的着色器在加载时会导致出现错误效果或导致卡顿。
+$Skip Compilation Error Description	错误: {}个着色器编译失败。请查看安装和CommunityShaders.log日志。
