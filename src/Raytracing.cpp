@@ -330,7 +330,7 @@ void Raytracing::UpdateGeometry(RE::BSGeometry* a_geometry)
 						VertexPosition* vertex = reinterpret_cast<VertexPosition*>(&rendererData->rawVertexData[vertexSize * v + offset]);
 						convertedData.push_back(*vertex);
 					}
-					
+
 					BufferData data;
 
 					// Allocate the memory on the CPU and GPU
@@ -387,7 +387,6 @@ void Raytracing::UpdateGeometry(RE::BSGeometry* a_geometry)
 							D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 						commandList->ResourceBarrier(1, &resourceBarrier);
 					}
-					
 
 					vertexBuffers.insert({ (ID3D11Buffer*)rendererData->vertexBuffer, data });
 					it2 = vertexBuffers.find((ID3D11Buffer*)rendererData->vertexBuffer);
