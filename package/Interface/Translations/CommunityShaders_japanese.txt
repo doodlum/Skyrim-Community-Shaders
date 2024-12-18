@@ -13,7 +13,7 @@ $Feature Disabled Description	起動時に無効化されています。再有�
 $Feature Loading Description	機能は再起動を待っています。
 $Enable at Boot	起動時に有効化
 $Disable at Boot	起動時に無効化
-$$Enabled	有効
+$Enabled	有効
 $Disabled	無効
 $Enable	有効化
 $Disable	無効化

@@ -13,7 +13,7 @@ $Feature Disabled Description	Disabled at boot. Reenable, save settings, and res
 $Feature Loading Description	Feature pending restart.
 $Enable at Boot	Enable at Boot
 $Disable at Boot	Disable at Boot
-$$Enabled	Enabled
+$Enabled	Enabled
 $Disabled	Disabled
 $Enable	Enable
 $Disable	Disable

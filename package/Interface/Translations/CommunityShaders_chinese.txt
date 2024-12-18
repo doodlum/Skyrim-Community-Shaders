@@ -13,7 +13,7 @@ $Feature Disabled Description	启动时已禁用。重新启用后请保存设�
 $Feature Loading Description	功能等待重启生效。
 $Enable at Boot	启动时启用
 $Disable at Boot	启动时禁用
-$$Enabled	启用
+$Enabled	启用
 $Disabled	禁用
 $Enable	开启
 $Disable	关闭
