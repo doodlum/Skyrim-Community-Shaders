@@ -264,6 +264,11 @@ DirectX::XMMATRIX GetXMFromNiTransform(const RE::NiTransform& Transform)
 	return temp;
 }
 
+struct VertexPosition
+{
+	float data[3];
+};
+
 void Raytracing::UpdateGeometry(RE::BSGeometry* a_geometry)
 {
 	if (Deferred::GetSingleton()->inWorld) {
@@ -272,8 +277,9 @@ void Raytracing::UpdateGeometry(RE::BSGeometry* a_geometry)
 			geometries.insert(a_geometry);
 
 			const auto& transform = a_geometry->world;
-			const RE::NiPoint3 c = { a_geometry->worldBound.center.x, a_geometry->worldBound.center.y, a_geometry->worldBound.center.z };
-			const RE::NiPoint3 r = { a_geometry->worldBound.radius, a_geometry->worldBound.radius, a_geometry->worldBound.radius };
+			const auto modelBound = a_geometry->GetModelData().modelBound;
+			const RE::NiPoint3 c = { modelBound.center.x, modelBound.center.y, modelBound.center.z };
+			const RE::NiPoint3 r = { modelBound.radius, modelBound.radius, modelBound.radius };
 			const RE::NiPoint3 aabbMinVec = c - r;
 			const RE::NiPoint3 aabbMaxVec = c + r;
 			const RE::NiPoint3 extents = aabbMaxVec - aabbMinVec;
@@ -293,7 +299,7 @@ void Raytracing::UpdateGeometry(RE::BSGeometry* a_geometry)
 			float4 maxExtents = float4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
 
 			for (uint i = 0; i < 8; i++) {
-				auto transformed = aabbCorners[i];
+				auto transformed = transform * aabbCorners[i];
 				float4 transformedF = { transformed.x, transformed.y, transformed.z, 0 };
 
 				minExtents = (float4)_mm_min_ps(minExtents, transformedF);
@@ -305,14 +311,90 @@ void Raytracing::UpdateGeometry(RE::BSGeometry* a_geometry)
 			if (!rendererData || !rendererData->vertexBuffer || !rendererData->indexBuffer)
 				return;
 
+			auto triShape = a_geometry->AsTriShape();
+			if (!triShape)
+				return;
+
 			BufferData* vertexBuffer;
 			BufferData* indexBuffer;
 
 			{
 				auto it2 = vertexBuffers.find((ID3D11Buffer*)rendererData->vertexBuffer);
-				if (it2 == vertexBuffers.end())
-					return;
-				vertexBuffer = &it2->second;
+				if (it2 == vertexBuffers.end()) {
+					uint32_t vertexSize = rendererData->vertexDesc.GetSize();
+					uint32_t offset = rendererData->vertexDesc.GetAttributeOffset(RE::BSGraphics::Vertex::Attribute::VA_POSITION);
+
+					std::vector<VertexPosition> convertedData;
+
+					for (int v = 0; v < triShape->GetTrishapeRuntimeData().vertexCount; v++) {
+						VertexPosition* vertex = reinterpret_cast<VertexPosition*>(&rendererData->rawVertexData[vertexSize * v + offset]);
+						convertedData.push_back(*vertex);
+					}
+					
+					BufferData data;
+
+					// Allocate the memory on the CPU and GPU
+					CD3DX12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(convertedData.size(), D3D12_RESOURCE_FLAG_NONE);
+					{
+						CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
+						DX::ThrowIfFailed(d3d12Device->CreateCommittedResource(
+							&heapProperties,
+							D3D12_HEAP_FLAG_NONE,
+							&bufferDesc,
+							D3D12_RESOURCE_STATE_COPY_DEST,
+							nullptr,
+							IID_PPV_ARGS(&data.buffer)));
+					}
+
+					// Create temporary upload buffer
+					winrt::com_ptr<ID3D12Resource> uploadBuffer;
+					{
+						CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_UPLOAD);
+						DX::ThrowIfFailed(d3d12Device->CreateCommittedResource(
+							&heapProperties,
+							D3D12_HEAP_FLAG_NONE,
+							&bufferDesc,
+							D3D12_RESOURCE_STATE_GENERIC_READ,
+							nullptr,
+							IID_PPV_ARGS(&uploadBuffer)));
+					}
+
+					// Map the buffer to CPU memory and copy the vertex data
+					{
+						void* pVertexData = nullptr;
+						DX::ThrowIfFailed(uploadBuffer->Map(0, nullptr, &pVertexData));
+						memcpy(pVertexData, convertedData.data(), convertedData.size());
+						uploadBuffer->Unmap(0, nullptr);
+					}
+
+					{
+						// Transition the upload buffer to the source of a copy operation
+						CD3DX12_RESOURCE_BARRIER resourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+							uploadBuffer.get(),
+							D3D12_RESOURCE_STATE_GENERIC_READ,
+							D3D12_RESOURCE_STATE_COPY_SOURCE);
+						commandList->ResourceBarrier(1, &resourceBarrier);
+					}
+
+					// Record the copy command.
+					commandList->CopyResource(data.buffer.get(), uploadBuffer.get());
+
+					{
+						// Transition the buffer to a state suitable for shader access.
+						CD3DX12_RESOURCE_BARRIER resourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+							data.buffer.get(),
+							D3D12_RESOURCE_STATE_COPY_DEST,
+							D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+						commandList->ResourceBarrier(1, &resourceBarrier);
+					}
+					
+
+					vertexBuffers.insert({ (ID3D11Buffer*)rendererData->vertexBuffer, data });
+					it2 = vertexBuffers.find((ID3D11Buffer*)rendererData->vertexBuffer);
+					vertexBuffer = &it2->second;
+				} else {
+					vertexBuffer = &it2->second;
+				}
 			}
 
 			{
@@ -321,10 +403,6 @@ void Raytracing::UpdateGeometry(RE::BSGeometry* a_geometry)
 					return;
 				indexBuffer = &it2->second;
 			}
-
-			auto triShape = a_geometry->AsTriShape();
-			if (!triShape)
-				return;
 
 			FfxBrixelizerInstanceDescription instanceDesc = {};
 
@@ -383,48 +461,63 @@ Raytracing::BufferData Raytracing::AllocateBuffer(const D3D11_BUFFER_DESC* pDesc
 	BufferData data;
 
 	// Allocate the memory on the CPU and GPU
+	CD3DX12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(pDesc->ByteWidth, D3D12_RESOURCE_FLAG_NONE);
 	{
-		D3D12_HEAP_PROPERTIES heapProperties = {};
-		heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+		CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
+		DX::ThrowIfFailed(d3d12Device->CreateCommittedResource(
+			&heapProperties,
+			D3D12_HEAP_FLAG_NONE,
+			&bufferDesc,
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			nullptr,
+			IID_PPV_ARGS(&data.buffer)));
+	}
 
-		D3D12_RESOURCE_DESC bufferDesc = {};
-		bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		bufferDesc.Width = pDesc->ByteWidth;
-		bufferDesc.Height = 1;
-		bufferDesc.DepthOrArraySize = 1;
-		bufferDesc.MipLevels = 1;
-		bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-		bufferDesc.SampleDesc.Count = 1;
-		bufferDesc.SampleDesc.Quality = 0;
-		bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
+	// Create temporary upload buffer
+	winrt::com_ptr<ID3D12Resource> uploadBuffer;
+	{
+		CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_UPLOAD);
 		DX::ThrowIfFailed(d3d12Device->CreateCommittedResource(
 			&heapProperties,
 			D3D12_HEAP_FLAG_NONE,
 			&bufferDesc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
-			IID_PPV_ARGS(&data.buffer)));
-
-		data.width = pDesc->ByteWidth;
+			IID_PPV_ARGS(&uploadBuffer)));
 	}
 
 	// Map the buffer to CPU memory and copy the vertex data
 	{
 		void* pVertexData = nullptr;
-		data.buffer->Map(0, nullptr, &pVertexData);
+		DX::ThrowIfFailed(uploadBuffer->Map(0, nullptr, &pVertexData));
 		memcpy(pVertexData, pInitialData->pSysMem, pDesc->ByteWidth);
-		data.buffer->Unmap(0, nullptr);
+		uploadBuffer->Unmap(0, nullptr);
 	}
 
-	return data;
-}
+	{
+		// Transition the upload buffer to the source of a copy operation
+		CD3DX12_RESOURCE_BARRIER resourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			uploadBuffer.get(),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			D3D12_RESOURCE_STATE_COPY_SOURCE);
+		commandList->ResourceBarrier(1, &resourceBarrier);
+	}
 
-void Raytracing::RegisterVertexBuffer(const D3D11_BUFFER_DESC* pDesc, const D3D11_SUBRESOURCE_DATA* pInitialData, ID3D11Buffer** ppBuffer)
-{
-	BufferData data = AllocateBuffer(pDesc, pInitialData);
-	vertexBuffers.insert({ *ppBuffer, data });
+	// Record the copy command.
+	commandList->CopyResource(data.buffer.get(), uploadBuffer.get());
+
+	{
+		// Transition the buffer to a state suitable for shader access.
+		CD3DX12_RESOURCE_BARRIER resourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+			data.buffer.get(),
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		commandList->ResourceBarrier(1, &resourceBarrier);
+	}
+
+	uploadBuffer->Release();
+
+	return data;
 }
 
 void Raytracing::RegisterIndexBuffer(const D3D11_BUFFER_DESC* pDesc, const D3D11_SUBRESOURCE_DATA* pInitialData, ID3D11Buffer** ppBuffer)
@@ -520,12 +613,14 @@ FfxBrixelizerDebugVisualizationDescription Raytracing::GetDebugVisualization()
 {
 	FfxBrixelizerDebugVisualizationDescription debugVisDesc{};
 
-	auto cameraViewInverseAdjusted = frameBufferCached.CameraViewInverse;
+	auto cameraViewInverseAdjusted = frameBufferCached.CameraViewInverse.Transpose();
 	cameraViewInverseAdjusted._41 += frameBufferCached.CameraPosAdjust.x;
 	cameraViewInverseAdjusted._42 += frameBufferCached.CameraPosAdjust.y;
 	cameraViewInverseAdjusted._43 += frameBufferCached.CameraPosAdjust.z;
-	memcpy(&debugVisDesc.inverseViewMatrix, &frameBufferCached.CameraViewInverse, sizeof(debugVisDesc.inverseViewMatrix));
-	memcpy(&debugVisDesc.inverseProjectionMatrix, &frameBufferCached.CameraProjInverse, sizeof(debugVisDesc.inverseProjectionMatrix));
+	auto cameraProjInverse = frameBufferCached.CameraProjInverse.Transpose();
+
+	memcpy(&debugVisDesc.inverseViewMatrix, &cameraViewInverseAdjusted, sizeof(debugVisDesc.inverseViewMatrix));
+	memcpy(&debugVisDesc.inverseProjectionMatrix, &cameraProjInverse, sizeof(debugVisDesc.inverseProjectionMatrix));
 
 	debugVisDesc.debugState = FFX_BRIXELIZER_TRACE_DEBUG_MODE_GRAD;
 
