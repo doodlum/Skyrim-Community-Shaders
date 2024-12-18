@@ -223,7 +223,8 @@ void Menu::Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceCon
 	builder.BuildRanges(&ranges);
 
 	imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\CommunityShaders.ttf", 24, nullptr, ranges.Data);
-	// imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\Jost-Regular.ttf", 36, &font_config);  // Override Latin character
+	// This feature only fill in missing characters, cannot overwrite Latin character.
+	// imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\Jost-Regular.ttf", 36, &font_config);
 	imgui_io.Fonts->Build();
 
 	DXGI_SWAP_CHAIN_DESC desc;
@@ -1016,7 +1017,7 @@ void Menu::DrawOverlay()
 	auto progressOverlay = fmt::format("{}/{} ({:2.1f}%)", compiledShaders, totalShaders, 100 * percent);
 	if (shaderCache.IsCompiling()) {
 		ImGui::SetNextWindowPos(ImVec2(10, 10));
-		if (!ImGui::Begin("ShaderCompilationInfo", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
+		if (!ImGui::Begin("$Shader Compilation Info"_i18n_cs, nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
 			ImGui::End();
 			return;
 		}
@@ -1032,12 +1033,12 @@ void Menu::DrawOverlay()
 	} else if (failed) {
 		if (!hide) {
 			ImGui::SetNextWindowPos(ImVec2(10, 10));
-			if (!ImGui::Begin("ShaderCompilationInfo", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
+			if (!ImGui::Begin("$Shader Compilation Info"_i18n_cs, nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
 				ImGui::End();
 				return;
 			}
 
-			ImGui::TextColored(themeSettings.StatusPalette.Error, "ERROR: %d shaders failed to compile. Check installation and CommunityShaders.log", failed, totalShaders);
+			ImGui::TextColored(themeSettings.StatusPalette.Error, "$Skip Compilation Error Description"_i18n(totalShaders).c_str());
 			ImGui::End();
 		}
 	}
