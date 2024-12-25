@@ -727,7 +727,8 @@ void Menu::DrawGeneralSettings()
 				ImGui::SliderFloat("$Font Size"_i18n_cs, &themeSettings.FontSize, 8.0f, 48.0f, "%.0f");
 
 				ImGui::BeginDisabled(!fontPathValid);
-				if (ImGui::Button("$Refresh Font"_i18n_cs)) fontReloadRequested = true;
+				if (ImGui::Button("$Refresh Font"_i18n_cs))
+					fontReloadRequested = true;
 				ImGui::EndDisabled();
 
 				if (!fontPathValid) {
