@@ -41,7 +41,7 @@ jobs:
           file_format: json
           flat_naming: true
           translations_path: |
-            ${{env.TRANSLATION_CACHE}}
+            ${{ env.TRANSLATION_CACHE }}
           base_lang: en
 
       - name: commit cache

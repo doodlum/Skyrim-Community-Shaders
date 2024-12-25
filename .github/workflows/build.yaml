@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   translate:
@@ -32,10 +31,11 @@ jobs:
             file_format: json
             flat_naming: true
             translations_path: |
-              ${{env.TRANSLATION_CACHE}}
+              ${{ env.TRANSLATION_CACHE }}
             base_lang: en
 
         - name: convert json to utf-16-le-bom txt
+          if: always()
           run: |
             for file in $TRANSLATION_CACHE/*.json; do
               if [[ -f "$file" ]]; then
@@ -54,6 +54,13 @@ jobs:
               fi
             done
 
+        - name: Upload translations
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: translations
+            path: ${{ env.TRANSLATION_FILES }}
+
   compile:
     name: build plugin and addons
     runs-on: windows-latest
@@ -61,6 +68,12 @@ jobs:
         - uses: actions/checkout@v4
           with:
             submodules: recursive
+
+        - name: Download translations
+          uses: actions/download-artifact@v4
+          with:
+            name: translations
+            path: ${{ env.TRANSLATION_FILES }}
 
         - uses: ilammy/msvc-dev-cmd@v1.10.0
 

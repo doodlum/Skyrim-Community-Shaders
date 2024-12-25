@@ -1,0 +1,33 @@
+name: pull from Lokalise
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  translate:
+    name: translate plugin
+    runs-on: ubuntu-latest
+    env:
+      ISO: .github/workflows/iso.json
+      TRANSLATION_FILES: package/Interface/Translations/
+      TRANSLATION_CACHE: locales/
+      WHITELIST_FILES: CommunityShaders_english.txt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: pull files from Lokalise
+        uses: lokalise/lokalise-pull-action@v3.1.0
+        with:
+          api_token: ${{ secrets.LOKALISE_API_TOKEN }}
+          project_id: ${{ vars.PROJECT_ID }}
+          file_format: json
+          flat_naming: true
+          translations_path: |
+            ${{ env.TRANSLATION_CACHE }}
+          base_lang: en
