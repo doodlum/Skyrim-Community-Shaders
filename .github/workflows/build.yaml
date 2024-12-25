@@ -14,36 +14,37 @@ jobs:
     name: translate plugin
     runs-on: ubuntu-latest
     env:
+      ISO: .github/workflows/iso.json
       TRANSLATION_FILES: package/Interface/Translations/
-      TRANSLATION_CACHE: translates/
+      TRANSLATION_CACHE: locales/
       WHITELIST_FILES: CommunityShaders_english.txt
     steps:
         - uses: actions/checkout@v4
           with:
             fetch-depth: 0
 
-        - name: convert utf-16-le-bom txt to json
-          run: |
-            mkdir -p $TRANSLATION_CACHE
-            for file in "$TRANSLATION_FILES"/*.txt; do
-              if [[ -f "$file" ]]; then
-                iconv -f UTF-16LE -t UTF-8 "$file" \
-                  | sed '1s/^\xEF\xBB\xBF//' \
-                  | grep -vE '^(;|\s*$)' \
-                  | jq -Rn '[ inputs | split("\t") | { (.[0]): .[1] } ] | add' \
-                  > "$TRANSLATION_CACHE/$(basename "${file%.txt}.json")"
-              fi
-            done
-
-        - name: third-party translate
-          run: |
-            echo 'Okay'
+        - name: pull files from Lokalise
+          uses: lokalise/lokalise-pull-action@v3.1.0
+          with:
+            api_token: ${{ secrets.LOKALISE_API_TOKEN }}
+            project_id: ${{ vars.PROJECT_ID }}
+            file_format: json
+            flat_naming: true
+            translations_path: |
+              ${{env.TRANSLATION_CACHE}}
+            base_lang: en
 
         - name: convert json to utf-16-le-bom txt
           run: |
             for file in $TRANSLATION_CACHE/*.json; do
               if [[ -f "$file" ]]; then
-                output_file="$TRANSLATION_FILES/$(basename "${file%.json}.txt")"
+                iso_code=$(basename "$file" .json)
+                language=$(jq -r --arg iso "$iso_code" '.iso_lang[$iso]' $ISO)
+                if [[ -z "$language" || "$language" == "null" ]]; then
+                  echo "Warning: ISO code '$iso_code' not found. Skipping $file." >&2
+                  continue
+                fi
+                output_file="$TRANSLATION_FILES/CommunityShaders_${language}.txt"
                 if [[ "$(basename "$output_file")" != "$WHITELIST_FILES" ]]; then
                   printf "\xFF\xFE" > "$output_file"
                   jq -r 'to_entries | .[] | "\(.key)\t\(.value)"' "$file" \

@@ -1,0 +1,24 @@
+{
+  "lang_iso": {
+    "english": "en",
+    "french": "fr",
+    "italian": "it",
+    "german": "de",
+    "spanish": "es",
+    "polish": "pl",
+    "chinese": "zh",
+    "russian": "ru",
+    "japanese": "ja"
+  },
+  "iso_lang": {
+    "en": "english",
+    "fr": "french",
+    "it": "italian",
+    "de": "german",
+    "es": "spanish",
+    "pl": "polish",
+    "zh": "chinese",
+    "ru": "russian",
+    "ja": "japanese"
+  }
+}
