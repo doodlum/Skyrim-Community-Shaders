@@ -43,6 +43,9 @@ $Effect Toggle Keybinding Description	Press any key to set as a toggle key for a
 $Effect Toggle Keybinding	Effect Toggle Key:
 $Skip Compilation Keybinding Description	Press any key to set as Skip Compilation Key...
 $Skip Compilation Keybinding	Skip Compilation Key:
+$Font   Font
+$Font Path  Font Path
+$Font Size  Font Size
 $Theme	Theme
 $Sizes	Sizes
 $Global Scale	Global Scale

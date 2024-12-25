@@ -265,34 +265,3 @@ if(AIO_ZIP_TO_DIST)
 		WORKING_DIRECTORY ${AIO_DIR}
 	)
 endif()
-
-# #######################################################################################################################
-# # Generate font subset when translations updated
-# #######################################################################################################################
-
-find_package(Python3 COMPONENTS Interpreter)
-
-if (Python3_Interpreter_FOUND)
-	set(SCRIPT "${CMAKE_SOURCE_DIR}/subset_font.py" CACHE STRING "Path to the Python script")
-	set(ORIGINAL_FONT "https://github.com/adobe-fonts/source-han-sans/raw/release/Variable/OTC/SourceHanSans-VF.ttf.ttc" CACHE STRING "Original font file URL or path")
-	set(SUBSET_FONT "${CMAKE_SOURCE_DIR}/package/Interface/CommunityShaders/Fonts/CommunityShaders.ttf" CACHE STRING "Output subset font file path")
-	set(TRANSLATIONS_DIR "${CMAKE_SOURCE_DIR}/package/Interface/Translations" CACHE STRING "Translations directory")
-
-	file(GLOB_RECURSE TRANSLATIONS CONFIGURE_DEPENDS "${TRANSLATIONS_DIR}/*")
-
-	add_custom_command(
-		OUTPUT "${SUBSET_FONT}"
-		COMMAND Python3::Interpreter "${SCRIPT}"
-		--input "${ORIGINAL_FONT}"
-		--output "${SUBSET_FONT}"
-		--text_dir "${TRANSLATIONS_DIR}"
-		DEPENDS ${TRANSLATIONS}
-		COMMENT "Generating subset font based on updated translations."
-		VERBATIM
-	)
-
-	add_custom_target(GenSubsetFont ALL DEPENDS "${SUBSET_FONT}")
-	add_dependencies(${PROJECT_NAME} GenSubsetFont)
-else()
-	message(WARNING "Python3 not found: Skipping subset font generation logic.")
-endif()

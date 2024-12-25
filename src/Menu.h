@@ -54,6 +54,9 @@ public:
 	{
 		float GlobalScale = REL::Module::IsVR() ? -0.5f : 0.f;  // exponential
 
+		std::string FontPath = "Data\\Interface\\CommunityShaders\\Fonts\\Jost-Regular.ttf";
+		float FontSize = 36;
+
 		bool UseSimplePalette = true;  // simple palette or full customization
 		struct PaletteColors
 		{
@@ -170,6 +173,8 @@ private:
 	void SetupImGuiStyle() const;
 	const char* KeyIdToString(uint32_t key);
 	const ImGuiKey VirtualKeyToImGuiKey(WPARAM vkKey);
+
+	void LoadFont(std::string fontPath, float fontSize);
 
 	void DrawGeneralSettings();
 	void DrawAdvancedSettings();

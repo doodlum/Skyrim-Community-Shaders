@@ -74,6 +74,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	Menu::ThemeSettings,
 	GlobalScale,
+	FontPath,
+	FontSize,
 	UseSimplePalette,
 	Palette,
 	Style,
@@ -180,6 +182,38 @@ void Menu::SetupImGuiStyle() const
 	}
 }
 
+void LoadFont(std::string fontPath, float fontSize)
+{
+	static std::string lastFontPath = "";
+	static float lastFontSize = 0.0f;
+
+	if (fontPath == lastFontPath && fontSize == lastFontSize)
+		return;
+
+	const auto& io = ImGui::GetIO();
+	io.Fonts->Clear();
+
+	ImFontConfig font_config;
+	font_config.GlyphExtraSpacing.x = -0.5;
+
+	ImVector<ImWchar> ranges;
+	ImFontGlyphRangesBuilder builder;
+	builder.AddRanges(io.Fonts->GetGlyphRangesDefault());
+	builder.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
+	builder.AddRanges(io.Fonts->GetGlyphRangesChineseFull());
+	builder.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+	builder.BuildRanges(&ranges);
+
+	io.Fonts->AddFontFromFileTTF(fontPath.c_str(), fontSize, &font_config, ranges.Data);
+	io.Fonts->Build();
+
+	ImGui_ImplDX11_InvalidateDeviceObjects();
+	ImGui_ImplDX11_CreateDeviceObjects();
+
+	lastFontPath = fontPath;
+	lastFontSize = fontSize;
+}
+
 bool IsEnabled = false;
 
 Menu::~Menu()
@@ -207,25 +241,13 @@ void Menu::Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceCon
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+
 	auto& imgui_io = ImGui::GetIO();
 
 	imgui_io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
 	imgui_io.BackendFlags = ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_RendererHasVtxOffset;
 
-	// ImFontConfig font_config;
-	// font_config.GlyphExtraSpacing.x = -0.5;
-
-	ImVector<ImWchar> ranges;
-	ImFontGlyphRangesBuilder builder;
-	builder.AddRanges(imgui_io.Fonts->GetGlyphRangesChineseFull());
-	builder.AddRanges(imgui_io.Fonts->GetGlyphRangesJapanese());
-	// builder.AddRanges(imgui_io.Fonts->GetGlyphRangesKorean());
-	builder.BuildRanges(&ranges);
-
-	imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\CommunityShaders.ttf", 24, nullptr, ranges.Data);
-	// This feature only fill in missing characters, cannot overwrite Latin character.
-	// imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\Jost-Regular.ttf", 36, &font_config);
-	imgui_io.Fonts->Build();
+	LoadFont(settings.Theme.FontPath, settings.Theme.FontSize);
 
 	DXGI_SWAP_CHAIN_DESC desc;
 	swapchain->GetDesc(&desc);
@@ -688,6 +710,29 @@ void Menu::DrawGeneralSettings()
 				ImGui::SliderFloat("$Docking Splitter Size"_i18n_cs, &style.DockingSeparatorSize, 0.0f, 12.0f, "%.0f");
 
 				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("$Font"_i18n_cs)) {
+				static char fontPathBuffer[256];
+				static bool fontPathValid = true;
+				strncpy(fontPathBuffer, themeSettings.FontPath.c_str(), sizeof(fontPathBuffer));
+
+				if (ImGui::InputText("$Font Path", fontPathBuffer, sizeof(fontPathBuffer))) {
+					themeSettings.FontPath = fontPathBuffer;
+					fontPathValid = std::filesystem::exists(themeSettings.FontPath);
+
+					if (fontPathValid) {
+						LoadFont(themeSettings.FontPath, themeSettings.FontSize);
+					}
+				}
+
+				if (ImGui::SliderFloat("Font Size", &themeSettings.FontSize, 8.0f, 48.0f, "%.0f")) {
+					LoadFont(themeSettings.FontPath, themeSettings.FontSize);
+				}
+
+				if (!fontPathValid) {
+					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Invalid font path!");
+				}
 			}
 
 			if (ImGui::BeginTabItem("$Colors"_i18n_cs)) {
