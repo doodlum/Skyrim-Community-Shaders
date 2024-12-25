@@ -6,7 +6,7 @@
     "german": "de",
     "spanish": "es",
     "polish": "pl",
-    "chinese": "zh-CN",
+    "chinese": "zh_CN",
     "russian": "ru",
     "japanese": "ja"
   },
@@ -17,7 +17,7 @@
     "de": "german",
     "es": "spanish",
     "pl": "polish",
-    "zh-CN": "chinese",
+    "zh_CN": "chinese",
     "ru": "russian",
     "ja": "japanese"
   }
