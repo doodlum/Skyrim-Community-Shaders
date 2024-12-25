@@ -719,7 +719,7 @@ void Menu::DrawGeneralSettings()
 
 				if (ImGui::InputText("$Font Path"_i18n_cs, &themeSettings.FontPath)) {
 					fontPathValid = std::filesystem::exists(themeSettings.FontPath) &&
-												std::filesystem::is_regular_file(themeSettings.FontPath);
+					                std::filesystem::is_regular_file(themeSettings.FontPath);
 				}
 				if (auto _tt = Util::HoverTooltipWrapper()) {
 					ImGui::SetTooltip("$Font Path Description"_i18n_cs);
