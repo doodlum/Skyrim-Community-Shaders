@@ -717,11 +717,16 @@ void Menu::DrawGeneralSettings()
 			if (ImGui::BeginTabItem("$Font"_i18n_cs)) {
 				static bool fontPathValid = true;
 
-				if (ImGui::InputText("$Font Path"_i18n_cs, &themeSettings.FontPath, ImGuiInputTextFlags_EnterReturnsTrue)) {
-					fontPathValid = std::filesystem::exists(themeSettings.FontPath);
+				if (ImGui::InputText("$Font Path"_i18n_cs, &themeSettings.FontPath)) {
+					fontPathValid = std::filesystem::exists(themeSettings.FontPath) &&
+												std::filesystem::is_regular_file(themeSettings.FontPath);
 				}
 				if (auto _tt = Util::HoverTooltipWrapper()) {
 					ImGui::SetTooltip("$Font Path Description"_i18n_cs);
+				}
+
+				if (!fontPathValid) {
+					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "$Invalid Font Description"_i18n_cs);
 				}
 
 				ImGui::SliderFloat("$Font Size"_i18n_cs, &themeSettings.FontSize, 8.0f, 48.0f, "%.0f");
@@ -730,10 +735,6 @@ void Menu::DrawGeneralSettings()
 				if (ImGui::Button("$Refresh Font"_i18n_cs))
 					fontReloadRequested = true;
 				ImGui::EndDisabled();
-
-				if (!fontPathValid) {
-					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "$Invalid Font Description"_i18n_cs);
-				}
 
 				ImGui::EndTabItem();
 			}
