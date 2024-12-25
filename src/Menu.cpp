@@ -182,7 +182,27 @@ void Menu::SetupImGuiStyle() const
 	}
 }
 
-void LoadFont(std::string fontPath, float fontSize)
+bool IsEnabled = false;
+
+Menu::~Menu()
+{
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+	dxgiAdapter3 = nullptr;
+}
+
+void Menu::Load(json& o_json)
+{
+	settings = o_json;
+}
+
+void Menu::Save(json& o_json)
+{
+	o_json = settings;
+}
+
+void Menu::LoadFont(std::string& fontPath, float fontSize)
 {
 	static std::string lastFontPath = "";
 	static float lastFontSize = 0.0f;
@@ -190,7 +210,7 @@ void LoadFont(std::string fontPath, float fontSize)
 	if (fontPath == lastFontPath && fontSize == lastFontSize)
 		return;
 
-	const auto& io = ImGui::GetIO();
+	auto& io = ImGui::GetIO();
 	io.Fonts->Clear();
 
 	ImFontConfig font_config;
@@ -212,26 +232,6 @@ void LoadFont(std::string fontPath, float fontSize)
 
 	lastFontPath = fontPath;
 	lastFontSize = fontSize;
-}
-
-bool IsEnabled = false;
-
-Menu::~Menu()
-{
-	ImGui_ImplDX11_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
-	dxgiAdapter3 = nullptr;
-}
-
-void Menu::Load(json& o_json)
-{
-	settings = o_json;
-}
-
-void Menu::Save(json& o_json)
-{
-	o_json = settings;
 }
 
 #define IM_VK_KEYPAD_ENTER (VK_RETURN + 256)
@@ -713,7 +713,7 @@ void Menu::DrawGeneralSettings()
 			}
 
 			if (ImGui::BeginTabItem("$Font"_i18n_cs)) {
-				static char fontPathBuffer[256];
+				static char fontPathBuffer[256] = "";
 				static bool fontPathValid = true;
 				strncpy(fontPathBuffer, themeSettings.FontPath.c_str(), sizeof(fontPathBuffer));
 
@@ -733,6 +733,8 @@ void Menu::DrawGeneralSettings()
 				if (!fontPathValid) {
 					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Invalid font path!");
 				}
+
+				ImGui::EndTabItem();
 			}
 
 			if (ImGui::BeginTabItem("$Colors"_i18n_cs)) {

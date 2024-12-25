@@ -174,7 +174,7 @@ private:
 	const char* KeyIdToString(uint32_t key);
 	const ImGuiKey VirtualKeyToImGuiKey(WPARAM vkKey);
 
-	void LoadFont(std::string fontPath, float fontSize);
+	void LoadFont(std::string& fontPath, float fontSize);
 
 	void DrawGeneralSettings();
 	void DrawAdvancedSettings();
