@@ -10,11 +10,53 @@ permissions:
   contents: write
 
 jobs:
+  translate:
+    name: translate plugin
+    runs-on: ubuntu-latest
+    env:
+      TRANSLATION_FILES: package/Interface/Translations/
+      TRANSLATION_CACHE: translates/
+      WHITELIST_FILES: CommunityShaders_english.txt
+    steps:
+        - uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+
+        - name: convert utf-16-le-bom txt to json
+          run: |
+            mkdir -p $TRANSLATION_CACHE
+            for file in "$TRANSLATION_FILES"/*.txt; do
+              if [[ -f "$file" ]]; then
+                iconv -f UTF-16LE -t UTF-8 "$file" \
+                  | sed '1s/^\xEF\xBB\xBF//' \
+                  | grep -vE '^(;|\s*$)' \
+                  | jq -Rn '[ inputs | split("\t") | { (.[0]): .[1] } ] | add' \
+                  > "$TRANSLATION_CACHE/$(basename "${file%.txt}.json")"
+              fi
+            done
+
+        - name: third-party translate
+          run: |
+            echo 'Okay'
+
+        - name: convert json to utf-16-le-bom txt
+          run: |
+            for file in $TRANSLATION_CACHE/*.json; do
+              if [[ -f "$file" ]]; then
+                output_file="$TRANSLATION_FILES/$(basename "${file%.json}.txt")"
+                if [[ "$(basename "$output_file")" != "$WHITELIST_FILES" ]]; then
+                  printf "\xFF\xFE" > "$output_file"
+                  jq -r 'to_entries | .[] | "\(.key)\t\(.value)"' "$file" \
+                    | sed 's/$/\r/' | iconv -f UTF-8 -t UTF-16LE >> "$output_file"
+                fi
+              fi
+            done
+
   compile:
     name: build plugin and addons
     runs-on: windows-latest
     steps:
-        - uses: actions/checkout@v3
+        - uses: actions/checkout@v4
           with:
             submodules: recursive
 
