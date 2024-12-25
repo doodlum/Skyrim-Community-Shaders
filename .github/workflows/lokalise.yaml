@@ -29,7 +29,7 @@ jobs:
                 | sed '1s/^\xEF\xBB\xBF//' \
                 | grep -vE '^(;|\s*$)' \
                 | jq -Rn '[ inputs | split("\t") | { (.[0]): .[1] } ] | add' \
-                > "$TRANSLATION_CACHE/$iso_code.json")"
+                > "$TRANSLATION_CACHE/$iso_code.json"
             fi
           done
 
