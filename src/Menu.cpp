@@ -202,7 +202,7 @@ void Menu::Save(json& o_json)
 	o_json = settings;
 }
 
-void Menu::LoadFont(std::string& fontPath, float fontSize)
+void Menu::LoadFont(std::string& fontPath, float fontSize, bool refresh)
 {
 	static std::string lastFontPath = "";
 	static float lastFontSize = 0.0f;
@@ -227,8 +227,10 @@ void Menu::LoadFont(std::string& fontPath, float fontSize)
 	io.Fonts->AddFontFromFileTTF(fontPath.c_str(), fontSize, &font_config, ranges.Data);
 	io.Fonts->Build();
 
-	ImGui_ImplDX11_InvalidateDeviceObjects();
-	ImGui_ImplDX11_CreateDeviceObjects();
+	if (refresh) {
+		ImGui_ImplDX11_InvalidateDeviceObjects();
+		ImGui_ImplDX11_CreateDeviceObjects();
+	}
 
 	lastFontPath = fontPath;
 	lastFontSize = fontSize;
@@ -247,7 +249,7 @@ void Menu::Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceCon
 	imgui_io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
 	imgui_io.BackendFlags = ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_RendererHasVtxOffset;
 
-	LoadFont(settings.Theme.FontPath, settings.Theme.FontSize);
+	LoadFont(settings.Theme.FontPath, settings.Theme.FontSize, false);
 
 	DXGI_SWAP_CHAIN_DESC desc;
 	swapchain->GetDesc(&desc);
@@ -713,25 +715,23 @@ void Menu::DrawGeneralSettings()
 			}
 
 			if (ImGui::BeginTabItem("$Font"_i18n_cs)) {
-				static char fontPathBuffer[256] = "";
 				static bool fontPathValid = true;
-				strncpy(fontPathBuffer, themeSettings.FontPath.c_str(), sizeof(fontPathBuffer));
 
-				if (ImGui::InputText("$Font Path", fontPathBuffer, sizeof(fontPathBuffer))) {
-					themeSettings.FontPath = fontPathBuffer;
+				if (ImGui::InputText("$Font Path"_i18n_cs, &themeSettings.FontPath, ImGuiInputTextFlags_EnterReturnsTrue)) {
 					fontPathValid = std::filesystem::exists(themeSettings.FontPath);
-
-					if (fontPathValid) {
-						LoadFont(themeSettings.FontPath, themeSettings.FontSize);
-					}
+				}
+				if (auto _tt = Util::HoverTooltipWrapper()) {
+					ImGui::SetTooltip("$Font Path Description"_i18n_cs);
 				}
 
-				if (ImGui::SliderFloat("Font Size", &themeSettings.FontSize, 8.0f, 48.0f, "%.0f")) {
-					LoadFont(themeSettings.FontPath, themeSettings.FontSize);
-				}
+				ImGui::SliderFloat("$Font Size"_i18n_cs, &themeSettings.FontSize, 8.0f, 48.0f, "%.0f");
+
+				ImGui::BeginDisabled(!fontPathValid);
+				if (ImGui::Button("$Refresh Font"_i18n_cs)) fontReloadRequested = true;
+				ImGui::EndDisabled();
 
 				if (!fontPathValid) {
-					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Invalid font path!");
+					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "$Invalid Font Description"_i18n_cs);
 				}
 
 				ImGui::EndTabItem();
@@ -1030,6 +1030,13 @@ void Menu::DrawOverlay()
 {
 	ProcessInputEventQueue();  //Synchronize Inputs to frame
 
+	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
+
+	if (fontReloadRequested) {
+		LoadFont(themeSettings.FontPath, themeSettings.FontSize, true);
+		fontReloadRequested = false;
+	}
+
 	auto& shaderCache = SIE::ShaderCache::Instance();
 	auto failed = shaderCache.GetFailedTasks();
 	auto hide = shaderCache.IsHideErrors();
@@ -1056,7 +1063,6 @@ void Menu::DrawOverlay()
 	totalShaders = shaderCache.GetTotalTasks();
 
 	auto state = State::GetSingleton();
-	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
 	auto shaderStates = shaderCache.GetShaderStatsString(!state->IsDeveloperMode());
 	auto progressTitle = shaderCache.backgroundCompilation ? "$Background Compiling Shaders"_i18n(shaderStates) : "$Compiling Shaders"_i18n(shaderStates);

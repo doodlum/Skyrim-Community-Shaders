@@ -43,9 +43,12 @@ $Effect Toggle Keybinding Description	Press any key to set as a toggle key for a
 $Effect Toggle Keybinding	Effect Toggle Key:
 $Skip Compilation Keybinding Description	Press any key to set as Skip Compilation Key...
 $Skip Compilation Keybinding	Skip Compilation Key:
-$Font   Font
-$Font Path  Font Path
-$Font Size  Font Size
+$Font	Font
+$Font Path	Font Path
+$Font Path Description	Enter the full path or relative path to the font file. (e.g., C:/Windows/Fonts/msyh.ttc)
+$Font Size	Font Size
+$Invalid Font Description	Invalid font path! Make sure the file exists.
+$Refresh Font	Refresh Font
 $Theme	Theme
 $Sizes	Sizes
 $Global Scale	Global Scale

@@ -160,6 +160,7 @@ private:
 	uint32_t priorShaderKey = VK_PRIOR;  // used for blocking shaders in debugging
 	uint32_t nextShaderKey = VK_NEXT;    // used for blocking shaders in debugging
 
+	bool fontReloadRequested = false;
 	bool settingToggleKey = false;
 	bool settingSkipCompilationKey = false;
 	bool settingsEffectsToggle = false;
@@ -174,7 +175,7 @@ private:
 	const char* KeyIdToString(uint32_t key);
 	const ImGuiKey VirtualKeyToImGuiKey(WPARAM vkKey);
 
-	void LoadFont(std::string& fontPath, float fontSize);
+	void LoadFont(std::string& fontPath, float fontSize, bool refresh);
 
 	void DrawGeneralSettings();
 	void DrawAdvancedSettings();
