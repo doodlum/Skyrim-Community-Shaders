@@ -11,7 +11,7 @@ const MAX_TOTAL = 300;      // total time limit in seconds
 const DEFAULT_TIMEOUT = 120; // download command timeout (sec)
 
 const envOr = (name, def) => process.env[name] ?? def;
-const parseIntEnv = (value, def) => isNaN(parseInt(value)) ? def : parseInt(value);
+const parseIntEnv = (value, def) => Number.isInteger(Number(value)) && Number(value) >= 0 ? Number(value) : def;
 const parseBoolEnv = (value) => ['true','1','yes'].includes(String(value).toLowerCase());
 
 const config = {
@@ -19,7 +19,7 @@ const config = {
     projectId:       envOr('PROJECT_ID', ''),
     fileFormat:      envOr('FILE_FORMAT', ''),
     refName:         envOr('GITHUB_REF_NAME',''),
-    skipIncludeTags: parseBoolEnv(envOr('SKIP_INCLUDE_TAGS', 'false')),
+    skipIncludeTags: parseBoolEnv(envOr('SKIP_INCLUDE_TAGS', false)),
     maxRetries:      parseIntEnv(envOr('MAX_RETRIES', DEFAULT_MAX_RETRIES), DEFAULT_MAX_RETRIES),
     sleepTime:       parseIntEnv(envOr('SLEEP_TIME', DEFAULT_SLEEP), DEFAULT_SLEEP),
     downloadTimeout: parseIntEnv(envOr('DOWNLOAD_TIMEOUT', DEFAULT_TIMEOUT), DEFAULT_TIMEOUT),
