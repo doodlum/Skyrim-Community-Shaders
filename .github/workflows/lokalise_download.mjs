@@ -82,7 +82,7 @@ async function downloadFiles(cfg) {
         console.log(`Attempt ${attempt} of ${cfg.maxRetries}...`);
 
         try {
-            await executeDownload('./lokalise2', args, cfg.downloadTimeout);
+            await executeDownload('lokalise2', args, cfg.downloadTimeout);
             return;
         } catch (err) {
             const msg = err.message || String(err);
