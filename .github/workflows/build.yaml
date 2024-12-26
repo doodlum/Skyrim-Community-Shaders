@@ -9,13 +9,15 @@ on:
 permissions:
   contents: write
 
+env:
+  TRANSLATION_FILES: package/Interface/Translations/
+
 jobs:
   translate:
     name: translate plugin
     runs-on: ubuntu-latest
     env:
       ISO: .github/workflows/iso.json
-      TRANSLATION_FILES: package/Interface/Translations/
       TRANSLATION_CACHE: locales/
       WHITELIST_FILES: CommunityShaders_english.txt
     steps:
