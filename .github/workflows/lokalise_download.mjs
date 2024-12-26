@@ -11,7 +11,7 @@ const MAX_TOTAL = 300;      // total time limit in seconds
 const DEFAULT_TIMEOUT = 120; // download command timeout (sec)
 
 const envOr = (name, def) => process.env[name] ?? def;
-const parseIntEnv = (value, def) => Number.isInteger(Number(value)) && Number(value) >= 0 ? Number(value) : def;
+const parseIntEnv = (value, def) => isNaN(parseInt(value)) ? def : parseInt(value);
 const parseBoolEnv = (value) => ['true','1','yes'].includes(String(value).toLowerCase());
 
 const config = {
@@ -107,7 +107,7 @@ async function downloadFiles(cfg) {
 }
 
 try {
-    await installLokaliseCLI();
+    await installLokaliseCLI(DEFAULT_TIMEOUT);
     await downloadFiles(config);
     console.log("Successfully downloaded files.");
     process.exit(0);
