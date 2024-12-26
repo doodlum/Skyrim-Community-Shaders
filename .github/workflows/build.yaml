@@ -36,7 +36,7 @@ jobs:
             FILE_FORMAT: json
             GITHUB_REF_NAME: ${{ github.ref_name }}
           run: |
-            node --input-type=module .github/workflows/lokalise_download.js
+            node .github/workflows/lokalise_download.mjs
 
         - name: convert json to utf-16-le-bom txt
           run: |
