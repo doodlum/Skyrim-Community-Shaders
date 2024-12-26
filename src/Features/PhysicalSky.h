@@ -45,6 +45,7 @@ struct PhysicalSky : Feature
 	eastl::unique_ptr<ConstantBuffer> atmosphereCB = nullptr;
 
 	winrt::com_ptr<ID3D11ComputeShader> indirectIrradianceCS = nullptr;
+	winrt::com_ptr<ID3D11ComputeShader> transmittanceLutCS = nullptr;
 	winrt::com_ptr<ID3D11ComputeShader> multiScatteringLutCS = nullptr;
 
 	virtual bool SupportsVR() override { return true; };

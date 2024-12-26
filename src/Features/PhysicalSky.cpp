@@ -45,6 +45,7 @@ void PhysicalSky::CompileComputeShaders()
 	std::vector<ShaderCompileInfo>
 		shaderInfos = {
 			{ &indirectIrradianceCS, "IndirectIrradianceCS.hlsl", {} },
+			{ &transmittanceLutCS, "TransmittanceLutCS.hlsl", {} },
 			{ &multiScatteringLutCS, "MultiScatteringLutCS.hlsl", {} },
 		};
 
