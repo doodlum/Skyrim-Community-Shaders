@@ -43,11 +43,3 @@ jobs:
           translations_path: |
             ${{ env.TRANSLATION_CACHE }}
           base_lang: en
-
-      - name: commit cache
-        run: |
-          git config --local user.name "GitHub Actions"
-          git config --local user.email "actions@github.com"
-          git add $TRANSLATION_CACHE/*
-          git commit -m "Update translation cache" || echo "No changes to commit"
-          git push

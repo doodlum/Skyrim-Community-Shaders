@@ -25,19 +25,20 @@ jobs:
           with:
             fetch-depth: 0
 
-        - name: pull files from Lokalise
-          uses: lokalise/lokalise-pull-action@v3.1.0
+        - uses: actions/setup-node@v4
           with:
-            api_token: ${{ secrets.LOKALISE_API_TOKEN }}
-            project_id: ${{ vars.PROJECT_ID }}
-            file_format: json
-            flat_naming: true
-            translations_path: |
-              ${{ env.TRANSLATION_CACHE }}
-            base_lang: en
+            node-version: 20
+
+        - name: pull files from Lokalise
+          env:
+            LOKALISE_TOKEN: ${{ secrets.LOKALISE_API_TOKEN }}
+            PROJECT_ID: ${{ vars.PROJECT_ID }}
+            FILE_FORMAT: json
+            GITHUB_REF_NAME: ${{ github.ref_name }}
+          run: |
+            node .github/workflows/lokalise_download.js
 
         - name: convert json to utf-16-le-bom txt
-          if: always()
           run: |
             for file in $TRANSLATION_CACHE/*.json; do
               if [[ -f "$file" ]]; then
@@ -57,7 +58,6 @@ jobs:
             done
 
         - name: Upload translations
-          if: always()
           uses: actions/upload-artifact@v4
           with:
             name: translations
