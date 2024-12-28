@@ -27,7 +27,7 @@ cbuffer AtmosphereCB : register(b0)
 	float OzoneCenterAltitude;
 	float OzoneWidth;
 
-    float3 GroundAlbedo;
+	float3 GroundAlbedo;
 }
 
 float RayleighPhaseFunction(float cosTheta)
@@ -52,9 +52,7 @@ float OzoneDensity(float h)
 
 float3 ComputeExtinction(float h)
 {
-	float3 e = RayleighAbsorption.rgb * exp(-h / RayleighHeight)
-				+ MieAbsorption * exp(-h / MieHeight)
-				+ OzoneAbsorption.rgb * OzoneDensity(h);
+	float3 e = RayleighAbsorption.rgb * exp(-h / RayleighHeight) + MieAbsorption * exp(-h / MieHeight) + OzoneAbsorption.rgb * OzoneDensity(h);
 
 	return max(e, float3(1e-6));
 }
@@ -74,12 +72,10 @@ float2 IntersectAtmosphere(float3 ro, float3 rd, out float3 n, out float r)
 
 	float2 t = IntersectSphere(AtmosphericRadius, dot(n, -rd), r);
 
-	if (t.y >= 0)
-	{
+	if (t.y >= 0) {
 		t.x = max(t.x, 0.0);
 
-		if (t.x > 0)
-		{
+		if (t.x > 0) {
 			n = normalize(ro + t.x * -rd);
 			r = AtmosphericRadius;
 		}
@@ -133,54 +129,54 @@ float Hammersley2d(uint i, uint sampleCount)
 
 float2 MapTransmittance(float cosTheta, float r)
 {
-    float h = sqrt(AtmosphericRadius * AtmosphericRadius - PlanetRadius * PlanetRadius);
-    float rho = sqrt(max(r * r - PlanetRadius * PlanetRadius, 0.0));
+	float h = sqrt(AtmosphericRadius * AtmosphericRadius - PlanetRadius * PlanetRadius);
+	float rho = sqrt(max(r * r - PlanetRadius * PlanetRadius, 0.0));
 
-    float d = max(0, IntersectSphere(AtmosphericRadius, cosTheta, r).x);
-    float dMin = AtmosphericRadius - r;
-    float dMax = rho + h;
+	float d = max(0, IntersectSphere(AtmosphericRadius, cosTheta, r).x);
+	float dMin = AtmosphericRadius - r;
+	float dMax = rho + h;
 
-    float u = UnitRangeToTextureCoord((d - dMin) / (dMax - dMin), TRANSMITTANCE_LUT_WIDTH);
-    float v = UnitRangeToTextureCoord(rho / h, TRANSMITTANCE_LUT_HEIGHT);
+	float u = UnitRangeToTextureCoord((d - dMin) / (dMax - dMin), TRANSMITTANCE_LUT_WIDTH);
+	float v = UnitRangeToTextureCoord(rho / h, TRANSMITTANCE_LUT_HEIGHT);
 
-    return float2(u, v);
+	return float2(u, v);
 }
 
 float2 UnmapTransmittance(float2 coord)
 {
-    float h = sqrt(AtmosphericRadius * AtmosphericRadius - PlanetRadius * PlanetRadius);
-    float rho = h * TextureCoordToUnitRange(coord.y, TRANSMITTANCE_LUT_HEIGHT);
+	float h = sqrt(AtmosphericRadius * AtmosphericRadius - PlanetRadius * PlanetRadius);
+	float rho = h * TextureCoordToUnitRange(coord.y, TRANSMITTANCE_LUT_HEIGHT);
 
-    float r = sqrt(rho * rho + PlanetRadius * PlanetRadius);
-	
-    float dMin = AtmosphericRadius - r;
-    float dMax = rho + h;
-    float d = dMin + TextureCoordToUnitRange(coord.x, TRANSMITTANCE_LUT_WIDTH) * (dMax - dMin);
-    float cosTheta = d == 0.0 ? 1.0 : clamp((h * h - rho * rho - d * d) / (2.0 * r * d), -1.0, 1.0);
+	float r = sqrt(rho * rho + PlanetRadius * PlanetRadius);
 
-    return float2(cosTheta, r);
+	float dMin = AtmosphericRadius - r;
+	float dMax = rho + h;
+	float d = dMin + TextureCoordToUnitRange(coord.x, TRANSMITTANCE_LUT_WIDTH) * (dMax - dMin);
+	float cosTheta = d == 0.0 ? 1.0 : clamp((h * h - rho * rho - d * d) / (2.0 * r * d), -1.0, 1.0);
+
+	return float2(cosTheta, r);
 }
 
 float3 SampleTransmittance(Texture2D<float3> t, SamplerState s, float cosTheta, float r)
 {
-    return t.SampleLevel(s, MapTransmittance(cosTheta, r), 0);
+	return t.SampleLevel(s, MapTransmittance(cosTheta, r), 0);
 }
 
 float2 MapMultipleScattering(float cosTheta, float r)
 {
-    return saturate(float2(cosTheta * 0.5f + 0.5f, r / AtmosphericDepth));
+	return saturate(float2(cosTheta * 0.5f + 0.5f, r / AtmosphericDepth));
 }
 
 float2 UnmapMultipleScattering(float2 coord)
 {
-    const float2 uv = coord / (float2(MULTI_SCATTERING_LUT_WIDTH, MULTI_SCATTERING_LUT_HEIGHT) - 1.0);
+	const float2 uv = coord / (float2(MULTI_SCATTERING_LUT_WIDTH, MULTI_SCATTERING_LUT_HEIGHT) - 1.0);
 
-    return float2(uv.x * 2.0 - 1.0, lerp(PlanetRadius, AtmosphericRadius, uv.y));
+	return float2(uv.x * 2.0 - 1.0, lerp(PlanetRadius, AtmosphericRadius, uv.y));
 }
 
 float3 SampleMultipleScattering(Texture2D<float3> t, SamplerState s, float cosTheta, float r)
 {
-    return t.SampleLevel(s, MapMultipleScattering(cosTheta, r), 0);
+	return t.SampleLevel(s, MapMultipleScattering(cosTheta, r), 0);
 }
 
 #endif
