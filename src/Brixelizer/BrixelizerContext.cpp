@@ -53,25 +53,16 @@ void BrixelizerContext::InitBrixelizerContext()
 	sdfAtlasDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	sdfAtlasDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-	{
-		CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
-		DX::ThrowIfFailed(Brixelizer::GetSingleton()->d3d12Device->CreateCommittedResource(
-			&heapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&sdfAtlasDesc,
-			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-			nullptr,
-			IID_PPV_ARGS(&sdfAtlas)));
-	}
+	Brixelizer::CreatedWrappedResource3D(sdfAtlasDesc, sdfAtlas);
 
-	brickAABBs = CreateBuffer(FFX_BRIXELIZER_BRICK_AABBS_SIZE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-
-	gpuScratchBuffer = CreateBuffer(GPU_SCRATCH_BUFFER_SIZE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+	brickAABBs = CreateWrappedBuffer(FFX_BRIXELIZER_BRICK_AABBS_SIZE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
 	for (int i = 0; i < FFX_BRIXELIZER_MAX_CASCADES; i++) {
-		cascadeAABBTrees[i] = CreateBuffer(FFX_BRIXELIZER_CASCADE_AABB_TREE_SIZE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-		cascadeBrickMaps[i] = CreateBuffer(FFX_BRIXELIZER_CASCADE_BRICK_MAP_SIZE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+		cascadeAABBTrees[i] = CreateWrappedBuffer(FFX_BRIXELIZER_CASCADE_AABB_TREE_SIZE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+		cascadeBrickMaps[i] = CreateWrappedBuffer(FFX_BRIXELIZER_CASCADE_BRICK_MAP_SIZE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 	}
+
+	gpuScratchBuffer = CreateBuffer(GPU_SCRATCH_BUFFER_SIZE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
 	{
 		auto state = State::GetSingleton();
@@ -96,6 +87,7 @@ void BrixelizerContext::InitBrixelizerContext()
 winrt::com_ptr<ID3D12Resource> BrixelizerContext::CreateBuffer(UINT64 size, D3D12_RESOURCE_STATES resourceState = D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE)
 {
 	winrt::com_ptr<ID3D12Resource> buffer;
+
 	CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
 	CD3DX12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(size, flags);
 
@@ -108,6 +100,31 @@ winrt::com_ptr<ID3D12Resource> BrixelizerContext::CreateBuffer(UINT64 size, D3D1
 		IID_PPV_ARGS(&buffer)));
 
 	return buffer;
+}
+
+Brixelizer::WrappedBuffer BrixelizerContext::CreateWrappedBuffer(UINT64 size, D3D12_RESOURCE_STATES resourceState = D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE)
+{
+	Brixelizer::WrappedBuffer wrappedBuffer;
+
+	CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
+	CD3DX12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(size, flags);
+
+	DX::ThrowIfFailed(Brixelizer::GetSingleton()->d3d12Device->CreateCommittedResource(
+		&heapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&bufferDesc,
+		resourceState,
+		nullptr,
+		IID_PPV_ARGS(&wrappedBuffer.buffer)));
+
+	auto brixelizer = Brixelizer::GetSingleton();
+
+	HANDLE sharedHandle = nullptr;
+	DX::ThrowIfFailed(brixelizer->d3d12Device->CreateSharedHandle(wrappedBuffer.buffer.get(), nullptr, GENERIC_ALL, nullptr, &sharedHandle));
+
+	DX::ThrowIfFailed(brixelizer->d3d11Device->OpenSharedResource1(sharedHandle, IID_PPV_ARGS(&wrappedBuffer.buffer)));
+
+	return wrappedBuffer;
 }
 
 void BrixelizerContext::BSTriShape_UpdateWorldData(RE::BSTriShape* This, RE::NiUpdateData* a_data)
@@ -495,20 +512,20 @@ void BrixelizerContext::TransitionResources(ID3D12GraphicsCommandList* cmdList, 
 
 	// Transition the SDF Atlas
 	barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
-		sdfAtlas.get(),
+		sdfAtlas.resource.get(),
 		stateBefore,
 		stateAfter));
 
 	// Transition the Brick AABBs
 	barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
-		brickAABBs.get(),
+		brickAABBs.buffer.get(),
 		stateBefore,
 		stateAfter));
 
 	// Transition each Cascade AABB Tree
 	for (const auto aabbTree : cascadeAABBTrees) {
 		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
-			aabbTree.get(),
+			aabbTree.buffer.get(),
 			stateBefore,
 			stateAfter));
 	}
@@ -516,7 +533,7 @@ void BrixelizerContext::TransitionResources(ID3D12GraphicsCommandList* cmdList, 
 	// Transition each Cascade Brick Map
 	for (const auto brickMap : cascadeBrickMaps) {
 		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
-			brickMap.get(),
+			brickMap.buffer.get(),
 			stateBefore,
 			stateAfter));
 	}
@@ -624,12 +641,12 @@ void BrixelizerContext::UpdateBrixelizerContext(ID3D12GraphicsCommandList* cmdLi
 
 	// Fill out the Brixelizer update description resources.
 	// Pass in the externally created output resources as FfxResource objects.
-	updateDesc.resources.sdfAtlas = ffxGetResourceDX12(sdfAtlas.get(), ffxGetResourceDescriptionDX12(sdfAtlas.get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
-	updateDesc.resources.brickAABBs = ffxGetResourceDX12(brickAABBs.get(), ffxGetResourceDescriptionDX12(brickAABBs.get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+	updateDesc.resources.sdfAtlas = ffxGetResourceDX12(sdfAtlas.resource.get(), ffxGetResourceDescriptionDX12(sdfAtlas.resource.get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+	updateDesc.resources.brickAABBs = ffxGetResourceDX12(brickAABBs.buffer.get(), ffxGetResourceDescriptionDX12(brickAABBs.buffer.get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
 	for (uint32_t i = 0; i < FFX_BRIXELIZER_MAX_CASCADES; ++i) {
-		updateDesc.resources.cascadeResources[i].aabbTree = ffxGetResourceDX12(cascadeAABBTrees[i].get(), ffxGetResourceDescriptionDX12(cascadeAABBTrees[i].get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
-		updateDesc.resources.cascadeResources[i].brickMap = ffxGetResourceDX12(cascadeBrickMaps[i].get(), ffxGetResourceDescriptionDX12(cascadeBrickMaps[i].get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+		updateDesc.resources.cascadeResources[i].aabbTree = ffxGetResourceDX12(cascadeAABBTrees[i].buffer.get(), ffxGetResourceDescriptionDX12(cascadeAABBTrees[i].buffer.get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+		updateDesc.resources.cascadeResources[i].brickMap = ffxGetResourceDX12(cascadeBrickMaps[i].buffer.get(), ffxGetResourceDescriptionDX12(cascadeBrickMaps[i].buffer.get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
 
 	FfxErrorCode error = ffxBrixelizerBakeUpdate(&brixelizerContext, &updateDesc, &bakedUpdateDesc);

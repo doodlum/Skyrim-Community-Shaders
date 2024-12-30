@@ -300,14 +300,14 @@ void BrixelizerGIContext::UpdateBrixelizerGIContext(ID3D12GraphicsCommandList* c
 	giDispatchDesc.environmentMap = ffxGetResourceDX12(environmentMap.resource.get(), ffxGetResourceDescriptionDX12(environmentMap.resource.get()), L"EnvironmentMap");
 	giDispatchDesc.environmentMap.description.type = FFX_RESOURCE_TYPE_TEXTURE_CUBE;
 
-	giDispatchDesc.sdfAtlas = ffxGetResourceDX12(brixelizerContext->sdfAtlas.get(), ffxGetResourceDescriptionDX12(brixelizerContext->sdfAtlas.get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
-	giDispatchDesc.bricksAABBs = ffxGetResourceDX12(brixelizerContext->brickAABBs.get(), ffxGetResourceDescriptionDX12(brixelizerContext->brickAABBs.get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
+	giDispatchDesc.sdfAtlas = ffxGetResourceDX12(brixelizerContext->sdfAtlas.resource.get(), ffxGetResourceDescriptionDX12(brixelizerContext->sdfAtlas.resource.get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
+	giDispatchDesc.bricksAABBs = ffxGetResourceDX12(brixelizerContext->brickAABBs.buffer.get(), ffxGetResourceDescriptionDX12(brixelizerContext->brickAABBs.buffer.get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
 	giDispatchDesc.bricksAABBs.description.stride = 4;
 
 	for (uint32_t i = 0; i < FFX_BRIXELIZER_MAX_CASCADES; ++i) {
-		giDispatchDesc.cascadeAABBTrees[i] = ffxGetResourceDX12(brixelizerContext->cascadeAABBTrees[i].get(), ffxGetResourceDescriptionDX12(brixelizerContext->cascadeAABBTrees[i].get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
+		giDispatchDesc.cascadeAABBTrees[i] = ffxGetResourceDX12(brixelizerContext->cascadeAABBTrees[i].buffer.get(), ffxGetResourceDescriptionDX12(brixelizerContext->cascadeAABBTrees[i].buffer.get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
 		giDispatchDesc.cascadeAABBTrees[i].description.stride = 4;
-		giDispatchDesc.cascadeBrickMaps[i] = ffxGetResourceDX12(brixelizerContext->cascadeBrickMaps[i].get(), ffxGetResourceDescriptionDX12(brixelizerContext->cascadeBrickMaps[i].get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
+		giDispatchDesc.cascadeBrickMaps[i] = ffxGetResourceDX12(brixelizerContext->cascadeBrickMaps[i].buffer.get(), ffxGetResourceDescriptionDX12(brixelizerContext->cascadeBrickMaps[i].buffer.get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
 		giDispatchDesc.cascadeBrickMaps[i].description.stride = 4;
 	}
 
@@ -343,42 +343,42 @@ void BrixelizerGIContext::UpdateBrixelizerGIContext(ID3D12GraphicsCommandList* c
 	if (ffxBrixelizerGIContextDispatch(&brixelizerGIContext, &giDispatchDesc, ffxGetCommandListDX12(cmdList)) != FFX_OK)
 		logger::error("Failed to dispatch Brixelizer GI.");
 
-	{
-		auto state = State::GetSingleton();
+	//{
+	//	auto state = State::GetSingleton();
 
-		FfxBrixelizerGIDebugDescription debug_desc = {};
+	//	FfxBrixelizerGIDebugDescription debug_desc = {};
 
-		memcpy(&debug_desc.view, &view, sizeof(debug_desc.view));
-		memcpy(&debug_desc.projection, &projection, sizeof(debug_desc.projection));
+	//	memcpy(&debug_desc.view, &view, sizeof(debug_desc.view));
+	//	memcpy(&debug_desc.projection, &projection, sizeof(debug_desc.projection));
 
-		debug_desc.outputSize[0] = (uint)state->screenSize.x;
-		debug_desc.outputSize[1] = (uint)state->screenSize.y;
-		debug_desc.normalsUnpackMul = 2.0f;
-		debug_desc.normalsUnpackAdd = -1.0f;
+	//	debug_desc.outputSize[0] = (uint)state->screenSize.x;
+	//	debug_desc.outputSize[1] = (uint)state->screenSize.y;
+	//	debug_desc.normalsUnpackMul = 2.0f;
+	//	debug_desc.normalsUnpackAdd = -1.0f;
 
-		debug_desc.debugMode = FFX_BRIXELIZER_GI_DEBUG_MODE_RADIANCE_CACHE;
+	//	debug_desc.debugMode = FFX_BRIXELIZER_GI_DEBUG_MODE_RADIANCE_CACHE;
 
-		debug_desc.startCascade = brixelizerContext->m_StartCascadeIdx + (2 * NUM_BRIXELIZER_CASCADES);
-		debug_desc.endCascade = brixelizerContext->m_EndCascadeIdx + (2 * NUM_BRIXELIZER_CASCADES);
-		debug_desc.depth = ffxGetResourceDX12(depth.resource.get(), ffxGetResourceDescriptionDX12(depth.resource.get()), L"Depth");
-		debug_desc.normal = ffxGetResourceDX12(normal.resource.get(), ffxGetResourceDescriptionDX12(normal.resource.get()), L"Normal");
+	//	debug_desc.startCascade = brixelizerContext->m_StartCascadeIdx + (2 * NUM_BRIXELIZER_CASCADES);
+	//	debug_desc.endCascade = brixelizerContext->m_EndCascadeIdx + (2 * NUM_BRIXELIZER_CASCADES);
+	//	debug_desc.depth = ffxGetResourceDX12(depth.resource.get(), ffxGetResourceDescriptionDX12(depth.resource.get()), L"Depth");
+	//	debug_desc.normal = ffxGetResourceDX12(normal.resource.get(), ffxGetResourceDescriptionDX12(normal.resource.get()), L"Normal");
 
-		debug_desc.sdfAtlas = ffxGetResourceDX12(brixelizerContext->sdfAtlas.get(), ffxGetResourceDescriptionDX12(brixelizerContext->sdfAtlas.get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
-		debug_desc.bricksAABBs = ffxGetResourceDX12(brixelizerContext->brickAABBs.get(), ffxGetResourceDescriptionDX12(brixelizerContext->brickAABBs.get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
-		debug_desc.bricksAABBs.description.stride = 4;
-		for (uint32_t i = 0; i < FFX_BRIXELIZER_MAX_CASCADES; ++i) {
-			debug_desc.cascadeAABBTrees[i] = ffxGetResourceDX12(brixelizerContext->cascadeAABBTrees[i].get(), ffxGetResourceDescriptionDX12(brixelizerContext->cascadeAABBTrees[i].get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
-			debug_desc.cascadeAABBTrees[i].description.stride = 4;
-			debug_desc.cascadeBrickMaps[i] = ffxGetResourceDX12(brixelizerContext->cascadeBrickMaps[i].get(), ffxGetResourceDescriptionDX12(brixelizerContext->cascadeBrickMaps[i].get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
-			debug_desc.cascadeBrickMaps[i].description.stride = 4;
-		}
+	//	debug_desc.sdfAtlas = ffxGetResourceDX12(brixelizerContext->sdfAtlas.get(), ffxGetResourceDescriptionDX12(brixelizerContext->sdfAtlas.get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
+	//	debug_desc.bricksAABBs = ffxGetResourceDX12(brixelizerContext->brickAABBs.get(), ffxGetResourceDescriptionDX12(brixelizerContext->brickAABBs.get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
+	//	debug_desc.bricksAABBs.description.stride = 4;
+	//	for (uint32_t i = 0; i < FFX_BRIXELIZER_MAX_CASCADES; ++i) {
+	//		debug_desc.cascadeAABBTrees[i] = ffxGetResourceDX12(brixelizerContext->cascadeAABBTrees[i].get(), ffxGetResourceDescriptionDX12(brixelizerContext->cascadeAABBTrees[i].get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
+	//		debug_desc.cascadeAABBTrees[i].description.stride = 4;
+	//		debug_desc.cascadeBrickMaps[i] = ffxGetResourceDX12(brixelizerContext->cascadeBrickMaps[i].get(), ffxGetResourceDescriptionDX12(brixelizerContext->cascadeBrickMaps[i].get()), nullptr, FFX_RESOURCE_STATE_COMPUTE_READ);
+	//		debug_desc.cascadeBrickMaps[i].description.stride = 4;
+	//	}
 
-		debug_desc.outputDebug = ffxGetResourceDX12(brixelizerContext->debugRenderTarget.resource.get(), ffxGetResourceDescriptionDX12(brixelizerContext->debugRenderTarget.resource.get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+	//	debug_desc.outputDebug = ffxGetResourceDX12(brixelizerContext->debugRenderTarget.resource.get(), ffxGetResourceDescriptionDX12(brixelizerContext->debugRenderTarget.resource.get(), FFX_RESOURCE_USAGE_UAV), nullptr, FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		if (ffxBrixelizerGetRawContext(&brixelizerContext->brixelizerContext, &debug_desc.brixelizerContext) != FFX_OK)
-			logger::error("Failed to dispatch Brixelizer GI.");
+	//	if (ffxBrixelizerGetRawContext(&brixelizerContext->brixelizerContext, &debug_desc.brixelizerContext) != FFX_OK)
+	//		logger::error("Failed to dispatch Brixelizer GI.");
 
-		if (ffxBrixelizerGIContextDebugVisualization(&brixelizerGIContext, &debug_desc, ffxGetCommandListDX12(cmdList)) != FFX_OK)
-			logger::error("Failed to dispatch Brixelizer GI.");
-	}
+	//	if (ffxBrixelizerGIContextDebugVisualization(&brixelizerGIContext, &debug_desc, ffxGetCommandListDX12(cmdList)) != FFX_OK)
+	//		logger::error("Failed to dispatch Brixelizer GI.");
+	//}
 }

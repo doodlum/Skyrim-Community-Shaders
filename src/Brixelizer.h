@@ -105,12 +105,27 @@ public:
 		winrt::com_ptr<ID3D12Resource> resource;
 	};
 
+	struct WrappedResource3D
+	{
+		ID3D11Texture3D* resource11;
+		ID3D11ShaderResourceView* srv;
+		ID3D11UnorderedAccessView* uav;
+		winrt::com_ptr<ID3D12Resource> resource;
+	};
+
+	struct WrappedBuffer
+	{
+		ID3D11Buffer* buffer11;
+		winrt::com_ptr<ID3D12Resource> buffer;
+	};
+
 	void DrawSettings();
 
 	void InitD3D12(IDXGIAdapter* a_adapter);
 	void InitBrixelizer();
 
 	static void CreatedWrappedResource(D3D11_TEXTURE2D_DESC a_texDesc, Brixelizer::WrappedResource& a_resource);
+	static void CreatedWrappedResource3D(D3D12_RESOURCE_DESC a_texDesc, Brixelizer::WrappedResource3D& a_resource);
 
 	void OpenSharedHandles();
 

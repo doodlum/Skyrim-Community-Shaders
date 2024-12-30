@@ -27,12 +27,12 @@ public:
 
 	std::shared_mutex mutex;
 
-	winrt::com_ptr<ID3D12Resource> sdfAtlas;
-	winrt::com_ptr<ID3D12Resource> brickAABBs;
-	winrt::com_ptr<ID3D12Resource> gpuScratchBuffer;
+	Brixelizer::WrappedResource3D sdfAtlas;
+	Brixelizer::WrappedBuffer brickAABBs;
+	Brixelizer::WrappedBuffer cascadeAABBTrees[FFX_BRIXELIZER_MAX_CASCADES];
+	Brixelizer::WrappedBuffer cascadeBrickMaps[FFX_BRIXELIZER_MAX_CASCADES];
 
-	winrt::com_ptr<ID3D12Resource> cascadeAABBTrees[FFX_BRIXELIZER_MAX_CASCADES];
-	winrt::com_ptr<ID3D12Resource> cascadeBrickMaps[FFX_BRIXELIZER_MAX_CASCADES];
+	winrt::com_ptr<ID3D12Resource> gpuScratchBuffer;
 
 	Brixelizer::WrappedResource debugRenderTarget;
 
@@ -53,6 +53,8 @@ public:
 	float m_RayPushoff = 0.25f;
 
 	winrt::com_ptr<ID3D12Resource> CreateBuffer(UINT64 size, D3D12_RESOURCE_STATES resourceState, D3D12_RESOURCE_FLAGS flags);
+
+	Brixelizer::WrappedBuffer CreateWrappedBuffer(UINT64 size, D3D12_RESOURCE_STATES resourceState, D3D12_RESOURCE_FLAGS flags);
 
 	void InitBrixelizerContext();
 

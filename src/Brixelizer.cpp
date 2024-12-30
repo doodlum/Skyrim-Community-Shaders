@@ -74,14 +74,14 @@ static RENDERDOC_API_1_5_0* rdoc_api = NULL;
 void Brixelizer::InitD3D12(IDXGIAdapter* a_adapter)
 {
 	// At init, on windows
-	if (HMODULE mod = GetModuleHandleA("renderdoc.dll")) {
-		pRENDERDOC_GetAPI RENDERDOC_GetAPI =
-			(pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
-		int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_5_0, (void**)&rdoc_api);
-		assert(ret == 1);
-	}
-	if (rdoc_api)
-		rdoc_api->SetCaptureOptionU32(eRENDERDOC_Option_APIValidation, 1);
+	//if (HMODULE mod = GetModuleHandleA("renderdoc.dll")) {
+	//	pRENDERDOC_GetAPI RENDERDOC_GetAPI =
+	//		(pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+	//	int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_5_0, (void**)&rdoc_api);
+	//	assert(ret == 1);
+	//}
+	//if (rdoc_api)
+	//	rdoc_api->SetCaptureOptionU32(eRENDERDOC_Option_APIValidation, 1);
 	DX::ThrowIfFailed(D3D12CreateDevice(a_adapter, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&d3d12Device)));
 
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
@@ -226,6 +226,43 @@ void Brixelizer::CreatedWrappedResource(D3D11_TEXTURE2D_DESC a_texDesc, Brixeliz
 	//}
 	//GetSingleton()->EndCommandList();
 #endif
+}
+
+void Brixelizer::CreatedWrappedResource3D(D3D12_RESOURCE_DESC a_texDesc, Brixelizer::WrappedResource3D& a_resource)
+{
+	//a_texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER;
+
+	auto& d3d11Device = GetSingleton()->d3d11Device;
+	
+	D3D12_HEAP_PROPERTIES heapProp = { D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
+
+	DX::ThrowIfFailed(GetSingleton()->d3d12Device->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_SHARED, &a_texDesc, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, nullptr, IID_PPV_ARGS(&a_resource.resource)));
+
+	HANDLE sharedHandle = nullptr;
+	DX::ThrowIfFailed(GetSingleton()->d3d12Device->CreateSharedHandle(a_resource.resource.get(), nullptr, GENERIC_ALL, nullptr, &sharedHandle));
+
+	DX::ThrowIfFailed(d3d11Device->OpenSharedResource1(sharedHandle, IID_PPV_ARGS(&a_resource.resource11)));
+
+	if (!(a_texDesc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE)) {
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		srvDesc.Format = a_texDesc.Format;
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
+		srvDesc.Texture3D.MostDetailedMip = 0;
+		srvDesc.Texture3D.MipLevels = 1;
+
+		DX::ThrowIfFailed(d3d11Device->CreateShaderResourceView(a_resource.resource11, &srvDesc, &a_resource.srv));
+	}
+
+	if (a_texDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) {
+		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+		uavDesc.Format = a_texDesc.Format;
+		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE3D;
+		uavDesc.Texture3D.MipSlice = 0;
+		uavDesc.Texture3D.FirstWSlice = 0;
+		uavDesc.Texture3D.WSize = 512;
+
+		DX::ThrowIfFailed(d3d11Device->CreateUnorderedAccessView(a_resource.resource11, &uavDesc, &a_resource.uav));	
+	}
 }
 
 // Function to check for shared NT handle support and convert to D3D12 resource
