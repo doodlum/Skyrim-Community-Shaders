@@ -233,7 +233,7 @@ void Brixelizer::CreatedWrappedResource3D(D3D12_RESOURCE_DESC a_texDesc, Brixeli
 	//a_texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER;
 
 	auto& d3d11Device = GetSingleton()->d3d11Device;
-	
+
 	D3D12_HEAP_PROPERTIES heapProp = { D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
 
 	DX::ThrowIfFailed(GetSingleton()->d3d12Device->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_SHARED, &a_texDesc, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, nullptr, IID_PPV_ARGS(&a_resource.resource)));
@@ -261,7 +261,7 @@ void Brixelizer::CreatedWrappedResource3D(D3D12_RESOURCE_DESC a_texDesc, Brixeli
 		uavDesc.Texture3D.FirstWSlice = 0;
 		uavDesc.Texture3D.WSize = 512;
 
-		DX::ThrowIfFailed(d3d11Device->CreateUnorderedAccessView(a_resource.resource11, &uavDesc, &a_resource.uav));	
+		DX::ThrowIfFailed(d3d11Device->CreateUnorderedAccessView(a_resource.resource11, &uavDesc, &a_resource.uav));
 	}
 }
 
