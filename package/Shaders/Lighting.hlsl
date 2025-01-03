@@ -2326,15 +2326,24 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	TexEnvSampler.GetDimensions(envSize.x, envSize.y);
 
 	bool dynamicCubemap = false;
-	if (envMask > 0.0 && envSize.x < 5) {
+	if (envMask > 0.0 && envSize.x == 1 && envSize.y == 1) {
 		dynamicCubemap = true;
-		envColorBase = TexEnvSampler.SampleLevel(SampEnvSampler, float3(1.0, 0.0, 0.0), 15);
-		if (envColorBase.a < 1.0) {
-			F0 = (Color::GammaToLinear(envColorBase.rgb) + Color::GammaToLinear(baseColor.rgb));
-			envRoughness = envColorBase.a;
-		} else {
-			F0 = 1.0;
-			envRoughness = 1.0 / 7.0;
+		
+		// Dynamic Cubemap Creator sets this value to black, if it is anything but black it is wrong
+		float3 envColorTest = TexEnvSampler.SampleLevel(SampEnvSampler, float3(0.0, 1.0, 0.0), 15);
+		dynamicCubemap = all(envColorTest == 0.0);
+
+		if (dynamicCubemap)
+		{
+			envColorBase = TexEnvSampler.SampleLevel(SampEnvSampler, float3(1.0, 0.0, 0.0), 15);
+
+			if (envColorBase.a < 1.0) {
+				F0 = (Color::GammaToLinear(envColorBase.rgb) + Color::GammaToLinear(baseColor.rgb));
+				envRoughness = envColorBase.a;
+			} else {
+				F0 = 1.0;
+				envRoughness = 1.0 / 7.0;
+			}
 		}
 	}
 
