@@ -54,6 +54,9 @@ public:
 	{
 		float GlobalScale = REL::Module::IsVR() ? -0.5f : 0.f;  // exponential
 
+		std::string FontPath = "Data\\Interface\\CommunityShaders\\Fonts\\Jost-Regular.ttf";
+		float FontSize = 36;
+
 		bool UseSimplePalette = true;  // simple palette or full customization
 		struct PaletteColors
 		{
@@ -157,6 +160,7 @@ private:
 	uint32_t priorShaderKey = VK_PRIOR;  // used for blocking shaders in debugging
 	uint32_t nextShaderKey = VK_NEXT;    // used for blocking shaders in debugging
 
+	bool fontReloadRequested = false;
 	bool settingToggleKey = false;
 	bool settingSkipCompilationKey = false;
 	bool settingsEffectsToggle = false;
@@ -164,12 +168,14 @@ private:
 	bool inTestMode = false;       // Whether we're in test mode
 	bool usingTestConfig = false;  // Whether we're using the test config
 
-	std::chrono::steady_clock::time_point lastTestSwitch = high_resolution_clock::now();  // Time of last test switch
+	steady_clock::time_point lastTestSwitch = high_resolution_clock::now();  // Time of last test switch
 
 	Menu() = default;
 	void SetupImGuiStyle() const;
 	const char* KeyIdToString(uint32_t key);
 	const ImGuiKey VirtualKeyToImGuiKey(WPARAM vkKey);
+
+	void LoadFont(std::string& fontPath, float fontSize, bool refresh);
 
 	void DrawGeneralSettings();
 	void DrawAdvancedSettings();

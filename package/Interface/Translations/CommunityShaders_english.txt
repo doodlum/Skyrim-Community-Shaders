@@ -1,0 +1,158 @@
+; Menu::DrawSettings
+
+$Community Shaders Version	Community Shaders {}
+$Save Settings	Save Settings
+$Load Settings	Load Settings
+$Clear Shader Cache	Clear Shader Cache
+$Clear Shader Cache Description	The Shader Cache is the collection of compiled shaders which replace the vanilla shaders at runtime. Clearing the shader cache will mean that shaders are recompiled only when the game re-encounters them. This is only needed for hot-loading shaders for development purposes.
+$Clear Disk Cache	Clear Disk Cache
+$Clear Disk Cache Description	The Disk Cache is a collection of compiled shaders on disk, which are automatically created when shaders are added to the Shader Cache. If you do not have a Disk Cache, or it is outdated or invalid, you will see "Compiling Shaders" in the upper-left corner. After this has completed you will no longer see this message apart from when loading from the Disk Cache. Only delete the Disk Cache manually if you are encountering issues.
+$Toggle Error Message	Toggle Error Message
+$Toggle Error Message Description	Hide or show the shader failure message. Your installation is broken and will likely see errors in game. Please double check you have updated all features and that your load order is correct. See CommunityShaders.log for details and check the Nexus Mods page or Discord server.
+$Feature Disabled Description	Disabled at boot. Reenable, save settings, and restart.
+$Feature Loading Description	Feature pending restart.
+$Enable at Boot	Enable at Boot
+$Disable at Boot	Disable at Boot
+$Enabled	Enabled
+$Disabled	Disabled
+$Enable	Enable
+$Disable	Disable
+$Feature State Description{}{}	Current State: {}. {} the feature settings at boot. Restart will be required to reenable. This is the same as deleting the ini file. This should remove any performance impact for the feature.
+$Restore Defaults	Restore Defaults
+$Restore Defaults Description	Restores the feature's settings back to their default values. You will still need to Save Settings to make these changes permanent.
+$General	General
+$Advanced	Advanced
+$Display	Display
+$Core Features	Core Features
+$Features	Features
+$Unloaded Features	Unloaded Features
+$Menu Description	Please select an item on the left.
+
+; Menu::DrawGeneralSettings
+
+$Enable Shaders	Enable Shaders
+$Enable Shaders Description	Disabling this effectively disables all features.
+$Enable Disk Cache	Enable Disk Cache
+$Enable Disk Cache Description	Disabling this stops shaders from being loaded from disk, as well as stops shaders from being saved to it.
+$Enable Async	Enable Async
+$Enable Async Description	Skips a shader being replaced if it hasn't been compiled yet. Also makes compilation blazingly fast!
+$Keybindings	Keybindings
+$Toggle Keybinding Description	Press any key to set as toggle key...
+$Toggle Keybinding	Toggle Key:
+$Effect Toggle Keybinding Description	Press any key to set as a toggle key for all effects...
+$Effect Toggle Keybinding	Effect Toggle Key:
+$Skip Compilation Keybinding Description	Press any key to set as Skip Compilation Key...
+$Skip Compilation Keybinding	Skip Compilation Key:
+$Font	Font
+$Font Path	Font Path
+$Font Path Description	Enter the full path or relative path to the font file. (e.g., C:/Windows/Fonts/msyh.ttc)
+$Font Size	Font Size
+$Invalid Font Description	Invalid font path! Make sure the file exists.
+$Refresh Font	Refresh Font
+$Theme	Theme
+$Sizes	Sizes
+$Global Scale	Global Scale
+$Main	Main
+$Window Padding	Window Padding
+$Frame Padding	Frame Padding
+$Item Spacing	Item Spacing
+$Item Inner Spacing	Item Inner Spacing
+$Indent Spacing	Indent Spacing
+$Scrollbar Size	Scrollbar Size
+$Grab Min Size	Grab Min Size
+$Borders	Borders
+$Window Border Size	Window Border Size
+$Child Border Size	Child Border Size
+$Popup Border Size	Popup Border Size
+$Frame Border Size	Frame Border Size
+$Tab Border Size	Tab Border Size
+$Tab Bar Border Size	Tab Bar Border Size
+$Rounding	Rounding
+$Window Rounding	Window Rounding
+$Child Rounding	Child Rounding
+$Frame Rounding	Frame Rounding
+$Popup Rounding	Popup Rounding
+$Scrollbar Rounding	Scrollbar Rounding
+$Grab Rounding	Grab Rounding	
+$Tab Rounding	Tab Rounding
+$Tables	Tables
+$Cell Padding	Cell Padding
+$Table Angled Headers Angle	Table Angled Headers Angle
+$Widgets	Widgets
+$Color Button Position	Color Button Position
+$Color Button Position Option	Left\0Right\0
+$Button Text Align	Button Text Align
+$Button Text Align Description	Alignment applies when a button is larger than its text content.
+$Selectable Text Align	Selectable Text Align
+$Selectable Text Align Description	Alignment applies when a selectable is larger than its text content.
+$Separator Text Border Size	Separator Text Border Size
+$Separator Text Align	Separator Text Align
+$Separator Text Padding	Separator Text Padding
+$Log Slider Deadzone	Log Slider Deadzone
+$Docking	Docking
+$Docking Splitter Size	Docking Splitter Size
+$Colors	Colors
+$Status	Status
+$Disabled Text	Disabled Text
+$Error Text	Error Text
+$Restart Needed Text	Restart Needed Text
+$Current Hotkey Text	Current Hotkey Text
+$Palette	Palette
+$Simple Palette	Simple Palette
+$Full Palette	Full Palette
+$Background	Background
+$Text	Text
+$Border	Border
+$Filter colors	Filter colors
+
+; Menu::DrawAdvancedSettings
+
+$Dump Shaders	Dump Shaders
+$Dump Shaders Description	Dump shaders at startup. This should be used only when reversing shaders. Normal users don't need this.
+$Log Level	Log Level
+$Log Level Description	Log level. Trace is most verbose. Default is info.
+$Shader Defines	Shader Defines
+$Shader Defines Description	Defines for Shader Compiler. Semicolon ";" separated. Clear with space. Rebuild shaders after making change. Compute Shaders require a restart to recompile.
+$Compiler Threads	Compiler Threads
+$Compiler Threads Description	Number of threads to use to compile shaders. The more threads the faster compilation will finish but may make the system unresponsive.
+$Background Compiler Threads	Background Compiler Threads
+$Background Compiler Threads Description	Number of threads to use to compile shaders while playing game. This is activated if the startup compilation is skipped. The more threads the faster compilation will finish but may make the system unresponsive.
+$Test Interval	Test Interval
+$Test Interval Description	Sets number of seconds before toggling between default USER and TEST config. 0 disables. Non-zero will enable testing mode. Enabling will save current settings as TEST config. This has no impact if no settings are changed.
+$Enable File Watcher	Enable File Watcher
+$Enable File Watcher Description	Automatically recompile shaders on file change. Intended for developing.
+$Dump Ini Settings	Dump Ini Settings
+$Stop Blocking Shaders	Stop Blocking {} Shaders
+$Stop Blocking Shaders Description	Stop blocking Community Shaders shader. Blocking is helpful when debugging shader errors in game to determine which shader has issues. Blocking is enabled if in developer mode and pressing PAGEUP and PAGEDOWN. Specific shader will be printed to logfile.
+$Statistics	Statistics
+$Replace Original Shaders	Replace Original Shaders
+$Vertex Shader Description	Replace Vertex Shaders. When false, will disable the custom Vertex Shaders for the types above. For developers to test whether CS shaders match vanilla behavior.
+$Pixel Shader Description	Replace Pixel Shaders. When false, will disable the custom Pixel Shaders for the types above. For developers to test whether CS shaders match vanilla behavior.
+$Compute Shader Description	Replace Compute Shaders. When false, will disable the custom Compute Shaders for the types above. For developers to test whether CS shaders match vanilla behavior.
+
+; Menu::DrawDisableAtBootSettings
+
+$Disable at Boot	Disable at Boot
+$Disable at Boot Description	Select features to disable at boot. This is the same as deleting a feature.ini file. Restart will be required to reenable.
+$Special Features	Special Features
+
+; Menu::DrawDisplaySettings
+
+$Display Feature Description{}	{{}} has been disabled at boot. Reenable in the Advanced -> Disable at Boot Menu.
+$Display Disabled Description	Display options disabled due to Skyrim Upscaler
+
+; Menu::DrawFooter
+
+$Game Version	Game Version: {} {}
+$D3D12 Interop	D3D12 Interop: {}
+$Active	Active
+$Inactive	Inactive
+
+; Menu::DrawOverlay
+
+$Compiling Shaders	Compiling Shaders: {}
+$Background Compiling Shaders	Background Compiling Shaders: {}
+$Shader Compilation Info	Shader Compilation Info
+$Skip Compilation	Press {} to proceed without completing shader compilation.
+$Skip Compilation Description	WARNING: Uncompiled shaders will have visual errors or cause stuttering when loading.
+$Skip Compilation Error Description	ERROR: {} shaders failed to compile. Check installation and CommunityShaders.log

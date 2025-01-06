@@ -2,6 +2,7 @@ build/
 bin/
 dist/
 .vs*/
+.idea/
 CMakeUserPresets.json
 shadertoolsconfig.json
 .vscode
