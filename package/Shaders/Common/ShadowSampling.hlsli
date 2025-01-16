@@ -84,7 +84,7 @@ namespace ShadowSampling
 
 	float Get2DFilteredShadowCascade(float noise, float2x2 rotationMatrix, float sampleOffsetScale, float2 baseUV, float cascadeIndex, float compareValue, uint eyeIndex)
 	{
-		const uint sampleCount = 8;
+		const uint sampleCount = 16;
 
 		float layerIndexRcp = rcp(1 + cascadeIndex);
 
@@ -95,7 +95,7 @@ namespace ShadowSampling
 #endif
 
 		for (uint sampleIndex = 0; sampleIndex < sampleCount; ++sampleIndex) {
-			float2 sampleOffset = mul(Random::SpiralSampleOffsets8[sampleIndex], rotationMatrix);
+			float2 sampleOffset = mul(Random::PoissonSampleOffsets16[sampleIndex], rotationMatrix);
 
 			float2 sampleUV = layerIndexRcp * sampleOffset * sampleOffsetScale + baseUV;
 
