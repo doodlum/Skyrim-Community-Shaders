@@ -13,6 +13,7 @@
 
 #include "Deferred.h"
 #include "Features/TerrainBlending.h"
+#include "Features/CloudShadows.h"
 #include "TruePBR.h"
 
 #include "Streamline.h"
@@ -25,6 +26,10 @@ void State::Draw()
 		auto terrainBlending = TerrainBlending::GetSingleton();
 		if (terrainBlending->loaded)
 			terrainBlending->TerrainShaderHacks();
+
+		auto cloudShadows = CloudShadows::GetSingleton();
+		if (cloudShadows->loaded)
+			cloudShadows->SkyShaderHacks();
 
 		TruePBR::GetSingleton()->SetShaderResouces();
 

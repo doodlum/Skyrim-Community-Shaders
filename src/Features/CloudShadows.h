@@ -16,6 +16,9 @@ struct CloudShadows : Feature
 	virtual inline std::string_view GetShaderDefineName() override { return "CLOUD_SHADOWS"; }
 	virtual inline bool HasShaderDefine(RE::BSShader::Type) override { return true; }
 
+	bool overrideSky = false;
+	void SkyShaderHacks();
+
 	Texture2D* texCubemapCloudOcc = nullptr;
 	ID3D11RenderTargetView* cubemapCloudOccRTVs[6] = { nullptr };
 	ID3D11BlendState* cloudShadowBlendState = nullptr;

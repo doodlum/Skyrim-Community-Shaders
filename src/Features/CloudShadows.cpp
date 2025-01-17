@@ -17,18 +17,10 @@ void CloudShadows::CheckResourcesSide(int side)
 	context->ClearRenderTargetView(cubemapCloudOccRTVs[side], black);
 }
 
-void CloudShadows::ModifySky(RE::BSRenderPass* Pass)
+void CloudShadows::SkyShaderHacks()
 {
-	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
-
-	GET_INSTANCE_MEMBER(cubeMapRenderTarget, shadowState);
-
-	if (cubeMapRenderTarget != RE::RENDER_TARGETS_CUBEMAP::kREFLECTIONS)
-		return;
-
-	auto skyProperty = static_cast<const RE::BSSkyShaderProperty*>(Pass->shaderProperty);
-
-	if (skyProperty->uiSkyObjectType == RE::BSSkyShaderProperty::SkyObject::SO_CLOUDS) {
+	if (overrideSky)
+	{
 		auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 		auto& context = State::GetSingleton()->context;
 
@@ -60,6 +52,24 @@ void CloudShadows::ModifySky(RE::BSRenderPass* Pass)
 
 		auto cubemapDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kCUBEMAP_REFLECTIONS];
 		context->PSSetShaderResources(17, 1, &cubemapDepth.depthSRV);
+
+		overrideSky = false;
+	}
+}
+
+void CloudShadows::ModifySky(RE::BSRenderPass* Pass)
+{
+	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
+
+	GET_INSTANCE_MEMBER(cubeMapRenderTarget, shadowState);
+
+	if (cubeMapRenderTarget != RE::RENDER_TARGETS_CUBEMAP::kREFLECTIONS)
+		return;
+
+	auto skyProperty = static_cast<const RE::BSSkyShaderProperty*>(Pass->shaderProperty);
+
+	if (skyProperty->uiSkyObjectType == RE::BSSkyShaderProperty::SkyObject::SO_CLOUDS) {
+		overrideSky = true;
 	}
 }
 
