@@ -12,8 +12,8 @@
 #include "Util.h"
 
 #include "Deferred.h"
-#include "Features/TerrainBlending.h"
 #include "Features/CloudShadows.h"
+#include "Features/TerrainBlending.h"
 #include "TruePBR.h"
 
 #include "Streamline.h"

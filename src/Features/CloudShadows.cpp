@@ -19,8 +19,7 @@ void CloudShadows::CheckResourcesSide(int side)
 
 void CloudShadows::SkyShaderHacks()
 {
-	if (overrideSky)
-	{
+	if (overrideSky) {
 		auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 		auto& context = State::GetSingleton()->context;
 
