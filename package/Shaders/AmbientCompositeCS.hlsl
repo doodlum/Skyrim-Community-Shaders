@@ -91,11 +91,10 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 	sh2 ibl = IBLTexture[int2(0, 0)];
 
 	sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, positionMS.xyz, normalWS);
-	skylighting = lerp(skylighting / Math::PI, SphericalHarmonics::Product(skylighting, ibl), 0.5);
+	sh2 cosineLobe = SphericalHarmonics::EvaluateCosineLobe(normalWS);
 
-	sh2 cosineLobe = SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5));
-
-	cosineLobe = lerp(cosineLobe, SphericalHarmonics::FuncProductIntegral(cosineLobe, ibl), 0.5);
+	skylighting = SphericalHarmonics::Product(skylighting, ibl);
+	cosineLobe = SphericalHarmonics::FuncProductIntegral(cosineLobe, ibl);
 
 	half skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylighting, cosineLobe);
 	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(positionMS.xyz));
@@ -143,6 +142,6 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out half ao, out half3 il)
 
 	diffuseColor = lerp(diffuseColor + directionalAmbientColor * albedo, Color::LinearToGamma(linDiffuseColor + linAmbient), pbrWeight);
 
-	//MainRW[dispatchID.xy] = diffuseColor;
-	MainRW[dispatchID.xy] = Color::LinearToGamma(((ssgiIl / linAlbedo) + linDirectionalAmbientColor * visibility));
+	MainRW[dispatchID.xy] = diffuseColor;
+	//MainRW[dispatchID.xy] = Color::LinearToGamma(((ssgiIl / linAlbedo) + linDirectionalAmbientColor * visibility));
 };
