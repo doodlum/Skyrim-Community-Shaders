@@ -534,12 +534,12 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 
 		color = ambientColor;
 
-#	if defined(SKYLIGHTING)
-#		if defined(VR)
+#		if defined(SKYLIGHTING)
+#			if defined(VR)
 		float3 positionMSSkylight = worldPosition + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
-#		else
+#			else
 		float3 positionMSSkylight = worldPosition;
-#		endif
+#			endif
 
 		sh2 skylightingSH = Skylighting::sampleNoBias(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, positionMSSkylight);
 		float skylighting = SphericalHarmonics::Unproject(skylightingSH, float3(0, 0, 1));
@@ -547,17 +547,16 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 		color = Color::GammaToLinear(color);
 		color *= Skylighting::mixDiffuse(SharedData::skylightingSettings, skylighting);
 		color = Color::LinearToGamma(color);
-#	endif
+#		endif
 
 		color += dirLightColor * ShadowSampling::GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
 	} else {
-
-#	if defined(SKYLIGHTING)
-#		if defined(VR)
+#		if defined(SKYLIGHTING)
+#			if defined(VR)
 		float3 positionMSSkylight = worldPosition + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
-#		else
+#			else
 		float3 positionMSSkylight = worldPosition;
-#		endif
+#			endif
 
 		sh2 skylightingSH = Skylighting::sampleNoBias(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, positionMSSkylight);
 		float skylighting = SphericalHarmonics::Unproject(skylightingSH, float3(0, 0, 1));
@@ -565,8 +564,7 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 		color = Color::GammaToLinear(color);
 		color *= Skylighting::mixDiffuse(SharedData::skylightingSettings, skylighting);
 		color = Color::LinearToGamma(color);
-#	endif
-
+#		endif
 	}
 
 #		if defined(LIGHT_LIMIT_FIX)
