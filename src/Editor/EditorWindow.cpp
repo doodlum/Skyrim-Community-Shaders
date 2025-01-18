@@ -239,6 +239,7 @@ void EditorWindow::SetupResources()
 
 	for (auto weather : weatherArray) {
 		auto widget = new WeatherWidget(weather);
+		widget->Load();
 		weatherWidgets.push_back(widget);
 	}
 
@@ -246,6 +247,7 @@ void EditorWindow::SetupResources()
 
 	for (auto worldSpace : worldSpaceArray) {
 		auto widget = new WorldSpaceWidget(worldSpace);
+		widget->Load();
 		worldSpaceWidgets.push_back(widget);
 	}
 
@@ -253,6 +255,7 @@ void EditorWindow::SetupResources()
 
 	for (auto lightingTemplate : lightingTemplateArray) {
 		auto widget = new LightingTemplateWidget(lightingTemplate);
+		widget->Load();
 		lightingTemplateWidgets.push_back(widget);
 	}
 }

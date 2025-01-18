@@ -8,3 +8,6 @@
 [submodule "extern/FidelityFX-SDK"]
 	path = extern/FidelityFX-SDK
 	url = https://github.com/MapleHinata/FidelityFX-SDK.git
+[submodule "extern/CLibUtil"]
+	path = extern/CLibUtil
+	url = https://github.com/powerof3/CLibUtil.git
