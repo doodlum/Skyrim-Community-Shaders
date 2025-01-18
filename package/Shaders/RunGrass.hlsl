@@ -849,12 +849,12 @@ PS_OUTPUT main(PS_INPUT input)
 #			if !defined(SSGI)
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 
-#					if defined(SKYLIGHTING)
-#						if defined(VR)
+#				if defined(SKYLIGHTING)
+#					if defined(VR)
 	float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
-#						else
+#					else
 	float3 positionMSSkylight = input.WorldPosition.xyz;
-#						endif
+#					endif
 
 	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, normal);
 	float skylighting = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(normal.xy, normal.z * 0.5 + 0.5))) / Math::PI;
@@ -864,10 +864,10 @@ PS_OUTPUT main(PS_INPUT input)
 	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
 	directionalAmbientColor *= skylighting;
 	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor * Color::LightPreMult);
-#					endif  // SKYLIGHTING
+#				endif  // SKYLIGHTING
 
 	diffuseColor += directionalAmbientColor;
-#			endif  // !SSGI
+#			endif      // !SSGI
 
 	float3 albedo = baseColor.xyz * input.DiffuseColor.xyz;
 	psout.Diffuse.xyz = diffuseColor * albedo;
