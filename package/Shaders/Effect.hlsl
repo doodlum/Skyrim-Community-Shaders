@@ -533,6 +533,8 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 		float3 ambientColor = mul(SharedData::DirectionalAmbient, float4(0, 0, 1, 1));
 
 		color = ambientColor;
+
+#	if defined(SKYLIGHTING)
 #		if defined(VR)
 		float3 positionMSSkylight = worldPosition + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #		else
@@ -545,9 +547,12 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 		color = Color::GammaToLinear(color);
 		color *= Skylighting::mixDiffuse(SharedData::skylightingSettings, skylighting);
 		color = Color::LinearToGamma(color);
+#	endif
 
 		color += dirLightColor * ShadowSampling::GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
 	} else {
+
+#	if defined(SKYLIGHTING)
 #		if defined(VR)
 		float3 positionMSSkylight = worldPosition + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #		else
@@ -560,6 +565,8 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 		color = Color::GammaToLinear(color);
 		color *= Skylighting::mixDiffuse(SharedData::skylightingSettings, skylighting);
 		color = Color::LinearToGamma(color);
+#	endif
+
 	}
 
 #		if defined(LIGHT_LIMIT_FIX)
