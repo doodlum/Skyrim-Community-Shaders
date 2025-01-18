@@ -97,9 +97,10 @@ float4 GetReflectionColor(
 #	endif
 
 			// Fade out around screen edges
-			float2 centerDistanceFadeFactor = smoothstep(0.0, 0.1, saturate(1.0 - centerDistance));
+			float2 centerDistanceFadeFactorX = smoothstep(0.0, 0.1, saturate(1.0 - centerDistance.x));
+			float2 centerDistanceFadeFactorY = smoothstep(0.0, 0.5, saturate(1.0 - centerDistance.y));
 
-			float fadeFactor = depthThicknessFactor * ssrMarchingRadiusFadeFactor * ssrMarchingRadiusFadeFactor * min(centerDistanceFadeFactor.x, centerDistanceFadeFactor.y);
+			float fadeFactor = depthThicknessFactor * ssrMarchingRadiusFadeFactor * centerDistanceFadeFactorX * centerDistanceFadeFactorY;
 
 			if (fadeFactor > 0.0) {
 				float3 color = ColorTex.SampleLevel(ColorSampler, ConvertRaySample(binaryRaySample.xy, eyeIndex), 0);
