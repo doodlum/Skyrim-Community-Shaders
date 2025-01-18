@@ -88,7 +88,7 @@ namespace Skylighting
 
 		return SphericalHarmonics::Scale(sum, rcp(wsum + 1e-10));
 	}
-	
+
 	sh2 sampleNoBias(SharedData::SkylightingSettings params, Texture3D<sh2> probeArray, float3 positionMS)
 	{
 		const static sh2 unitSH = float4(sqrt(4 * Math::PI), 0, 0, 0);
