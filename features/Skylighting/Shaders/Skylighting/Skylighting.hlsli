@@ -34,7 +34,7 @@ namespace Skylighting
 
 	sh2 sample(SharedData::SkylightingSettings params, Texture3D<sh2> probeArray, Texture2DArray<float3> blueNoise, float2 screenPosition, float3 positionMS, float3 normalWS)
 	{
-		positionMS.xyz += normalWS * CELL_SIZE * 0.5; // Receiver plane bias
+		positionMS.xyz += normalWS * CELL_SIZE * 0.5; // Receiver normal bias
 
 		if (SharedData::FrameCount) {  // Check TAA
 			float3 offset = blueNoise[int3(screenPosition.xy % 128, SharedData::FrameCount % 64)] * 2.0 - 1.0;
