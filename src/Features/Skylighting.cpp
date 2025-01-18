@@ -226,6 +226,14 @@ void Skylighting::Prepass()
 		if (ui->IsMenuOpen(RE::MapMenu::MENU_NAME))
 			return;
 
+	bool interior = true;
+
+	if (auto sky = RE::Sky::GetSingleton())
+		interior = sky->mode.get() != RE::Sky::Mode::kFull;
+
+	if (interior)
+		return;
+
 	TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Skylighting - Update Probes");
 
 	auto& context = State::GetSingleton()->context;
