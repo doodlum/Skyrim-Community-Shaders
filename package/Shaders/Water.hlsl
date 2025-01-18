@@ -546,7 +546,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 			float3 positionMSSkylight = input.WPosition.xyz;
 #					endif
 
-			sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, normal);
+			sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, R);
 			sh2 specularLobe = SphericalHarmonics::FauxSpecularLobe(normal, -viewDirection, 0.0);
 
 			float skylightingSpecular = SphericalHarmonics::FuncProductIntegral(skylighting, specularLobe);
@@ -719,7 +719,7 @@ DiffuseOutput GetWaterDiffuseColor(PS_INPUT input, float3 normal, float3 viewDir
 		float3 positionMSSkylight = skylightingPosition;
 #					endif
 
-		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, float3(0, 0, 1));
+		sh2 skylightingSH = Skylighting::sampleNoBias(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, positionMSSkylight);
 		float skylighting = SphericalHarmonics::Unproject(skylightingSH, float3(0, 0, 1));
 		skylighting = lerp(1.0, skylighting, Skylighting::getFadeOutFactor(input.WPosition.xyz));
 
