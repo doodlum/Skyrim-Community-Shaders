@@ -20,3 +20,7 @@ void LightingTemplateWidget::DrawWidget()
 void LightingTemplateWidget::LoadSettings()
 {
 }
+
+void LightingTemplateWidget::SaveSettings()
+{
+}

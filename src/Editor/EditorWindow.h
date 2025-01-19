@@ -35,4 +35,7 @@ public:
 	void SetupResources();
 
 	void Draw();
+
+private:
+	void SaveAll();
 };

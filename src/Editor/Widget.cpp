@@ -4,7 +4,8 @@
 
 void Widget::Save()
 {
-	const std::string filePath = std::format("{}\\{}s", State::GetSingleton()->folderPath, RE::FormTypeToString(form->GetFormType()));
+	SaveSettings();
+	const std::string filePath = std::format("{}\\{}", State::GetSingleton()->folderPath, GetFolderName());
 	const std::string file = std::format("{}\\{}.json", filePath, GetEditorID());
 
 	std::ofstream settingsFile(file);
@@ -40,7 +41,7 @@ void Widget::Save()
 
 void Widget::Load()
 {
-	std::string filePath = std::format("{}\\{}s\\{}.json", State::GetSingleton()->folderPath, RE::FormTypeToString(form->GetFormType()), GetEditorID());
+	std::string filePath = std::format("{}\\{}\\{}.json", State::GetSingleton()->folderPath, GetFolderName(), GetEditorID());
 
 	std::ifstream settingsFile(filePath);
 
@@ -62,4 +63,34 @@ void Widget::Load()
 		settingsFile.close();
 	}
 	LoadSettings();
+}
+
+void Widget::DrawMenu()
+{
+	if (ImGui::BeginMenuBar()) {
+		if (ImGui::BeginMenu("Menu")) {
+			if (ImGui::MenuItem("Save")) {
+				Save();
+			}
+			if (ImGui::MenuItem("Load")) {
+				Load();
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::EndMenuBar();
+	}
+}
+
+std::string Widget::GetFolderName()
+{
+	switch (form->GetFormType()) {
+	case RE::FormType::Weather:
+		return "Weathers";
+	case RE::FormType::LightingMaster:
+		return "LightingTemplates";
+	case RE::FormType::WorldSpace:
+		return "WorldSpaces";
+	default:
+		return "Unknown";
+	}
 }

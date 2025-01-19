@@ -26,7 +26,7 @@ class Widget
 public:
 	RE::TESForm* form = nullptr;
 
-	virtual ~Widget() {};
+	virtual ~Widget(){};
 
 	virtual std::string GetEditorID()
 	{
@@ -65,7 +65,10 @@ public:
 	void Load();
 
 	virtual void LoadSettings() = 0;
+	virtual void SaveSettings() = 0;
 
 protected:
 	json j = json();
+	virtual void DrawMenu();
+	std::string GetFolderName();
 };

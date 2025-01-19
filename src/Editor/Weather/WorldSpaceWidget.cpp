@@ -10,21 +10,7 @@ WorldSpaceWidget::~WorldSpaceWidget()
 void WorldSpaceWidget::DrawWidget()
 {
 	if (ImGui::Begin(GetEditorID().c_str(), &open, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar)) {
-		if (ImGui::BeginMenuBar()) {
-			if (ImGui::BeginMenu("Menu")) {
-				//Move save outside of menu
-				if (ImGui::MenuItem("Save")) {
-					j = settings;
-					Save();
-				}
-				//Move save outside of menu
-				if (ImGui::MenuItem("Load")) {
-					Load();
-				}
-				ImGui::EndMenu();
-			}
-			ImGui::EndMenuBar();
-		}
+		DrawMenu();
 	}
 	ImGui::End();
 }
@@ -34,4 +20,9 @@ void WorldSpaceWidget::LoadSettings()
 	if (!j.empty()) {
 		settings = j;
 	}
+}
+
+void WorldSpaceWidget::SaveSettings()
+{
+	j = settings;
 }

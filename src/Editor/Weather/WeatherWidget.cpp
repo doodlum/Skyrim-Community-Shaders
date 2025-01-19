@@ -15,21 +15,7 @@ WeatherWidget::~WeatherWidget()
 void WeatherWidget::DrawWidget()
 {
 	if (ImGui::Begin(GetEditorID().c_str(), &open, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar)) {
-		if (ImGui::BeginMenuBar()) {
-			if (ImGui::BeginMenu("Menu")) {
-				//Move save outside of menu
-				if (ImGui::MenuItem("Save")) {
-					j = settings;
-					Save();
-				}
-				//Move save outside of menu
-				if (ImGui::MenuItem("Load")) {
-					Load();
-				}
-				ImGui::EndMenu();
-			}
-			ImGui::EndMenuBar();
-		}
+		DrawMenu();
 
 		auto editorWindow = EditorWindow::GetSingleton();
 		auto& widgets = editorWindow->weatherWidgets;
@@ -41,7 +27,7 @@ void WeatherWidget::DrawWidget()
 				parent = (WeatherWidget*)*temp;
 			else
 				settings.currentParentBuffer = "None";
-				strncpy(currentParentBuffer, settings.currentParentBuffer.c_str(), sizeof(settings.currentParentBuffer));
+			strncpy(currentParentBuffer, settings.currentParentBuffer.c_str(), sizeof(settings.currentParentBuffer));
 		}
 
 		if (ImGui::BeginCombo("Parent", currentParentBuffer)) {
@@ -58,12 +44,6 @@ void WeatherWidget::DrawWidget()
 				// Skip self-selection
 				if (widget == this)
 					continue;
-
-				if (settings.currentParentBuffer == widget->GetEditorID()) {
-					parent = (WeatherWidget*)widget;
-					logger::info("here");
-					continue;
-				}
 
 				// Option for each widget
 				if (ImGui::Selectable(widget->GetEditorID().c_str(), parent == widget)) {
@@ -97,4 +77,9 @@ void WeatherWidget::LoadSettings()
 		strncpy(currentParentBuffer, settings.currentParentBuffer.c_str(), sizeof(settings.currentParentBuffer));
 		currentParentBuffer[sizeof(currentParentBuffer) - 1] = '\0';  // Ensure null-termination
 	}
+}
+
+void WeatherWidget::SaveSettings()
+{
+	j = settings;
 }
