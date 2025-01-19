@@ -2442,7 +2442,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	indirectDiffuseLobeWeight *= vertexColor;
 #		endif
 
-	color.xyz += emitColor.xyz;
+	// Fixes white items in UI for VR
+	[branch] if ((PBRFlags & PBR::Flags::HasEmissive) != 0)
+	{
+		color.xyz += emitColor.xyz;
+	}
 	color.xyz += transmissionColor;
 #	else
 	color.xyz += diffuseColor * baseColor.xyz;
