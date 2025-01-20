@@ -66,34 +66,38 @@ struct BSShader_LoadShaders
 	static void thunk(RE::BSShader* shader, std::uintptr_t stream)
 	{
 		func(shader, stream);
-		auto& shaderCache = SIE::ShaderCache::Instance();
 
-		if (shaderCache.IsDiskCache() || shaderCache.IsDump()) {
-			if (shaderCache.IsDiskCache()) {
-				TruePBR::GetSingleton()->GenerateShaderPermutations(shader);
+		auto variableCache = VariableCache::GetSingleton();
+		auto state = variableCache->state;
+		auto shaderCache = variableCache->shaderCache;
+		auto truePBR = variableCache->truePBR;
+
+		if (shaderCache->IsDiskCache() || shaderCache->IsDump()) {
+			if (shaderCache->IsDiskCache()) {
+				truePBR->GenerateShaderPermutations(shader);
 			}
 
 			for (const auto& entry : shader->vertexShaders) {
-				if (entry->shader && shaderCache.IsDump()) {
+				if (entry->shader && shaderCache->IsDump()) {
 					const auto& bytecode = GetShaderBytecode(entry->shader);
 					DumpShader((REX::BSShader*)shader, entry, bytecode);
 				}
 				auto vertexShaderDesriptor = entry->id;
 				auto pixelShaderDescriptor = entry->id;
-				State::GetSingleton()->ModifyShaderLookup(*shader, vertexShaderDesriptor, pixelShaderDescriptor);
-				shaderCache.GetVertexShader(*shader, vertexShaderDesriptor);
+				state->ModifyShaderLookup(*shader, vertexShaderDesriptor, pixelShaderDescriptor);
+				shaderCache->GetVertexShader(*shader, vertexShaderDesriptor);
 			}
 			for (const auto& entry : shader->pixelShaders) {
-				if (entry->shader && shaderCache.IsDump()) {
+				if (entry->shader && shaderCache->IsDump()) {
 					const auto& bytecode = GetShaderBytecode(entry->shader);
 					DumpShader((REX::BSShader*)shader, entry, bytecode);
 				}
 				auto vertexShaderDesriptor = entry->id;
 				auto pixelShaderDescriptor = entry->id;
-				State::GetSingleton()->ModifyShaderLookup(*shader, vertexShaderDesriptor, pixelShaderDescriptor);
-				shaderCache.GetPixelShader(*shader, pixelShaderDescriptor);
-				State::GetSingleton()->ModifyShaderLookup(*shader, vertexShaderDesriptor, pixelShaderDescriptor, true);
-				shaderCache.GetPixelShader(*shader, pixelShaderDescriptor);
+				state->ModifyShaderLookup(*shader, vertexShaderDesriptor, pixelShaderDescriptor);
+				shaderCache->GetPixelShader(*shader, pixelShaderDescriptor);
+				state->ModifyShaderLookup(*shader, vertexShaderDesriptor, pixelShaderDescriptor, true);
+				shaderCache->GetPixelShader(*shader, pixelShaderDescriptor);
 			}
 		}
 		BSShaderHooks::hk_LoadShaders((REX::BSShader*)shader, stream);
@@ -106,7 +110,6 @@ bool Hooks::BSShader_BeginTechnique::thunk(RE::BSShader* shader, uint32_t vertex
 	auto variableCache = VariableCache::GetSingleton();
 	auto state = variableCache->state;
 	auto shaderCache = variableCache->shaderCache;
-	auto shadowState = variableCache->shadowState;
 
 	state->updateShader = true;
 	state->currentShader = shader;
