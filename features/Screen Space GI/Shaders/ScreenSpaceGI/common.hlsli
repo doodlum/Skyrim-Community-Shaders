@@ -73,7 +73,10 @@ SamplerState samplerLinearClamp : register(s1);
 #define FP_Z (18.0)
 
 #define ISNAN(x) (!(x < 0.f || x > 0.f || x == 0.f))
-float filterNaN(float v) { return ISNAN(v) ? 0 : v; }
+float filterNaN(float v)
+{
+	return ISNAN(v) ? 0 : v;
+}
 float2 filterNaN(float2 v) { return float2(filterNaN(v.x), filterNaN(v.y)); }
 float4 filterNaN(float4 v) { return float4(filterNaN(v.x), filterNaN(v.y), filterNaN(v.z), filterNaN(v.w)); }
 
