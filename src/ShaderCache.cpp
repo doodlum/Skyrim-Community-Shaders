@@ -1394,7 +1394,6 @@ namespace SIE
 		std::unique_ptr<RE::BSGraphics::VertexShader> CreateVertexShader(ID3DBlob& shaderData,
 			const RE::BSShader& shader, uint32_t descriptor)
 		{
-			static const auto device = REL::Relocation<ID3D11Device**>(RE::Offset::D3D11Device);
 			static const auto perTechniqueBuffersArray =
 				REL::Relocation<ID3D11Buffer**>(RELOCATION_ID(524755, 411371));
 			static const auto perMaterialBuffersArray =
@@ -1453,7 +1452,6 @@ namespace SIE
 		std::unique_ptr<RE::BSGraphics::PixelShader> CreatePixelShader(ID3DBlob& shaderData,
 			const RE::BSShader& shader, uint32_t descriptor)
 		{
-			static const auto device = REL::Relocation<ID3D11Device**>(RE::Offset::D3D11Device);
 			static const auto perTechniqueBuffersArray =
 				REL::Relocation<ID3D11Buffer**>(RELOCATION_ID(524761, 411377));
 			static const auto perMaterialBuffersArray =
@@ -2285,14 +2283,14 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Vertex, shader, descriptor, isDiskCache)) {
-			static const auto device = REL::Relocation<ID3D11Device**>(RE::Offset::D3D11Device);
+			auto device = VariableCache::GetSingleton()->device;
 
 			auto newShader = SShaderCache::CreateVertexShader(*shaderBlob, shader,
 				descriptor);
 
 			std::lock_guard lockGuard(vertexShadersMutex);
 
-			const auto result = (*device)->CreateVertexShader(shaderBlob->GetBufferPointer(),
+			const auto result = device->CreateVertexShader(shaderBlob->GetBufferPointer(),
 				newShader->byteCodeSize, nullptr, reinterpret_cast<ID3D11VertexShader**>(&newShader->shader));
 			if (FAILED(result)) {
 				logger::error("Failed to create vertex shader {}::{:X}",
@@ -2314,13 +2312,13 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Pixel, shader, descriptor, isDiskCache)) {
-			static const auto device = REL::Relocation<ID3D11Device**>(RE::Offset::D3D11Device);
+			auto device = VariableCache::GetSingleton()->device;
 
 			auto newShader = SShaderCache::CreatePixelShader(*shaderBlob, shader,
 				descriptor);
 
 			std::lock_guard lockGuard(pixelShadersMutex);
-			const auto result = (*device)->CreatePixelShader(shaderBlob->GetBufferPointer(),
+			const auto result = device->CreatePixelShader(shaderBlob->GetBufferPointer(),
 				shaderBlob->GetBufferSize(), nullptr, reinterpret_cast<ID3D11PixelShader**>(&newShader->shader));
 			if (FAILED(result)) {
 				logger::error("Failed to create pixel shader {}::{:X}",
@@ -2343,13 +2341,13 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Compute, shader, descriptor, isDiskCache)) {
-			static const auto device = REL::Relocation<ID3D11Device**>(RE::Offset::D3D11Device);
+			auto device = VariableCache::GetSingleton()->device;
 
 			auto newShader = SShaderCache::CreateComputeShader(*shaderBlob, shader,
 				descriptor);
 
 			std::lock_guard lockGuard(computeShadersMutex);
-			const auto result = (*device)->CreateComputeShader(shaderBlob->GetBufferPointer(),
+			const auto result = device->CreateComputeShader(shaderBlob->GetBufferPointer(),
 				shaderBlob->GetBufferSize(), nullptr, reinterpret_cast<ID3D11ComputeShader**>(&newShader->shader));
 			if (FAILED(result)) {
 				logger::error("Failed to create pixel shader {}::{:X}",

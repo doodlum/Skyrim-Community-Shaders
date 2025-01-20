@@ -5,11 +5,12 @@
 
 void VariableCache::InitializeVariables()
 {
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	renderer = RE::BSGraphics::Renderer::GetSingleton();
 
+	device = reinterpret_cast<ID3D11Device*>(renderer->GetRuntimeData().forwarder);
 	context = reinterpret_cast<ID3D11DeviceContext*>(renderer->GetRuntimeData().context);
 
-	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
+	shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 
 	currentPixelShader = GET_INSTANCE_MEMBER_PTR(currentPixelShader, shadowState);
 	currentVertexShader = GET_INSTANCE_MEMBER_PTR(currentVertexShader, shadowState);
@@ -17,9 +18,20 @@ void VariableCache::InitializeVariables()
 
 	state = State::GetSingleton();
 	shaderCache = &SIE::ShaderCache::Instance();
-	rendererShadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 	deferred = Deferred::GetSingleton();
 	terrainBlending = TerrainBlending::GetSingleton();
 	cloudShadows = CloudShadows::GetSingleton();
 	truePBR = TruePBR::GetSingleton();
+	graphicsState = RE::BSGraphics::State::GetSingleton();
+	smState = &RE::BSShaderManager::State::GetSingleton();
+	tes = RE::TES::GetSingleton();
+	isVR = REL::Module::IsVR();
+	memoryManager = RE::MemoryManager::GetSingleton();
+
+	iniSettingCollection = RE::INISettingCollection::GetSingleton();
+	bEnableLandFade = iniSettingCollection->GetSetting("bEnableLandFade:Display");
+	bDrawLandShadows = iniSettingCollection->GetSetting("bDrawLandShadows:Display");
+
+	bShadowsOnGrass = RE::GetINISetting("bShadowsOnGrass:Display");
+	shadowMaskQuarter = RE::GetINISetting("iShadowMaskQuarter:Display");
 }

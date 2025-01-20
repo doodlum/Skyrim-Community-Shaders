@@ -106,7 +106,7 @@ bool Hooks::BSShader_BeginTechnique::thunk(RE::BSShader* shader, uint32_t vertex
 	auto variableCache = VariableCache::GetSingleton();
 	auto state = variableCache->state;
 	auto shaderCache = variableCache->shaderCache;
-	auto rendererShadowState = variableCache->rendererShadowState;
+	auto shadowState = variableCache->shadowState;
 
 	state->updateShader = true;
 	state->currentShader = shader;
@@ -128,11 +128,11 @@ bool Hooks::BSShader_BeginTechnique::thunk(RE::BSShader* shader, uint32_t vertex
 			shaderFound = false;
 		} else {
 			state->settingCustomShader = true;
-			rendererShadowState->SetVertexShader(vertexShader);
+			shadowState->SetVertexShader(vertexShader);
 			if (skipPixelShader) {
 				pixelShader = nullptr;
 			}
-			rendererShadowState->SetPixelShader(pixelShader);
+			shadowState->SetPixelShader(pixelShader);
 			state->settingCustomShader = false;
 			shaderFound = true;
 		}
