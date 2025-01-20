@@ -128,11 +128,15 @@ bool Hooks::BSShader_BeginTechnique::thunk(RE::BSShader* shader, uint32_t vertex
 			shaderFound = false;
 		} else {
 			state->settingCustomShader = true;
-			shadowState->SetVertexShader(vertexShader);
+			state->context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(vertexShader->shader), NULL, NULL);
+			*variableCache->currentVertexShader = vertexShader;
+			variableCache->stateUpdateFlags->set(RE::BSGraphics::DIRTY_VERTEX_DESC);
 			if (skipPixelShader) {
 				pixelShader = nullptr;
 			}
-			shadowState->SetPixelShader(pixelShader);
+			*variableCache->currentPixelShader = pixelShader;
+			if (pixelShader)
+				state->context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(pixelShader->shader), NULL, NULL);
 			state->settingCustomShader = false;
 			shaderFound = true;
 		}
