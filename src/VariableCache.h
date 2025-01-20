@@ -1,11 +1,11 @@
 #pragma once
 
-#include "State.h"
-#include "ShaderCache.h"
 #include "Deferred.h"
+#include "ShaderCache.h"
+#include "State.h"
 
-#include "Features/TerrainBlending.h"
 #include "Features/CloudShadows.h"
+#include "Features/TerrainBlending.h"
 
 class VariableCache
 {
@@ -13,7 +13,6 @@ class VariableCache
 
 public:
 	static VariableCache* GetSingleton() { return &instance; };
-
 
 	ID3D11DeviceContext* context = nullptr;
 	RE::BSGraphics::PixelShader** currentPixelShader = nullptr;

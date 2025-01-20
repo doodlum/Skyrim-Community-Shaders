@@ -8,7 +8,7 @@ void VariableCache::InitializeVariables()
 	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 
 	context = reinterpret_cast<ID3D11DeviceContext*>(renderer->GetRuntimeData().context);
-	
+
 	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 
 	currentPixelShader = GET_INSTANCE_MEMBER_PTR(currentPixelShader, shadowState);
