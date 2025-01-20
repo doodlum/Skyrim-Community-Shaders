@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+#include "Util.h"
 #include <FeatureBuffer.h>
 
 class State
@@ -155,6 +156,8 @@ public:
 
 	ConstantBuffer* sharedDataCB = nullptr;
 	ConstantBuffer* featureDataCB = nullptr;
+
+	Util::FrameChecker frameChecker;
 
 	// Skyrim constants
 	bool isVR = false;

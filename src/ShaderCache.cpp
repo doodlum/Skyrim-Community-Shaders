@@ -10,6 +10,7 @@
 #include "Deferred.h"
 #include "Feature.h"
 #include "State.h"
+#include "VariableCache.h"
 
 #include "Features/DynamicCubemaps.h"
 
@@ -1393,7 +1394,6 @@ namespace SIE
 		std::unique_ptr<RE::BSGraphics::VertexShader> CreateVertexShader(ID3DBlob& shaderData,
 			const RE::BSShader& shader, uint32_t descriptor)
 		{
-			static const auto device = REL::Relocation<ID3D11Device**>(RE::Offset::D3D11Device);
 			static const auto perTechniqueBuffersArray =
 				REL::Relocation<ID3D11Buffer**>(RELOCATION_ID(524755, 411371));
 			static const auto perMaterialBuffersArray =
@@ -1452,7 +1452,6 @@ namespace SIE
 		std::unique_ptr<RE::BSGraphics::PixelShader> CreatePixelShader(ID3DBlob& shaderData,
 			const RE::BSShader& shader, uint32_t descriptor)
 		{
-			static const auto device = REL::Relocation<ID3D11Device**>(RE::Offset::D3D11Device);
 			static const auto perTechniqueBuffersArray =
 				REL::Relocation<ID3D11Buffer**>(RELOCATION_ID(524761, 411377));
 			static const auto perMaterialBuffersArray =
@@ -1676,7 +1675,7 @@ namespace SIE
 			}
 		}
 
-		auto state = State::GetSingleton();
+		auto state = VariableCache::GetSingleton()->state;
 		if (state->isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
 			// use vanilla shader
 			return nullptr;
@@ -1685,13 +1684,15 @@ namespace SIE
 			return nullptr;
 		}
 
-		auto key = SIE::SShaderCache::GetShaderString(ShaderClass::Vertex, shader, descriptor, true);
-		if (blockedKeyIndex != -1 && !blockedKey.empty() && key == blockedKey) {
-			if (std::find(blockedIDs.begin(), blockedIDs.end(), descriptor) == blockedIDs.end()) {
-				blockedIDs.push_back(descriptor);
-				logger::debug("Skipping blocked shader {:X}:{} total: {}", descriptor, blockedKey, blockedIDs.size());
+		if (state->IsDeveloperMode()) {
+			auto key = SIE::SShaderCache::GetShaderString(ShaderClass::Vertex, shader, descriptor, true);
+			if (blockedKeyIndex != -1 && !blockedKey.empty() && key == blockedKey) {
+				if (std::find(blockedIDs.begin(), blockedIDs.end(), descriptor) == blockedIDs.end()) {
+					blockedIDs.push_back(descriptor);
+					logger::debug("Skipping blocked shader {:X}:{} total: {}", descriptor, blockedKey, blockedIDs.size());
+				}
+				return nullptr;
 			}
-			return nullptr;
 		}
 
 		{
@@ -1715,7 +1716,7 @@ namespace SIE
 	RE::BSGraphics::PixelShader* ShaderCache::GetPixelShader(const RE::BSShader& shader,
 		uint32_t descriptor)
 	{
-		auto state = State::GetSingleton();
+		auto state = VariableCache::GetSingleton()->state;
 		if (state->isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
 			// use vanilla shader
 			return nullptr;
@@ -1731,13 +1732,15 @@ namespace SIE
 			}
 		}
 
-		auto key = SIE::SShaderCache::GetShaderString(ShaderClass::Pixel, shader, descriptor, true);
-		if (blockedKeyIndex != -1 && !blockedKey.empty() && key == blockedKey) {
-			if (std::find(blockedIDs.begin(), blockedIDs.end(), descriptor) == blockedIDs.end()) {
-				blockedIDs.push_back(descriptor);
-				logger::debug("Skipping blocked shader {:X}:{} total: {}", descriptor, blockedKey, blockedIDs.size());
+		if (state->IsDeveloperMode()) {
+			auto key = SIE::SShaderCache::GetShaderString(ShaderClass::Pixel, shader, descriptor, true);
+			if (blockedKeyIndex != -1 && !blockedKey.empty() && key == blockedKey) {
+				if (std::find(blockedIDs.begin(), blockedIDs.end(), descriptor) == blockedIDs.end()) {
+					blockedIDs.push_back(descriptor);
+					logger::debug("Skipping blocked shader {:X}:{} total: {}", descriptor, blockedKey, blockedIDs.size());
+				}
+				return nullptr;
 			}
-			return nullptr;
 		}
 
 		{
@@ -2280,14 +2283,14 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Vertex, shader, descriptor, isDiskCache)) {
-			static const auto device = REL::Relocation<ID3D11Device**>(RE::Offset::D3D11Device);
+			auto device = VariableCache::GetSingleton()->device;
 
 			auto newShader = SShaderCache::CreateVertexShader(*shaderBlob, shader,
 				descriptor);
 
 			std::lock_guard lockGuard(vertexShadersMutex);
 
-			const auto result = (*device)->CreateVertexShader(shaderBlob->GetBufferPointer(),
+			const auto result = device->CreateVertexShader(shaderBlob->GetBufferPointer(),
 				newShader->byteCodeSize, nullptr, reinterpret_cast<ID3D11VertexShader**>(&newShader->shader));
 			if (FAILED(result)) {
 				logger::error("Failed to create vertex shader {}::{:X}",
@@ -2309,13 +2312,13 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Pixel, shader, descriptor, isDiskCache)) {
-			static const auto device = REL::Relocation<ID3D11Device**>(RE::Offset::D3D11Device);
+			auto device = VariableCache::GetSingleton()->device;
 
 			auto newShader = SShaderCache::CreatePixelShader(*shaderBlob, shader,
 				descriptor);
 
 			std::lock_guard lockGuard(pixelShadersMutex);
-			const auto result = (*device)->CreatePixelShader(shaderBlob->GetBufferPointer(),
+			const auto result = device->CreatePixelShader(shaderBlob->GetBufferPointer(),
 				shaderBlob->GetBufferSize(), nullptr, reinterpret_cast<ID3D11PixelShader**>(&newShader->shader));
 			if (FAILED(result)) {
 				logger::error("Failed to create pixel shader {}::{:X}",
@@ -2338,13 +2341,13 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Compute, shader, descriptor, isDiskCache)) {
-			static const auto device = REL::Relocation<ID3D11Device**>(RE::Offset::D3D11Device);
+			auto device = VariableCache::GetSingleton()->device;
 
 			auto newShader = SShaderCache::CreateComputeShader(*shaderBlob, shader,
 				descriptor);
 
 			std::lock_guard lockGuard(computeShadersMutex);
-			const auto result = (*device)->CreateComputeShader(shaderBlob->GetBufferPointer(),
+			const auto result = device->CreateComputeShader(shaderBlob->GetBufferPointer(),
 				shaderBlob->GetBufferSize(), nullptr, reinterpret_cast<ID3D11ComputeShader**>(&newShader->shader));
 			if (FAILED(result)) {
 				logger::error("Failed to create pixel shader {}::{:X}",

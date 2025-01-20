@@ -4,6 +4,7 @@
 #include "State.h"
 #include "TruePBR.h"
 #include "Util.h"
+#include "VariableCache.h"
 
 #include "Features/DynamicCubemaps.h"
 #include "Features/ScreenSpaceGI.h"
@@ -220,16 +221,15 @@ void Deferred::EarlyPrepasses()
 
 	State::GetSingleton()->UpdateSharedData();
 
-	ZoneScoped;
-	TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Early Prepass");
+	auto variableCache = VariableCache::GetSingleton();
 
-	auto context = RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().context;
+	ZoneScoped;
+	TracyD3D11Zone(variableCache->state->tracyCtx, "Early Prepass");
+
+	auto context = variableCache->context;
 	context->OMSetRenderTargets(0, nullptr, nullptr);  // Unbind all bound render targets
 
-	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
-	GET_INSTANCE_MEMBER(stateUpdateFlags, shadowState)
-
-	stateUpdateFlags.set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);  // Run OMSetRenderTargets again
+	variableCache->stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);  // Run OMSetRenderTargets again
 
 	for (auto* feature : Feature::GetFeatureList()) {
 		if (feature->loaded) {

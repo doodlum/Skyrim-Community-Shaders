@@ -9,7 +9,6 @@
 #include "ShaderCache.h"
 
 #include "Feature.h"
-#include "Util.h"
 
 #include "Deferred.h"
 #include "Features/CloudShadows.h"
@@ -19,28 +18,32 @@
 #include "Streamline.h"
 #include "Upscaling.h"
 
+#include "VariableCache.h"
+
 void State::Draw()
 {
-	const auto& shaderCache = SIE::ShaderCache::Instance();
-	if (shaderCache.IsEnabled()) {
-		auto terrainBlending = TerrainBlending::GetSingleton();
+	auto variableCache = VariableCache::GetSingleton();
+	auto shaderCache = variableCache->shaderCache;
+	auto deferred = variableCache->deferred;
+	auto terrainBlending = variableCache->terrainBlending;
+	auto cloudShadows = variableCache->cloudShadows;
+	auto truePBR = variableCache->truePBR;
+
+	if (shaderCache->IsEnabled()) {
 		if (terrainBlending->loaded)
 			terrainBlending->TerrainShaderHacks();
 
-		auto cloudShadows = CloudShadows::GetSingleton();
 		if (cloudShadows->loaded)
 			cloudShadows->SkyShaderHacks();
 
-		TruePBR::GetSingleton()->SetShaderResouces();
+		truePBR->SetShaderResouces(context);
 
-		if (auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator()) {
-			// Set an unused bit to indicate if we are rendering an object in the main rendering pass
-			if (accumulator->GetRuntimeData().activeShadowSceneNode == RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0]) {
-				currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
-			}
+		// Set an unused bit to indicate if we are rendering an object in the main rendering pass
+		if (deferred->inWorld) {
+			currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
 		}
 
-		if (Deferred::GetSingleton()->inDecals)
+		if (deferred->inDecals)
 			currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::IsDecal;
 
 		if (forceUpdatePermutationBuffer || currentPixelDescriptor != lastPixelDescriptor || currentExtraDescriptor != lastExtraDescriptor) {
@@ -60,7 +63,6 @@ void State::Draw()
 
 		currentExtraDescriptor = 0;
 
-		static Util::FrameChecker frameChecker;
 		if (frameChecker.IsNewFrame()) {
 			ID3D11Buffer* buffers[3] = { permutationCB->CB(), sharedDataCB->CB(), featureDataCB->CB() };
 			context->PSSetConstantBuffers(4, 3, buffers);
@@ -71,7 +73,7 @@ void State::Draw()
 			auto type = currentShader->shaderType.get();
 			if (type == RE::BSShader::Type::Utility) {
 				if (currentPixelDescriptor & static_cast<uint32_t>(SIE::ShaderCache::UtilityShaderFlags::RenderShadowmask)) {
-					Deferred::GetSingleton()->CopyShadowData();
+					deferred->CopyShadowData();
 				}
 			}
 
@@ -507,6 +509,8 @@ void State::SetupResources()
 
 void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescriptor, uint& a_pixelDescriptor, bool a_forceDeferred)
 {
+	auto deferred = VariableCache::GetSingleton()->deferred;
+
 	if (a_shader.shaderType.get() != RE::BSShader::Type::Utility && a_shader.shaderType.get() != RE::BSShader::Type::ImageSpace) {
 		switch (a_shader.shaderType.get()) {
 		case RE::BSShader::Type::Lighting:
@@ -542,7 +546,7 @@ void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescr
 				if (vr || !enableImprovedSnow->GetBool())
 					a_pixelDescriptor &= ~((uint32_t)SIE::ShaderCache::LightingShaderFlags::Snow);
 
-				if (Deferred::GetSingleton()->deferredPass || a_forceDeferred)
+				if (deferred->deferredPass || a_forceDeferred)
 					a_pixelDescriptor |= (uint32_t)SIE::ShaderCache::LightingShaderFlags::Deferred;
 
 				{
@@ -582,19 +586,19 @@ void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescr
 				a_vertexDescriptor &= flags;
 				a_pixelDescriptor &= flags;
 
-				if (Deferred::GetSingleton()->deferredPass || a_forceDeferred)
+				if (deferred->deferredPass || a_forceDeferred)
 					a_pixelDescriptor |= (uint32_t)SIE::ShaderCache::EffectShaderFlags::Deferred;
 			}
 			break;
 		case RE::BSShader::Type::DistantTree:
 			{
-				if (Deferred::GetSingleton()->deferredPass || a_forceDeferred)
+				if (deferred->deferredPass || a_forceDeferred)
 					a_pixelDescriptor |= (uint32_t)SIE::ShaderCache::DistantTreeShaderFlags::Deferred;
 			}
 			break;
 		case RE::BSShader::Type::Sky:
 			{
-				if (Deferred::GetSingleton()->deferredPass || a_forceDeferred)
+				if (deferred->deferredPass || a_forceDeferred)
 					a_pixelDescriptor |= 256;
 			}
 			break;

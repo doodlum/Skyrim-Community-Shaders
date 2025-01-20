@@ -4,6 +4,7 @@
 
 #include "Deferred.h"
 #include "Util.h"
+#include "VariableCache.h"
 
 void CloudShadows::CheckResourcesSide(int side)
 {
@@ -20,8 +21,9 @@ void CloudShadows::CheckResourcesSide(int side)
 void CloudShadows::SkyShaderHacks()
 {
 	if (overrideSky) {
-		auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-		auto& context = State::GetSingleton()->context;
+		auto variableCache = VariableCache::GetSingleton();
+		auto renderer = variableCache->renderer;
+		auto context = variableCache->context;
 
 		auto reflections = renderer->GetRendererData().cubemapRenderTargets[RE::RENDER_TARGET_CUBEMAP::kREFLECTIONS];
 
@@ -58,7 +60,7 @@ void CloudShadows::SkyShaderHacks()
 
 void CloudShadows::ModifySky(RE::BSRenderPass* Pass)
 {
-	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
+	auto shadowState = VariableCache::GetSingleton()->shadowState;
 
 	GET_INSTANCE_MEMBER(cubeMapRenderTarget, shadowState);
 
