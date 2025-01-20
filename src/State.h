@@ -7,8 +7,8 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-#include <FeatureBuffer.h>
 #include "Util.h"
+#include <FeatureBuffer.h>
 
 class State
 {
