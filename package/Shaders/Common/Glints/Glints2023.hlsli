@@ -1,4 +1,6 @@
 #include "Common/Math.hlsli"
+#include "Common/Random.hlsli"
+#include "Common/SharedData.hlsli"
 
 namespace Glints
 {
@@ -54,23 +56,6 @@ namespace Glints
 		float x2 = sigma * 1.414213f * erfinv(2.0 * u.z - 1.0) + mu;
 		float x3 = sigma * 1.414213f * erfinv(2.0 * u.w - 1.0) + mu;
 		return float4(x0, x1, x2, x3);
-	}
-
-	float3 pcg3dFloat(uint3 v)
-	{
-		v = v * 1664525u + 1013904223u;
-
-		v.x += v.y * v.z;
-		v.y += v.z * v.x;
-		v.z += v.x * v.y;
-
-		v ^= v >> 16u;
-
-		v.x += v.y * v.z;
-		v.y += v.z * v.x;
-		v.z += v.x * v.y;
-
-		return v * (1.0 / 4294967296.0);
 	}
 
 	float HashWithoutSine13(float3 p3)
@@ -271,9 +256,9 @@ namespace Glints
 		float3 barycentrics = float3(-temp.z * s2, s - temp.y * s2, s - temp.x * s2);
 
 		// Generate per surface cell random numbers
-		float3 rand0 = pcg3dFloat(uint3(glint0 + 2147483648, vars.gridSeed));  // TODO : optimize away manual seeds
-		float3 rand1 = pcg3dFloat(uint3(glint1 + 2147483648, vars.gridSeed));
-		float3 rand2 = pcg3dFloat(uint3(glint2 + 2147483648, vars.gridSeed));
+		float3 rand0 = Random::pcg3d(uint3(glint0 + 2147483648, vars.gridSeed)) / 4294967296.0;  // TODO : optimize away manual seeds
+		float3 rand1 = Random::pcg3d(uint3(glint1 + 2147483648, vars.gridSeed)) / 4294967296.0;
+		float3 rand2 = Random::pcg3d(uint3(glint2 + 2147483648, vars.gridSeed)) / 4294967296.0;
 
 		// Get per surface cell per slope cell random numbers
 		float4 rand0SlopesB, rand1SlopesB, rand2SlopesB, rand0SlopesG, rand1SlopesG, rand2SlopesG;
@@ -439,7 +424,7 @@ namespace Glints
 		return;
 	}
 
-	void PrecomputeGlints(float2 uv, float2 duvdx, float2 duvdy, float screenSpaceScale, out GlintCachedVars vars[4])
+	void PrecomputeGlints(float rnd, float2 uv, float2 duvdx, float2 duvdy, float screenSpaceScale, out GlintCachedVars vars[4])
 	{
 		// ACCURATE PIXEL FOOTPRINT ELLIPSE
 		float2 ellipseMajor, ellipseMinor;
@@ -529,6 +514,20 @@ namespace Glints
 		vars[3].gridSeed = gridSeedD;
 		vars[3].footprintArea = ratios[tetraD.y] * footprintAreas[tetraD.z];
 		vars[3].gridWeight = tetraBarycentricWeights.w;
+
+		// [branch] if (SharedData::FrameCount != 0)  // has TAA
+		// {
+		// importance sampling as if linear interp (not ideal but good enough)
+		float3 accumWeights = tetraBarycentricWeights.xyz;
+		accumWeights.y += accumWeights.x;
+		accumWeights.z += accumWeights.y;
+		if (rnd > accumWeights.x && rnd < accumWeights.y)
+			vars[0] = vars[1];
+		else if (rnd < accumWeights.z)
+			vars[0] = vars[2];
+		else
+			vars[0] = vars[3];
+		// }
 	}
 
 	float4 SampleGlints2023NDF(float logDensity, float roughness, float densityRandomization, GlintCachedVars vars[4], float3 H, float targetNDF, float maxNDF)
@@ -536,10 +535,20 @@ namespace Glints
 		float2 slope = H.xy;  // Orthogrtaphic slope projected grid
 		float rescaledTargetNDF = targetNDF / maxNDF;
 
-		float sampleA = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[0], slope, rescaledTargetNDF);
-		float sampleB = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[1], slope, rescaledTargetNDF);
-		float sampleC = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[2], slope, rescaledTargetNDF);
-		float sampleD = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[3], slope, rescaledTargetNDF);
-		return min((sampleA + sampleB + sampleC + sampleD) * (1.0 / roughness), 20) * maxNDF;  // somewhat brute force way of prevent glazing angle extremities
+		float sampleContribution;
+		// [branch] if (SharedData::FrameCount == 0)  // no TAA
+		// {
+		// 	float sampleA = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[0], slope, rescaledTargetNDF);
+		// 	float sampleB = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[1], slope, rescaledTargetNDF);
+		// 	float sampleC = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[2], slope, rescaledTargetNDF);
+		// 	float sampleD = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[3], slope, rescaledTargetNDF);
+		// 	sampleContribution = sampleA + sampleB + sampleC + sampleD;
+		// }
+		// else
+		{
+			sampleContribution = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[0], slope, rescaledTargetNDF) / vars[0].gridWeight;
+		}
+
+		return min(sampleContribution * (1.0 / roughness), 20) * maxNDF;  // somewhat brute force way of prevent glazing angle extremities}
 	}
 }
