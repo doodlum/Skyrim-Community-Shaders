@@ -515,19 +515,19 @@ namespace Glints
 		vars[3].footprintArea = ratios[tetraD.y] * footprintAreas[tetraD.z];
 		vars[3].gridWeight = tetraBarycentricWeights.w;
 
-		// [branch] if (SharedData::FrameCount != 0)  // has TAA
-		// {
-		// importance sampling as if linear interp (not ideal but good enough)
-		float3 accumWeights = tetraBarycentricWeights.xyz;
-		accumWeights.y += accumWeights.x;
-		accumWeights.z += accumWeights.y;
-		if (rnd > accumWeights.x && rnd < accumWeights.y)
-			vars[0] = vars[1];
-		else if (rnd < accumWeights.z)
-			vars[0] = vars[2];
-		else
-			vars[0] = vars[3];
-		// }
+		[branch] if (SharedData::FrameCount != 0)  // has TAA
+		{
+			// importance sampling as if linear interp (not ideal but good enough)
+			float3 accumWeights = tetraBarycentricWeights.xyz;
+			accumWeights.y += accumWeights.x;
+			accumWeights.z += accumWeights.y;
+			if (rnd > accumWeights.x && rnd < accumWeights.y)
+				vars[0] = vars[1];
+			else if (rnd < accumWeights.z)
+				vars[0] = vars[2];
+			else
+				vars[0] = vars[3];
+		}
 	}
 
 	float4 SampleGlints2023NDF(float logDensity, float roughness, float densityRandomization, GlintCachedVars vars[4], float3 H, float targetNDF, float maxNDF)
@@ -536,15 +536,15 @@ namespace Glints
 		float rescaledTargetNDF = targetNDF / maxNDF;
 
 		float sampleContribution;
-		// [branch] if (SharedData::FrameCount == 0)  // no TAA
-		// {
-		// 	float sampleA = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[0], slope, rescaledTargetNDF);
-		// 	float sampleB = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[1], slope, rescaledTargetNDF);
-		// 	float sampleC = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[2], slope, rescaledTargetNDF);
-		// 	float sampleD = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[3], slope, rescaledTargetNDF);
-		// 	sampleContribution = sampleA + sampleB + sampleC + sampleD;
-		// }
-		// else
+		[branch] if (SharedData::FrameCount == 0)  // no TAA
+		{
+			float sampleA = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[0], slope, rescaledTargetNDF);
+			float sampleB = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[1], slope, rescaledTargetNDF);
+			float sampleC = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[2], slope, rescaledTargetNDF);
+			float sampleD = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[3], slope, rescaledTargetNDF);
+			sampleContribution = sampleA + sampleB + sampleC + sampleD;
+		}
+		else
 		{
 			sampleContribution = SampleGlintGridSimplex(logDensity, roughness, densityRandomization, vars[0], slope, rescaledTargetNDF) / vars[0].gridWeight;
 		}
