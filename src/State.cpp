@@ -19,15 +19,20 @@
 #include "Streamline.h"
 #include "Upscaling.h"
 
+#include "VariableCache.h"
+
 void State::Draw()
 {
-	const auto& shaderCache = SIE::ShaderCache::Instance();
-	if (shaderCache.IsEnabled()) {
-		auto terrainBlending = TerrainBlending::GetSingleton();
+	auto variableCache = VariableCache::GetSingleton();
+	auto shaderCache = variableCache->shaderCache;
+	auto deferred = variableCache->deferred;
+	auto terrainBlending = variableCache->terrainBlending;
+	auto cloudShadows = variableCache->cloudShadows;
+
+	if (shaderCache->IsEnabled()) {
 		if (terrainBlending->loaded)
 			terrainBlending->TerrainShaderHacks();
 
-		auto cloudShadows = CloudShadows::GetSingleton();
 		if (cloudShadows->loaded)
 			cloudShadows->SkyShaderHacks();
 
@@ -71,7 +76,7 @@ void State::Draw()
 			auto type = currentShader->shaderType.get();
 			if (type == RE::BSShader::Type::Utility) {
 				if (currentPixelDescriptor & static_cast<uint32_t>(SIE::ShaderCache::UtilityShaderFlags::RenderShadowmask)) {
-					Deferred::GetSingleton()->CopyShadowData();
+					deferred->CopyShadowData();
 				}
 			}
 
@@ -507,6 +512,8 @@ void State::SetupResources()
 
 void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescriptor, uint& a_pixelDescriptor, bool a_forceDeferred)
 {
+	auto deferred = VariableCache::GetSingleton()->deferred;
+
 	if (a_shader.shaderType.get() != RE::BSShader::Type::Utility && a_shader.shaderType.get() != RE::BSShader::Type::ImageSpace) {
 		switch (a_shader.shaderType.get()) {
 		case RE::BSShader::Type::Lighting:
@@ -542,7 +549,7 @@ void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescr
 				if (vr || !enableImprovedSnow->GetBool())
 					a_pixelDescriptor &= ~((uint32_t)SIE::ShaderCache::LightingShaderFlags::Snow);
 
-				if (Deferred::GetSingleton()->deferredPass || a_forceDeferred)
+				if (deferred->deferredPass || a_forceDeferred)
 					a_pixelDescriptor |= (uint32_t)SIE::ShaderCache::LightingShaderFlags::Deferred;
 
 				{
@@ -582,19 +589,19 @@ void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescr
 				a_vertexDescriptor &= flags;
 				a_pixelDescriptor &= flags;
 
-				if (Deferred::GetSingleton()->deferredPass || a_forceDeferred)
+				if (deferred->deferredPass || a_forceDeferred)
 					a_pixelDescriptor |= (uint32_t)SIE::ShaderCache::EffectShaderFlags::Deferred;
 			}
 			break;
 		case RE::BSShader::Type::DistantTree:
 			{
-				if (Deferred::GetSingleton()->deferredPass || a_forceDeferred)
+				if (deferred->deferredPass || a_forceDeferred)
 					a_pixelDescriptor |= (uint32_t)SIE::ShaderCache::DistantTreeShaderFlags::Deferred;
 			}
 			break;
 		case RE::BSShader::Type::Sky:
 			{
-				if (Deferred::GetSingleton()->deferredPass || a_forceDeferred)
+				if (deferred->deferredPass || a_forceDeferred)
 					a_pixelDescriptor |= 256;
 			}
 			break;

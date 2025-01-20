@@ -173,7 +173,7 @@ void Deferred::SetupResources()
 
 void Deferred::CopyShadowData()
 {
-	ZoneScoped;
+	/*ZoneScoped;
 	TracyD3D11Zone(State::GetSingleton()->tracyCtx, "CopyShadowData");
 
 	auto& context = State::GetSingleton()->context;
@@ -208,7 +208,7 @@ void Deferred::CopyShadowData()
 		};
 
 		context->PSSetShaderResources(18, ARRAYSIZE(srvs), srvs);
-	}
+	}*/
 }
 
 void Deferred::EarlyPrepasses()
@@ -333,158 +333,158 @@ void Deferred::StartDeferred()
 
 void Deferred::DeferredPasses()
 {
-	ZoneScoped;
-	TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Deferred");
+	//ZoneScoped;
+	//TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Deferred");
 
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-	auto& context = State::GetSingleton()->context;
+	//auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	//auto& context = State::GetSingleton()->context;
 
-	{
-		static REL::Relocation<ID3D11Buffer**> perFrame{ REL::RelocationID(524768, 411384) };
-		ID3D11Buffer* buffers[1] = { *perFrame.get() };
-		ID3D11Buffer* vrBuffer = nullptr;
+	//{
+	//	static REL::Relocation<ID3D11Buffer**> perFrame{ REL::RelocationID(524768, 411384) };
+	//	ID3D11Buffer* buffers[1] = { *perFrame.get() };
+	//	ID3D11Buffer* vrBuffer = nullptr;
 
-		if (REL::Module::IsVR()) {
-			static REL::Relocation<ID3D11Buffer**> VRValues{ REL::Offset(0x3180688) };
-			vrBuffer = *VRValues.get();
-		}
-		if (vrBuffer) {
-			context->CSSetConstantBuffers(12, 1, buffers);
-			context->CSSetConstantBuffers(13, 1, &vrBuffer);
-		} else {
-			context->CSSetConstantBuffers(12, 1, buffers);
-		}
-	}
+	//	if (REL::Module::IsVR()) {
+	//		static REL::Relocation<ID3D11Buffer**> VRValues{ REL::Offset(0x3180688) };
+	//		vrBuffer = *VRValues.get();
+	//	}
+	//	if (vrBuffer) {
+	//		context->CSSetConstantBuffers(12, 1, buffers);
+	//		context->CSSetConstantBuffers(13, 1, &vrBuffer);
+	//	} else {
+	//		context->CSSetConstantBuffers(12, 1, buffers);
+	//	}
+	//}
 
-	auto specular = renderer->GetRuntimeData().renderTargets[SPECULAR];
-	auto albedo = renderer->GetRuntimeData().renderTargets[ALBEDO];
-	auto normalRoughness = renderer->GetRuntimeData().renderTargets[NORMALROUGHNESS];
-	auto masks = renderer->GetRuntimeData().renderTargets[MASKS];
-	auto masks2 = renderer->GetRuntimeData().renderTargets[MASKS2];
+	//auto specular = renderer->GetRuntimeData().renderTargets[SPECULAR];
+	//auto albedo = renderer->GetRuntimeData().renderTargets[ALBEDO];
+	//auto normalRoughness = renderer->GetRuntimeData().renderTargets[NORMALROUGHNESS];
+	//auto masks = renderer->GetRuntimeData().renderTargets[MASKS];
+	//auto masks2 = renderer->GetRuntimeData().renderTargets[MASKS2];
 
-	auto main = renderer->GetRuntimeData().renderTargets[forwardRenderTargets[0]];
-	auto normals = renderer->GetRuntimeData().renderTargets[forwardRenderTargets[2]];
-	auto depth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
-	auto reflectance = renderer->GetRuntimeData().renderTargets[REFLECTANCE];
+	//auto main = renderer->GetRuntimeData().renderTargets[forwardRenderTargets[0]];
+	//auto normals = renderer->GetRuntimeData().renderTargets[forwardRenderTargets[2]];
+	//auto depth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
+	//auto reflectance = renderer->GetRuntimeData().renderTargets[REFLECTANCE];
 
-	auto motionVectors = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMOTION_VECTOR];
+	//auto motionVectors = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMOTION_VECTOR];
 
-	bool interior = true;
-	if (auto sky = RE::Sky::GetSingleton())
-		interior = sky->mode.get() != RE::Sky::Mode::kFull;
+	//bool interior = true;
+	//if (auto sky = RE::Sky::GetSingleton())
+	//	interior = sky->mode.get() != RE::Sky::Mode::kFull;
 
-	auto skylighting = Skylighting::GetSingleton();
+	//auto skylighting = Skylighting::GetSingleton();
 
-	auto ssgi = ScreenSpaceGI::GetSingleton();
-	if (ssgi->loaded)
-		ssgi->DrawSSGI(prevDiffuseAmbientTexture);
-	auto [ssgi_ao, ssgi_y, ssgi_cocg, ssgi_gi_spec] = ssgi->GetOutputTextures();
-	bool ssgi_hq_spec = ssgi->settings.EnableExperimentalSpecularGI;
+	//auto ssgi = ScreenSpaceGI::GetSingleton();
+	//if (ssgi->loaded)
+	//	ssgi->DrawSSGI(prevDiffuseAmbientTexture);
+	//auto [ssgi_ao, ssgi_y, ssgi_cocg, ssgi_gi_spec] = ssgi->GetOutputTextures();
+	//bool ssgi_hq_spec = ssgi->settings.EnableExperimentalSpecularGI;
 
-	auto dispatchCount = Util::GetScreenDispatchCount();
+	//auto dispatchCount = Util::GetScreenDispatchCount();
 
-	if (ssgi->loaded) {
-		// Ambient Composite
-		{
-			TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Ambient Composite");
+	//if (ssgi->loaded) {
+	//	// Ambient Composite
+	//	{
+	//		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Ambient Composite");
 
-			ID3D11ShaderResourceView* srvs[9]{
-				albedo.SRV,
-				normalRoughness.SRV,
-				skylighting->loaded || REL::Module::IsVR() ? depth.depthSRV : nullptr,
-				skylighting->loaded ? skylighting->texProbeArray->srv.get() : nullptr,
-				skylighting->loaded ? skylighting->stbn_vec3_2Dx1D_128x128x64.get() : nullptr,
-				masks2.SRV,
-				ssgi_ao,
-				ssgi_y,
-				ssgi_cocg,
-			};
+	//		ID3D11ShaderResourceView* srvs[9]{
+	//			albedo.SRV,
+	//			normalRoughness.SRV,
+	//			skylighting->loaded || REL::Module::IsVR() ? depth.depthSRV : nullptr,
+	//			skylighting->loaded ? skylighting->texProbeArray->srv.get() : nullptr,
+	//			skylighting->loaded ? skylighting->stbn_vec3_2Dx1D_128x128x64.get() : nullptr,
+	//			masks2.SRV,
+	//			ssgi_ao,
+	//			ssgi_y,
+	//			ssgi_cocg,
+	//		};
 
-			context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
+	//		context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
 
-			ID3D11UnorderedAccessView* uavs[2]{ main.UAV, prevDiffuseAmbientTexture->uav.get() };
-			context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
+	//		ID3D11UnorderedAccessView* uavs[2]{ main.UAV, prevDiffuseAmbientTexture->uav.get() };
+	//		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
 
-			auto shader = interior ? GetComputeAmbientCompositeInterior() : GetComputeAmbientComposite();
-			context->CSSetShader(shader, nullptr, 0);
+	//		auto shader = interior ? GetComputeAmbientCompositeInterior() : GetComputeAmbientComposite();
+	//		context->CSSetShader(shader, nullptr, 0);
 
-			context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
-		}
+	//		context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
+	//	}
 
-		// Clear
-		{
-			ID3D11ShaderResourceView* views[6]{ nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
-			context->CSSetShaderResources(0, ARRAYSIZE(views), views);
+	//	// Clear
+	//	{
+	//		ID3D11ShaderResourceView* views[6]{ nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+	//		context->CSSetShaderResources(0, ARRAYSIZE(views), views);
 
-			ID3D11UnorderedAccessView* uavs[2]{ nullptr, nullptr };
-			context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
+	//		ID3D11UnorderedAccessView* uavs[2]{ nullptr, nullptr };
+	//		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
 
-			context->CSSetShader(nullptr, nullptr, 0);
-		}
-	}
+	//		context->CSSetShader(nullptr, nullptr, 0);
+	//	}
+	//}
 
-	auto sss = SubsurfaceScattering::GetSingleton();
-	if (sss->loaded)
-		sss->DrawSSS();
+	//auto sss = SubsurfaceScattering::GetSingleton();
+	//if (sss->loaded)
+	//	sss->DrawSSS();
 
-	auto dynamicCubemaps = DynamicCubemaps::GetSingleton();
-	if (dynamicCubemaps->loaded)
-		dynamicCubemaps->UpdateCubemap();
+	//auto dynamicCubemaps = DynamicCubemaps::GetSingleton();
+	//if (dynamicCubemaps->loaded)
+	//	dynamicCubemaps->UpdateCubemap();
 
-	auto terrainBlending = TerrainBlending::GetSingleton();
+	//auto terrainBlending = TerrainBlending::GetSingleton();
 
-	// Deferred Composite
-	{
-		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Deferred Composite");
+	//// Deferred Composite
+	//{
+	//	TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Deferred Composite");
 
-		ID3D11ShaderResourceView* srvs[15]{
-			specular.SRV,
-			albedo.SRV,
-			normalRoughness.SRV,
-			masks.SRV,
-			masks2.SRV,
-			dynamicCubemaps->loaded || REL::Module::IsVR() ? (terrainBlending->loaded ? terrainBlending->blendedDepthTexture16->srv.get() : depth.depthSRV) : nullptr,
-			dynamicCubemaps->loaded ? reflectance.SRV : nullptr,
-			dynamicCubemaps->loaded ? dynamicCubemaps->envTexture->srv.get() : nullptr,
-			dynamicCubemaps->loaded ? dynamicCubemaps->envReflectionsTexture->srv.get() : nullptr,
-			dynamicCubemaps->loaded && skylighting->loaded ? skylighting->texProbeArray->srv.get() : nullptr,
-			dynamicCubemaps->loaded && skylighting->loaded ? skylighting->stbn_vec3_2Dx1D_128x128x64.get() : nullptr,
-			ssgi_ao,
-			ssgi_hq_spec ? nullptr : ssgi_y,
-			ssgi_hq_spec ? nullptr : ssgi_cocg,
-			ssgi_hq_spec ? ssgi_gi_spec : nullptr,
-		};
+	//	ID3D11ShaderResourceView* srvs[15]{
+	//		specular.SRV,
+	//		albedo.SRV,
+	//		normalRoughness.SRV,
+	//		masks.SRV,
+	//		masks2.SRV,
+	//		dynamicCubemaps->loaded || REL::Module::IsVR() ? (terrainBlending->loaded ? terrainBlending->blendedDepthTexture16->srv.get() : depth.depthSRV) : nullptr,
+	//		dynamicCubemaps->loaded ? reflectance.SRV : nullptr,
+	//		dynamicCubemaps->loaded ? dynamicCubemaps->envTexture->srv.get() : nullptr,
+	//		dynamicCubemaps->loaded ? dynamicCubemaps->envReflectionsTexture->srv.get() : nullptr,
+	//		dynamicCubemaps->loaded && skylighting->loaded ? skylighting->texProbeArray->srv.get() : nullptr,
+	//		dynamicCubemaps->loaded && skylighting->loaded ? skylighting->stbn_vec3_2Dx1D_128x128x64.get() : nullptr,
+	//		ssgi_ao,
+	//		ssgi_hq_spec ? nullptr : ssgi_y,
+	//		ssgi_hq_spec ? nullptr : ssgi_cocg,
+	//		ssgi_hq_spec ? ssgi_gi_spec : nullptr,
+	//	};
 
-		if (dynamicCubemaps->loaded)
-			context->CSSetSamplers(0, 1, &linearSampler);
+	//	if (dynamicCubemaps->loaded)
+	//		context->CSSetSamplers(0, 1, &linearSampler);
 
-		context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
+	//	context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
 
-		ID3D11UnorderedAccessView* uavs[3]{ main.UAV, normals.UAV, motionVectors.UAV };
-		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
+	//	ID3D11UnorderedAccessView* uavs[3]{ main.UAV, normals.UAV, motionVectors.UAV };
+	//	context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
 
-		auto shader = interior ? GetComputeMainCompositeInterior() : GetComputeMainComposite();
-		context->CSSetShader(shader, nullptr, 0);
+	//	auto shader = interior ? GetComputeMainCompositeInterior() : GetComputeMainComposite();
+	//	context->CSSetShader(shader, nullptr, 0);
 
-		context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
-	}
+	//	context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
+	//}
 
-	// Clear
-	{
-		ID3D11ShaderResourceView* views[10]{ nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
-		context->CSSetShaderResources(0, ARRAYSIZE(views), views);
+	//// Clear
+	//{
+	//	ID3D11ShaderResourceView* views[10]{ nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+	//	context->CSSetShaderResources(0, ARRAYSIZE(views), views);
 
-		ID3D11UnorderedAccessView* uavs[3]{ nullptr, nullptr, nullptr };
-		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
+	//	ID3D11UnorderedAccessView* uavs[3]{ nullptr, nullptr, nullptr };
+	//	context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
 
-		ID3D11Buffer* buffers[1] = { nullptr };
-		context->CSSetConstantBuffers(12, 1, buffers);
+	//	ID3D11Buffer* buffers[1] = { nullptr };
+	//	context->CSSetConstantBuffers(12, 1, buffers);
 
-		context->CSSetShader(nullptr, nullptr, 0);
-	}
+	//	context->CSSetShader(nullptr, nullptr, 0);
+	//}
 
-	if (dynamicCubemaps->loaded)
-		dynamicCubemaps->PostDeferred();
+	//if (dynamicCubemaps->loaded)
+	//	dynamicCubemaps->PostDeferred();
 }
 
 void Deferred::EndDeferred()

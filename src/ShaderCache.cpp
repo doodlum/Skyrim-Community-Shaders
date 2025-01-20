@@ -10,6 +10,7 @@
 #include "Deferred.h"
 #include "Feature.h"
 #include "State.h"
+#include "VariableCache.h"
 
 #include "Features/DynamicCubemaps.h"
 
@@ -1676,7 +1677,7 @@ namespace SIE
 			}
 		}
 
-		auto state = State::GetSingleton();
+		auto state = VariableCache::GetSingleton()->state;
 		if (state->isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
 			// use vanilla shader
 			return nullptr;
@@ -1685,13 +1686,15 @@ namespace SIE
 			return nullptr;
 		}
 
-		auto key = SIE::SShaderCache::GetShaderString(ShaderClass::Vertex, shader, descriptor, true);
-		if (blockedKeyIndex != -1 && !blockedKey.empty() && key == blockedKey) {
-			if (std::find(blockedIDs.begin(), blockedIDs.end(), descriptor) == blockedIDs.end()) {
-				blockedIDs.push_back(descriptor);
-				logger::debug("Skipping blocked shader {:X}:{} total: {}", descriptor, blockedKey, blockedIDs.size());
+		if (state->IsDeveloperMode()) {
+			auto key = SIE::SShaderCache::GetShaderString(ShaderClass::Vertex, shader, descriptor, true);
+			if (blockedKeyIndex != -1 && !blockedKey.empty() && key == blockedKey) {
+				if (std::find(blockedIDs.begin(), blockedIDs.end(), descriptor) == blockedIDs.end()) {
+					blockedIDs.push_back(descriptor);
+					logger::debug("Skipping blocked shader {:X}:{} total: {}", descriptor, blockedKey, blockedIDs.size());
+				}
+				return nullptr;
 			}
-			return nullptr;
 		}
 
 		{
@@ -1715,7 +1718,7 @@ namespace SIE
 	RE::BSGraphics::PixelShader* ShaderCache::GetPixelShader(const RE::BSShader& shader,
 		uint32_t descriptor)
 	{
-		auto state = State::GetSingleton();
+		auto state = VariableCache::GetSingleton()->state;
 		if (state->isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
 			// use vanilla shader
 			return nullptr;
@@ -1731,13 +1734,15 @@ namespace SIE
 			}
 		}
 
-		auto key = SIE::SShaderCache::GetShaderString(ShaderClass::Pixel, shader, descriptor, true);
-		if (blockedKeyIndex != -1 && !blockedKey.empty() && key == blockedKey) {
-			if (std::find(blockedIDs.begin(), blockedIDs.end(), descriptor) == blockedIDs.end()) {
-				blockedIDs.push_back(descriptor);
-				logger::debug("Skipping blocked shader {:X}:{} total: {}", descriptor, blockedKey, blockedIDs.size());
+		if (state->IsDeveloperMode()) {
+			auto key = SIE::SShaderCache::GetShaderString(ShaderClass::Pixel, shader, descriptor, true);
+			if (blockedKeyIndex != -1 && !blockedKey.empty() && key == blockedKey) {
+				if (std::find(blockedIDs.begin(), blockedIDs.end(), descriptor) == blockedIDs.end()) {
+					blockedIDs.push_back(descriptor);
+					logger::debug("Skipping blocked shader {:X}:{} total: {}", descriptor, blockedKey, blockedIDs.size());
+				}
+				return nullptr;
 			}
-			return nullptr;
 		}
 
 		{

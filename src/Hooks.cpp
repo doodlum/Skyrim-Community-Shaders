@@ -10,6 +10,8 @@
 
 #include "Streamline.h"
 
+#include "VariableCache.h"
+
 std::unordered_map<void*, std::pair<std::unique_ptr<uint8_t[]>, size_t>> ShaderBytecodeMap;
 
 void RegisterShaderBytecode(void* Shader, const void* Bytecode, size_t BytecodeLength)
@@ -101,7 +103,10 @@ struct BSShader_LoadShaders
 
 bool Hooks::BSShader_BeginTechnique::thunk(RE::BSShader* shader, uint32_t vertexDescriptor, uint32_t pixelDescriptor, bool skipPixelShader)
 {
-	auto state = State::GetSingleton();
+	auto variableCache = VariableCache::GetSingleton();
+	auto state = variableCache->state;
+	auto shaderCache = variableCache->shaderCache;
+	auto rendererShadowState = variableCache->rendererShadowState;
 
 	state->updateShader = true;
 	state->currentShader = shader;
@@ -117,18 +122,17 @@ bool Hooks::BSShader_BeginTechnique::thunk(RE::BSShader* shader, uint32_t vertex
 	bool shaderFound = func(shader, vertexDescriptor, pixelDescriptor, skipPixelShader);
 
 	if (!shaderFound && shader->shaderType.get() != RE::BSShader::Type::Effect) {
-		auto& shaderCache = SIE::ShaderCache::Instance();
-		RE::BSGraphics::VertexShader* vertexShader = shaderCache.GetVertexShader(*shader, state->modifiedVertexDescriptor);
-		RE::BSGraphics::PixelShader* pixelShader = shaderCache.GetPixelShader(*shader, state->modifiedPixelDescriptor);
+		RE::BSGraphics::VertexShader* vertexShader = shaderCache->GetVertexShader(*shader, state->modifiedVertexDescriptor);
+		RE::BSGraphics::PixelShader* pixelShader = shaderCache->GetPixelShader(*shader, state->modifiedPixelDescriptor);
 		if (vertexShader == nullptr || (!skipPixelShader && pixelShader == nullptr)) {
 			shaderFound = false;
 		} else {
 			state->settingCustomShader = true;
-			RE::BSGraphics::RendererShadowState::GetSingleton()->SetVertexShader(vertexShader);
+			rendererShadowState->SetVertexShader(vertexShader);
 			if (skipPixelShader) {
 				pixelShader = nullptr;
 			}
-			RE::BSGraphics::RendererShadowState::GetSingleton()->SetPixelShader(pixelShader);
+			rendererShadowState->SetPixelShader(pixelShader);
 			state->settingCustomShader = false;
 			shaderFound = true;
 		}
@@ -371,6 +375,8 @@ namespace Hooks
 				stl::detour_vfunc<15, ID3D11Device_CreatePixelShader>(device);
 			}
 			Menu::GetSingleton()->Init(swapchain, device, context);
+
+			VariableCache::GetSingleton()->InitializeVariables();
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
@@ -455,60 +461,68 @@ namespace Hooks
 
 	struct BSShader__BeginTechnique_SetVertexShader
 	{
-		static void thunk(RE::BSGraphics::Renderer* This, RE::BSGraphics::VertexShader* a_vertexShader)
+		static void thunk(RE::BSGraphics::Renderer*, RE::BSGraphics::VertexShader* a_vertexShader)
 		{
-			auto state = State::GetSingleton();
+			auto variableCache = VariableCache::GetSingleton();
+			auto state = variableCache->state;
+			auto shaderCache = variableCache->shaderCache;
+
 			if (!state->settingCustomShader) {
-				auto& shaderCache = SIE::ShaderCache::Instance();
-				if (shaderCache.IsEnabled()) {
+				if (shaderCache->IsEnabled()) {
 					auto currentShader = state->currentShader;
 					auto type = currentShader->shaderType.get();
 					if (type > 0 && type < RE::BSShader::Type::Total) {
 						if (state->enabledClasses[type - 1]) {
-							RE::BSGraphics::VertexShader* vertexShader = shaderCache.GetVertexShader(*currentShader, state->modifiedVertexDescriptor);
+							RE::BSGraphics::VertexShader* vertexShader = shaderCache->GetVertexShader(*currentShader, state->modifiedVertexDescriptor);
 							if (vertexShader) {
 								state->context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(vertexShader->shader), NULL, NULL);
-								auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
-								GET_INSTANCE_MEMBER(currentVertexShader, shadowState)
-								currentVertexShader = a_vertexShader;
-								GET_INSTANCE_MEMBER(stateUpdateFlags, shadowState)
-								stateUpdateFlags.set(RE::BSGraphics::DIRTY_VERTEX_DESC);
+								*variableCache->currentVertexShader = a_vertexShader;
+								variableCache->stateUpdateFlags->set(RE::BSGraphics::DIRTY_VERTEX_DESC);
 								return;
 							}
 						}
 					}
 				}
 			}
-			func(This, a_vertexShader);
+
+			variableCache->stateUpdateFlags->set(RE::BSGraphics::DIRTY_VERTEX_DESC);
+
+			*variableCache->currentVertexShader = a_vertexShader;
+			variableCache->context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(a_vertexShader->shader), NULL, NULL);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
+
 	struct BSShader__BeginTechnique_SetPixelShader
 	{
-		static void thunk(RE::BSGraphics::Renderer* This, RE::BSGraphics::PixelShader* a_pixelShader)
+		static void thunk(RE::BSGraphics::Renderer*, RE::BSGraphics::PixelShader* a_pixelShader)
 		{
-			auto state = State::GetSingleton();
+			auto variableCache = VariableCache::GetSingleton();
+			auto state = variableCache->state;
+			auto shaderCache = variableCache->shaderCache;
+
 			if (!state->settingCustomShader) {
-				auto& shaderCache = SIE::ShaderCache::Instance();
-				if (shaderCache.IsEnabled()) {
+				if (shaderCache->IsEnabled()) {
 					auto currentShader = state->currentShader;
 					auto type = currentShader->shaderType.get();
 					if (type > 0 && type < RE::BSShader::Type::Total) {
 						if (state->enabledClasses[type - 1]) {
-							RE::BSGraphics::PixelShader* pixelShader = shaderCache.GetPixelShader(*currentShader, state->modifiedPixelDescriptor);
+							RE::BSGraphics::PixelShader* pixelShader = shaderCache->GetPixelShader(*currentShader, state->modifiedPixelDescriptor);	
 							if (pixelShader) {
 								state->context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(pixelShader->shader), NULL, NULL);
-								auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
-								GET_INSTANCE_MEMBER(currentPixelShader, shadowState)
-								currentPixelShader = a_pixelShader;
+								*variableCache->currentPixelShader = a_pixelShader;
 								return;
 							}
 						}
 					}
 				}
 			}
-			func(This, a_pixelShader);
+
+			*variableCache->currentPixelShader = a_pixelShader;
+			
+			if (a_pixelShader)
+				variableCache->context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(a_pixelShader->shader), NULL, NULL);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
