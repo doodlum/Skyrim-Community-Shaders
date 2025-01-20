@@ -493,7 +493,6 @@ namespace Hooks
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-
 	struct BSShader__BeginTechnique_SetPixelShader
 	{
 		static void thunk(RE::BSGraphics::Renderer*, RE::BSGraphics::PixelShader* a_pixelShader)
@@ -508,7 +507,7 @@ namespace Hooks
 					auto type = currentShader->shaderType.get();
 					if (type > 0 && type < RE::BSShader::Type::Total) {
 						if (state->enabledClasses[type - 1]) {
-							RE::BSGraphics::PixelShader* pixelShader = shaderCache->GetPixelShader(*currentShader, state->modifiedPixelDescriptor);	
+							RE::BSGraphics::PixelShader* pixelShader = shaderCache->GetPixelShader(*currentShader, state->modifiedPixelDescriptor);
 							if (pixelShader) {
 								state->context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(pixelShader->shader), NULL, NULL);
 								*variableCache->currentPixelShader = a_pixelShader;
@@ -520,7 +519,7 @@ namespace Hooks
 			}
 
 			*variableCache->currentPixelShader = a_pixelShader;
-			
+
 			if (a_pixelShader)
 				variableCache->context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(a_pixelShader->shader), NULL, NULL);
 		}
