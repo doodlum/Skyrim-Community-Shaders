@@ -436,7 +436,11 @@ namespace PBR
 		else
 #endif
 		{
+			// #	if defined(HAIR)
+			// 			transmission += 0.1 * lightProperties.LinearLightColor * GetHairColorMarschner(N, V, L, NdotL, NdotV, VdotL, 0, 1, 0, surfaceProperties);
+			// #	else
 			diffuse += lightProperties.LinearLightColor * satNdotL * GetDiffuseDirectLightMultiplierLambert();
+			// #	endif
 
 			float3 F;
 #if defined(GLINT)
@@ -532,7 +536,14 @@ namespace PBR
 		else
 #endif
 		{
+#if defined(HAIR)
+			float3 L = normalize(V - N * dot(V, N));
+			float NdotL = dot(N, L);
+			float VdotL = dot(V, L);
+			diffuseLobeWeight = GetHairColorMarschner(N, V, L, NdotL, NdotV, VdotL, 1, 0, 0.2, surfaceProperties);
+#else
 			diffuseLobeWeight = diffuseColor;
+#endif
 
 #if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 			[branch] if ((PBRFlags & Flags::Subsurface) != 0)

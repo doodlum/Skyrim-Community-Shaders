@@ -470,6 +470,7 @@ namespace SIE
 			// Community Shaders start
 			TruePbr = 1 << 3,
 			Deferred = 1 << 4,
+			VtPbr = 1 << 5,
 			// Community Shaders end
 			Specular = 1 << 9,
 			SoftLighting = 1 << 10,

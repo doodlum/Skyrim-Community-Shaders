@@ -90,4 +90,21 @@ public:
 	PBRMaterialObjectData* selectedPbrMaterialObject = nullptr;
 
 	RE::BGSTextureSet* currentTextureSet = nullptr;
+
+	struct DebugSkinHairSettings
+	{
+		bool EnablePBRSkin = false;
+		bool EnablePBRHair = false;
+		float SkinRoughnessScale = 0.6f;
+		float SkinSpecularLevel = 0.0277f;
+		float SkinSpecularTexMultiplier = 3.14f;
+		float HairRoughnessScale = 0.5f;
+		float HairSpecularLevel = 0.045f;
+	} debugSkinHairSettings;
+
+	DebugSkinHairSettings GetDebugSkinHairSettings();
+	void SaveDebugSkinHairSettings(json& o_json);
+	void LoadDebugSkinHairSettings(json& o_json);
+	void ResetDebugSkinHairSettings();
+	void DebugSkinHairSettingsLog();
 };

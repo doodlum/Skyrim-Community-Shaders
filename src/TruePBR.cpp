@@ -39,6 +39,16 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	specularLevel,
 	glintParameters);
 
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
+	TruePBR::DebugSkinHairSettings,
+	EnablePBRSkin,
+	EnablePBRHair,
+	SkinRoughnessScale,
+	SkinSpecularLevel,
+	SkinSpecularTexMultiplier,
+	HairRoughnessScale,
+	HairSpecularLevel);
+
 namespace PNState
 {
 	void ReadPBRRecordConfigs(const std::string& rootPath, std::function<void(const std::string&, const json&)> recordReader)
@@ -100,6 +110,28 @@ void SetupPBRLandscapeTextureParameters(BSLightingShaderMaterialPBRLandscape& ma
 void TruePBR::DrawSettings()
 {
 	if (ImGui::CollapsingHeader("PBR", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+		if (ImGui::TreeNodeEx("Experimental Vanilla to PBR Skin / Hair", ImGuiTreeNodeFlags_DefaultOpen)) {
+			ImGui::Checkbox("Enable Skin", &debugSkinHairSettings.EnablePBRSkin);
+			// if (debugSkinHairSettings.EnablePBRSkin) {
+			ImGui::SliderFloat("Skin Roughness", &debugSkinHairSettings.SkinRoughnessScale, 0.f, 1.f, "%.3f");
+			ImGui::SliderFloat("Skin Specular Level", &debugSkinHairSettings.SkinSpecularLevel, 0.f, 0.1f, "%.4f");
+			if (auto _tt = Util::HoverTooltipWrapper())
+				ImGui::Text("This \"Specular\" here is the same as the \"Specular\" in the PBR material object data. 0.028 is the default value for skin.");
+			ImGui::SliderFloat("Skin Specular Texture Multiplier", &debugSkinHairSettings.SkinSpecularTexMultiplier, 0.f, 10.f, "%.3f");
+			if (auto _tt = Util::HoverTooltipWrapper())
+				ImGui::Text("A multiplier for the vanilla specular texture. It will be used to modify the roughness of the skin.");
+			// }
+			ImGui::Checkbox("Enable Hair", &debugSkinHairSettings.EnablePBRHair);
+			// if (debugSkinHairSettings.EnablePBRHair) {
+			ImGui::SliderFloat("Hair Roughness", &debugSkinHairSettings.HairRoughnessScale, 0.f, 1.f, "%.3f");
+			ImGui::SliderFloat("Hair Specular Level", &debugSkinHairSettings.HairSpecularLevel, 0.f, 0.1f, "%.4f");
+			// }
+			if (ImGui::Button("Reset")) {
+				ResetDebugSkinHairSettings();
+			}
+			ImGui::TreePop();
+		}
+
 		if (ImGui::TreeNodeEx("Texture Set Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
 			if (ImGui::BeginCombo("Texture Set", selectedPbrTextureSetName.c_str())) {
 				for (auto& [textureSetName, textureSet] : pbrTextureSets) {
@@ -251,6 +283,40 @@ void TruePBR::DrawSettings()
 			ImGui::TreePop();
 		}
 	}
+}
+
+void TruePBR::SaveDebugSkinHairSettings(json& o_json)
+{
+	o_json = debugSkinHairSettings;
+}
+
+void TruePBR::LoadDebugSkinHairSettings(json& o_json)
+{
+	debugSkinHairSettings = o_json;
+}
+
+void TruePBR::ResetDebugSkinHairSettings()
+{
+	debugSkinHairSettings = {};
+}
+
+void TruePBR::DebugSkinHairSettingsLog()
+{
+	logger::info("[TruePBR] DebugSkinHairSettings:");
+	logger::info("[TruePBR] EnablePBRSkin: {}", debugSkinHairSettings.EnablePBRSkin);
+	logger::info("[TruePBR] EnablePBRHair: {}", debugSkinHairSettings.EnablePBRHair);
+	logger::info("[TruePBR] SkinRoughnessScale: {}", debugSkinHairSettings.SkinRoughnessScale);
+	logger::info("[TruePBR] SkinSpecularLevel: {}", debugSkinHairSettings.SkinSpecularLevel);
+	logger::info("[TruePBR] SkinSpecularTexMultiplier: {}", debugSkinHairSettings.SkinSpecularTexMultiplier);
+	logger::info("[TruePBR] HairRoughnessScale: {}", debugSkinHairSettings.HairRoughnessScale);
+	logger::info("[TruePBR] HairSpecularLevel: {}", debugSkinHairSettings.HairSpecularLevel);
+}
+
+TruePBR::DebugSkinHairSettings TruePBR::GetDebugSkinHairSettings()
+{
+	DebugSkinHairSettings out = debugSkinHairSettings;
+	// DebugSkinHairSettingsLog();
+	return out;
 }
 
 void TruePBR::SetupResources()
@@ -468,7 +534,9 @@ namespace Permutations
 	std::unordered_set<uint32_t> GeneratePBRLightingPixelPermutations()
 	{
 		using enum SIE::ShaderCache::LightingShaderFlags;
-
+		// TruePBR::DebugSkinHairSettings debugSkinHairSettings = TruePBR::GetSingleton()->GetDebugSkinHairSettings();
+		// bool debugSkin = debugSkinHairSettings.EnablePBRSkin;
+		// bool debugHair = debugSkinHairSettings.EnablePBRHair;
 		constexpr std::array defaultFlags{ Deferred, AnisoLighting, Skinned, DoAlphaTest };
 		constexpr std::array projectedUvFlags{ Deferred, AnisoLighting, DoAlphaTest, Snow };
 		constexpr std::array lodObjectsFlags{ Deferred, WorldMap, DoAlphaTest, ProjectedUV };
@@ -567,7 +635,7 @@ struct BSLightingShaderProperty_LoadBinary
 		}
 
 		stream.iStr->read(&property->flags, 1);
-
+		auto debugSkinHairSettings = TruePBR::GetSingleton()->GetDebugSkinHairSettings();
 		bool isPbr = false;
 		{
 			RE::BSLightingShaderMaterialBase* material = nullptr;
@@ -640,7 +708,6 @@ struct BSLightingShaderProperty_LoadBinary
 			// meshes. But it was too late to move to use different flag so internally we use kVertexLighting instead
 			// as it's not used for Lighting shader.
 			property->flags.set(kVertexLighting);
-
 			property->flags.reset(kMenuScreen, kSpecular, kGlowMap, kEnvMap, kMultiLayerParallax, kSoftLighting, kRimLighting, kBackLighting, kAnisotropicLighting, kEffectLighting, kFitSlope);
 		} else {
 			// There are some modded non-PBR meshes with kVertexLighting enabled.
@@ -661,6 +728,8 @@ struct BSLightingShaderProperty_GetRenderPasses
 
 		bool isPbr = false;
 
+		TruePBR::DebugSkinHairSettings debugSkinHairSettings = TruePBR::GetSingleton()->GetDebugSkinHairSettings();
+
 		if (property->flags.any(RE::BSShaderProperty::EShaderPropertyFlag::kVertexLighting) && (property->material->GetFeature() == RE::BSShaderMaterial::Feature::kDefault || property->material->GetFeature() == RE::BSShaderMaterial::Feature::kMultiTexLandLODBlend)) {
 			isPbr = true;
 		}
@@ -673,6 +742,12 @@ struct BSLightingShaderProperty_GetRenderPasses
 				auto lightingFlags = lightingTechnique & ~(~0u << 24);
 				auto lightingType = static_cast<SIE::ShaderCache::LightingShaderTechniques>((lightingTechnique >> 24) & 0x3F);
 				lightingFlags &= ~0b111000u;
+				if (debugSkinHairSettings.EnablePBRHair && property->material->GetFeature() == RE::BSShaderMaterial::Feature::kHairTint) {
+					lightingFlags |= static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::VtPbr);
+				}
+				if (debugSkinHairSettings.EnablePBRSkin && (property->material->GetFeature() == RE::BSShaderMaterial::Feature::kFaceGen || property->material->GetFeature() == RE::BSShaderMaterial::Feature::kFaceGenRGBTint)) {
+					lightingFlags |= static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::VtPbr);
+				}
 				if (isPbr) {
 					lightingFlags |= static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::TruePbr);
 					lightingFlags &= ~static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::Specular);
@@ -714,6 +789,9 @@ struct BSLightingShader_SetupMaterial
 
 		auto lightingFlags = shader->currentRawTechnique & ~(~0u << 24);
 		auto lightingType = static_cast<SIE::ShaderCache::LightingShaderTechniques>((shader->currentRawTechnique >> 24) & 0x3F);
+		auto debugSkinHairSettings = TruePBR::GetSingleton()->GetDebugSkinHairSettings();
+		if ((debugSkinHairSettings.EnablePBRSkin && (lightingType == Facegen || lightingType == FacegenRGBTint)) || (debugSkinHairSettings.EnablePBRHair && lightingType == Hair))
+			lightingFlags |= static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::VtPbr);
 		if (!(lightingType == LODLand || lightingType == LODLandNoise) && (lightingFlags & static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::TruePbr))) {
 			auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 			auto renderer = RE::BSGraphics::Renderer::GetSingleton();
@@ -985,6 +1063,134 @@ struct BSLightingShader_SetupMaterial
 			RE::BSGraphics::Renderer::FlushPSConstantGroup(RE::BSGraphics::ConstantGroupLevel::PerMaterial);
 			RE::BSGraphics::Renderer::ApplyVSConstantGroup(RE::BSGraphics::ConstantGroupLevel::PerMaterial);
 			RE::BSGraphics::Renderer::ApplyPSConstantGroup(RE::BSGraphics::ConstantGroupLevel::PerMaterial);
+		} else if (lightingFlags & static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::VtPbr)) {
+			auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
+			auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+
+			RE::BSGraphics::Renderer::PrepareVSConstantGroup(RE::BSGraphics::ConstantGroupLevel::PerMaterial);
+			RE::BSGraphics::Renderer::PreparePSConstantGroup(RE::BSGraphics::ConstantGroupLevel::PerMaterial);
+
+			auto* tMaterial = material;
+
+			stl::enumeration<PBRShaderFlags> shaderFlags;
+			if (tMaterial->diffuseRenderTargetSourceIndex != -1) {
+				shadowState->SetPSTexture(0, renderer->GetRuntimeData().renderTargets[tMaterial->diffuseRenderTargetSourceIndex]);
+			} else {
+				shadowState->SetPSTexture(0, tMaterial->diffuseTexture->rendererTexture);
+			}
+			shadowState->SetPSTextureAddressMode(0, static_cast<RE::BSGraphics::TextureAddressMode>(tMaterial->textureClampMode));
+			shadowState->SetPSTextureFilterMode(0, RE::BSGraphics::TextureFilterMode::kAnisotropic);
+
+			shadowState->SetPSTexture(1, tMaterial->normalTexture->rendererTexture);
+			shadowState->SetPSTextureAddressMode(1, static_cast<RE::BSGraphics::TextureAddressMode>(tMaterial->textureClampMode));
+			shadowState->SetPSTextureFilterMode(1, RE::BSGraphics::TextureFilterMode::kAnisotropic);
+
+			if (lightingType == Hair) {
+				// shaderFlags.set(PBRShaderFlags::HairMarschner);
+				auto* hairMaterial = static_cast<const RE::BSLightingShaderMaterialHairTint*>(tMaterial);
+
+				std::array<float, 4> PBRParams1;
+				PBRParams1[0] = debugSkinHairSettings.HairRoughnessScale;
+				PBRParams1[1] = 0.f;
+				PBRParams1[2] = debugSkinHairSettings.HairSpecularLevel;
+				shadowState->SetPSConstant(PBRParams1, RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.PBRParams1);
+				shadowState->SetPSConstant(hairMaterial->tintColor, RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.TintColor);
+			} else if (lightingType == Facegen || lightingType == FacegenRGBTint) {
+				if (lightingType == Facegen) {
+					auto* facegenMaterial = static_cast<const RE::BSLightingShaderMaterialFacegen*>(tMaterial);
+					if (facegenMaterial->specularBackLightingTexture != nullptr) {
+						shadowState->SetPSTexture(2, facegenMaterial->specularBackLightingTexture->rendererTexture);
+						shadowState->SetPSTextureAddressMode(2, static_cast<RE::BSGraphics::TextureAddressMode>(tMaterial->textureClampMode));
+						shadowState->SetPSTextureFilterMode(2, RE::BSGraphics::TextureFilterMode::kAnisotropic);
+					}
+					if (facegenMaterial->tintTexture != nullptr) {
+						shadowState->SetPSTexture(3, facegenMaterial->tintTexture->rendererTexture);
+						shadowState->SetPSTextureAddressMode(3, static_cast<RE::BSGraphics::TextureAddressMode>(tMaterial->textureClampMode));
+						shadowState->SetPSTextureFilterMode(3, RE::BSGraphics::TextureFilterMode::kAnisotropic);
+					}
+					if (facegenMaterial->detailTexture != nullptr) {
+						shadowState->SetPSTexture(4, facegenMaterial->detailTexture->rendererTexture);
+						shadowState->SetPSTextureAddressMode(4, static_cast<RE::BSGraphics::TextureAddressMode>(tMaterial->textureClampMode));
+						shadowState->SetPSTextureFilterMode(4, RE::BSGraphics::TextureFilterMode::kAnisotropic);
+					}
+					shadowState->SetPSConstant(float4(1.0, 1.0, 1.0, 1.0), RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.TintColor);
+				}
+				if (lightingType == FacegenRGBTint) {
+					auto* facegenMaterial = static_cast<const RE::BSLightingShaderMaterialFacegenTint*>(tMaterial);
+					if (facegenMaterial->specularBackLightingTexture != nullptr) {
+						shadowState->SetPSTexture(2, facegenMaterial->specularBackLightingTexture->rendererTexture);
+						shadowState->SetPSTextureAddressMode(2, static_cast<RE::BSGraphics::TextureAddressMode>(tMaterial->textureClampMode));
+						shadowState->SetPSTextureFilterMode(2, RE::BSGraphics::TextureFilterMode::kAnisotropic);
+					}
+					shadowState->SetPSConstant(facegenMaterial->tintColor, RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.TintColor);
+				}
+
+				std::array<float, 3> PBRParams1;
+				PBRParams1[0] = debugSkinHairSettings.SkinRoughnessScale;
+				PBRParams1[1] = 0.f;
+				PBRParams1[2] = debugSkinHairSettings.SkinSpecularLevel;
+				shadowState->SetPSConstant(PBRParams1, RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.PBRParams1);
+
+				std::array<float, 4> PBRParams2;
+				PBRParams2[0] = 0.482f;
+				PBRParams2[1] = 0.169f;
+				PBRParams2[2] = 0.109f;
+				PBRParams2[3] = debugSkinHairSettings.SkinSpecularTexMultiplier;
+				shadowState->SetPSConstant(PBRParams2, RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.PBRParams2);
+			} else {
+				std::array<float, 3> PBRParams1;
+				PBRParams1[0] = debugSkinHairSettings.SkinRoughnessScale;
+				PBRParams1[1] = 0.f;
+				PBRParams1[2] = debugSkinHairSettings.SkinSpecularLevel;
+				shadowState->SetPSConstant(PBRParams1, RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.PBRParams1);
+
+				std::array<float, 4> PBRParams2;
+				PBRParams2[0] = 0.482f;
+				PBRParams2[1] = 0.169f;
+				PBRParams2[2] = 0.109f;
+				PBRParams2[3] = debugSkinHairSettings.SkinSpecularTexMultiplier;
+				shadowState->SetPSConstant(PBRParams2, RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.PBRParams2);
+			}
+
+			{
+				shadowState->SetPSConstant(shaderFlags, RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.PBRFlags);
+				shadowState->SetPSConstant(tMaterial->specularColor, RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.SpecularColor);
+				shadowState->SetPSConstant(float4(0.0, 0.0, 0.0, 0.0), RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.EnvmapData);
+			}
+
+			{
+				const uint32_t bufferIndex = RE::BSShaderManager::State::GetSingleton().textureTransformCurrentBuffer;
+
+				std::array<float, 4> texCoordOffsetScale;
+				texCoordOffsetScale[0] = material->texCoordOffset[bufferIndex].x;
+				texCoordOffsetScale[1] = material->texCoordOffset[bufferIndex].y;
+				texCoordOffsetScale[2] = material->texCoordScale[bufferIndex].x;
+				texCoordOffsetScale[3] = material->texCoordScale[bufferIndex].y;
+				shadowState->SetVSConstant(texCoordOffsetScale, RE::BSGraphics::ConstantGroupLevel::PerMaterial, 11);
+			}
+
+			if (lightingFlags & static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::CharacterLight)) {
+				static const REL::Relocation<RE::ImageSpaceTexture*> characterLightTexture{ RELOCATION_ID(513464, 391302) };
+
+				if (characterLightTexture->renderTarget >= RE::RENDER_TARGET::kFRAMEBUFFER) {
+					shadowState->SetPSTexture(11, renderer->GetRuntimeData().renderTargets[characterLightTexture->renderTarget]);
+					shadowState->SetPSTextureAddressMode(11, RE::BSGraphics::TextureAddressMode::kClampSClampT);
+				}
+
+				const auto& smState = RE::BSShaderManager::State::GetSingleton();
+				std::array<float, 4> characterLightParams;
+				if (smState.characterLightEnabled) {
+					std::copy_n(smState.characterLightParams, 4, characterLightParams.data());
+				} else {
+					std::fill_n(characterLightParams.data(), 4, 0.f);
+				}
+				shadowState->SetPSConstant(characterLightParams, RE::BSGraphics::ConstantGroupLevel::PerMaterial, lightingPSConstants.CharacterLightParams);
+			}
+
+			RE::BSGraphics::Renderer::FlushVSConstantGroup(RE::BSGraphics::ConstantGroupLevel::PerMaterial);
+			RE::BSGraphics::Renderer::FlushPSConstantGroup(RE::BSGraphics::ConstantGroupLevel::PerMaterial);
+			RE::BSGraphics::Renderer::ApplyVSConstantGroup(RE::BSGraphics::ConstantGroupLevel::PerMaterial);
+			RE::BSGraphics::Renderer::ApplyPSConstantGroup(RE::BSGraphics::ConstantGroupLevel::PerMaterial);
 		} else {
 			func(shader, material);
 		}
@@ -1001,6 +1207,14 @@ struct BSLightingShader_SetupGeometry
 		if ((shader->currentRawTechnique & static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::TruePbr)) != 0) {
 			shader->currentRawTechnique |= static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::AmbientSpecular);
 			shader->currentRawTechnique ^= static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::AnisoLighting);
+		}
+
+		TruePBR::DebugSkinHairSettings debugSkinHairSettings = TruePBR::GetSingleton()->GetDebugSkinHairSettings();
+		if (debugSkinHairSettings.EnablePBRSkin) {
+			shader->currentRawTechnique |= static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::VtPbr);
+		}
+		if (debugSkinHairSettings.EnablePBRHair) {
+			shader->currentRawTechnique |= static_cast<uint32_t>(SIE::ShaderCache::LightingShaderFlags::VtPbr);
 		}
 
 		shader->currentRawTechnique &= ~0b111000u;
