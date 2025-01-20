@@ -42,7 +42,7 @@ void State::Draw()
 		if (deferred->inWorld) {
 			currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
 		}
-		
+
 		if (deferred->inDecals)
 			currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::IsDecal;
 
