@@ -1513,7 +1513,7 @@ struct TESBoundObject_Clone3D
 struct BGSTextureSet_ToShaderTextureSet
 {
 	static RE::BSShaderTextureSet* thunk(RE::BGSTextureSet* textureSet)
-	{			
+	{
 		auto truePBR = VariableCache::GetSingleton()->truePBR;
 		truePBR->currentTextureSet = textureSet;
 
