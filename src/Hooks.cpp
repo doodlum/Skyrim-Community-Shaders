@@ -654,9 +654,10 @@ namespace Hooks
 		{
 			static void thunk(RE::BSGraphics::Renderer* renderer, RE::BSGraphics::ComputeShader* shader, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ)
 			{
-				auto state = State::GetSingleton();
+				auto variableCache = VariableCache::GetSingleton();
+				auto state = variableCache->state;
+				auto shaderCache = variableCache->shaderCache;
 				if (state->enabledClasses[RE::BSShader::Type::ImageSpace]) {
-					auto& shaderCache = SIE::ShaderCache::Instance();
 					RE::BSImagespaceShader* isShader = CurrentlyDispatchedShader;
 					uint32_t techniqueId = CurrentComputeShaderTechniqueId;
 					if (CurrentlyDispatchedShader == nullptr) {
@@ -668,7 +669,7 @@ namespace Hooks
 						}
 					}
 					if (isShader != nullptr) {
-						if (auto* computeShader = shaderCache.GetComputeShader(*isShader, techniqueId)) {
+						if (auto* computeShader = shaderCache->GetComputeShader(*isShader, techniqueId)) {
 							shader = computeShader;
 						}
 					}
