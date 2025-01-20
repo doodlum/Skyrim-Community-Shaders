@@ -355,8 +355,9 @@ void CalculateGI(
 #	endif
 #endif
 	}
-	currY = any(ISNAN(currY)) ? 0 : currY;
-	currCoCg = any(ISNAN(currCoCg)) ? 0 : currCoCg;
+	currY = filterNaN(currY);
+	currCoCg = filterNaN(currCoCg);
+	currGIAOSpecular = filterNaN(currGIAOSpecular);
 
 	outAo[pxCoord] = currAo;
 	outY[pxCoord] = currY;
