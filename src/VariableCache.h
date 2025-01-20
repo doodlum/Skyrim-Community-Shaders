@@ -7,6 +7,8 @@
 #include "Features/CloudShadows.h"
 #include "Features/TerrainBlending.h"
 
+#include "TruePBR.h"
+
 class VariableCache
 {
 	static VariableCache instance;
@@ -24,6 +26,7 @@ public:
 	Deferred* deferred = nullptr;
 	TerrainBlending* terrainBlending = nullptr;
 	CloudShadows* cloudShadows = nullptr;
+	TruePBR* truePBR = nullptr;
 
 	void InitializeVariables();
 };

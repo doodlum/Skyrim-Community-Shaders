@@ -9,7 +9,6 @@
 #include "ShaderCache.h"
 
 #include "Feature.h"
-#include "Util.h"
 
 #include "Deferred.h"
 #include "Features/CloudShadows.h"
@@ -28,6 +27,7 @@ void State::Draw()
 	auto deferred = variableCache->deferred;
 	auto terrainBlending = variableCache->terrainBlending;
 	auto cloudShadows = variableCache->cloudShadows;
+	auto truePBR = variableCache->truePBR;
 
 	if (shaderCache->IsEnabled()) {
 		if (terrainBlending->loaded)
@@ -36,16 +36,14 @@ void State::Draw()
 		if (cloudShadows->loaded)
 			cloudShadows->SkyShaderHacks();
 
-		TruePBR::GetSingleton()->SetShaderResouces();
+		truePBR->SetShaderResouces(context);
 
-		if (auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator()) {
-			// Set an unused bit to indicate if we are rendering an object in the main rendering pass
-			if (accumulator->GetRuntimeData().activeShadowSceneNode == RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0]) {
-				currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
-			}
+		// Set an unused bit to indicate if we are rendering an object in the main rendering pass
+		if (deferred->inWorld) {
+			currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
 		}
-
-		if (Deferred::GetSingleton()->inDecals)
+		
+		if (deferred->inDecals)
 			currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::IsDecal;
 
 		if (forceUpdatePermutationBuffer || currentPixelDescriptor != lastPixelDescriptor || currentExtraDescriptor != lastExtraDescriptor) {
@@ -65,7 +63,6 @@ void State::Draw()
 
 		currentExtraDescriptor = 0;
 
-		static Util::FrameChecker frameChecker;
 		if (frameChecker.IsNewFrame()) {
 			ID3D11Buffer* buffers[3] = { permutationCB->CB(), sharedDataCB->CB(), featureDataCB->CB() };
 			context->PSSetConstantBuffers(4, 3, buffers);

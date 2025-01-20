@@ -21,4 +21,5 @@ void VariableCache::InitializeVariables()
 	deferred = Deferred::GetSingleton();
 	terrainBlending = TerrainBlending::GetSingleton();
 	cloudShadows = CloudShadows::GetSingleton();
+	truePBR = TruePBR::GetSingleton();
 }

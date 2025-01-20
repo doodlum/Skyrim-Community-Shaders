@@ -28,7 +28,7 @@ public:
 	void PostPostLoad();
 	void DataLoaded();
 
-	void SetShaderResouces();
+	void SetShaderResouces(ID3D11DeviceContext* a_context);
 	void GenerateShaderPermutations(RE::BSShader* shader);
 
 	void SetupGlintsTexture();

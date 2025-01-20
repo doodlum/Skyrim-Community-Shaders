@@ -1596,12 +1596,11 @@ void TruePBR::SetupDefaultPBRLandTextureSet()
 	}
 }
 
-void TruePBR::SetShaderResouces()
+void TruePBR::SetShaderResouces(ID3D11DeviceContext* a_context)
 {
-	auto context = State::GetSingleton()->context;
 	for (uint32_t textureIndex = 0; textureIndex < ExtendedRendererState::NumPSTextures; ++textureIndex) {
 		if (extendedRendererState.PSResourceModifiedBits & (1 << textureIndex)) {
-			context->PSSetShaderResources(ExtendedRendererState::FirstPSTexture + textureIndex, 1, &extendedRendererState.PSTexture[textureIndex]);
+			a_context->PSSetShaderResources(ExtendedRendererState::FirstPSTexture + textureIndex, 1, &extendedRendererState.PSTexture[textureIndex]);
 		}
 	}
 	extendedRendererState.PSResourceModifiedBits = 0;
