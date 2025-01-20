@@ -525,7 +525,7 @@ namespace Glints
 		vars[2].gridSeed = gridSeedC;
 		vars[2].footprintArea = ratios[tetraC.y] * footprintAreas[tetraC.z];
 		vars[2].gridWeight = tetraBarycentricWeights.z;
-		vars[3].uv = uvRotA / divLods[tetraD.z] / float2(1.0, ratios[tetraD.y]);
+		vars[3].uv = uvRotD / divLods[tetraD.z] / float2(1.0, ratios[tetraD.y]);
 		vars[3].gridSeed = gridSeedD;
 		vars[3].footprintArea = ratios[tetraD.y] * footprintAreas[tetraD.z];
 		vars[3].gridWeight = tetraBarycentricWeights.w;
