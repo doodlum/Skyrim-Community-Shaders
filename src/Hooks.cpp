@@ -157,7 +157,9 @@ namespace EffectExtensions
 			func(shader, pass, renderFlags);
 			if (auto* shaderProperty = static_cast<RE::BSShaderProperty*>(pass->geometry->GetGeometryRuntimeData().properties[1].get())) {
 				if (shaderProperty->flags.any(RE::BSShaderProperty::EShaderPropertyFlag::kUniformScale)) {
-					State::GetSingleton()->currentExtraDescriptor |= (uint)State::ExtraShaderDescriptors::EffectShadows;
+					auto variableCache = VariableCache::GetSingleton();
+					auto state = variableCache->state;
+					state->currentExtraDescriptor |= (uint)State::ExtraShaderDescriptors::EffectShadows;
 				}
 			}
 		}
