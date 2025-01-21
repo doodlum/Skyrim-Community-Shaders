@@ -5,5 +5,6 @@
 #include "Utils/Game.h"
 #include "Utils/GameSetting.h"
 #include "Utils/Serialize.h"
+#include "Utils/Translate.h"
 #include "Utils/UI.h"
 #include "Utils/WinApi.h"
