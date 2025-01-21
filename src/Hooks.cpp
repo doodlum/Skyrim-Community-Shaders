@@ -385,7 +385,7 @@ namespace Hooks
 			}
 			Menu::GetSingleton()->Init(swapchain, device, context);
 
-			VariableCache::GetSingleton()->InitializeVariables();
+			VariableCache::GetSingleton()->OnInit();
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 	};

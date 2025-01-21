@@ -36,11 +36,11 @@ public:
 	RE::MemoryManager* memoryManager = nullptr;
 	RE::INISettingCollection* iniSettingCollection = nullptr;
 	RE::Setting* bEnableLandFade = nullptr;
-	RE::Setting* bDrawLandShadows = nullptr;
 	RE::Setting* bShadowsOnGrass = nullptr;
 	RE::Setting* shadowMaskQuarter = nullptr;
 
-	void InitializeVariables();
+	void OnInit();
+	void OnDataLoaded();
 };
 
 inline constinit VariableCache VariableCache::instance;

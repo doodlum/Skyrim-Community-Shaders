@@ -3,7 +3,7 @@
 #define GET_INSTANCE_MEMBER_PTR(a_value, a_source) \
 	&(!REL::Module::IsVR() ? a_source->GetRuntimeData().a_value : a_source->GetVRRuntimeData().a_value);
 
-void VariableCache::InitializeVariables()
+void VariableCache::OnInit()
 {
 	renderer = RE::BSGraphics::Renderer::GetSingleton();
 
@@ -24,13 +24,16 @@ void VariableCache::InitializeVariables()
 	truePBR = TruePBR::GetSingleton();
 	graphicsState = RE::BSGraphics::State::GetSingleton();
 	smState = &RE::BSShaderManager::State::GetSingleton();
-	tes = RE::TES::GetSingleton();
 	isVR = REL::Module::IsVR();
 	memoryManager = RE::MemoryManager::GetSingleton();
-
 	iniSettingCollection = RE::INISettingCollection::GetSingleton();
+}
+
+void VariableCache::OnDataLoaded()
+{
+	tes = RE::TES::GetSingleton();
+
 	bEnableLandFade = iniSettingCollection->GetSetting("bEnableLandFade:Display");
-	bDrawLandShadows = iniSettingCollection->GetSetting("bDrawLandShadows:Display");
 
 	bShadowsOnGrass = RE::GetINISetting("bShadowsOnGrass:Display");
 	shadowMaskQuarter = RE::GetINISetting("iShadowMaskQuarter:Display");
