@@ -906,15 +906,12 @@ PS_OUTPUT main(PS_INPUT input)
 
 #					if defined(VC)
 	float specularFraction = lerp(1, fresnel * diffuseOutput.refractionMul, distanceFactor);
-	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseColor), Color::GammaToLinear(specularColor), specularFraction) + Color::GammaToLinear(sunColor) * depthControl.w;
-	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
+	float3 finalColorPreFog = lerp(diffuseColor, specularColor, specularFraction) + sunColor * depthControl.w;
 	float3 finalColor = lerp(finalColorPreFog, input.FogParam.xyz * PosAdjust[eyeIndex].w, input.FogParam.w);
 #					else
 	float specularFraction = lerp(1, fresnel, distanceFactor);
-	float3 finalColorPreFog = lerp(Color::GammaToLinear(diffuseOutput.refractionDiffuseColor), Color::GammaToLinear(specularColor), specularFraction) + Color::GammaToLinear(sunColor) * depthControl.w;
-	finalColorPreFog = Color::LinearToGamma(finalColorPreFog);
+	float3 finalColorPreFog = lerp(diffuseOutput.refractionDiffuseColor, specularColor, specularFraction) + sunColor * depthControl.w;
 	finalColorPreFog = lerp(finalColorPreFog, input.FogParam.xyz * PosAdjust[eyeIndex].w, input.FogParam.w);
-	finalColorPreFog = Color::GammaToLinear(finalColorPreFog);
 
 	float3 refractionColor = diffuseOutput.refractionColor;
 
@@ -922,8 +919,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 fogColor = lerp(FogNearColor.xyz, FogFarColor.xyz, fogFactor);
 	refractionColor = lerp(refractionColor, fogColor, fogFactor);
 
-	finalColorPreFog = lerp(Color::GammaToLinear(refractionColor), finalColorPreFog, diffuseOutput.refractionMul);
-	float3 finalColor = Color::LinearToGamma(finalColorPreFog);
+	float3 finalColor = lerp(refractionColor, finalColorPreFog, diffuseOutput.refractionMul);
 #					endif
 
 #				endif
