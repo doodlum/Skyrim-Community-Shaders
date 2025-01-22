@@ -19,9 +19,17 @@ void VariableCache::OnInit()
 	state = State::GetSingleton();
 	shaderCache = &SIE::ShaderCache::Instance();
 	deferred = Deferred::GetSingleton();
+
 	terrainBlending = TerrainBlending::GetSingleton();
 	cloudShadows = CloudShadows::GetSingleton();
 	truePBR = TruePBR::GetSingleton();
+	lightLimitFix = LightLimitFix::GetSingleton();
+
+	particleLights = ParticleLights::GetSingleton();
+
+	cameraNear = (float*)(REL::RelocationID(517032, 403540).address() + 0x40);
+	cameraFar = (float*)(REL::RelocationID(517032, 403540).address() + 0x44);
+
 	graphicsState = RE::BSGraphics::State::GetSingleton();
 	smState = &RE::BSShaderManager::State::GetSingleton();
 	isVR = REL::Module::IsVR();

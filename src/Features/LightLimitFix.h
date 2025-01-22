@@ -1,14 +1,14 @@
 #pragma once
 #include <DirectXMath.h>
 #include <d3d11.h>
+#include <shared_mutex>
 
 #include "Buffer.h"
 #include "Util.h"
-#include <shared_mutex>
-
 #include "Feature.h"
 #include "ShaderCache.h"
-#include <Features/LightLimitFix/ParticleLights.h>
+
+#include "Features/LightLimitFix/ParticleLights.h"
 
 struct LightLimitFix : Feature
 {
@@ -145,13 +145,18 @@ public:
 
 	eastl::hash_map<RE::NiNode*, ParticleLightReference> particleLightsReferences;
 	eastl::vector<ParticleLightInfo> queuedParticleLights;
-	eastl::vector<ParticleLightInfo> particleLights;
+	eastl::vector<ParticleLightInfo> currentParticleLights;
 
 	void CleanupParticleLights(RE::NiNode* a_node);
 
 	RE::NiPoint3 eyePositionCached[2]{};
 	Matrix viewMatrixCached[2]{};
 	Matrix viewMatrixInverseCached[2]{};
+
+	bool wasEmpty = false;
+	bool wasWorld = false;
+	int previousRoomIndex = -1;
+	Util::FrameChecker frameChecker;
 
 	virtual void SetupResources() override;
 	virtual void Reset() override;
@@ -222,105 +227,53 @@ public:
 
 	struct Hooks
 	{
-		struct BSBatchRenderer__RenderPassImmediately1
+		struct BSBatchRenderer_RenderPassImmediately
 		{
-			static void thunk(RE::BSRenderPass* Pass, uint32_t Technique, bool AlphaTest, uint32_t RenderFlags)
-			{
-				if (GetSingleton()->CheckParticleLights(Pass, Technique))
-					func(Pass, Technique, AlphaTest, RenderFlags);
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
-		struct BSBatchRenderer__RenderPassImmediately2
-		{
-			static void thunk(RE::BSRenderPass* Pass, uint32_t Technique, bool AlphaTest, uint32_t RenderFlags)
-			{
-				if (GetSingleton()->CheckParticleLights(Pass, Technique))
-					func(Pass, Technique, AlphaTest, RenderFlags);
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
-		struct BSBatchRenderer__RenderPassImmediately3
-		{
-			static void thunk(RE::BSRenderPass* Pass, uint32_t Technique, bool AlphaTest, uint32_t RenderFlags)
-			{
-				if (GetSingleton()->CheckParticleLights(Pass, Technique))
-					func(Pass, Technique, AlphaTest, RenderFlags);
-			}
+			static void thunk(RE::BSRenderPass* Pass, uint32_t Technique, bool AlphaTest, uint32_t RenderFlags);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct BSLightingShader_SetupGeometry
 		{
-			static void thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
-			{
-				GetSingleton()->BSLightingShader_SetupGeometry_Before(Pass);
-				func(This, Pass, RenderFlags);
-				GetSingleton()->BSLightingShader_SetupGeometry_After(Pass);
-			}
+			static void thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct BSEffectShader_SetupGeometry
 		{
-			static void thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
-			{
-				func(This, Pass, RenderFlags);
-				GetSingleton()->BSLightingShader_SetupGeometry_Before(Pass);
-				GetSingleton()->BSLightingShader_SetupGeometry_After(Pass);
-			}
+			static void thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct BSWaterShader_SetupGeometry
 		{
-			static void thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
-			{
-				func(This, Pass, RenderFlags);
-				GetSingleton()->BSLightingShader_SetupGeometry_Before(Pass);
-				GetSingleton()->BSLightingShader_SetupGeometry_After(Pass);
-			}
+			static void thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct AIProcess_CalculateLightValue_GetLuminance
 		{
-			static float thunk(RE::ShadowSceneNode* shadowSceneNode, RE::NiPoint3& targetPosition, int& numHits, float& sunLightLevel, float& lightLevel, RE::NiLight& refLight, int32_t shadowBitMask)
-			{
-				auto ret = func(shadowSceneNode, targetPosition, numHits, sunLightLevel, lightLevel, refLight, shadowBitMask);
-				GetSingleton()->AddParticleLightLuminance(targetPosition, numHits, ret);
-				return ret;
-			}
+			static float thunk(RE::ShadowSceneNode* shadowSceneNode, RE::NiPoint3& targetPosition, int& numHits, float& sunLightLevel, float& lightLevel, RE::NiLight& refLight, int32_t shadowBitMask);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct BSLightingShader_SetupGeometry_GeometrySetupConstantPointLights
 		{
-			static void thunk(RE::BSGraphics::PixelShader* PixelShader, RE::BSRenderPass* Pass, DirectX::XMMATRIX& Transform, uint32_t LightCount, uint32_t ShadowLightCount, float WorldScale, Space RenderSpace)
-			{
-				GetSingleton()->BSLightingShader_SetupGeometry_GeometrySetupConstantPointLights(Pass, Transform, LightCount, ShadowLightCount, WorldScale, RenderSpace);
-				func(PixelShader, Pass, Transform, LightCount, ShadowLightCount, WorldScale, RenderSpace);
-			}
+			static void thunk(RE::BSGraphics::PixelShader* PixelShader, RE::BSRenderPass* Pass, DirectX::XMMATRIX& Transform, uint32_t LightCount, uint32_t ShadowLightCount, float WorldScale, Space RenderSpace);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct NiNode_Destroy
 		{
-			static void thunk(RE::NiNode* This)
-			{
-				GetSingleton()->CleanupParticleLights(This);
-				func(This);
-			}
+			static void thunk(RE::NiNode* This);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		static void Install()
 		{
-			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately1>(REL::RelocationID(100877, 107673).address() + REL::Relocate(0x1E5, 0x1EE));
-			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately2>(REL::RelocationID(100852, 107642).address() + REL::Relocate(0x29E, 0x28F));
-			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately3>(REL::RelocationID(100871, 107667).address() + REL::Relocate(0xEE, 0xED));
+			stl::write_thunk_call<BSBatchRenderer_RenderPassImmediately>(REL::RelocationID(100877, 107673).address() + REL::Relocate(0x1E5, 0x1EE));
+			stl::write_thunk_call<BSBatchRenderer_RenderPassImmediately>(REL::RelocationID(100852, 107642).address() + REL::Relocate(0x29E, 0x28F));
+			stl::write_thunk_call<BSBatchRenderer_RenderPassImmediately>(REL::RelocationID(100871, 107667).address() + REL::Relocate(0xEE, 0xED));
 
 			stl::write_thunk_call<AIProcess_CalculateLightValue_GetLuminance>(REL::RelocationID(38900, 39946).address() + REL::Relocate(0x1C9, 0x1D3));
 

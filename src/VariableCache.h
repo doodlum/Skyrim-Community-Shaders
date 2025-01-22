@@ -6,8 +6,10 @@
 
 #include "Features/CloudShadows.h"
 #include "Features/TerrainBlending.h"
+#include "Features/LightLimitFix.h"
 
 #include "TruePBR.h"
+#include "Features/LightLimitFix/ParticleLights.h"
 
 class VariableCache
 {
@@ -24,10 +26,18 @@ public:
 	State* state = nullptr;
 	SIE::ShaderCache* shaderCache = nullptr;
 	RE::BSGraphics::RendererShadowState* shadowState = nullptr;
+
 	Deferred* deferred = nullptr;
+
 	TerrainBlending* terrainBlending = nullptr;
 	CloudShadows* cloudShadows = nullptr;
 	TruePBR* truePBR = nullptr;
+	LightLimitFix* lightLimitFix = nullptr;
+	ParticleLights* particleLights = nullptr;
+
+	float* cameraNear = nullptr;
+	float* cameraFar = nullptr;
+
 	RE::BSGraphics::State* graphicsState = nullptr;
 	RE::BSGraphics::Renderer* renderer = nullptr;
 	RE::BSShaderManager::State* smState = nullptr;
