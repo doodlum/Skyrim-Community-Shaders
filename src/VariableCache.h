@@ -3,6 +3,7 @@
 #include "Deferred.h"
 #include "ShaderCache.h"
 #include "State.h"
+#include "Menu.h"
 
 #include "Features/CloudShadows.h"
 #include "Features/TerrainBlending.h"
@@ -25,6 +26,7 @@ public:
 	RE::BSGraphics::VertexShader** currentVertexShader = nullptr;
 	stl::enumeration<RE::BSGraphics::ShaderFlags, uint32_t>* stateUpdateFlags = nullptr;
 	State* state = nullptr;
+	Menu* menu = nullptr;
 	SIE::ShaderCache* shaderCache = nullptr;
 	RE::BSGraphics::RendererShadowState* shadowState = nullptr;
 

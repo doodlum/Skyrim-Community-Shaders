@@ -82,7 +82,7 @@ void State::Draw()
 					// Only check against non-shader bits
 					currentPixelDescriptor &= ~modifiedPixelDescriptor;
 
-					if (IsDeveloperMode()) {
+					if (frameAnnotations) {
 						BeginPerfEvent(std::format("Draw: CS {}::{:x}::{}", magic_enum::enum_name(currentShader->shaderType.get()), currentPixelDescriptor, currentShader->fxpFilename));
 						SetPerfMarker(std::format("Defines: {}", SIE::ShaderCache::GetDefinesString(*currentShader, currentPixelDescriptor)));
 						EndPerfEvent();
@@ -215,8 +215,8 @@ void State::Load(ConfigMode a_configMode, bool a_allowReload)
 				shaderCache.backgroundCompilationThreadCount = std::clamp(advanced["Background Compiler Threads"].get<int32_t>(), 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
 			if (advanced["Use FileWatcher"].is_boolean())
 				shaderCache.SetFileWatcher(advanced["Use FileWatcher"]);
-			if (advanced["Extended Frame Annotations"].is_boolean())
-				extendedFrameAnnotations = advanced["Extended Frame Annotations"];
+			if (advanced["Frame Annotations"].is_boolean())
+				frameAnnotations = advanced["Frame Annotations"];
 		}
 
 		if (settings["General"].is_object()) {
@@ -347,7 +347,7 @@ void State::Save(ConfigMode a_configMode)
 	advanced["Compiler Threads"] = shaderCache.compilationThreadCount;
 	advanced["Background Compiler Threads"] = shaderCache.backgroundCompilationThreadCount;
 	advanced["Use FileWatcher"] = shaderCache.UseFileWatcher();
-	advanced["Extended Frame Annotations"] = extendedFrameAnnotations;
+	advanced["Frame Annotations"] = frameAnnotations;
 	settings["Advanced"] = advanced;
 
 	json general;

@@ -129,7 +129,7 @@ void LightLimitFix::CleanupParticleLights(RE::NiNode* a_node)
 
 void LightLimitFix::SetupResources()
 {
-	auto screenSize = Util::ConvertToDynamic(VariableCache::GetSingleton()->state->screenSize);
+	auto screenSize = Util::ConvertToDynamic(State::GetSingleton()->screenSize);
 	if (REL::Module::IsVR())
 		screenSize.x *= .5;
 	clusterSize[0] = ((uint)screenSize.x + 63) / 64;

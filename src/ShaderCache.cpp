@@ -1776,13 +1776,15 @@ namespace SIE
 			}
 		}
 
-		auto key = SIE::SShaderCache::GetShaderString(ShaderClass::Compute, shader, descriptor, true);
-		if (blockedKeyIndex != -1 && !blockedKey.empty() && key == blockedKey) {
-			if (std::find(blockedIDs.begin(), blockedIDs.end(), descriptor) == blockedIDs.end()) {
-				blockedIDs.push_back(descriptor);
-				logger::debug("Skipping blocked shader {:X}:{} total: {}", descriptor, blockedKey, blockedIDs.size());
+		if (state->IsDeveloperMode()) {
+			auto key = SIE::SShaderCache::GetShaderString(ShaderClass::Compute, shader, descriptor, true);
+			if (blockedKeyIndex != -1 && !blockedKey.empty() && key == blockedKey) {
+				if (std::find(blockedIDs.begin(), blockedIDs.end(), descriptor) == blockedIDs.end()) {
+					blockedIDs.push_back(descriptor);
+					logger::debug("Skipping blocked shader {:X}:{} total: {}", descriptor, blockedKey, blockedIDs.size());
+				}
+				return nullptr;
 			}
-			return nullptr;
 		}
 
 		{

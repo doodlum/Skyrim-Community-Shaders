@@ -106,7 +106,7 @@ public:
 
 	void SetAdapterDescription(const std::wstring& description);
 
-	bool extendedFrameAnnotations = false;
+	bool frameAnnotations = false;
 
 	uint lastVertexDescriptor = 0;
 	uint lastPixelDescriptor = 0;
@@ -172,6 +172,8 @@ public:
 	bool SetFeatureDisabled(const std::string& featureName, bool isDisabled);
 	bool IsFeatureDisabled(const std::string& featureName);
 	std::unordered_map<std::string, bool>& GetDisabledFeatures();
+
+	bool useFrameAnnotations = false;
 
 	// Features that are more special then others
 	std::unordered_map<std::string, bool> specialFeatures = {

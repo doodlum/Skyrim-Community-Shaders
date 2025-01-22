@@ -17,6 +17,7 @@ void VariableCache::OnInit()
 	stateUpdateFlags = GET_INSTANCE_MEMBER_PTR(stateUpdateFlags, shadowState);
 
 	state = State::GetSingleton();
+	menu = Menu::GetSingleton();
 	shaderCache = &SIE::ShaderCache::Instance();
 	deferred = Deferred::GetSingleton();
 

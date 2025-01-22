@@ -856,7 +856,7 @@ void Menu::DrawAdvancedSettings()
 			ImGui::Text(std::format("Shader Compiler : {}", shaderCache.GetShaderStatsString()).c_str());
 			ImGui::TreePop();
 		}
-		ImGui::Checkbox("Extended Frame Annotations", &State::GetSingleton()->extendedFrameAnnotations);
+		ImGui::Checkbox("Frame Annotations", &State::GetSingleton()->frameAnnotations);
 	}
 
 	if (ImGui::CollapsingHeader("Replace Original Shaders", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {

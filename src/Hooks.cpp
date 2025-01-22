@@ -324,7 +324,8 @@ struct BSInputDeviceManager_PollInputDevices
 	static void thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher, RE::InputEvent* const* a_events)
 	{
 		bool blockedDevice = true;
-		auto menu = Menu::GetSingleton();
+		auto variableCache = VariableCache::GetSingleton();
+		auto menu = variableCache->menu;
 
 		if (a_events) {
 			menu->ProcessInputEvents(a_events);
@@ -334,7 +335,7 @@ struct BSInputDeviceManager_PollInputDevices
 					// Check that the device is not a Gamepad or VR controller. If it is, unblock input.
 					bool vrDevice = false;
 #ifdef ENABLE_SKYRIM_VR
-					vrDevice = (REL::Module::IsVR() && ((device == RE::INPUT_DEVICES::INPUT_DEVICE::kVivePrimary) ||
+					vrDevice = (variableCache->isVR && ((device == RE::INPUT_DEVICES::INPUT_DEVICE::kVivePrimary) ||
 														   (device == RE::INPUT_DEVICES::INPUT_DEVICE::kViveSecondary) ||
 														   (device == RE::INPUT_DEVICES::INPUT_DEVICE::kOculusPrimary) ||
 														   (device == RE::INPUT_DEVICES::INPUT_DEVICE::kOculusSecondary) ||
