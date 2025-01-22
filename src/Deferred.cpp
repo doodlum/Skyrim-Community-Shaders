@@ -733,7 +733,7 @@ void Deferred::Hooks::Main_RenderWorld_Start::thunk(RE::BSBatchRenderer* This, u
 void Deferred::Hooks::Main_RenderWorld_BlendedDecals::thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags)
 {
 	auto deferred = VariableCache::GetSingleton()->deferred;
-	
+
 	// Deferred blended decals
 	deferred->inBlendedDecals = true;
 	func(This, RenderFlags);
