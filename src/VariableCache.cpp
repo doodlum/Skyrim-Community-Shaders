@@ -24,6 +24,7 @@ void VariableCache::OnInit()
 	cloudShadows = CloudShadows::GetSingleton();
 	truePBR = TruePBR::GetSingleton();
 	lightLimitFix = LightLimitFix::GetSingleton();
+	grassCollision = GrassCollision::GetSingleton();
 
 	particleLights = ParticleLights::GetSingleton();
 

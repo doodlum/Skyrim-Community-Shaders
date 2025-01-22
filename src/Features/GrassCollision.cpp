@@ -2,6 +2,7 @@
 
 #include "State.h"
 #include "Util.h"
+#include "VariableCache.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	GrassCollision::Settings,
@@ -228,4 +229,10 @@ bool GrassCollision::HasShaderDefine(RE::BSShader::Type shaderType)
 	default:
 		return false;
 	}
+}
+
+void GrassCollision::Hooks::BSGrassShader_SetupGeometry::thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
+{
+	VariableCache::GetSingleton()->grassCollision->Update();
+	func(This, Pass, RenderFlags);
 }

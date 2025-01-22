@@ -130,3 +130,10 @@ void CloudShadows::SetupResources()
 		DX::ThrowIfFailed(device->CreateBlendState(&blendDesc, &cloudShadowBlendState));
 	}
 }
+
+
+void CloudShadows::Hooks::BSSkyShader_SetupMaterial::thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
+{
+	VariableCache::GetSingleton()->cloudShadows->ModifySky(Pass);
+	func(This, Pass, RenderFlags);
+}

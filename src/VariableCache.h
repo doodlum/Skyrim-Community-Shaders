@@ -7,6 +7,7 @@
 #include "Features/CloudShadows.h"
 #include "Features/TerrainBlending.h"
 #include "Features/LightLimitFix.h"
+#include "Features/GrassCollision.h"
 
 #include "TruePBR.h"
 #include "Features/LightLimitFix/ParticleLights.h"
@@ -34,6 +35,7 @@ public:
 	TruePBR* truePBR = nullptr;
 	LightLimitFix* lightLimitFix = nullptr;
 	ParticleLights* particleLights = nullptr;
+	GrassCollision* grassCollision = nullptr;
 
 	float* cameraNear = nullptr;
 	float* cameraFar = nullptr;

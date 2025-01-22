@@ -83,95 +83,43 @@ public:
 	{
 		struct Main_RenderShadowMaps
 		{
-			static void thunk()
-			{
-				func();
-				GetSingleton()->EarlyPrepasses();
-			}
+			static void thunk();
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct Main_RenderWorld
 		{
-			static void thunk(bool a1)
-			{
-				GetSingleton()->inWorld = true;
-				func(a1);
-				GetSingleton()->inWorld = false;
-			}
-
+			static void thunk(bool a1);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct Main_RenderWorld_Start
 		{
-			static void thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRanges, uint32_t RenderFlags, int GeometryGroup)
-			{
-				// Here is where the first opaque objects start rendering
-				GetSingleton()->StartDeferred();
-				func(This, StartRange, EndRanges, RenderFlags, GeometryGroup);  // RenderBatches
-			}
+			static void thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRanges, uint32_t RenderFlags, int GeometryGroup);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct Main_RenderWorld_BlendedDecals
 		{
-			static void thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags)
-			{
-				// Deferred blended decals
-				GetSingleton()->inBlendedDecals = true;
-				func(This, RenderFlags);
-				GetSingleton()->inBlendedDecals = false;
-
-				GetSingleton()->EndDeferred();
-
-				// Blended decals
-				GetSingleton()->inDecals = true;
-				func(This, RenderFlags);
-				GetSingleton()->inDecals = false;
-
-				// After this point, water starts rendering
-			}
+			static void thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct BSShaderAccumulator_BlendedDecals_RenderGeometryGroup
 		{
-			static void thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRanges, uint32_t RenderFlags, int GeometryGroup)
-			{
-				if (GetSingleton()->inBlendedDecals) {
-					func(This, StartRange, EndRanges, RenderFlags, 12);
-				} else {
-					func(This, StartRange, EndRanges, RenderFlags, GeometryGroup);
-				}
-			}
-
+			static void thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRanges, uint32_t RenderFlags, int GeometryGroup);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct BSShaderAccumulator_FirstPerson_BlendedDecals
 		{
-			static void thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags)
-			{
-				GetSingleton()->inBlendedDecals = true;
-				func(This, RenderFlags);
-				GetSingleton()->inBlendedDecals = false;
-				func(This, RenderFlags);
-				GetSingleton()->inDecals = false;
-			}
+			static void thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct BSShaderAccumulator_ShadowMapOrMask_BlendedDecals
 		{
-			static void thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags)
-			{
-				GetSingleton()->inBlendedDecals = true;
-				func(This, RenderFlags);
-				GetSingleton()->inBlendedDecals = false;
-				func(This, RenderFlags);
-				GetSingleton()->inDecals = false;
-			}
+			static void thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
