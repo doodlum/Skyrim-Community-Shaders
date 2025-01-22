@@ -4,9 +4,9 @@
 #include <shared_mutex>
 
 #include "Buffer.h"
-#include "Util.h"
 #include "Feature.h"
 #include "ShaderCache.h"
+#include "Util.h"
 
 #include "Features/LightLimitFix/ParticleLights.h"
 

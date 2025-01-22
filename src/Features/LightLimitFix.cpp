@@ -1026,13 +1026,11 @@ void LightLimitFix::UpdateLights()
 	context->CSSetUnorderedAccessViews(0, 3, null_uavs, nullptr);
 }
 
-
 void LightLimitFix::Hooks::BSBatchRenderer_RenderPassImmediately::thunk(RE::BSRenderPass* Pass, uint32_t Technique, bool AlphaTest, uint32_t RenderFlags)
 {
 	if (VariableCache::GetSingleton()->lightLimitFix->CheckParticleLights(Pass, Technique))
-		func(Pass, Technique, AlphaTest, RenderFlags);	
+		func(Pass, Technique, AlphaTest, RenderFlags);
 }
-
 
 void LightLimitFix::Hooks::BSLightingShader_SetupGeometry::thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
 {

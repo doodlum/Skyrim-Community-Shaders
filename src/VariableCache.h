@@ -5,11 +5,11 @@
 #include "State.h"
 
 #include "Features/CloudShadows.h"
-#include "Features/TerrainBlending.h"
 #include "Features/LightLimitFix.h"
+#include "Features/TerrainBlending.h"
 
-#include "TruePBR.h"
 #include "Features/LightLimitFix/ParticleLights.h"
+#include "TruePBR.h"
 
 class VariableCache
 {
