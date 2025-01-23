@@ -173,14 +173,14 @@ void TerrainBlending::SetupResources()
 
 		DX::ThrowIfFailed(device->CreateBuffer(&bufferDesc, &initData, &vertexBuffer));
 
-        D3D11_INPUT_ELEMENT_DESC layout[] = {
+		D3D11_INPUT_ELEMENT_DESC layout[] = {
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
 
 		auto vertexShader = Util::CompileShaderBlob(L"Data\\Shaders\\Common\\DummyVS.hlsl", {}, "vs_5_0");
 
 		DX::ThrowIfFailed(device->CreateInputLayout(layout, ARRAYSIZE(layout), vertexShader->GetBufferPointer(), vertexShader->GetBufferSize(), &inputLayout));
-		
+
 		vertexShader->Release();
 	}
 
@@ -202,17 +202,17 @@ void TerrainBlending::SetupResources()
 		DX::ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, &terrainDepthStencilState2));
 	}
 
-    {
+	{
 		auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 
-        // Create a depth stencil view that can be written to
-        D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc{};
-        depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-        depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-        depthStencilViewDesc.Flags = 0;
+		// Create a depth stencil view that can be written to
+		D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc{};
+		depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+		depthStencilViewDesc.Flags = 0;
 
-        DX::ThrowIfFailed(device->CreateDepthStencilView(mainDepth.texture, &depthStencilViewDesc, &writeableView));
-    }
+		DX::ThrowIfFailed(device->CreateDepthStencilView(mainDepth.texture, &depthStencilViewDesc, &writeableView));
+	}
 }
 
 void TerrainBlending::PostPostLoad()
@@ -320,7 +320,7 @@ void TerrainBlending::SetupFullscreenPass()
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 	context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-	
+
 	// Set the input layout
 	context->IASetInputLayout(inputLayout);
 
@@ -368,7 +368,7 @@ void TerrainBlending::SetupFullscreenPass()
 void TerrainBlending::BlendPrepassDepths()
 {
 	//auto context = VariableCache::GetSingleton()->context;
-//	context->OMSetRenderTargets(0, nullptr, nullptr);
+	//	context->OMSetRenderTargets(0, nullptr, nullptr);
 
 	//auto dispatchCount = Util::GetScreenDispatchCount();
 
@@ -405,14 +405,13 @@ void TerrainBlending::BlendPrepassDepths()
 	//ID3D11ComputeShader* shader = nullptr;
 	//context->CSSetShader(shader, nullptr, 0);
 
-
 	{
 		SetupFullscreenPass();
 
 		//auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 		//auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 
-	//	context->CopyResource(mainDepth.texture, tempDepthTexture->resource.get());
+		//	context->CopyResource(mainDepth.texture, tempDepthTexture->resource.get());
 	}
 
 	//auto state = RE::BSGraphics::RendererShadowState::GetSingleton();
