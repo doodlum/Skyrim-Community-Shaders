@@ -329,7 +329,6 @@ void TerrainBlending::Hooks::Main_RenderDepth::thunk(bool a1, bool a2)
 	}
 }
 
-
 void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::BSRenderPass* a_pass, uint32_t a_technique, bool a_alphaTest, uint32_t a_renderFlags)
 {
 	auto singleton = VariableCache::GetSingleton()->terrainBlending;
@@ -359,8 +358,6 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 	}
 }
 
-
-
 void TerrainBlending::Hooks::Main_RenderWorld_RenderBatches::thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRange, uint32_t RenderFlags, int GeometryGroup)
 {
 	auto singleton = VariableCache::GetSingleton()->terrainBlending;
@@ -368,7 +365,6 @@ void TerrainBlending::Hooks::Main_RenderWorld_RenderBatches::thunk(RE::BSBatchRe
 	auto renderer = VariableCache::GetSingleton()->renderer;
 
 	if (shaderCache->IsEnabled()) {
-
 		singleton->renderWorld = true;
 
 		func(This, StartRange, EndRange, RenderFlags, GeometryGroup);
