@@ -431,8 +431,6 @@ void Deferred::DeferredPasses()
 	if (dynamicCubemaps->loaded)
 		dynamicCubemaps->UpdateCubemap();
 
-	auto terrainBlending = TerrainBlending::GetSingleton();
-
 	// Deferred Composite
 	{
 		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Deferred Composite");
@@ -443,7 +441,7 @@ void Deferred::DeferredPasses()
 			normalRoughness.SRV,
 			masks.SRV,
 			masks2.SRV,
-			dynamicCubemaps->loaded || REL::Module::IsVR() ? (terrainBlending->loaded ? terrainBlending->blendedDepthTexture16->srv.get() : depth.depthSRV) : nullptr,
+			dynamicCubemaps->loaded || REL::Module::IsVR() ?  depth.depthSRV : nullptr,
 			dynamicCubemaps->loaded ? reflectance.SRV : nullptr,
 			dynamicCubemaps->loaded ? dynamicCubemaps->envTexture->srv.get() : nullptr,
 			dynamicCubemaps->loaded ? dynamicCubemaps->envReflectionsTexture->srv.get() : nullptr,

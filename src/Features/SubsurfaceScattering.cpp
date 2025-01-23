@@ -196,11 +196,9 @@ void SubsurfaceScattering::DrawSSS()
 		ID3D11UnorderedAccessView* uav = blurHorizontalTemp->uav.get();
 		context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 
-		auto terrainBlending = TerrainBlending::GetSingleton();
-
 		ID3D11ShaderResourceView* views[3];
 		views[0] = main.SRV;
-		views[1] = terrainBlending->loaded ? terrainBlending->blendedDepthTexture16->srv.get() : depth.depthSRV,
+		views[1] = depth.depthSRV,
 		views[2] = mask.SRV;
 
 		context->CSSetShaderResources(0, 3, views);

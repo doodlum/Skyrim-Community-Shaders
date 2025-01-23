@@ -395,7 +395,7 @@ struct PS_OUTPUT
 	float4 Masks : SV_Target6;
 	float4 Parameters : SV_Target7;
 #	if defined(TERRAIN_BLENDING)
-	float Depth : SV_Depth;
+//	float Depth : SV_Depth;
 #	endif
 };
 #else
@@ -1036,16 +1036,16 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif
 
 #	if defined(TERRAIN_BLENDING)
-	float depthSampled = TerrainBlending::GetTerrainOffsetDepth(screenUV, eyeIndex);
-	float depthComp = input.Position.z - depthSampled;
+	// float depthSampled = TerrainBlending::GetTerrainOffsetDepth(screenUV, eyeIndex);
+	// float depthComp = input.Position.z - depthSampled;
 
-	float depthSampledLinear = SharedData::GetScreenDepth(depthSampled);
-	float depthPixelLinear = SharedData::GetScreenDepth(input.Position.z);
+	// float depthSampledLinear = SharedData::GetScreenDepth(depthSampled);
+	// float depthPixelLinear = SharedData::GetScreenDepth(input.Position.z);
 
-	float blendFactorTerrain = saturate((depthSampledLinear - depthPixelLinear) / 5.0);
+	// float blendFactorTerrain = saturate((depthSampledLinear - depthPixelLinear) / 5.0);
 
-	if (blendFactorTerrain > 1 || blendFactorTerrain < screenNoise)
-		discard;
+	// if (blendFactorTerrain > 1 || blendFactorTerrain < screenNoise)
+	// 	discard;
 #	endif
 
 	float3 viewDirection = normalize(input.ViewVector.xyz);
@@ -1097,11 +1097,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 #		endif  // PARALLAX
 
-#		if defined(ENVMAP)
 	bool complexMaterial = false;
 	bool complexMaterialParallax = false;
 	float4 complexMaterialColor = 1.0;
 
+#		if defined(ENVMAP)
 	if (SharedData::extendedMaterialSettings.EnableComplexMaterial) {
 		float envMaskTest = TexEnvMaskSampler.SampleLevel(SampEnvMaskSampler, uv, 15).w;
 		complexMaterial = envMaskTest < (1.0 - (4.0 / 255.0));
@@ -1641,8 +1641,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	pbrSurfaceProperties.GlintDensityRandomization = clamp(glintParameters.w, 0, 5);
 
 #		if defined(GLINT)
-	float glintNoise = Random::R1Modified(SharedData::FrameCountAlwaysActive, Random::pcg2d(uint2(input.Position.xy)) / 4294967296.0);
-	PBR::Glints::PrecomputeGlints(glintNoise, uvOriginal, ddx(uvOriginal), ddy(uvOriginal), pbrSurfaceProperties.GlintScreenSpaceScale, pbrSurfaceProperties.GlintCache);
+	PBR::Glints::PrecomputeGlints(uvOriginal, ddx(uvOriginal), ddy(uvOriginal), pbrSurfaceProperties.GlintScreenSpaceScale, pbrSurfaceProperties.GlintCache);
 #		endif
 
 	baseColor.xyz *= 1 - pbrSurfaceProperties.Metallic;
@@ -2693,8 +2692,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	else
 
 #		if defined(TERRAIN_BLENDING)
-	psout.Diffuse.w = 1;
-	psout.Depth = lerp(max(depthSampled, input.Position.z), input.Position.z, 1);
+	// psout.Diffuse.w = 1;
+	// psout.Depth = lerp(max(depthSampled, input.Position.z), input.Position.z, 1);
 #		endif
 
 	psout.MotionVectors.zw = float2(0.0, psout.Diffuse.w);
