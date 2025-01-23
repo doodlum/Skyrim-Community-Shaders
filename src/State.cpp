@@ -28,6 +28,7 @@ void State::Draw()
 	auto terrainBlending = variableCache->terrainBlending;
 	auto cloudShadows = variableCache->cloudShadows;
 	auto truePBR = variableCache->truePBR;
+	auto smState = variableCache->smState;
 
 	if (shaderCache->IsEnabled()) {
 		if (terrainBlending->loaded)
@@ -38,9 +39,11 @@ void State::Draw()
 
 		truePBR->SetShaderResouces(context);
 
-		// Set an unused bit to indicate if we are rendering an object in the main rendering pass
-		if (deferred->inWorld) {
-			currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
+		if (auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator()) {
+			// Set an unused bit to indicate if we are rendering an object in the main rendering passes
+			if (accumulator->GetRuntimeData().activeShadowSceneNode == smState->shadowSceneNode[0]) {
+				currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
+			}
 		}
 
 		if (deferred->inDecals)
