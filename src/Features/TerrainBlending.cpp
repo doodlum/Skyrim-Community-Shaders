@@ -1,9 +1,7 @@
 #include "TerrainBlending.h"
 
-#include "State.h"
 #include "Util.h"
-
-#include "VariableCache.h"
+#include "Deferred.h"
 
 ID3D11VertexShader* TerrainBlending::GetTerrainVertexShader()
 {
@@ -34,8 +32,8 @@ ID3D11ComputeShader* TerrainBlending::GetDepthBlendShader()
 
 void TerrainBlending::SetupResources()
 {
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-	auto& device = State::GetSingleton()->device;
+	auto renderer = globals::game::renderer;
+	auto& device = globals::d3d::device;
 
 	{
 		auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
@@ -107,8 +105,8 @@ struct BlendStates
 void TerrainBlending::TerrainShaderHacks()
 {
 	if (renderTerrainDepth) {
-		auto renderer = VariableCache::GetSingleton()->renderer;
-		auto context = VariableCache::GetSingleton()->context;
+		auto renderer = globals::game::renderer;
+		auto context = globals::d3d::context;
 		if (renderAltTerrain) {
 			auto dsv = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN].views[0];
 			context->OMSetRenderTargets(0, nullptr, dsv);
@@ -116,7 +114,7 @@ void TerrainBlending::TerrainShaderHacks()
 		} else {
 			auto dsv = terrainDepth.views[0];
 			context->OMSetRenderTargets(0, nullptr, dsv);
-			auto shadowState = VariableCache::GetSingleton()->shadowState;
+			auto shadowState = globals::game::shadowState;
 			GET_INSTANCE_MEMBER(currentVertexShader, shadowState)
 			context->VSSetShader((ID3D11VertexShader*)currentVertexShader->shader, NULL, NULL);
 		}
@@ -126,7 +124,7 @@ void TerrainBlending::TerrainShaderHacks()
 
 void TerrainBlending::ResetDepth()
 {
-	auto context = VariableCache::GetSingleton()->context;
+	auto context = globals::d3d::context;
 
 	auto dsv = terrainDepth.views[0];
 	context->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH, 1.0f, 0u);
@@ -134,18 +132,18 @@ void TerrainBlending::ResetDepth()
 
 void TerrainBlending::ResetTerrainDepth()
 {
-	auto context = VariableCache::GetSingleton()->context;
+	auto context = globals::d3d::context;
 
-	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
+	auto stateUpdateFlags = globals::game::stateUpdateFlags;
 	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
 
-	auto currentVertexShader = *VariableCache::GetSingleton()->currentVertexShader;
+	auto currentVertexShader = *globals::game::currentVertexShader;
 	context->VSSetShader((ID3D11VertexShader*)currentVertexShader->shader, NULL, NULL);
 }
 
 void TerrainBlending::BlendPrepassDepths()
 {
-	auto& context = VariableCache::GetSingleton()->context;
+	auto& context = globals::d3d::context;
 	context->OMSetRenderTargets(0, nullptr, nullptr);
 
 	auto dispatchCount = Util::GetScreenDispatchCount();
@@ -171,10 +169,10 @@ void TerrainBlending::BlendPrepassDepths()
 	ID3D11ComputeShader* shader = nullptr;
 	context->CSSetShader(shader, nullptr, 0);
 
-	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
+	auto stateUpdateFlags = globals::game::stateUpdateFlags;
 	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
 
-	auto renderer = VariableCache::GetSingleton()->renderer;
+	auto renderer = globals::game::renderer;
 	auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 
 	context->CopyResource(terrainDepth.texture, mainDepth.texture);
@@ -182,7 +180,7 @@ void TerrainBlending::BlendPrepassDepths()
 
 void TerrainBlending::ResetTerrainWorld()
 {
-	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
+	auto stateUpdateFlags = globals::game::stateUpdateFlags;
 	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_ALPHA_BLEND);
 	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_DEPTH_MODE);
 }
@@ -205,9 +203,9 @@ void TerrainBlending::ClearShaderCache()
 
 void TerrainBlending::Hooks::Main_RenderDepth::thunk(bool a1, bool a2)
 {
-	auto singleton = VariableCache::GetSingleton()->terrainBlending;
-	auto shaderCache = VariableCache::GetSingleton()->shaderCache;
-	auto renderer = VariableCache::GetSingleton()->renderer;
+	auto singleton = globals::features::terrainBlending;
+	auto shaderCache = globals::shaderCache;
+	auto renderer = globals::game::renderer;
 
 	auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 	auto& zPrepassCopy = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
@@ -241,9 +239,9 @@ void TerrainBlending::Hooks::Main_RenderDepth::thunk(bool a1, bool a2)
 
 void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::BSRenderPass* a_pass, uint32_t a_technique, bool a_alphaTest, uint32_t a_renderFlags)
 {
-	auto singleton = VariableCache::GetSingleton()->terrainBlending;
-	auto shaderCache = VariableCache::GetSingleton()->shaderCache;
-	auto deferred = VariableCache::GetSingleton()->deferred;
+	auto singleton = globals::features::terrainBlending;
+	auto shaderCache = globals::shaderCache;
+	auto deferred = globals::deferred;
 
 	if (shaderCache->IsEnabled()) {
 		if (singleton->renderDepth) {
@@ -288,10 +286,10 @@ void TerrainBlending::RenderTerrain()
 {
 	renderTerrainWorld = true;
 
-	auto renderer = VariableCache::GetSingleton()->renderer;
-	auto context = VariableCache::GetSingleton()->context;
-	auto shadowState = VariableCache::GetSingleton()->shadowState;
-	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
+	auto renderer = globals::game::renderer;
+	auto context = globals::d3d::context;
+	auto shadowState = globals::game::shadowState;
+	auto stateUpdateFlags = globals::game::stateUpdateFlags;
 
 	static BlendStates* blendStates = (BlendStates*)REL::RelocationID(524749, 411364).address();
 

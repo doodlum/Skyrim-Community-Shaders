@@ -14,7 +14,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 void Upscaling::DrawSettings()
 {
 	// Skyrim settings control whether any upscaling is possible
-	auto state = State::GetSingleton();
+
+	auto state = globals::state;
 	auto imageSpaceManager = RE::ImageSpaceManager::GetSingleton();
 	auto streamline = Streamline::GetSingleton();
 	GET_INSTANCE_MEMBER(BSImagespaceShaderISTemporalAA, imageSpaceManager);
@@ -29,9 +30,9 @@ void Upscaling::DrawSettings()
 	// Determine available modes
 	bool featureDLSS = streamline->featureDLSS;
 	uint* currentUpscaleMode = featureDLSS ? &settings.upscaleMethod : &settings.upscaleMethodNoDLSS;
-	uint availableModes = (state->isVR && state->upscalerLoaded) ? (featureDLSS ? 2 : 1) : (featureDLSS ? 3 : 2);
+	uint availableModes = (globals::game::isVR && state->upscalerLoaded) ? (featureDLSS ? 2 : 1) : (featureDLSS ? 3 : 2);
 
-	if (State::GetSingleton()->featureLevel != D3D_FEATURE_LEVEL_11_1)
+	if (state->featureLevel != D3D_FEATURE_LEVEL_11_1)
 		availableModes = 1;
 
 	// Slider for method selection
@@ -129,7 +130,7 @@ void Upscaling::RestoreDefaultSettings()
 
 Upscaling::UpscaleMethod Upscaling::GetUpscaleMethod()
 {
-	if (State::GetSingleton()->featureLevel != D3D_FEATURE_LEVEL_11_1)
+	if (globals::state->featureLevel != D3D_FEATURE_LEVEL_11_1)
 		return (Upscaling::UpscaleMethod)settings.upscaleMethodNoFSR;
 
 	if (Streamline::GetSingleton()->featureDLSS)
@@ -203,12 +204,13 @@ void Upscaling::UpdateJitter()
 {
 	auto upscaleMethod = GetUpscaleMethod();
 	if (upscaleMethod == UpscaleMethod::kFSR || upscaleMethod == UpscaleMethod::kDLSS) {
-		static auto gameViewport = RE::BSGraphics::State::GetSingleton();
-		auto state = State::GetSingleton();
+		static auto gameViewport = globals::game::graphicsState;
+
+		auto state = globals::state;
 
 		ffxFsr3UpscalerGetJitterOffset(&jitter.x, &jitter.y, gameViewport->frameCount, 8);
 
-		if (state->isVR)
+		if (globals::game::isVR)
 			gameViewport->projectionPosScaleX = -jitter.x / state->screenSize.x;
 		else
 			gameViewport->projectionPosScaleX = -2.0f * jitter.x / state->screenSize.x;
@@ -230,9 +232,9 @@ void Upscaling::Upscale()
 
 	Hooks::BSGraphics_SetDirtyStates::func(false);
 
-	auto state = State::GetSingleton();
+	auto state = globals::state;
 
-	auto& context = state->context;
+	auto& context = globals::d3d::context;
 
 	ID3D11ShaderResourceView* inputTextureSRV;
 	context->PSGetShaderResources(0, 1, &inputTextureSRV);
@@ -260,7 +262,7 @@ void Upscaling::Upscale()
 	{
 		state->BeginPerfEvent("Alpha Mask");
 
-		static auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+		static auto renderer = globals::game::renderer;
 		static auto& temporalAAMask = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kTEMPORAL_AA_MASK];
 
 		{
@@ -342,9 +344,8 @@ void Upscaling::SharpenTAA()
 
 	CheckResources();
 
-	auto state = State::GetSingleton();
-
-	auto& context = state->context;
+	auto state = globals::state;
+	auto& context = globals::d3d::context;
 
 	ID3D11ShaderResourceView* inputTextureSRV;
 	context->PSGetShaderResources(0, 1, &inputTextureSRV);
@@ -400,15 +401,12 @@ void Upscaling::SharpenTAA()
 
 	context->CopyResource(outputTextureResource, upscalingTexture->resource.get());
 
-	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
-	GET_INSTANCE_MEMBER(stateUpdateFlags, shadowState)
-
-	stateUpdateFlags.set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);  // Run OMSetRenderTargets again
+	globals::game::stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);  // Run OMSetRenderTargets again
 }
 
 void Upscaling::CreateUpscalingResources()
 {
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	auto renderer = globals::game::renderer;
 	auto& main = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMAIN];
 
 	D3D11_TEXTURE2D_DESC texDesc{};

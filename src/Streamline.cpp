@@ -30,8 +30,7 @@ void LoggingCallback(sl::LogType type, const char* msg)
 
 void Streamline::DrawSettings()
 {
-	auto state = State::GetSingleton();
-	if (!state->isVR) {
+	if (!globals::game::isVR) {
 		ImGui::Text("Frame Generation uses a D3D11 to D3D12 proxy which can create compatibility issues");
 		ImGui::Text("Frame Generation can only be enabled or disabled in the mod manager, it can only be temporarily toggled in-game");
 
@@ -55,7 +54,7 @@ void Streamline::DrawSettings()
 
 void Streamline::LoadInterposer()
 {
-	if (State::GetSingleton()->IsFeatureDisabled("Frame Generation")) {
+	if (globals::state->IsFeatureDisabled("Frame Generation")) {
 		return;
 	}
 
@@ -301,7 +300,7 @@ void Streamline::SetupResources()
 	if (featureDLSS || (featureDLSSG && !REL::Module::IsVR())) {
 		logger::info("[Streamline] Creating resources");
 
-		auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+		auto renderer = globals::game::renderer;
 		auto& main = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMAIN];
 
 		D3D11_TEXTURE2D_DESC texDesc{};
@@ -345,8 +344,8 @@ void Streamline::CopyResourcesToSharedBuffers()
 	if (!(featureDLSSG && !REL::Module::IsVR()) || settings.frameGenerationMode == sl::DLSSGMode::eOff)
 		return;
 
-	auto& context = State::GetSingleton()->context;
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	auto& context = globals::d3d::context;
+	auto renderer = globals::game::renderer;
 
 	ID3D11RenderTargetView* backupViews[8];
 	ID3D11DepthStencilView* backupDsv;
@@ -430,15 +429,14 @@ void Streamline::Present()
 		slReflexSetMarker(sl::ReflexMarker::ePresentEnd, *frameToken);
 	}
 
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	auto renderer = globals::game::renderer;
+	auto state = globals::state;
 
 	auto& motionVectorsBuffer = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::RENDER_TARGET::kMOTION_VECTOR];
 
-	auto state = State::GetSingleton();
-
 	sl::Extent fullExtent{ 0, 0, (uint)state->screenSize.x, (uint)state->screenSize.y };
 
-	float2 dynamicScreenSize = Util::ConvertToDynamic(State::GetSingleton()->screenSize);
+	float2 dynamicScreenSize = Util::ConvertToDynamic(state->screenSize);
 	sl::Extent dynamicExtent{ 0, 0, (uint)dynamicScreenSize.x, (uint)dynamicScreenSize.y };
 
 	sl::Resource depth = { sl::ResourceType::eTex2d, depthBufferShared->resource.get(), 0 };
@@ -454,16 +452,16 @@ void Streamline::Present()
 	sl::ResourceTag uiTag = sl::ResourceTag{ &ui, sl::kBufferTypeUIColorAndAlpha, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
 
 	sl::ResourceTag inputs[] = { depthTag, mvecTag, hudLessTag, uiTag };
-	slSetTag(viewport, inputs, _countof(inputs), state->context);
+	slSetTag(viewport, inputs, _countof(inputs), globals::d3d::context);
 }
 
 void Streamline::Upscale(Texture2D* a_upscaleTexture, Texture2D* a_alphaMask, sl::DLSSPreset a_preset)
 {
 	UpdateConstants();
 
-	auto state = State::GetSingleton();
+	auto state = globals::state;
 
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	auto renderer = globals::game::renderer;
 	auto& depthTexture = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 	auto& motionVectorsTexture = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMOTION_VECTOR];
 
@@ -512,12 +510,12 @@ void Streamline::Upscale(Texture2D* a_upscaleTexture, Texture2D* a_alphaMask, sl
 		sl::ResourceTag alphaTag = sl::ResourceTag{ &alpha, sl::kBufferTypeBiasCurrentColorHint, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
 
 		sl::ResourceTag resourceTags[] = { colorInTag, colorOutTag, depthTag, mvecTag, alphaTag };
-		slSetTag(viewport, resourceTags, _countof(resourceTags), state->context);
+		slSetTag(viewport, resourceTags, _countof(resourceTags), globals::d3d::context);
 	}
 
 	sl::ViewportHandle view(viewport);
 	const sl::BaseStructure* inputs[] = { &view };
-	slEvaluateFeature(sl::kFeatureDLSS, *frameToken, inputs, _countof(inputs), state->context);
+	slEvaluateFeature(sl::kFeatureDLSS, *frameToken, inputs, _countof(inputs), globals::d3d::context);
 }
 
 void Streamline::UpdateConstants()
@@ -526,7 +524,7 @@ void Streamline::UpdateConstants()
 	if (!frameChecker.IsNewFrame())
 		return;
 
-	auto state = State::GetSingleton();
+	auto state = globals::state;
 
 	auto cameraData = Util::GetCameraData(0);
 	auto eyePosition = Util::GetEyePosition(0);
@@ -545,7 +543,7 @@ void Streamline::UpdateConstants()
 
 	sl::Constants slConstants = {};
 
-	if (state->isVR) {
+	if (globals::game::isVR) {
 		slConstants.cameraAspectRatio = (state->screenSize.x * 0.5f) / state->screenSize.y;
 	} else {
 		slConstants.cameraAspectRatio = state->screenSize.x / state->screenSize.y;
@@ -574,7 +572,7 @@ void Streamline::UpdateConstants()
 	slConstants.jitterOffset = { -jitter.x, -jitter.y };
 	slConstants.reset = upscaling->reset ? sl::Boolean::eTrue : sl::Boolean::eFalse;
 
-	slConstants.mvecScale = { (state->isVR ? 0.5f : 1.0f), 1 };
+	slConstants.mvecScale = { (globals::game::isVR ? 0.5f : 1.0f), 1 };
 	slConstants.prevClipToClip = *(sl::float4x4*)&prevCameraToCamera;
 	slConstants.motionVectors3D = sl::Boolean::eTrue;
 	slConstants.motionVectorsInvalidValue = FLT_MIN;

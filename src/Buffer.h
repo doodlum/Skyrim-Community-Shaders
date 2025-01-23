@@ -52,7 +52,7 @@ public:
 	explicit ConstantBuffer(D3D11_BUFFER_DESC const& a_desc) :
 		desc(a_desc)
 	{
-		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, nullptr, resource.put()));
 	}
 
@@ -60,7 +60,7 @@ public:
 
 	void Update(void const* src_data, size_t data_size)
 	{
-		ID3D11DeviceContext* ctx = reinterpret_cast<ID3D11DeviceContext*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().context);
+		auto ctx = globals::d3d::context;
 		if (desc.Usage & D3D11_USAGE_DYNAMIC) {
 			D3D11_MAPPED_SUBRESOURCE mapped_buffer{};
 			ZeroMemory(&mapped_buffer, sizeof(D3D11_MAPPED_SUBRESOURCE));
@@ -104,7 +104,7 @@ public:
 	StructuredBuffer(D3D11_BUFFER_DESC const& a_desc, UINT a_count) :
 		desc(a_desc), count(a_count)
 	{
-		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, nullptr, resource.put()));
 	}
 
@@ -113,7 +113,7 @@ public:
 
 	virtual void CreateSRV()
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		D3D11_SHADER_RESOURCE_VIEW_DESC srv_desc{};
 		srv_desc.Format = DXGI_FORMAT_UNKNOWN;
 		srv_desc.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
@@ -126,7 +126,7 @@ public:
 
 	virtual void CreateUAV()
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		D3D11_UNORDERED_ACCESS_VIEW_DESC uav_desc{};
 		uav_desc.Format = DXGI_FORMAT_UNKNOWN;
 		uav_desc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
@@ -140,13 +140,14 @@ public:
 
 	void Update(void const* src_data, [[maybe_unused]] size_t data_size)
 	{
-		ID3D11DeviceContext* ctx = reinterpret_cast<ID3D11DeviceContext*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().context);
+		auto ctx = globals::d3d::context;
 		D3D11_MAPPED_SUBRESOURCE mapped_buffer{};
 		ZeroMemory(&mapped_buffer, sizeof(D3D11_MAPPED_SUBRESOURCE));
 		DX::ThrowIfFailed(ctx->Map(resource.get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &mapped_buffer));
 		memcpy(mapped_buffer.pData, src_data, desc.ByteWidth);
 		ctx->Unmap(resource.get(), 0);
 	}
+
 	template <typename T>
 	void UpdateList(T const& src_data, std::int64_t count)
 	{
@@ -167,18 +168,19 @@ public:
 	explicit Buffer(D3D11_BUFFER_DESC const& a_desc, D3D11_SUBRESOURCE_DATA* a_init = nullptr) :
 		desc(a_desc)
 	{
-		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, a_init, resource.put()));
 	}
 
 	void CreateSRV(D3D11_SHADER_RESOURCE_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateShaderResourceView(resource.get(), &a_desc, srv.put()));
 	}
+
 	void CreateUAV(D3D11_UNORDERED_ACCESS_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateUnorderedAccessView(resource.get(), &a_desc, uav.put()));
 	}
 
@@ -194,24 +196,25 @@ public:
 	explicit Texture1D(D3D11_TEXTURE1D_DESC const& a_desc) :
 		desc(a_desc)
 	{
-		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateTexture1D(&desc, nullptr, resource.put()));
 	}
 
 	void CreateSRV(D3D11_SHADER_RESOURCE_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateShaderResourceView(resource.get(), &a_desc, srv.put()));
 	}
+
 	void CreateUAV(D3D11_UNORDERED_ACCESS_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateUnorderedAccessView(resource.get(), &a_desc, uav.put()));
 	}
 
 	void CreateRTV(D3D11_RENDER_TARGET_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateRenderTargetView(resource.get(), &a_desc, rtv.put()));
 	}
 
@@ -228,7 +231,7 @@ public:
 	explicit Texture2D(D3D11_TEXTURE2D_DESC const& a_desc) :
 		desc(a_desc)
 	{
-		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateTexture2D(&desc, nullptr, resource.put()));
 	}
 
@@ -240,24 +243,25 @@ public:
 
 	void CreateSRV(D3D11_SHADER_RESOURCE_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateShaderResourceView(resource.get(), &a_desc, srv.put()));
 	}
+
 	void CreateUAV(D3D11_UNORDERED_ACCESS_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateUnorderedAccessView(resource.get(), &a_desc, uav.put()));
 	}
 
 	void CreateRTV(D3D11_RENDER_TARGET_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateRenderTargetView(resource.get(), &a_desc, rtv.put()));
 	}
 
 	void CreateDSV(D3D11_DEPTH_STENCIL_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateDepthStencilView(resource.get(), &a_desc, dsv.put()));
 	}
 
@@ -275,25 +279,28 @@ public:
 	explicit Texture3D(D3D11_TEXTURE3D_DESC const& a_desc) :
 		desc(a_desc)
 	{
-		auto device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateTexture3D(&desc, nullptr, resource.put()));
 	}
 
 	void CreateSRV(D3D11_SHADER_RESOURCE_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateShaderResourceView(resource.get(), &a_desc, srv.put()));
 	}
+
 	void CreateUAV(D3D11_UNORDERED_ACCESS_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateUnorderedAccessView(resource.get(), &a_desc, uav.put()));
 	}
+
 	void CreateRTV(D3D11_RENDER_TARGET_VIEW_DESC const& a_desc)
 	{
-		ID3D11Device* device = reinterpret_cast<ID3D11Device*>(RE::BSGraphics::Renderer::GetSingleton()->GetRuntimeData().forwarder);
+		auto device = globals::d3d::device;
 		DX::ThrowIfFailed(device->CreateRenderTargetView(resource.get(), &a_desc, rtv.put()));
 	}
+
 	D3D11_TEXTURE3D_DESC desc;
 	winrt::com_ptr<ID3D11Texture3D> resource;
 	winrt::com_ptr<ID3D11ShaderResourceView> srv;

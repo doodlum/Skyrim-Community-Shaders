@@ -202,7 +202,7 @@ void Menu::Save(json& o_json)
 
 #define IM_VK_KEYPAD_ENTER (VK_RETURN + 256)
 
-void Menu::Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceContext* context)
+void Menu::Init()
 {
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -218,18 +218,18 @@ void Menu::Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceCon
 	imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\Jost-Regular.ttf", 36, &font_config);
 
 	DXGI_SWAP_CHAIN_DESC desc;
-	swapchain->GetDesc(&desc);
+	globals::d3d::swapchain->GetDesc(&desc);
 
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_Init(desc.OutputWindow);
-	ImGui_ImplDX11_Init(device, context);
+	ImGui_ImplDX11_Init(globals::d3d::device, globals::d3d::context);
 
 	auto& io = ImGui::GetIO();
 	io.FontGlobalScale = exp2(settings.Theme.GlobalScale);
 
 	{
 		winrt::com_ptr<IDXGIDevice> dxgiDevice;
-		if (!FAILED(device->QueryInterface(dxgiDevice.put()))) {
+		if (!FAILED(globals::d3d::device->QueryInterface(dxgiDevice.put()))) {
 			winrt::com_ptr<IDXGIAdapter> dxgiAdapter;
 			if (!FAILED(dxgiDevice->GetAdapter(dxgiAdapter.put()))) {
 				dxgiAdapter->QueryInterface(dxgiAdapter3.put());
@@ -266,12 +266,12 @@ void Menu::DrawSettings()
 		if (ImGui::BeginTable("##LeButtons", 4, ImGuiTableFlags_SizingStretchSame)) {
 			ImGui::TableNextColumn();
 			if (ImGui::Button("Save Settings", { -1, 0 })) {
-				State::GetSingleton()->Save();
+				globals::state->Save();
 			}
 
 			ImGui::TableNextColumn();
 			if (ImGui::Button("Load Settings", { -1, 0 })) {
-				State::GetSingleton()->Load();
+				globals::state->Load();
 				ParticleLights::GetSingleton()->GetConfigs();
 			}
 
@@ -352,7 +352,7 @@ void Menu::DrawSettings()
 				void operator()(Feature* feat)
 				{
 					const auto featureName = feat->GetShortName();
-					bool isDisabled = State::GetSingleton()->IsFeatureDisabled(featureName);
+					bool isDisabled = globals::state->IsFeatureDisabled(featureName);
 					bool isLoaded = feat->loaded;
 					bool hasFailedMessage = !feat->failedLoadedMessage.empty();
 					auto& themeSettings = Menu::GetSingleton()->settings.Theme;
@@ -416,7 +416,7 @@ void Menu::DrawSettings()
 				void operator()(Feature* feat)
 				{
 					const auto featureName = feat->GetShortName();
-					bool isDisabled = State::GetSingleton()->IsFeatureDisabled(featureName);
+					bool isDisabled = globals::state->IsFeatureDisabled(featureName);
 					bool isLoaded = feat->loaded;
 					bool hasFailedMessage = !feat->failedLoadedMessage.empty();
 					auto& themeSettings = Menu::GetSingleton()->settings.Theme;
@@ -749,7 +749,7 @@ void Menu::DrawAdvancedSettings()
 		if (auto _tt = Util::HoverTooltipWrapper()) {
 			ImGui::Text("Dump shaders at startup. This should be used only when reversing shaders. Normal users don't need this.");
 		}
-		spdlog::level::level_enum logLevel = State::GetSingleton()->GetLogLevel();
+		spdlog::level::level_enum logLevel = globals::state->GetLogLevel();
 		const char* items[] = {
 			"trace",
 			"debug",
@@ -762,20 +762,20 @@ void Menu::DrawAdvancedSettings()
 		static int item_current = static_cast<int>(logLevel);
 		if (ImGui::Combo("Log Level", &item_current, items, IM_ARRAYSIZE(items))) {
 			ImGui::SameLine();
-			State::GetSingleton()->SetLogLevel(static_cast<spdlog::level::level_enum>(item_current));
+			globals::state->SetLogLevel(static_cast<spdlog::level::level_enum>(item_current));
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
 			ImGui::Text("Log level. Trace is most verbose. Default is info.");
 		}
 
-		auto& shaderDefines = State::GetSingleton()->shaderDefinesString;
+		auto& shaderDefines = globals::state->shaderDefinesString;
 		if (ImGui::InputText("Shader Defines", &shaderDefines)) {
-			State::GetSingleton()->SetDefines(shaderDefines);
+			globals::state->SetDefines(shaderDefines);
 		}
 		if (ImGui::IsItemDeactivatedAfterEdit() || (ImGui::IsItemActive() &&
 													   (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)) ||
 														   ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_KeypadEnter))))) {
-			State::GetSingleton()->SetDefines(shaderDefines);
+			globals::state->SetDefines(shaderDefines);
 			shaderCache.Clear();
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
@@ -800,10 +800,10 @@ void Menu::DrawAdvancedSettings()
 			if (testInterval == 0) {
 				inTestMode = false;
 				logger::info("Disabling test mode.");
-				State::GetSingleton()->Load(State::ConfigMode::TEST);  // restore last settings before entering test mode
+				globals::state->Load(State::ConfigMode::TEST);  // restore last settings before entering test mode
 			} else if (!inTestMode) {
 				logger::info("Saving current settings for test mode and starting test with interval {}.", testInterval);
-				State::GetSingleton()->Save(State::ConfigMode::TEST);
+				globals::state->Save(State::ConfigMode::TEST);
 				inTestMode = true;
 			} else {
 				logger::info("Setting new interval {}.", testInterval);
@@ -844,9 +844,9 @@ void Menu::DrawAdvancedSettings()
 			}
 		}
 		if (ImGui::TreeNodeEx("Addresses")) {
-			auto Renderer = RE::BSGraphics::Renderer::GetSingleton();
+			auto Renderer = globals::game::renderer;
 			auto BSShaderAccumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator();
-			auto RendererShadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
+			auto RendererShadowState = globals::game::shadowState;
 			ADDRESS_NODE(Renderer)
 			ADDRESS_NODE(BSShaderAccumulator)
 			ADDRESS_NODE(RendererShadowState)
@@ -856,11 +856,11 @@ void Menu::DrawAdvancedSettings()
 			ImGui::Text(std::format("Shader Compiler : {}", shaderCache.GetShaderStatsString()).c_str());
 			ImGui::TreePop();
 		}
-		ImGui::Checkbox("Frame Annotations", &State::GetSingleton()->frameAnnotations);
+		ImGui::Checkbox("Frame Annotations", &globals::state->frameAnnotations);
 	}
 
 	if (ImGui::CollapsingHeader("Replace Original Shaders", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
-		auto state = State::GetSingleton();
+		auto state = globals::state;
 		if (ImGui::BeginTable("##ReplaceToggles", 3, ImGuiTableFlags_SizingStretchSame)) {
 			for (int classIndex = 0; classIndex < RE::BSShader::Type::Total - 1; ++classIndex) {
 				ImGui::TableNextColumn();
@@ -900,13 +900,13 @@ void Menu::DrawAdvancedSettings()
 		}
 	}
 
-	TruePBR::GetSingleton()->DrawSettings();
+	globals::truePBR->DrawSettings();
 	Menu::DrawDisableAtBootSettings();
 }
 
 void Menu::DrawDisableAtBootSettings()
 {
-	auto state = State::GetSingleton();
+	auto state = globals::state;
 	auto& disabledFeatures = state->GetDisabledFeatures();
 
 	if (ImGui::CollapsingHeader("Disable at Boot", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
@@ -959,7 +959,7 @@ void Menu::DrawDisableAtBootSettings()
 
 void Menu::DrawDisplaySettings()
 {
-	if (!State::GetSingleton()->upscalerLoaded) {
+	if (!globals::state->upscalerLoaded) {
 		auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
 		const std::vector<std::pair<std::string, std::function<void()>>> features = {
@@ -968,7 +968,7 @@ void Menu::DrawDisplaySettings()
 		};
 
 		for (const auto& [featureName, drawFunc] : features) {
-			bool isDisabled = State::GetSingleton()->IsFeatureDisabled(featureName);
+			bool isDisabled = globals::state->IsFeatureDisabled(featureName);
 
 			if (featureName == "Frame Generation" && REL::Module::IsVR()) {
 				isDisabled = true;
@@ -1001,7 +1001,7 @@ void Menu::DrawFooter()
 	ImGui::SameLine();
 	ImGui::BulletText(std::format("D3D12 Interop: {}", Streamline::GetSingleton()->featureDLSSG && !REL::Module::IsVR() ? "Active" : "Inactive").c_str());
 	ImGui::SameLine();
-	ImGui::BulletText(std::format("GPU: {}", State::GetSingleton()->adapterDescription.c_str()).c_str());
+	ImGui::BulletText(std::format("GPU: {}", globals::state->adapterDescription.c_str()).c_str());
 
 	if (dxgiAdapter3) {
 		ImGui::SameLine();
@@ -1046,7 +1046,7 @@ void Menu::DrawOverlay()
 	compiledShaders = shaderCache.GetCompletedTasks();
 	totalShaders = shaderCache.GetTotalTasks();
 
-	auto state = State::GetSingleton();
+	auto state = globals::state;
 	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
 	auto progressTitle = fmt::format("{}Compiling Shaders: {}",
@@ -1097,7 +1097,7 @@ void Menu::DrawOverlay()
 		if (remaining < 0) {
 			usingTestConfig = !usingTestConfig;
 			logger::info("Swapping mode to {}", usingTestConfig ? "test" : "user");
-			State::GetSingleton()->Load(usingTestConfig ? State::ConfigMode::TEST : State::ConfigMode::USER);
+			globals::state->Load(usingTestConfig ? State::ConfigMode::TEST : State::ConfigMode::USER);
 			lastTestSwitch = high_resolution_clock::now();
 		}
 		ImGui::SetNextWindowBgAlpha(1);
@@ -1440,10 +1440,10 @@ void Menu::ProcessInputEventQueue()
 				} else if (key == settings.EffectToggleKey) {
 					auto& shaderCache = SIE::ShaderCache::Instance();
 					shaderCache.SetEnabled(!shaderCache.IsEnabled());
-				} else if (key == priorShaderKey && State::GetSingleton()->IsDeveloperMode()) {
+				} else if (key == priorShaderKey && globals::state->IsDeveloperMode()) {
 					auto& shaderCache = SIE::ShaderCache::Instance();
 					shaderCache.IterateShaderBlock();
-				} else if (key == nextShaderKey && State::GetSingleton()->IsDeveloperMode()) {
+				} else if (key == nextShaderKey && globals::state->IsDeveloperMode()) {
 					auto& shaderCache = SIE::ShaderCache::Instance();
 					shaderCache.IterateShaderBlock(false);
 				}

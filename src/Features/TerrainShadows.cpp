@@ -1,7 +1,6 @@
 #include "TerrainShadows.h"
-#include "Menu.h"
 
-#include "Deferred.h"
+#include "Menu.h"
 #include "State.h"
 #include "Util.h"
 
@@ -211,7 +210,7 @@ void TerrainShadows::LoadHeightmap()
 	if (cachedHeightmap && cachedHeightmap->worldspace == worldspace_name)  // already cached
 		return;
 
-	auto& device = State::GetSingleton()->device;
+	auto& device = globals::d3d::device;
 
 	logger::debug("Loading height map...");
 	{
@@ -306,14 +305,14 @@ void TerrainShadows::UpdateShadow()
 	constexpr uint updateLength = 128u;
 	constexpr uint logUpdateLength = std::bit_width(128u) - 1;  // integer log2, https://stackoverflow.com/questions/994593/how-to-do-an-integer-log2-in-c
 
-	auto& context = State::GetSingleton()->context;
+	auto& context = globals::d3d::context;
 	auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator();
 	auto sunLight = skyrim_cast<RE::NiDirectionalLight*>(accumulator->GetRuntimeData().activeShadowSceneNode->GetRuntimeData().sunLight->light.get());
 	if (!sunLight)
 		return;
 
 	ZoneScoped;
-	TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Terrain Occlusion - Update Shadows");
+	TracyD3D11Zone(globals::state->tracyCtx, "Terrain Occlusion - Update Shadows");
 
 	/* ---- UPDATE CB ---- */
 	uint width = texHeightMap->desc.Width;
@@ -412,7 +411,7 @@ void TerrainShadows::EarlyPrepass()
 	UpdateShadow();
 
 	if (texShadowHeight) {
-		auto context = State::GetSingleton()->context;
+		auto context = globals::d3d::context;
 
 		std::array<ID3D11ShaderResourceView*, 1> srvs = { texShadowHeight->srv.get() };
 		context->PSSetShaderResources(60, (uint)srvs.size(), srvs.data());

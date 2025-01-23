@@ -1,7 +1,7 @@
 #include "ScreenSpaceGI.h"
-#include "Menu.h"
 
 #include "Deferred.h"
+#include "Menu.h"
 #include "State.h"
 #include "Util.h"
 
@@ -328,8 +328,8 @@ void ScreenSpaceGI::SaveSettings(json& o_json)
 
 void ScreenSpaceGI::SetupResources()
 {
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-	auto& device = State::GetSingleton()->device;
+	auto renderer = globals::game::renderer;
+	auto& device = globals::d3d::device;
 
 	logger::debug("Creating buffers...");
 	{
@@ -563,7 +563,7 @@ bool ScreenSpaceGI::ShadersOK()
 
 void ScreenSpaceGI::UpdateSB()
 {
-	auto viewport = RE::BSGraphics::State::GetSingleton();
+	auto viewport = globals::game::graphicsState;
 
 	float2 res = { (float)texRadiance->desc.Width, (float)texRadiance->desc.Height };
 	float2 dynres = Util::ConvertToDynamic(res);
@@ -622,7 +622,7 @@ void ScreenSpaceGI::UpdateSB()
 
 void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 {
-	auto& context = State::GetSingleton()->context;
+	auto& context = globals::d3d::context;
 
 	if (!(settings.Enabled && ShadersOK())) {
 		FLOAT clr[4] = { 0.f, 0.f, 0.f, 0.f };
@@ -633,7 +633,7 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 	}
 
 	ZoneScoped;
-	TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSGI");
+	TracyD3D11Zone(globals::state->tracyCtx, "SSGI");
 
 	static uint lastFrameAoTexIdx = 0;
 	static uint lastFrameGITexIdx = 0;
@@ -650,11 +650,11 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 
 	//////////////////////////////////////////////////////
 
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	auto renderer = globals::game::renderer;
 	auto rts = renderer->GetRuntimeData().renderTargets;
-	auto deferred = Deferred::GetSingleton();
+	auto deferred = globals::deferred;
 
-	float2 size = Util::ConvertToDynamic(State::GetSingleton()->screenSize);
+	float2 size = Util::ConvertToDynamic(globals::state->screenSize);
 	auto resolution = std::array{ (uint)size.x, (uint)size.y };
 	auto resChoices = std::array{
 		resolution, std::array{ resolution[0] >> 1, resolution[1] >> 1 }, std::array{ resolution[0] >> 2, resolution[1] >> 2 }
@@ -681,7 +681,7 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 
 	// prefilter depths
 	{
-		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSGI - Prefilter Depths");
+		TracyD3D11Zone(globals::state->tracyCtx, "SSGI - Prefilter Depths");
 
 		srvs.at(0) = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY].depthSRV;
 		for (int i = 0; i < 5; ++i)
@@ -695,7 +695,7 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 
 	// fetch radiance and disocclusion
 	{
-		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSGI - Radiance Disocc");
+		TracyD3D11Zone(globals::state->tracyCtx, "SSGI - Radiance Disocc");
 
 		resetViews();
 		srvs.at(0) = rts[deferred->forwardRenderTargets[0]].SRV;
@@ -731,7 +731,7 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 
 	// GI
 	{
-		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSGI - GI");
+		TracyD3D11Zone(globals::state->tracyCtx, "SSGI - GI");
 
 		resetViews();
 		srvs.at(0) = texWorkingDepth->srv.get();
@@ -763,7 +763,7 @@ void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 
 	// blur
 	if (settings.EnableBlur) {
-		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "SSGI - Diffuse Blur");
+		TracyD3D11Zone(globals::state->tracyCtx, "SSGI - Diffuse Blur");
 
 		resetViews();
 		srvs.at(0) = texWorkingDepth->srv.get();

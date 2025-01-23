@@ -8,7 +8,6 @@
 #include "State.h"
 #include "TruePBR.h"
 #include "Upscaling.h"
-#include "VariableCache.h"
 
 #include "ENB/ENBSeriesAPI.h"
 
@@ -80,10 +79,10 @@ void MessageHandler(SKSE::MessagingInterface::Message* message)
 	case SKSE::MessagingInterface::kPostPostLoad:
 		{
 			if (errors.empty()) {
-				auto state = State::GetSingleton();
+				auto state = globals::state;
 				state->PostPostLoad();  // state should load first so basic information is populated
 				Deferred::Hooks::Install();
-				TruePBR::GetSingleton()->PostPostLoad();
+				globals::truePBR->PostPostLoad();
 				if (!state->IsFeatureDisabled("Upscaling")) {
 					Upscaling::InstallHooks();
 				}
@@ -114,7 +113,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* message)
 			}
 
 			if (errors.empty()) {
-				VariableCache::GetSingleton()->OnDataLoaded();
+				globals::OnDataLoaded();
 				FrameAnnotations::OnDataLoaded();
 
 				auto& shaderCache = SIE::ShaderCache::Instance();
@@ -132,7 +131,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* message)
 					RE::GetINISetting("bIBLFEnable:Display")->data.b = false;
 				}
 
-				TruePBR::GetSingleton()->DataLoaded();
+				globals::truePBR->DataLoaded();
 				for (auto* feature : Feature::GetFeatureList()) {
 					if (feature->loaded) {
 						feature->DataLoaded();
@@ -164,7 +163,7 @@ bool Load()
 	auto messaging = SKSE::GetMessagingInterface();
 	messaging->RegisterListener("SKSE", MessageHandler);
 
-	auto state = State::GetSingleton();
+	auto state = globals::state;
 	state->Load();
 	auto log = spdlog::default_logger();
 	log->set_level(state->GetLogLevel());

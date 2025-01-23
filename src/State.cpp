@@ -18,17 +18,15 @@
 #include "Streamline.h"
 #include "Upscaling.h"
 
-#include "VariableCache.h"
-
 void State::Draw()
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto shaderCache = variableCache->shaderCache;
-	auto deferred = variableCache->deferred;
-	auto terrainBlending = variableCache->terrainBlending;
-	auto cloudShadows = variableCache->cloudShadows;
-	auto truePBR = variableCache->truePBR;
-	auto smState = variableCache->smState;
+	auto shaderCache = globals::shaderCache;
+	auto deferred = globals::deferred;
+	auto terrainBlending = globals::features::terrainBlending;
+	auto cloudShadows = globals::features::cloudShadows;
+	auto truePBR = globals::truePBR;
+	auto smState = globals::game::smState;
+	auto context = globals::d3d::context;
 
 	if (shaderCache->IsEnabled()) {
 		if (terrainBlending->loaded)
@@ -114,7 +112,7 @@ void State::Reset()
 
 void State::Setup()
 {
-	TruePBR::GetSingleton()->SetupResources();
+	globals::truePBR->SetupResources();
 	SetupResources();
 	for (auto* feature : Feature::GetFeatureList())
 		if (feature->loaded)
@@ -132,12 +130,12 @@ static const std::string& GetConfigPath(State::ConfigMode a_configMode)
 {
 	switch (a_configMode) {
 	case State::ConfigMode::USER:
-		return State::GetSingleton()->userConfigPath;
+		return globals::state->userConfigPath;
 	case State::ConfigMode::TEST:
-		return State::GetSingleton()->testConfigPath;
+		return globals::state->testConfigPath;
 	case State::ConfigMode::DEFAULT:
 	default:
-		return State::GetSingleton()->defaultConfigPath;
+		return globals::state->defaultConfigPath;
 	}
 }
 
@@ -503,7 +501,7 @@ void State::ModifyRenderTarget(RE::RENDER_TARGETS::RENDER_TARGET a_target, RE::B
 
 void State::SetupResources()
 {
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	auto renderer = globals::game::renderer;
 
 	permutationCB = new ConstantBuffer(ConstantBufferDesc<PermutationCB>());
 	sharedDataCB = new ConstantBuffer(ConstantBufferDesc<SharedDataCB>());
@@ -517,20 +515,17 @@ void State::SetupResources()
 	D3D11_TEXTURE2D_DESC texDesc{};
 	renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMAIN].texture->GetDesc(&texDesc);
 
-	isVR = REL::Module::IsVR();
 	screenSize = { (float)texDesc.Width, (float)texDesc.Height };
-	context = reinterpret_cast<ID3D11DeviceContext*>(renderer->GetRuntimeData().context);
-	device = reinterpret_cast<ID3D11Device*>(renderer->GetRuntimeData().forwarder);
-	context->QueryInterface(__uuidof(pPerf), reinterpret_cast<void**>(&pPerf));
+	globals::d3d::context->QueryInterface(__uuidof(pPerf), reinterpret_cast<void**>(&pPerf));
 
-	featureLevel = device->GetFeatureLevel();
+	featureLevel = globals::d3d::device->GetFeatureLevel();
 
-	tracyCtx = TracyD3D11Context(device, context);
+	tracyCtx = TracyD3D11Context(globals::d3d::device, globals::d3d::context);
 }
 
 void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescriptor, uint& a_pixelDescriptor, bool a_forceDeferred)
 {
-	auto deferred = VariableCache::GetSingleton()->deferred;
+	auto deferred = globals::deferred;
 
 	if (a_shader.shaderType.get() != RE::BSShader::Type::Utility && a_shader.shaderType.get() != RE::BSShader::Type::ImageSpace) {
 		switch (a_shader.shaderType.get()) {
@@ -663,17 +658,17 @@ void State::UpdateSharedData()
 	{
 		SharedDataCB data{};
 
-		const auto& shaderManager = RE::BSShaderManager::State::GetSingleton();
-		const RE::NiTransform& dalcTransform = shaderManager.directionalAmbientTransform;
+		const auto shaderManager = globals::game::smState;
+		const RE::NiTransform& dalcTransform = shaderManager->directionalAmbientTransform;
 		Util::StoreTransform3x4NoScale(data.DirectionalAmbient, dalcTransform);
 
-		auto shadowSceneNode = RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0];
+		auto shadowSceneNode = shaderManager->shadowSceneNode[0];
 		auto dirLight = skyrim_cast<RE::NiDirectionalLight*>(shadowSceneNode->GetRuntimeData().sunLight->light.get());
 
 		data.DirLightColor = { dirLight->GetLightRuntimeData().diffuse.red, dirLight->GetLightRuntimeData().diffuse.green, dirLight->GetLightRuntimeData().diffuse.blue, 1.0f };
 
 		auto imageSpaceManager = RE::ImageSpaceManager::GetSingleton();
-		data.DirLightColor *= !isVR ? imageSpaceManager->GetRuntimeData().data.baseData.hdr.sunlightScale : imageSpaceManager->GetVRRuntimeData().data.baseData.hdr.sunlightScale;
+		data.DirLightColor *= !globals::game::isVR ? imageSpaceManager->GetRuntimeData().data.baseData.hdr.sunlightScale : imageSpaceManager->GetVRRuntimeData().data.baseData.hdr.sunlightScale;
 
 		const auto& direction = dirLight->GetWorldDirection();
 		data.DirLightDirection = { -direction.x, -direction.y, -direction.z, 0.0f };
@@ -683,12 +678,12 @@ void State::UpdateSharedData()
 		data.BufferDim = { screenSize.x, screenSize.y, 1.0f / screenSize.x, 1.0f / screenSize.y };
 		data.Timer = timer;
 
-		auto viewport = RE::BSGraphics::State::GetSingleton();
+		auto viewport = globals::game::graphicsState;
 
-		auto bTAA = !isVR ? imageSpaceManager->GetRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled :
-		                    imageSpaceManager->GetVRRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled;
+		auto bTAA = !globals::game::isVR ? imageSpaceManager->GetRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled :
+		                                   imageSpaceManager->GetVRRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled;
 
-		data.FrameCount = viewport->frameCount * (bTAA || State::GetSingleton()->upscalerLoaded);
+		data.FrameCount = viewport->frameCount * (bTAA || globals::state->upscalerLoaded);
 		data.FrameCountAlwaysActive = viewport->frameCount;
 
 		for (int i = -2; i <= 2; i++) {
@@ -719,11 +714,11 @@ void State::UpdateSharedData()
 		delete[] data;
 	}
 
-	const auto& depth = RE::BSGraphics::Renderer::GetSingleton()->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
-	auto terrainBlending = TerrainBlending::GetSingleton();
+	const auto& depth = globals::game::renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
+	auto terrainBlending = globals::features::terrainBlending;
 	auto srv = (terrainBlending->loaded ? terrainBlending->blendedDepthTexture16->srv.get() : depth.depthSRV);
 
-	context->PSSetShaderResources(17, 1, &srv);
+	globals::d3d::context->PSSetShaderResources(17, 1, &srv);
 }
 
 void State::ClearDisabledFeatures()

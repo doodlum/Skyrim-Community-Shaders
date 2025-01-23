@@ -42,7 +42,7 @@ public:
 	void Load(json& o_json);
 	void Save(json& o_json);
 
-	void Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceContext* context);
+	void Init();
 	void DrawSettings();
 	void DrawOverlay();
 

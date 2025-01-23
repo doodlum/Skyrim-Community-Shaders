@@ -265,11 +265,10 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 
 void WetnessEffects::Prepass()
 {
-	static auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	static auto renderer = globals::game::renderer;
 	static auto& precipOcclusionTexture = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPRECIPITATION_OCCLUSION_MAP];
 
-	auto state = State::GetSingleton();
-	auto& context = state->context;
+	auto& context = globals::d3d::context;
 
 	context->PSSetShaderResources(70, 1, &precipOcclusionTexture.depthSRV);
 }

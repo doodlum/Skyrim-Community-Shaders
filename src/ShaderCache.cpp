@@ -10,7 +10,6 @@
 #include "Deferred.h"
 #include "Feature.h"
 #include "State.h"
-#include "VariableCache.h"
 
 #include "Features/DynamicCubemaps.h"
 
@@ -1304,13 +1303,13 @@ namespace SIE
 			} else if (shaderClass == ShaderClass::Compute) {
 				defines[lastIndex++] = { "CSHADER", nullptr };
 			}
-			if (State::GetSingleton()->IsDeveloperMode()) {
+			if (globals::state->IsDeveloperMode()) {
 				defines[lastIndex++] = { "D3DCOMPILE_SKIP_OPTIMIZATION", nullptr };
 				defines[lastIndex++] = { "D3DCOMPILE_DEBUG", nullptr };
 			}
 			if (REL::Module::IsVR())
 				defines[lastIndex++] = { "VR", nullptr };
-			auto shaderDefines = State::GetSingleton()->GetDefines();
+			auto shaderDefines = globals::state->GetDefines();
 			if (!shaderDefines->empty()) {
 				for (unsigned int i = 0; i < shaderDefines->size(); i++)
 					defines[lastIndex++] = { shaderDefines->at(i).first.c_str(), shaderDefines->at(i).second.c_str() };
@@ -1331,7 +1330,7 @@ namespace SIE
 
 			// compile shaders
 			ID3DBlob* errorBlob = nullptr;
-			const uint32_t flags = !State::GetSingleton()->IsDeveloperMode() ? D3DCOMPILE_OPTIMIZATION_LEVEL3 : D3DCOMPILE_DEBUG;
+			const uint32_t flags = !globals::state->IsDeveloperMode() ? D3DCOMPILE_OPTIMIZATION_LEVEL3 : D3DCOMPILE_DEBUG;
 			const HRESULT compileResult = D3DCompileFromFile(path.c_str(), defines.data(), D3D_COMPILE_STANDARD_FILE_INCLUDE, "main",
 				GetShaderProfile(shaderClass), flags, 0, &shaderBlob, &errorBlob);
 
@@ -1357,7 +1356,7 @@ namespace SIE
 			logger::debug("Compiled shader {}:{}:{:X}", magic_enum::enum_name(type), magic_enum::enum_name(shaderClass), descriptor);
 
 			// strip debug info
-			if (!State::GetSingleton()->IsDeveloperMode()) {
+			if (!globals::state->IsDeveloperMode()) {
 				ID3DBlob* strippedShaderBlob = nullptr;
 
 				const uint32_t stripFlags = D3DCOMPILER_STRIP_DEBUG_INFO |
@@ -1675,8 +1674,8 @@ namespace SIE
 			}
 		}
 
-		auto state = VariableCache::GetSingleton()->state;
-		if (state->isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
+		auto state = globals::state;
+		if (globals::game::isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
 			// use vanilla shader
 			return nullptr;
 
@@ -1716,8 +1715,8 @@ namespace SIE
 	RE::BSGraphics::PixelShader* ShaderCache::GetPixelShader(const RE::BSShader& shader,
 		uint32_t descriptor)
 	{
-		auto state = VariableCache::GetSingleton()->state;
-		if (state->isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
+		auto state = globals::state;
+		if (globals::game::isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
 			// use vanilla shader
 			return nullptr;
 
@@ -1764,7 +1763,7 @@ namespace SIE
 	RE::BSGraphics::ComputeShader* ShaderCache::GetComputeShader(const RE::BSShader& shader,
 		uint32_t descriptor)
 	{
-		auto state = State::GetSingleton();
+		auto state = globals::state;
 		if (!((ShaderCache::IsSupportedShader(shader) || state->IsDeveloperMode() && state->IsShaderEnabled(shader)) && state->enableCShaders)) {
 			return nullptr;
 		}
@@ -2151,7 +2150,7 @@ namespace SIE
 		bool valid = true;
 
 		if (auto version = ini.GetValue("Cache", "Version")) {
-			if (strcmp(SHADER_CACHE_VERSION.string().c_str(), version) != 0 || !(State::GetSingleton()->ValidateCache(ini))) {
+			if (strcmp(SHADER_CACHE_VERSION.string().c_str(), version) != 0 || !(globals::state->ValidateCache(ini))) {
 				logger::info("Disk cache outdated or invalid");
 				valid = false;
 			}
@@ -2172,7 +2171,7 @@ namespace SIE
 		CSimpleIniA ini;
 		ini.SetUnicode();
 		ini.SetValue("Cache", "Version", SHADER_CACHE_VERSION.string().c_str());
-		State::GetSingleton()->WriteDiskCacheInfo(ini);
+		globals::state->WriteDiskCacheInfo(ini);
 		ini.SaveFile(L"Data\\ShaderCache\\Info.ini");
 		logger::info("Saved disk cache info");
 	}
@@ -2285,7 +2284,7 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Vertex, shader, descriptor, isDiskCache)) {
-			auto device = VariableCache::GetSingleton()->device;
+			auto device = globals::d3d::device;
 
 			auto newShader = SShaderCache::CreateVertexShader(*shaderBlob, shader,
 				descriptor);
@@ -2314,7 +2313,7 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Pixel, shader, descriptor, isDiskCache)) {
-			auto device = VariableCache::GetSingleton()->device;
+			auto device = globals::d3d::device;
 
 			auto newShader = SShaderCache::CreatePixelShader(*shaderBlob, shader,
 				descriptor);
@@ -2343,7 +2342,7 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Compute, shader, descriptor, isDiskCache)) {
-			auto device = VariableCache::GetSingleton()->device;
+			auto device = globals::d3d::device;
 
 			auto newShader = SShaderCache::CreateComputeShader(*shaderBlob, shader,
 				descriptor);

@@ -135,8 +135,7 @@ public:
 	{
 		static void thunk(bool a1)
 		{
-			auto state = State::GetSingleton();
-			if (!state->isVR || !state->upscalerLoaded) {
+			if (!globals::game::isVR || !globals::state->upscalerLoaded) {
 				// With upscaler, VR hangs on this function, specifically at slSetConstants
 				GetSingleton()->UpdateConstants();
 			}
