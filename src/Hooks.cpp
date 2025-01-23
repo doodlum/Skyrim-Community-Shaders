@@ -245,7 +245,7 @@ HRESULT WINAPI hk_D3D11CreateDeviceAndSwapChainNoStreamline(
 	pAdapter->GetDesc(&adapterDesc);
 	State::GetSingleton()->SetAdapterDescription(adapterDesc.Description);
 
-//	Flags |= D3D11_CREATE_DEVICE_DEBUG;
+	//	Flags |= D3D11_CREATE_DEVICE_DEBUG;
 
 	const D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_1;  // Create a device with only the latest feature level
 	return ptrD3D11CreateDeviceAndSwapChain(pAdapter,
