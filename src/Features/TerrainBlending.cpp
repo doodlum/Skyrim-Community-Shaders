@@ -85,15 +85,15 @@ void TerrainBlending::SetupResources()
 	{
 		// Create a rasterizer state description
 		D3D11_RASTERIZER_DESC rasterDesc = {};
-		rasterDesc.FillMode = D3D11_FILL_SOLID;    
-		rasterDesc.CullMode = D3D11_CULL_NONE;    
-		rasterDesc.FrontCounterClockwise = false; 
-		rasterDesc.DepthBias = 0;                
-		rasterDesc.DepthBiasClamp = 0.0f;          
-		rasterDesc.SlopeScaledDepthBias = 0.0f;    
-		rasterDesc.DepthClipEnable = false;      
-		rasterDesc.ScissorEnable = false;         
-		rasterDesc.MultisampleEnable = false;   
+		rasterDesc.FillMode = D3D11_FILL_SOLID;
+		rasterDesc.CullMode = D3D11_CULL_NONE;
+		rasterDesc.FrontCounterClockwise = false;
+		rasterDesc.DepthBias = 0;
+		rasterDesc.DepthBiasClamp = 0.0f;
+		rasterDesc.SlopeScaledDepthBias = 0.0f;
+		rasterDesc.DepthClipEnable = false;
+		rasterDesc.ScissorEnable = false;
+		rasterDesc.MultisampleEnable = false;
 		rasterDesc.AntialiasedLineEnable = false;
 
 		DX::ThrowIfFailed(device->CreateRasterizerState(&rasterDesc, &rasterState));

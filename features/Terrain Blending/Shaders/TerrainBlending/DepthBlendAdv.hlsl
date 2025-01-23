@@ -1,6 +1,6 @@
-#include "TerrainBlending/FullscreenVS.hlsl"
-#include "Common/SharedData.hlsli"
 #include "Common/Random.hlsli"
+#include "Common/SharedData.hlsli"
+#include "TerrainBlending/FullscreenVS.hlsl"
 
 typedef VS_OUTPUT PS_INPUT;
 
@@ -17,7 +17,7 @@ Texture2D<unorm float> TerrainDepthTexture : register(t2);
 PS_OUTPUT main(PS_INPUT input)
 {
 	PS_OUTPUT psout;
-	
+
 	float mainDepth = MainDepthTexture.Load(int3(input.Position.xy, 0));
 	float mainDepthAfterTerrain = MainDepthTextureAfterTerrain.Load(int3(input.Position.xy, 0));
 	float terrainDepth = TerrainDepthTexture.Load(int3(input.Position.xy, 0));
@@ -26,7 +26,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	if (mainDepth < mainDepthAfterTerrain)
 		fixedDepth = 1;
-		
+
 	float terrainOffsetTexture = mainDepth;
 
 	float screenNoise = Random::InterleavedGradientNoise(input.Position.xy, SharedData::FrameCount);
