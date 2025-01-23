@@ -216,7 +216,7 @@ void TerrainBlending::ResetTerrainDepth()
 
 	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
 	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
-	
+
 	auto currentVertexShader = *VariableCache::GetSingleton()->currentVertexShader;
 
 	context->VSSetShader((ID3D11VertexShader*)currentVertexShader->shader, NULL, NULL);
