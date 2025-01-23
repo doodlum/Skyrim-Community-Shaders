@@ -1044,11 +1044,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float blendFactorTerrain = saturate((depthSampledLinear - depthPixelLinear) / 5.0);
 
-	if (input.Position.z == depthSampled)
-		blendFactorTerrain = 1;
-
-	clip(blendFactorTerrain);
-	blendFactorTerrain = saturate(blendFactorTerrain);
+	if (blendFactorTerrain > 1 || blendFactorTerrain < screenNoise)
+		discard;
 #	endif
 
 	float3 viewDirection = normalize(input.ViewVector.xyz);
@@ -2696,8 +2693,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	else
 
 #		if defined(TERRAIN_BLENDING)
-	psout.Diffuse.w = blendFactorTerrain;
-	psout.Depth = lerp(max(depthSampled, input.Position.z), input.Position.z, blendFactorTerrain > screenNoise);
+	psout.Diffuse.w = 1;
+	psout.Depth = lerp(max(depthSampled, input.Position.z), input.Position.z, 1);
 #		endif
 
 	psout.MotionVectors.zw = float2(0.0, psout.Diffuse.w);

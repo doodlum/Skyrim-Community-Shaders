@@ -3,6 +3,8 @@
 #include "State.h"
 #include "Util.h"
 
+#include "VariableCache.h"
+
 ID3D11VertexShader* TerrainBlending::GetTerrainVertexShader()
 {
 	if (!terrainVertexShader) {
@@ -148,8 +150,8 @@ struct BlendStates
 void TerrainBlending::TerrainShaderHacks()
 {
 	if (renderTerrainDepth) {
-		auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-		auto& context = State::GetSingleton()->context;
+		auto renderer = VariableCache::GetSingleton()->renderer;
+		auto context = VariableCache::GetSingleton()->context;
 		if (renderAltTerrain) {
 			auto dsv = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN].views[0];
 			context->OMSetRenderTargets(0, nullptr, dsv);
@@ -157,8 +159,7 @@ void TerrainBlending::TerrainShaderHacks()
 		} else {
 			auto dsv = terrainDepth.views[0];
 			context->OMSetRenderTargets(0, nullptr, dsv);
-			auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
-			GET_INSTANCE_MEMBER(currentVertexShader, shadowState)
+			auto currentVertexShader = *VariableCache::GetSingleton()->currentVertexShader;
 			context->VSSetShader((ID3D11VertexShader*)currentVertexShader->shader, NULL, NULL);
 		}
 		renderAltTerrain = !renderAltTerrain;
@@ -170,20 +171,11 @@ void TerrainBlending::TerrainShaderHacks()
 
 void TerrainBlending::OverrideTerrainWorld()
 {
-	auto& context = State::GetSingleton()->context;
-
-	auto state = RE::BSGraphics::RendererShadowState::GetSingleton();
+	auto context = VariableCache::GetSingleton()->context;
 
 	static BlendStates* blendStates = (BlendStates*)REL::RelocationID(524749, 411364).address();
 
-	GET_INSTANCE_MEMBER(alphaBlendAlphaToCoverage, state)
-	GET_INSTANCE_MEMBER(alphaBlendModeExtra, state)
-	GET_INSTANCE_MEMBER(alphaBlendWriteMode, state)
-
-	// Enable alpha blending
-	context->OMSetBlendState(blendStates->a[1][alphaBlendAlphaToCoverage][alphaBlendWriteMode][alphaBlendModeExtra], nullptr, 0xFFFFFFFF);
-
-	//// Enable rendering for depth below the surface
+	// Enable rendering for depth below the surface
 	context->OMSetDepthStencilState(terrainDepthStencilState, 0xFF);
 
 	// Used to get the distance of the surface to the lowest depth
@@ -193,7 +185,7 @@ void TerrainBlending::OverrideTerrainWorld()
 
 void TerrainBlending::OverrideTerrainDepth()
 {
-	auto& context = State::GetSingleton()->context;
+	auto context = VariableCache::GetSingleton()->context;
 
 	auto rtv = blendedDepthTexture->rtv.get();
 	FLOAT clearColor[4]{ 1, 0, 0, 0 };
@@ -205,7 +197,7 @@ void TerrainBlending::OverrideTerrainDepth()
 
 void TerrainBlending::ResetDepth()
 {
-	auto& context = State::GetSingleton()->context;
+	auto context = VariableCache::GetSingleton()->context;
 
 	auto rtv = blendedDepthTexture->rtv.get();
 	FLOAT clearColor[4]{ 1, 0, 0, 0 };
@@ -217,16 +209,16 @@ void TerrainBlending::ResetDepth()
 
 void TerrainBlending::ResetTerrainDepth()
 {
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-	auto& context = State::GetSingleton()->context;
+	auto renderer = VariableCache::GetSingleton()->renderer;
+	auto context = VariableCache::GetSingleton()->context;
 
 	auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 
-	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
-	GET_INSTANCE_MEMBER(stateUpdateFlags, shadowState)
-	stateUpdateFlags.set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
+	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
+	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
+	
+	auto currentVertexShader = *VariableCache::GetSingleton()->currentVertexShader;
 
-	GET_INSTANCE_MEMBER(currentVertexShader, shadowState)
 	context->VSSetShader((ID3D11VertexShader*)currentVertexShader->shader, NULL, NULL);
 
 	context->CopyResource(terrainDepthTexture->resource.get(), mainDepth.texture);
@@ -234,7 +226,7 @@ void TerrainBlending::ResetTerrainDepth()
 
 void TerrainBlending::BlendPrepassDepths()
 {
-	auto& context = State::GetSingleton()->context;
+	auto context = VariableCache::GetSingleton()->context;
 	context->OMSetRenderTargets(0, nullptr, nullptr);
 
 	auto dispatchCount = Util::GetScreenDispatchCount();
@@ -279,10 +271,9 @@ void TerrainBlending::BlendPrepassDepths()
 
 void TerrainBlending::ResetTerrainWorld()
 {
-	auto state = RE::BSGraphics::RendererShadowState::GetSingleton();
-	GET_INSTANCE_MEMBER(stateUpdateFlags, state)
-	stateUpdateFlags.set(RE::BSGraphics::ShaderFlags::DIRTY_ALPHA_BLEND);
-	stateUpdateFlags.set(RE::BSGraphics::ShaderFlags::DIRTY_DEPTH_MODE);
+	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
+	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_ALPHA_BLEND);
+	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_DEPTH_MODE);
 }
 
 void TerrainBlending::ClearShaderCache()
