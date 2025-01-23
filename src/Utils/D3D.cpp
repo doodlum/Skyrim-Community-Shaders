@@ -218,4 +218,74 @@ namespace Util
 
 		return nullptr;
 	}
+
+	ID3DBlob* CompileShaderBlob(const wchar_t* FilePath, const std::vector<std::pair<const char*, const char*>>& Defines, const char* ProgramType, const char* Program)
+	{
+		CustomInclude include;
+
+		// Build defines (aka convert vector->D3DCONSTANT array)
+		std::vector<D3D_SHADER_MACRO> macros;
+		std::string str = Util::WStringToString(FilePath);
+
+		for (auto& i : Defines) {
+			if (i.first && _stricmp(i.first, "") != 0) {
+				macros.push_back({ i.first, i.second });
+			} else {
+				logger::error("Failed to process shader defines for {}", str);
+			}
+		}
+
+		if (REL::Module::IsVR())
+			macros.push_back({ "VR", "" });
+		if (State::GetSingleton()->IsDeveloperMode()) {
+			macros.push_back({ "D3DCOMPILE_SKIP_OPTIMIZATION", "" });
+			macros.push_back({ "D3DCOMPILE_DEBUG", "" });
+		}
+		auto shaderDefines = State::GetSingleton()->GetDefines();
+		if (!shaderDefines->empty()) {
+			for (unsigned int i = 0; i < shaderDefines->size(); i++)
+				macros.push_back({ shaderDefines->at(i).first.c_str(), shaderDefines->at(i).second.c_str() });
+		}
+		if (!_stricmp(ProgramType, "ps_5_0"))
+			macros.push_back({ "PSHADER", "" });
+		else if (!_stricmp(ProgramType, "vs_5_0"))
+			macros.push_back({ "VSHADER", "" });
+		else if (!_stricmp(ProgramType, "hs_5_0"))
+			macros.push_back({ "HULLSHADER", "" });
+		else if (!_stricmp(ProgramType, "ds_5_0"))
+			macros.push_back({ "DOMAINSHADER", "" });
+		else if (!_stricmp(ProgramType, "cs_5_0"))
+			macros.push_back({ "COMPUTESHADER", "" });
+		else if (!_stricmp(ProgramType, "cs_4_0"))
+			macros.push_back({ "COMPUTESHADER", "" });
+		else if (!_stricmp(ProgramType, "cs_5_1"))
+			macros.push_back({ "COMPUTESHADER", "" });
+		else
+			return nullptr;
+
+		// Add null terminating entry
+		macros.push_back({ "WINPC", "" });
+		macros.push_back({ "DX11", "" });
+		macros.push_back({ nullptr, nullptr });
+
+		// Compiler setup
+		uint32_t flags = !State::GetSingleton()->IsDeveloperMode() ? (D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3) : D3DCOMPILE_DEBUG;
+
+		ID3DBlob* shaderBlob;
+		ID3DBlob* shaderErrors;
+
+		if (!std::filesystem::exists(FilePath)) {
+			logger::error("Failed to compile shader; {} does not exist", str);
+			return nullptr;
+		}
+		logger::debug("Compiling {} with {}", str, DefinesToString(macros));
+		if (FAILED(D3DCompileFromFile(FilePath, macros.data(), &include, Program, ProgramType, flags, 0, &shaderBlob, &shaderErrors))) {
+			logger::warn("Shader compilation failed:\n\n{}", shaderErrors ? static_cast<char*>(shaderErrors->GetBufferPointer()) : "Unknown error");
+			return nullptr;
+		}
+		if (shaderErrors)
+			logger::debug("Shader logs:\n{}", static_cast<char*>(shaderErrors->GetBufferPointer()));
+
+		return shaderBlob;
+	}
 }  // namespace Util

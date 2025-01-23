@@ -23,6 +23,24 @@ ID3D11VertexShader* TerrainBlending::GetTerrainOffsetVertexShader()
 	return terrainOffsetVertexShader;
 }
 
+ID3D11VertexShader* TerrainBlending::GetTerrainBlendingVertexShader()
+{
+	if (!terrainBlendingVertexShader) {
+		logger::debug("Compiling DummyVS.hlsl");
+		terrainBlendingVertexShader = (ID3D11VertexShader*)Util::CompileShader(L"Data\\Shaders\\Common\\DummyVS.hlsl", {}, "vs_5_0");
+	}
+	return terrainBlendingVertexShader;
+}
+
+ID3D11PixelShader* TerrainBlending::GetTerrainBlendingPixelShader()
+{
+	if (!terrainBlendingPixelShader) {
+		logger::debug("Compiling DepthBlendAdv.hlsl");
+		terrainBlendingPixelShader = (ID3D11PixelShader*)Util::CompileShader(L"Data\\Shaders\\TerrainBlending\\DepthBlendAdv.hlsl", {}, "ps_5_0");
+	}
+	return terrainBlendingPixelShader;
+}
+
 ID3D11ComputeShader* TerrainBlending::GetDepthBlendShader()
 {
 	if (!depthBlendShader) {
@@ -76,6 +94,10 @@ void TerrainBlending::SetupResources()
 		terrainDepthTexture = new Texture2D(texDesc);
 		terrainDepthTexture->CreateSRV(srvDesc);
 		terrainDepthTexture->CreateDSV(dsvDesc);
+
+		tempDepthTexture = new Texture2D(texDesc);
+		tempDepthTexture->CreateSRV(srvDesc);
+		tempDepthTexture->CreateDSV(dsvDesc);
 	}
 
 	{
@@ -130,6 +152,67 @@ void TerrainBlending::SetupResources()
 		depthStencilDesc.StencilEnable = false;
 		DX::ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, &terrainDepthStencilState));
 	}
+
+	{
+		// Create a fullscreen quad vertex buffer
+		Vertex vertices[] = {
+			{ -1.0f, 1.0f, 0.0f },
+			{ 1.0f, 1.0f, 0.0f },
+			{ -1.0f, -1.0f, 0.0f },
+			{ 1.0f, -1.0f, 0.0f },
+		};
+
+		D3D11_BUFFER_DESC bufferDesc = {};
+		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		bufferDesc.ByteWidth = sizeof(vertices);
+		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		bufferDesc.CPUAccessFlags = 0;
+
+		D3D11_SUBRESOURCE_DATA initData = {};
+		initData.pSysMem = vertices;
+
+		DX::ThrowIfFailed(device->CreateBuffer(&bufferDesc, &initData, &vertexBuffer));
+
+        D3D11_INPUT_ELEMENT_DESC layout[] = {
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		};
+
+		auto vertexShader = Util::CompileShaderBlob(L"Data\\Shaders\\Common\\DummyVS.hlsl", {}, "vs_5_0");
+
+		DX::ThrowIfFailed(device->CreateInputLayout(layout, ARRAYSIZE(layout), vertexShader->GetBufferPointer(), vertexShader->GetBufferSize(), &inputLayout));
+		
+		vertexShader->Release();
+	}
+
+	// Add new depth stencil state that does not cull but writes depth out
+	{
+		D3D11_DEPTH_STENCIL_DESC depthStencilDesc{};
+		depthStencilDesc.DepthEnable = true;
+		depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+		depthStencilDesc.StencilEnable = false;
+		depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		depthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		DX::ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, &terrainDepthStencilState2));
+	}
+
+    {
+		auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
+
+        // Create a depth stencil view that can be written to
+        D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc{};
+        depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+        depthStencilViewDesc.Flags = 0;
+
+        DX::ThrowIfFailed(device->CreateDepthStencilView(mainDepth.texture, &depthStencilViewDesc, &writeableView));
+    }
 }
 
 void TerrainBlending::PostPostLoad()
@@ -171,16 +254,16 @@ void TerrainBlending::TerrainShaderHacks()
 
 void TerrainBlending::OverrideTerrainWorld()
 {
-	auto context = VariableCache::GetSingleton()->context;
+	//auto context = VariableCache::GetSingleton()->context;
 
-	static BlendStates* blendStates = (BlendStates*)REL::RelocationID(524749, 411364).address();
+	//static BlendStates* blendStates = (BlendStates*)REL::RelocationID(524749, 411364).address();
 
-	// Enable rendering for depth below the surface
-	context->OMSetDepthStencilState(terrainDepthStencilState, 0xFF);
+	//// Enable rendering for depth below the surface
+	//context->OMSetDepthStencilState(terrainDepthStencilState, 0xFF);
 
-	// Used to get the distance of the surface to the lowest depth
-	auto view = terrainOffsetTexture->srv.get();
-	context->PSSetShaderResources(55, 1, &view);
+	//// Used to get the distance of the surface to the lowest depth
+	//auto view = terrainOffsetTexture->srv.get();
+	//context->PSSetShaderResources(55, 1, &view);
 }
 
 void TerrainBlending::OverrideTerrainDepth()
@@ -224,56 +307,124 @@ void TerrainBlending::ResetTerrainDepth()
 	context->CopyResource(terrainDepthTexture->resource.get(), mainDepth.texture);
 }
 
-void TerrainBlending::BlendPrepassDepths()
+void TerrainBlending::SetupFullscreenPass()
 {
 	auto context = VariableCache::GetSingleton()->context;
-	context->OMSetRenderTargets(0, nullptr, nullptr);
 
-	auto dispatchCount = Util::GetScreenDispatchCount();
+	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 
-	{
-		ID3D11ShaderResourceView* views[2] = { depthSRVBackup, terrainDepth.depthSRV };
-		context->CSSetShaderResources(0, ARRAYSIZE(views), views);
+	context->CopyResource(tempDepthTexture->resource.get(), mainDepth.texture);
 
-		ID3D11UnorderedAccessView* uavs[2] = { blendedDepthTexture->uav.get(), blendedDepthTexture16->uav.get() };
-		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
+	// Set the vertex buffer
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+	
+	// Set the input layout
+	context->IASetInputLayout(inputLayout);
 
-		context->CSSetShader(GetDepthBlendShader(), nullptr, 0);
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-		context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
-	}
+	// Set the shaders
+	context->VSSetShader(GetTerrainBlendingVertexShader(), nullptr, 0);
+	context->PSSetShader(GetTerrainBlendingPixelShader(), nullptr, 0);
 
-	{
-		ID3D11ShaderResourceView* views[2] = { depthSRVBackup, terrainDepthTexture->srv.get() };
-		context->CSSetShaderResources(0, ARRAYSIZE(views), views);
+	//// Set the render target
+	//ID3D11RenderTargetView* renderTargets[1] = { nullptr };
+	//context->OMSetRenderTargets(1, renderTargets, writeableView);
 
-		ID3D11UnorderedAccessView* uavs[2] = { terrainOffsetTexture->uav.get(), nullptr };
-		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
+	//// Set the viewport
+	//D3D11_VIEWPORT viewport;
+	//viewport.Width = static_cast<float>(2560);
+	//viewport.Height = static_cast<float>(1440);
+	//viewport.MinDepth = 0.0f;
+	//viewport.MaxDepth = 1.0f;
+	//viewport.TopLeftX = 0;
+	//viewport.TopLeftY = 0;
+	//context->RSSetViewports(1, &viewport);
 
-		context->CSSetShader(GetDepthFixShader(), nullptr, 0);
+	//// Set the shader resources
+	//ID3D11ShaderResourceView* srvs[2] = { tempDepthTexture->srv.get(), terrainDepthTexture->srv.get() };
+	//context->PSSetShaderResources(0, 2, srvs);
 
-		context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
-	}
+	//context->OMSetDepthStencilState(terrainDepthStencilState2, 0);
 
-	ID3D11ShaderResourceView* views[2] = { nullptr, nullptr };
-	context->CSSetShaderResources(0, ARRAYSIZE(views), views);
+	//// Draw the fullscreen quad
+	context->Draw(4, 0);
 
-	ID3D11UnorderedAccessView* uavs[2] = { nullptr, nullptr };
-	context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
-
-	ID3D11ComputeShader* shader = nullptr;
-	context->CSSetShader(shader, nullptr, 0);
+	//// Cleanup
+	//srvs[0] = nullptr;
+	//srvs[1] = nullptr;
+	//context->PSSetShaderResources(0, 2, srvs);
 
 	auto state = RE::BSGraphics::RendererShadowState::GetSingleton();
 	GET_INSTANCE_MEMBER(stateUpdateFlags, state)
+	stateUpdateFlags.set(RE::BSGraphics::ShaderFlags::DIRTY_PRIMITIVE_TOPO);
+	stateUpdateFlags.set(RE::BSGraphics::ShaderFlags::DIRTY_VERTEX_DESC);
 	stateUpdateFlags.set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
+}
+
+void TerrainBlending::BlendPrepassDepths()
+{
+	//auto context = VariableCache::GetSingleton()->context;
+//	context->OMSetRenderTargets(0, nullptr, nullptr);
+
+	//auto dispatchCount = Util::GetScreenDispatchCount();
+
+	//{
+	//	ID3D11ShaderResourceView* views[2] = { depthSRVBackup, terrainDepth.depthSRV };
+	//	context->CSSetShaderResources(0, ARRAYSIZE(views), views);
+
+	//	ID3D11UnorderedAccessView* uavs[2] = { blendedDepthTexture->uav.get(), blendedDepthTexture16->uav.get() };
+	//	context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
+
+	//	context->CSSetShader(GetDepthBlendShader(), nullptr, 0);
+
+	//	context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
+	//}
+
+	//{
+	//	ID3D11ShaderResourceView* views[2] = { depthSRVBackup, terrainDepthTexture->srv.get() };
+	//	context->CSSetShaderResources(0, ARRAYSIZE(views), views);
+
+	//	ID3D11UnorderedAccessView* uavs[2] = { terrainOffsetTexture->uav.get(), nullptr };
+	//	context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
+
+	//	context->CSSetShader(GetDepthFixShader(), nullptr, 0);
+
+	//	context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
+	//}
+
+	//ID3D11ShaderResourceView* views[2] = { nullptr, nullptr };
+	//context->CSSetShaderResources(0, ARRAYSIZE(views), views);
+
+	//ID3D11UnorderedAccessView* uavs[2] = { nullptr, nullptr };
+	//context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
+
+	//ID3D11ComputeShader* shader = nullptr;
+	//context->CSSetShader(shader, nullptr, 0);
+
+
+	{
+		SetupFullscreenPass();
+
+		//auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+		//auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
+
+	//	context->CopyResource(mainDepth.texture, tempDepthTexture->resource.get());
+	}
+
+	//auto state = RE::BSGraphics::RendererShadowState::GetSingleton();
+	//GET_INSTANCE_MEMBER(stateUpdateFlags, state)
+	//stateUpdateFlags.set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
 }
 
 void TerrainBlending::ResetTerrainWorld()
 {
-	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
-	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_ALPHA_BLEND);
-	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_DEPTH_MODE);
+	//auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
+	//stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_ALPHA_BLEND);
+	//stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_DEPTH_MODE);
 }
 
 void TerrainBlending::ClearShaderCache()
@@ -293,5 +444,13 @@ void TerrainBlending::ClearShaderCache()
 	if (depthFixShader) {
 		depthFixShader->Release();
 		depthFixShader = nullptr;
+	}
+	if (terrainBlendingPixelShader) {
+		terrainBlendingPixelShader->Release();
+		terrainBlendingPixelShader = nullptr;
+	}
+	if (terrainBlendingVertexShader) {
+		terrainBlendingVertexShader->Release();
+		terrainBlendingVertexShader = nullptr;
 	}
 }

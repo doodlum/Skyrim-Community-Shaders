@@ -23,13 +23,31 @@ public:
 	ID3D11VertexShader* GetTerrainVertexShader();
 	ID3D11VertexShader* GetTerrainOffsetVertexShader();
 
+	ID3D11VertexShader* GetTerrainBlendingVertexShader();
+	ID3D11PixelShader* GetTerrainBlendingPixelShader();
+
+	ID3D11VertexShader* terrainBlendingVertexShader = nullptr;
+	ID3D11PixelShader* terrainBlendingPixelShader = nullptr;
+
 	ID3D11VertexShader* terrainVertexShader = nullptr;
 	ID3D11VertexShader* terrainOffsetVertexShader = nullptr;
+
+	struct Vertex
+	{
+		float x, y, z;
+	};
+
+	ID3D11Buffer* vertexBuffer;
+	ID3D11InputLayout* inputLayout;
+
+	void SetupFullscreenPass();
 
 	ID3D11ComputeShader* GetDepthBlendShader();
 	ID3D11ComputeShader* GetDepthFixShader();
 
 	virtual void PostPostLoad() override;
+
+	ID3D11DepthStencilView* writeableView = nullptr;
 
 	bool renderDepth = false;
 	bool renderTerrainDepth = false;
@@ -48,6 +66,7 @@ public:
 	void ResetTerrainWorld();
 
 	Texture2D* terrainDepthTexture = nullptr;
+	Texture2D* tempDepthTexture = nullptr;
 
 	Texture2D* blendedDepthTexture = nullptr;
 	Texture2D* blendedDepthTexture16 = nullptr;
@@ -57,6 +76,7 @@ public:
 	RE::BSGraphics::DepthStencilData terrainDepth;
 
 	ID3D11DepthStencilState* terrainDepthStencilState = nullptr;
+	ID3D11DepthStencilState* terrainDepthStencilState2 = nullptr;
 
 	ID3D11ShaderResourceView* depthSRVBackup = nullptr;
 	ID3D11ShaderResourceView* prepassSRVBackup = nullptr;
@@ -123,13 +143,13 @@ public:
 						if (inTerrain)
 							func(a_pass, a_technique, a_alphaTest, a_renderFlags);  // Run terrain twice
 					} else if (singleton->renderWorld) {
-						// Entering or exiting terrain section
-						bool inTerrain = a_pass->shaderProperty && a_pass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape);
-						if (singleton->renderTerrainWorld != inTerrain) {
-							if (!inTerrain)
-								singleton->ResetTerrainWorld();
-							singleton->renderTerrainWorld = inTerrain;
-						}
+						//// Entering or exiting terrain section
+						//bool inTerrain = a_pass->shaderProperty && a_pass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape);
+						//if (singleton->renderTerrainWorld != inTerrain) {
+						//	if (!inTerrain)
+						//		singleton->ResetTerrainWorld();
+						//	singleton->renderTerrainWorld = inTerrain;
+						//}
 					}
 				}
 				func(a_pass, a_technique, a_alphaTest, a_renderFlags);
@@ -150,15 +170,15 @@ public:
 
 					singleton->renderWorld = false;
 
-					if (singleton->renderTerrainWorld) {
-						singleton->renderTerrainWorld = false;
-						singleton->ResetTerrainWorld();
-					}
+					//if (singleton->renderTerrainWorld) {
+					//	singleton->renderTerrainWorld = false;
+					//	singleton->ResetTerrainWorld();
+					//}
 
-					auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-					auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
+					//auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+					//auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 
-					mainDepth.depthSRV = singleton->depthSRVBackup;
+					//mainDepth.depthSRV = singleton->depthSRVBackup;
 				} else {
 					func(This, StartRange, EndRange, RenderFlags, GeometryGroup);
 				}
@@ -175,7 +195,7 @@ public:
 			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately>(REL::RelocationID(100852, 107642).address() + REL::Relocate(0x29E, 0x28F));
 
 			// To manipulate depth testing
-			stl::write_thunk_call<Main_RenderWorld_RenderBatches>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x8E, 0x84));
+			//stl::write_thunk_call<Main_RenderWorld_RenderBatches>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x8E, 0x84));
 
 			logger::info("[Terrain Blending] Installed hooks");
 		}

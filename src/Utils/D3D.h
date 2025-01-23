@@ -9,4 +9,5 @@ namespace Util
 	void SetResourceName(ID3D11DeviceChild* Resource, const char* Format, ...);
 
 	ID3D11DeviceChild* CompileShader(const wchar_t* FilePath, const std::vector<std::pair<const char*, const char*>>& Defines, const char* ProgramType, const char* Program = "main");
+	ID3DBlob* CompileShaderBlob(const wchar_t* FilePath, const std::vector<std::pair<const char*, const char*>>& Defines, const char* ProgramType, const char* Program = "main");
 }  // namespace Util
