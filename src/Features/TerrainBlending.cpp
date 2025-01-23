@@ -4,6 +4,7 @@
 #include "Util.h"
 
 #include "VariableCache.h"
+#include <DDSTextureLoader.h>
 
 ID3D11VertexShader* TerrainBlending::GetTerrainVertexShader()
 {
@@ -36,7 +37,7 @@ ID3D11PixelShader* TerrainBlending::GetTerrainBlendingPixelShader()
 {
 	if (!terrainBlendingPixelShader) {
 		logger::debug("Compiling DepthBlendAdv.hlsl");
-		terrainBlendingPixelShader = (ID3D11PixelShader*)Util::CompileShader(L"Data\\Shaders\\TerrainBlending\\DepthBlendAdv.hlsl", {}, "ps_5_0");
+		terrainBlendingPixelShader = (ID3D11PixelShader*)Util::CompileShader(L"Data\\Shaders\\TerrainBlending\\TerrainBlendingPS.hlsl", {}, "ps_5_0");
 	}
 	return terrainBlendingPixelShader;
 }
@@ -73,10 +74,6 @@ void TerrainBlending::SetupResources()
 		mainDepth.depthSRV->GetDesc(&srvDesc);
 		mainDepth.views[0]->GetDesc(&dsvDesc);
 
-		terrainDepthTexture = new Texture2D(texDesc);
-		terrainDepthTexture->CreateSRV(srvDesc);
-		terrainDepthTexture->CreateDSV(dsvDesc);
-
 		tempDepthTexture = new Texture2D(texDesc);
 		tempDepthTexture->CreateSRV(srvDesc);
 		tempDepthTexture->CreateDSV(dsvDesc);
@@ -97,6 +94,11 @@ void TerrainBlending::SetupResources()
 		rasterDesc.AntialiasedLineEnable = false;
 
 		DX::ThrowIfFailed(device->CreateRasterizerState(&rasterDesc, &rasterState));
+	}
+
+	{
+		auto& context = State::GetSingleton()->context;
+		DirectX::CreateDDSTextureFromFile(device, context, L"Data\\Shaders\\TerrainBlending\\SpatiotemporalBlueNoise\\stbn_vec1_2Dx1D_128x128x64.dds", nullptr, stbn_vec1_2Dx1D_128x128x64.put());
 	}
 }
 
@@ -152,10 +154,7 @@ void TerrainBlending::ResetDepth()
 
 void TerrainBlending::ResetTerrainDepth()
 {
-	auto renderer = VariableCache::GetSingleton()->renderer;
 	auto context = VariableCache::GetSingleton()->context;
-
-	auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 
 	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
 	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
@@ -163,8 +162,6 @@ void TerrainBlending::ResetTerrainDepth()
 	auto currentVertexShader = *VariableCache::GetSingleton()->currentVertexShader;
 
 	context->VSSetShader((ID3D11VertexShader*)currentVertexShader->shader, NULL, NULL);
-
-	context->CopyResource(terrainDepthTexture->resource.get(), mainDepth.texture);
 }
 
 void TerrainBlending::BlendPrepassDepths()
@@ -203,7 +200,7 @@ void TerrainBlending::BlendPrepassDepths()
 	context->RSSetViewports(1, &viewport);
 
 	// Set the shader resources
-	ID3D11ShaderResourceView* srvs[3] = { tempDepthTexture->srv.get(), terrainDepthTexture->srv.get(), terrainDepth.depthSRV };
+	ID3D11ShaderResourceView* srvs[3] = { tempDepthTexture->srv.get(), terrainDepth.depthSRV, stbn_vec1_2Dx1D_128x128x64.get() };
 	context->PSSetShaderResources(0, 3, srvs);
 
 	// Draw

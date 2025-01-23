@@ -52,6 +52,8 @@ public:
 
 	Texture2D* terrainOffsetTexture = nullptr;
 
+	winrt::com_ptr<ID3D11ShaderResourceView> stbn_vec1_2Dx1D_128x128x64;
+
 	RE::BSGraphics::DepthStencilData terrainDepth;
 
 	virtual void ClearShaderCache() override;
