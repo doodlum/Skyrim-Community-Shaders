@@ -295,3 +295,95 @@ void TerrainBlending::ClearShaderCache()
 		depthFixShader = nullptr;
 	}
 }
+
+void TerrainBlending::Hooks::Main_RenderDepth::thunk(bool a1, bool a2)
+{
+	auto renderer = VariableCache::GetSingleton()->renderer;
+	auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
+	auto& zPrepassCopy = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
+
+	auto singleton = VariableCache::GetSingleton()->terrainBlending;
+	auto shaderCache = VariableCache::GetSingleton()->shaderCache;
+
+	if (shaderCache->IsEnabled()) {
+		mainDepth.depthSRV = singleton->blendedDepthTexture->srv.get();
+		zPrepassCopy.depthSRV = singleton->blendedDepthTexture->srv.get();
+
+		singleton->renderDepth = true;
+		singleton->OverrideTerrainDepth();
+
+		func(a1, a2);
+
+		singleton->renderDepth = false;
+
+		if (singleton->renderTerrainDepth) {
+			singleton->renderTerrainDepth = false;
+			singleton->ResetTerrainDepth();
+		}
+
+		singleton->BlendPrepassDepths();
+	} else {
+		mainDepth.depthSRV = singleton->depthSRVBackup;
+		zPrepassCopy.depthSRV = singleton->prepassSRVBackup;
+		func(a1, a2);
+	}
+}
+
+
+void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::BSRenderPass* a_pass, uint32_t a_technique, bool a_alphaTest, uint32_t a_renderFlags)
+{
+	auto singleton = VariableCache::GetSingleton()->terrainBlending;
+	auto shaderCache = VariableCache::GetSingleton()->shaderCache;
+
+	if (shaderCache->IsEnabled()) {
+		if (singleton->renderDepth) {
+			// Entering or exiting terrain depth section
+			bool inTerrain = a_pass->shaderProperty && a_pass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape);
+			if (singleton->renderTerrainDepth != inTerrain) {
+				if (!inTerrain)
+					singleton->ResetTerrainDepth();
+				singleton->renderTerrainDepth = inTerrain;
+			}
+
+			if (inTerrain)
+				func(a_pass, a_technique, a_alphaTest, a_renderFlags);  // Run terrain twice
+		} else if (singleton->renderWorld) {
+			// Entering or exiting terrain section
+			bool inTerrain = a_pass->shaderProperty && a_pass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape);
+			if (singleton->renderTerrainWorld != inTerrain) {
+				if (!inTerrain)
+					singleton->ResetTerrainWorld();
+				singleton->renderTerrainWorld = inTerrain;
+			}
+		}
+	}
+}
+
+
+
+void TerrainBlending::Hooks::Main_RenderWorld_RenderBatches::thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRange, uint32_t RenderFlags, int GeometryGroup)
+{
+	auto singleton = VariableCache::GetSingleton()->terrainBlending;
+	auto shaderCache = VariableCache::GetSingleton()->shaderCache;
+	auto renderer = VariableCache::GetSingleton()->renderer;
+
+	if (shaderCache->IsEnabled()) {
+
+		singleton->renderWorld = true;
+
+		func(This, StartRange, EndRange, RenderFlags, GeometryGroup);
+
+		singleton->renderWorld = false;
+
+		if (singleton->renderTerrainWorld) {
+			singleton->renderTerrainWorld = false;
+			singleton->ResetTerrainWorld();
+		}
+
+		auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
+
+		mainDepth.depthSRV = singleton->depthSRVBackup;
+	} else {
+		func(This, StartRange, EndRange, RenderFlags, GeometryGroup);
+	}
+}

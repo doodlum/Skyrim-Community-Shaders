@@ -70,99 +70,19 @@ public:
 	{
 		struct Main_RenderDepth
 		{
-			static void thunk(bool a1, bool a2)
-			{
-				auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-				auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
-				auto& zPrepassCopy = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
-
-				static auto singleton = GetSingleton();
-
-				if (SIE::ShaderCache::Instance().IsEnabled()) {
-					mainDepth.depthSRV = singleton->blendedDepthTexture->srv.get();
-					zPrepassCopy.depthSRV = singleton->blendedDepthTexture->srv.get();
-
-					singleton->renderDepth = true;
-					singleton->OverrideTerrainDepth();
-
-					func(a1, a2);
-
-					singleton->renderDepth = false;
-
-					if (singleton->renderTerrainDepth) {
-						singleton->renderTerrainDepth = false;
-						singleton->ResetTerrainDepth();
-					}
-
-					singleton->BlendPrepassDepths();
-				} else {
-					mainDepth.depthSRV = singleton->depthSRVBackup;
-					zPrepassCopy.depthSRV = singleton->prepassSRVBackup;
-					func(a1, a2);
-				}
-			}
-
+			static void thunk(bool a1, bool a2);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct BSBatchRenderer__RenderPassImmediately
 		{
-			static void thunk(RE::BSRenderPass* a_pass, uint32_t a_technique, bool a_alphaTest, uint32_t a_renderFlags)
-			{
-				if (SIE::ShaderCache::Instance().IsEnabled()) {
-					static auto singleton = GetSingleton();
-					if (singleton->renderDepth) {
-						// Entering or exiting terrain depth section
-						bool inTerrain = a_pass->shaderProperty && a_pass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape);
-						if (singleton->renderTerrainDepth != inTerrain) {
-							if (!inTerrain)
-								singleton->ResetTerrainDepth();
-							singleton->renderTerrainDepth = inTerrain;
-						}
-
-						if (inTerrain)
-							func(a_pass, a_technique, a_alphaTest, a_renderFlags);  // Run terrain twice
-					} else if (singleton->renderWorld) {
-						// Entering or exiting terrain section
-						bool inTerrain = a_pass->shaderProperty && a_pass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape);
-						if (singleton->renderTerrainWorld != inTerrain) {
-							if (!inTerrain)
-								singleton->ResetTerrainWorld();
-							singleton->renderTerrainWorld = inTerrain;
-						}
-					}
-				}
-				func(a_pass, a_technique, a_alphaTest, a_renderFlags);
-			}
+			static void thunk(RE::BSRenderPass* a_pass, uint32_t a_technique, bool a_alphaTest, uint32_t a_renderFlags);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
 		struct Main_RenderWorld_RenderBatches
 		{
-			static void thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRange, uint32_t RenderFlags, int GeometryGroup)
-			{
-				if (SIE::ShaderCache::Instance().IsEnabled()) {
-					static auto singleton = GetSingleton();
-
-					singleton->renderWorld = true;
-
-					func(This, StartRange, EndRange, RenderFlags, GeometryGroup);
-
-					singleton->renderWorld = false;
-
-					if (singleton->renderTerrainWorld) {
-						singleton->renderTerrainWorld = false;
-						singleton->ResetTerrainWorld();
-					}
-
-					auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-					auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
-
-					mainDepth.depthSRV = singleton->depthSRVBackup;
-				} else {
-					func(This, StartRange, EndRange, RenderFlags, GeometryGroup);
-				}
-			}
+			static void thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRange, uint32_t RenderFlags, int GeometryGroup);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
