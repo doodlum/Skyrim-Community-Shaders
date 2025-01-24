@@ -28,6 +28,9 @@ PS_OUTPUT main(PS_INPUT input)
 	float blendFactorTerrain = saturate((terrainOffsetLinear - terrainDepthLinear) / 10.0);
 
 	psout.Color = min(terrainOffset, terrainDepth);
-	psout.Depth = (blendFactorTerrain > 1 || blendFactorTerrain < screenNoise) ? terrainOffset : terrainDepth;
+
+	bool useOffset = (blendFactorTerrain > 1 || blendFactorTerrain < screenNoise);
+	
+	psout.Depth = useOffset ? terrainOffset : min(terrainDepth, terrainOffset);
 	return psout;
 }
