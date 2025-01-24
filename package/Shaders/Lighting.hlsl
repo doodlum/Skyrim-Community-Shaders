@@ -1617,7 +1617,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	pbrSurfaceProperties.GlintDensityRandomization = clamp(glintParameters.w, 0, 5);
 
 #		if defined(GLINT)
-	PBR::Glints::PrecomputeGlints(uvOriginal, ddx(uvOriginal), ddy(uvOriginal), pbrSurfaceProperties.GlintScreenSpaceScale, pbrSurfaceProperties.GlintCache);
+	float glintNoise = Random::R1Modified(SharedData::FrameCountAlwaysActive, Random::pcg2d(uint2(input.Position.xy)) / 4294967296.0);
+	PBR::Glints::PrecomputeGlints(glintNoise, uvOriginal, ddx(uvOriginal), ddy(uvOriginal), pbrSurfaceProperties.GlintScreenSpaceScale, pbrSurfaceProperties.GlintCache);
 #		endif
 
 	baseColor.xyz *= 1 - pbrSurfaceProperties.Metallic;
