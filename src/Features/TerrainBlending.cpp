@@ -110,7 +110,7 @@ void TerrainBlending::SetupResources()
 		DirectX::CreateDDSTextureFromFile(device, context, L"Data\\Shaders\\TerrainBlending\\SpatiotemporalBlueNoise\\stbn_vec1_2Dx1D_128x128x64.dds", nullptr, stbn_vec1_2Dx1D_128x128x64.put());
 	}
 
-	{	
+	{
 		auto main = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMAIN];
 
 		D3D11_TEXTURE2D_DESC texDesc{};
@@ -137,24 +137,24 @@ void TerrainBlending::SetupResources()
 		depthSRVBackup = mainDepth.depthSRV;
 
 		auto& zPrepassCopy = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
-		prepassSRVBackup = zPrepassCopy.depthSRV;	
+		prepassSRVBackup = zPrepassCopy.depthSRV;
 	}
 
 	{
-        D3D11_BLEND_DESC blendDesc = {};
+		D3D11_BLEND_DESC blendDesc = {};
 		blendDesc.AlphaToCoverageEnable = false;
-        blendDesc.IndependentBlendEnable = false;
-        auto& rtDesc = blendDesc.RenderTarget[0];
-        rtDesc.BlendEnable = true;
-        rtDesc.SrcBlend = D3D11_BLEND_ONE;
-        rtDesc.DestBlend = D3D11_BLEND_ZERO;
-        rtDesc.BlendOp = D3D11_BLEND_OP_ADD;
-        rtDesc.SrcBlendAlpha = D3D11_BLEND_ONE;
-        rtDesc.DestBlendAlpha = D3D11_BLEND_ZERO;
-        rtDesc.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        rtDesc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_RED;
+		blendDesc.IndependentBlendEnable = false;
+		auto& rtDesc = blendDesc.RenderTarget[0];
+		rtDesc.BlendEnable = true;
+		rtDesc.SrcBlend = D3D11_BLEND_ONE;
+		rtDesc.DestBlend = D3D11_BLEND_ZERO;
+		rtDesc.BlendOp = D3D11_BLEND_OP_ADD;
+		rtDesc.SrcBlendAlpha = D3D11_BLEND_ONE;
+		rtDesc.DestBlendAlpha = D3D11_BLEND_ZERO;
+		rtDesc.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		rtDesc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_RED;
 
-        DX::ThrowIfFailed(device->CreateBlendState(&blendDesc, &blendState));
+		DX::ThrowIfFailed(device->CreateBlendState(&blendDesc, &blendState));
 	}
 }
 
@@ -341,7 +341,6 @@ void TerrainBlending::Hooks::Main_RenderDepth::thunk(bool a1, bool a2)
 
 		singleton->BlendPrepassDepths();
 	} else {
-
 		mainDepth.depthSRV = singleton->depthSRVBackup;
 		zPrepassCopy.depthSRV = singleton->prepassSRVBackup;
 
