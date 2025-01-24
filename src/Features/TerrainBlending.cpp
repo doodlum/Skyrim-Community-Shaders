@@ -293,13 +293,13 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 		if (singleton->renderDepth) {
 			// Entering or exiting terrain depth section
 			bool inTerrain = a_pass->shaderProperty && a_pass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape);
-			
+
 			if (inTerrain) {
 				if ((a_pass->geometry->worldBound.center.GetDistance(singleton->averageEyePosition) - a_pass->geometry->worldBound.radius) > 1024.0f) {
 					inTerrain = false;
 				}
 			}
-			
+
 			if (singleton->renderTerrainDepth != inTerrain) {
 				if (!inTerrain)
 					singleton->ResetTerrainDepth();
