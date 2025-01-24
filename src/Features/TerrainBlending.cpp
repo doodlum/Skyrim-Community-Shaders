@@ -182,7 +182,7 @@ void TerrainBlending::ResetTerrainDepth()
 
 	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
 	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
-	
+
 	auto currentVertexShader = *VariableCache::GetSingleton()->currentVertexShader;
 	context->VSSetShader((ID3D11VertexShader*)currentVertexShader->shader, NULL, NULL);
 }
@@ -315,12 +315,12 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 void TerrainBlending::RenderTerrain()
 {
 	renderTerrainWorld = true;
-	
+
 	for (auto& renderPass : renderPasses)
 		TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::func(renderPass.a_pass, renderPass.a_technique, renderPass.a_alphaTest, renderPass.a_renderFlags);
-	
+
 	renderPasses.clear();
-	
+
 	renderTerrainWorld = false;
 
 	ResetTerrainWorld();
