@@ -35,6 +35,8 @@ public:
 	bool renderAltTerrain = false;
 	bool renderTerrainWorld = false;
 
+	RE::NiPoint3 averageEyePosition;
+
 	struct RenderPass
 	{
 		RE::BSRenderPass* a_pass;

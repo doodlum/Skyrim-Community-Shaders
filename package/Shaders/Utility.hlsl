@@ -270,8 +270,7 @@ VS_OUTPUT main(VS_INPUT input)
 #	endif
 
 #	if defined(OFFSET_DEPTH)
-	if (vsout.PositionCS.z < 4096)
-		vsout.PositionCS.z += 4.0;
+	vsout.PositionCS.z += 4.0;
 #	endif
 
 #	ifdef VR

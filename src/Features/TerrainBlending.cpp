@@ -256,6 +256,8 @@ void TerrainBlending::Hooks::Main_RenderDepth::thunk(bool a1, bool a2)
 	auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 	auto& zPrepassCopy = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 
+	singleton->averageEyePosition = Util::GetAverageEyePosition();
+
 	if (shaderCache->IsEnabled()) {
 		mainDepth.depthSRV = singleton->blendedDepthTexture->srv.get();
 		zPrepassCopy.depthSRV = singleton->blendedDepthTexture->srv.get();
@@ -291,6 +293,13 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 		if (singleton->renderDepth) {
 			// Entering or exiting terrain depth section
 			bool inTerrain = a_pass->shaderProperty && a_pass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape);
+			
+			if (inTerrain) {
+				if ((a_pass->geometry->worldBound.center.GetDistance(singleton->averageEyePosition) - a_pass->geometry->worldBound.radius) > 1024.0f) {
+					inTerrain = false;
+				}
+			}
+			
 			if (singleton->renderTerrainDepth != inTerrain) {
 				if (!inTerrain)
 					singleton->ResetTerrainDepth();
@@ -302,6 +311,12 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 		} else if (deferred->inWorld) {
 			// Entering or exiting terrain section
 			bool inTerrain = a_pass->shaderProperty && a_pass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape);
+
+			if (inTerrain) {
+				if ((a_pass->geometry->worldBound.center.GetDistance(singleton->averageEyePosition) - a_pass->geometry->worldBound.radius) > 1024.0f) {
+					inTerrain = false;
+				}
+			}
 
 			if (inTerrain) {
 				RenderPass call{ a_pass, a_technique, a_alphaTest, a_renderFlags };
