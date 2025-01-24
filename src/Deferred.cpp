@@ -722,7 +722,7 @@ void Deferred::Hooks::Main_RenderWorld_Start::thunk(RE::BSBatchRenderer* This, u
 	if (shaderCache->IsEnabled() && deferred->inWorld) {
 		// Here is where the first opaque objects start rendering
 		deferred->StartDeferred();
-		func(This, StartRange, EndRanges, RenderFlags, GeometryGroup); // RenderBatches                                                               // RenderBatches
+		func(This, StartRange, EndRanges, RenderFlags, GeometryGroup);  // RenderBatches                                                               // RenderBatches
 	} else {
 		func(This, StartRange, EndRanges, RenderFlags, GeometryGroup);  // RenderBatches
 	}
@@ -734,7 +734,7 @@ void Deferred::Hooks::Main_RenderWorld_BlendedDecals::thunk(RE::BSShaderAccumula
 	auto terrainBlending = VariableCache::GetSingleton()->terrainBlending;
 	auto shaderCache = VariableCache::GetSingleton()->shaderCache;
 
-	if (shaderCache->IsEnabled() && deferred->inWorld) {                                                    
+	if (shaderCache->IsEnabled() && deferred->inWorld) {
 		// Defer terrain rendering until after everything else
 		if (terrainBlending->loaded)
 			terrainBlending->RenderTerrain();
