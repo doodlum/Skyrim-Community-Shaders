@@ -261,7 +261,6 @@ void TerrainBlending::ResetTerrainDepth()
 	context->VSSetShader((ID3D11VertexShader*)currentVertexShader->shader, NULL, NULL);
 }
 
-
 void TerrainBlending::ResetTerrainWorld()
 {
 	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
@@ -307,7 +306,7 @@ void TerrainBlending::BlendPrepassDepths()
 	viewport.TopLeftY = 0;
 	context->RSSetViewports(1, &viewport);
 
-//	ID3D11ShaderResourceView* srv = nullptr;
+	//	ID3D11ShaderResourceView* srv = nullptr;
 	//context->PSSetShaderResources(17, 1, &srv);
 
 	// Set the render targets
