@@ -394,9 +394,6 @@ struct PS_OUTPUT
 	float4 Reflectance : SV_Target5;
 	float4 Masks : SV_Target6;
 	float4 Parameters : SV_Target7;
-#	if defined(TERRAIN_BLENDING)
-	float Depth : SV_Depth;
-#	endif
 };
 #else
 struct PS_OUTPUT
@@ -2695,7 +2692,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #		if defined(TERRAIN_BLENDING)
 	psout.Diffuse.w = blendFactorTerrain;
-	psout.Depth = lerp(max(depthSampled, input.Position.z), input.Position.z, blendFactorTerrain > screenNoise);
 #		endif
 
 	psout.MotionVectors.zw = float2(0.0, psout.Diffuse.w);

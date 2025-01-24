@@ -285,6 +285,7 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 {
 	auto singleton = VariableCache::GetSingleton()->terrainBlending;
 	auto shaderCache = VariableCache::GetSingleton()->shaderCache;
+	auto deferred = VariableCache::GetSingleton()->deferred;
 
 	if (shaderCache->IsEnabled()) {
 		if (singleton->renderDepth) {
@@ -298,7 +299,7 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 
 			if (inTerrain)
 				func(a_pass, a_technique, a_alphaTest, a_renderFlags);  // Run terrain twice
-		} else if (singleton->renderWorld) {
+		} else if (deferred->inWorld) {
 			// Entering or exiting terrain section
 			bool inTerrain = a_pass->shaderProperty && a_pass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape);
 

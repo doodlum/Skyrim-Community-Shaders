@@ -33,7 +33,6 @@ public:
 	bool renderDepth = false;
 	bool renderTerrainDepth = false;
 	bool renderAltTerrain = false;
-	bool renderWorld = false;
 	bool renderTerrainWorld = false;
 
 	struct RenderPass
