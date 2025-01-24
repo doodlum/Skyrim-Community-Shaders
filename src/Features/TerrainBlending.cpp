@@ -166,7 +166,7 @@ void TerrainBlending::OverrideTerrainWorld()
 
 void TerrainBlending::ResetDepth()
 {
-	auto& context = VariableCache::GetSingleton()->context;
+	auto context = VariableCache::GetSingleton()->context;
 
 	auto rtv = blendedDepthTexture->rtv.get();
 	FLOAT clearColor[4]{ 1, 0, 0, 0 };
@@ -178,14 +178,12 @@ void TerrainBlending::ResetDepth()
 
 void TerrainBlending::ResetTerrainDepth()
 {
-	auto renderer = VariableCache::GetSingleton()->renderer;
-	auto& context = VariableCache::GetSingleton()->context;
+	auto context = VariableCache::GetSingleton()->context;
 
-	auto shadowState = VariableCache::GetSingleton()->shadowState;
-	GET_INSTANCE_MEMBER(stateUpdateFlags, shadowState)
-	stateUpdateFlags.set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
-
-	GET_INSTANCE_MEMBER(currentVertexShader, shadowState)
+	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
+	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
+	
+	auto currentVertexShader = *VariableCache::GetSingleton()->currentVertexShader;
 	context->VSSetShader((ID3D11VertexShader*)currentVertexShader->shader, NULL, NULL);
 }
 
@@ -288,7 +286,6 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 	auto singleton = VariableCache::GetSingleton()->terrainBlending;
 	auto shaderCache = VariableCache::GetSingleton()->shaderCache;
 
-
 	if (shaderCache->IsEnabled()) {
 		if (singleton->renderDepth) {
 			// Entering or exiting terrain depth section
@@ -319,39 +316,17 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 void TerrainBlending::RenderTerrain()
 {
 	renderTerrainWorld = true;
+	
 	for (auto& renderPass : renderPasses)
 		TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::func(renderPass.a_pass, renderPass.a_technique, renderPass.a_alphaTest, renderPass.a_renderFlags);
+	
 	renderPasses.clear();
+	
 	renderTerrainWorld = false;
+
 	ResetTerrainWorld();
 
 	auto renderer = VariableCache::GetSingleton()->renderer;
 	auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 	mainDepth.depthSRV = depthSRVBackup;
-}
-
-void TerrainBlending::Hooks::Main_RenderWorld_RenderBatches::thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRange, uint32_t RenderFlags, int GeometryGroup)
-{
-	auto singleton = VariableCache::GetSingleton()->terrainBlending;
-	auto shaderCache = VariableCache::GetSingleton()->shaderCache;
-	auto renderer = VariableCache::GetSingleton()->renderer;
-
-	if (shaderCache->IsEnabled()) {
-		singleton->renderWorld = true;
-
-		func(This, StartRange, EndRange, RenderFlags, GeometryGroup);
-
-		singleton->renderWorld = false;
-
-		if (singleton->renderTerrainWorld) {
-			singleton->renderTerrainWorld = false;
-			singleton->ResetTerrainWorld();
-		}
-		auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
-
-		mainDepth.depthSRV = singleton->depthSRVBackup;
-	} else {
-
-		func(This, StartRange, EndRange, RenderFlags, GeometryGroup);
-	}
 }

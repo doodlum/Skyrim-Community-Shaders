@@ -85,12 +85,6 @@ public:
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
-		struct Main_RenderWorld_RenderBatches
-		{
-			static void thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRange, uint32_t RenderFlags, int GeometryGroup);
-			static inline REL::Relocation<decltype(thunk)> func;
-		};
-
 		static void Install()
 		{
 			// To know when we are rendering z-prepass depth vs shadows depth
@@ -98,9 +92,6 @@ public:
 
 			// To manipulate the depth buffer write, depth testing, alpha blending
 			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately>(REL::RelocationID(100852, 107642).address() + REL::Relocate(0x29E, 0x28F));
-
-			// To manipulate depth testing
-			//stl::write_thunk_call<Main_RenderWorld_RenderBatches>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x8E, 0x84));
 
 			logger::info("[Terrain Blending] Installed hooks");
 		}
