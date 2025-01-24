@@ -6,6 +6,7 @@ typedef VS_OUTPUT PS_INPUT;
 
 struct PS_OUTPUT
 {
+	float Color : SV_Target;
 	float Depth : SV_Depth;
 };
 
@@ -26,9 +27,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	float blendFactorTerrain = saturate((terrainOffsetLinear - terrainDepthLinear) / 10.0);
 
-	if (blendFactorTerrain > 1 || blendFactorTerrain < screenNoise)
-		discard;
-
-	psout.Depth = terrainDepth;
+	psout.Color = min(terrainOffset, terrainDepth);
+	psout.Depth = (blendFactorTerrain > 1 || blendFactorTerrain < screenNoise) ? terrainOffset : terrainDepth;
 	return psout;
 }

@@ -36,6 +36,7 @@ public:
 
 	ID3D11RasterizerState* rasterState = nullptr;
 	ID3D11DepthStencilState* depthStencilState = nullptr;
+	ID3D11BlendState* blendState = nullptr;
 
 	bool renderDepth = false;
 	bool renderTerrainDepth = false;
@@ -50,12 +51,16 @@ public:
 
 	Texture2D* terrainDepthTexture = nullptr;
 	Texture2D* tempDepthTexture = nullptr;
+	Texture2D* blendedDepthTexture = nullptr;
 
 	Texture2D* terrainOffsetTexture = nullptr;
 
 	winrt::com_ptr<ID3D11ShaderResourceView> stbn_vec1_2Dx1D_128x128x64;
 
 	RE::BSGraphics::DepthStencilData terrainDepth;
+
+	ID3D11ShaderResourceView* depthSRVBackup = nullptr;
+	ID3D11ShaderResourceView* prepassSRVBackup = nullptr;
 
 	virtual void ClearShaderCache() override;
 
@@ -73,6 +78,12 @@ public:
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
+		struct Main_RenderWorld_RenderBatches
+		{
+			static void thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRange, uint32_t RenderFlags, int GeometryGroup);
+			static inline REL::Relocation<decltype(thunk)> func;
+		};
+
 		static void Install()
 		{
 			// To know when we are rendering z-prepass depth vs shadows depth
@@ -80,6 +91,9 @@ public:
 
 			// To manipulate the depth buffer write
 			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately>(REL::RelocationID(100852, 107642).address() + REL::Relocate(0x29E, 0x28F));
+			
+			// To manipulate depth testing
+			stl::write_thunk_call<Main_RenderWorld_RenderBatches>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x8E, 0x84));
 
 			logger::info("[Terrain Blending] Installed hooks");
 		}
