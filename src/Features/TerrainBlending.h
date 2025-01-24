@@ -42,11 +42,17 @@ public:
 	bool renderTerrainDepth = false;
 	bool renderAltTerrain = false;
 
+	bool renderWorld = false;
+	bool renderTerrainWorld = false;
+
+	void OverrideTerrainWorld();
+
 	void TerrainShaderHacks();
 
 	void OverrideTerrainDepth();
 	void ResetDepth();
 	void ResetTerrainDepth();
+	void ResetTerrainWorld();
 	void BlendPrepassDepths();
 
 	Texture2D* terrainDepthTexture = nullptr;

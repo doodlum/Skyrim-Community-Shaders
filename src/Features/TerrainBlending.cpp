@@ -173,6 +173,37 @@ struct BlendStates
 	ID3D11BlendState* a[7][2][13][2];
 };
 
+void TerrainBlending::OverrideTerrainWorld()
+{
+	auto context = VariableCache::GetSingleton()->context;
+
+	auto shadowState = VariableCache::GetSingleton()->shadowState;
+
+	static BlendStates* blendStates = (BlendStates*)REL::RelocationID(524749, 411364).address();
+
+	GET_INSTANCE_MEMBER(alphaBlendAlphaToCoverage, shadowState)
+	GET_INSTANCE_MEMBER(alphaBlendModeExtra, shadowState)
+	GET_INSTANCE_MEMBER(alphaBlendWriteMode, shadowState)
+
+	// Enable alpha blending
+	context->OMSetBlendState(blendStates->a[1][alphaBlendAlphaToCoverage][alphaBlendWriteMode][alphaBlendModeExtra], nullptr, 0xFFFFFFFF);
+
+	////// Enable rendering for depth below the surface
+	//context->OMSetDepthStencilState(terrainDepthStencilState, 0xFF);
+
+	// Used to get the distance of the surface to the lowest depth
+	ID3D11ShaderResourceView* views[2] = { depthSRVBackup, blendedDepthTexture->srv.get() };
+	context->PSSetShaderResources(55, 2, views);
+
+	ID3D11RenderTargetView* rtvs[8];
+	ID3D11DepthStencilView* dsv;
+	context->OMGetRenderTargets(8, rtvs, &dsv);
+
+	dsv = tempDepthTexture->dsv.get();
+
+	context->OMSetRenderTargets(8, rtvs, dsv);
+}
+
 void TerrainBlending::TerrainShaderHacks()
 {
 	if (renderTerrainDepth) {
@@ -189,6 +220,8 @@ void TerrainBlending::TerrainShaderHacks()
 			context->VSSetShader((ID3D11VertexShader*)currentVertexShader->shader, NULL, NULL);
 		}
 		renderAltTerrain = !renderAltTerrain;
+	} else if (renderTerrainWorld) {
+		OverrideTerrainWorld();
 	}
 }
 
@@ -228,13 +261,22 @@ void TerrainBlending::ResetTerrainDepth()
 	context->VSSetShader((ID3D11VertexShader*)currentVertexShader->shader, NULL, NULL);
 }
 
+
+void TerrainBlending::ResetTerrainWorld()
+{
+	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
+	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_ALPHA_BLEND);
+	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_DEPTH_MODE);
+	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);
+}
+
 void TerrainBlending::BlendPrepassDepths()
 {
 	auto context = VariableCache::GetSingleton()->context;
 
 	auto renderer = VariableCache::GetSingleton()->renderer;
 	auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
-	auto& prepassDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
+	//auto& prepassDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 
 	context->CopyResource(tempDepthTexture->resource.get(), mainDepth.texture);
 
@@ -265,14 +307,17 @@ void TerrainBlending::BlendPrepassDepths()
 	viewport.TopLeftY = 0;
 	context->RSSetViewports(1, &viewport);
 
-	// Set the shader resources
-	ID3D11ShaderResourceView* srvs[3] = { tempDepthTexture->srv.get(), terrainDepth.depthSRV, stbn_vec1_2Dx1D_128x128x64.get() };
-	context->PSSetShaderResources(0, 3, srvs);
+//	ID3D11ShaderResourceView* srv = nullptr;
+	//context->PSSetShaderResources(17, 1, &srv);
 
 	// Set the render targets
 	auto rtv = blendedDepthTexture->rtv.get();
-	auto dsv = mainDepth.views[0];
+	auto dsv = tempDepthTexture->dsv.get();
 	context->OMSetRenderTargets(1, &rtv, dsv);
+
+	// Set the shader resources
+	ID3D11ShaderResourceView* srvs[3] = { depthSRVBackup, terrainDepth.depthSRV, stbn_vec1_2Dx1D_128x128x64.get() };
+	context->PSSetShaderResources(0, 3, srvs);
 
 	// Draw
 	context->Draw(3, 0);
@@ -290,8 +335,6 @@ void TerrainBlending::BlendPrepassDepths()
 	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_ALPHA_BLEND);
 
 	context->OMSetRenderTargets(0, nullptr, nullptr);  // Unbind all bound render targets
-
-	context->CopyResource(prepassDepth.texture, mainDepth.texture);
 }
 
 void TerrainBlending::ClearShaderCache()
@@ -365,6 +408,14 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 
 			if (inTerrain)
 				func(a_pass, a_technique, a_alphaTest, a_renderFlags);  // Run terrain twice
+		} else if (singleton->renderWorld) {
+			// Entering or exiting terrain section
+			bool inTerrain = a_pass->shaderProperty && a_pass->shaderProperty->flags.all(RE::BSShaderProperty::EShaderPropertyFlag::kMultiTextureLandscape);
+			if (singleton->renderTerrainWorld != inTerrain) {
+				if (!inTerrain)
+					singleton->ResetTerrainWorld();
+				singleton->renderTerrainWorld = inTerrain;
+			}
 		}
 	}
 	func(a_pass, a_technique, a_alphaTest, a_renderFlags);
@@ -377,8 +428,16 @@ void TerrainBlending::Hooks::Main_RenderWorld_RenderBatches::thunk(RE::BSBatchRe
 	auto renderer = VariableCache::GetSingleton()->renderer;
 
 	if (shaderCache->IsEnabled()) {
+		singleton->renderWorld = true;
+
 		func(This, StartRange, EndRange, RenderFlags, GeometryGroup);
 
+		singleton->renderWorld = false;
+
+		if (singleton->renderTerrainWorld) {
+			singleton->renderTerrainWorld = false;
+			singleton->ResetTerrainWorld();
+		}
 		auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 
 		mainDepth.depthSRV = singleton->depthSRVBackup;
