@@ -21,8 +21,6 @@ PS_OUTPUT main(PS_INPUT input)
 	float terrainDepth = TerrainDepthTexture.Load(int3(input.Position.xy, 0));
 	float screenNoise = BlueNoise[int3(input.Position.xy % 128, SharedData::FrameCount % 64)];
 
-	input.Position.z = terrainDepth;
-
 	float terrainOffsetLinear = SharedData::GetScreenDepth(terrainOffset);
 	float terrainDepthLinear = SharedData::GetScreenDepth(terrainDepth);
 

@@ -35,6 +35,7 @@ public:
 	virtual void PostPostLoad() override;
 
 	ID3D11RasterizerState* rasterState = nullptr;
+	ID3D11DepthStencilState* depthStencilState = nullptr;
 
 	bool renderDepth = false;
 	bool renderTerrainDepth = false;

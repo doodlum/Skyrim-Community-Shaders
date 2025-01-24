@@ -80,7 +80,6 @@ void TerrainBlending::SetupResources()
 	}
 
 	{
-		// Create a rasterizer state description
 		D3D11_RASTERIZER_DESC rasterDesc = {};
 		rasterDesc.FillMode = D3D11_FILL_SOLID;
 		rasterDesc.CullMode = D3D11_CULL_NONE;
@@ -94,6 +93,16 @@ void TerrainBlending::SetupResources()
 		rasterDesc.AntialiasedLineEnable = false;
 
 		DX::ThrowIfFailed(device->CreateRasterizerState(&rasterDesc, &rasterState));
+	}
+
+	{
+		D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
+		depthStencilDesc.DepthEnable = TRUE;
+		depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+		depthStencilDesc.StencilEnable = FALSE;
+
+		DX::ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, &depthStencilState));
 	}
 
 	{
@@ -186,6 +195,7 @@ void TerrainBlending::BlendPrepassDepths()
 	context->VSSetShader(GetTerrainBlendingVertexShader(), nullptr, 0);
 	context->PSSetShader(GetTerrainBlendingPixelShader(), nullptr, 0);
 	context->RSSetState(rasterState);
+	context->OMSetDepthStencilState(depthStencilState, 0);
 
 	auto state = VariableCache::GetSingleton()->state;
 
