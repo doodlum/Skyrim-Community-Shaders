@@ -30,7 +30,7 @@ PS_OUTPUT main(PS_INPUT input)
 	psout.Color = min(terrainOffset, terrainDepth);
 
 	bool useOffset = (blendFactorTerrain > 1 || blendFactorTerrain < screenNoise);
-	
+
 	psout.Depth = useOffset ? terrainOffset : min(terrainDepth, terrainOffset);
 	return psout;
 }
