@@ -266,14 +266,6 @@ void Deferred::PrepassPasses()
 
 void Deferred::StartDeferred()
 {
-	if (!inWorld)
-		return;
-
-	auto& shaderCache = SIE::ShaderCache::Instance();
-
-	if (!shaderCache.IsEnabled())
-		return;
-
 	State::GetSingleton()->UpdateSharedData();
 
 	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
@@ -725,14 +717,28 @@ void Deferred::Hooks::Main_RenderWorld::thunk(bool a1)
 void Deferred::Hooks::Main_RenderWorld_Start::thunk(RE::BSBatchRenderer* This, uint32_t StartRange, uint32_t EndRanges, uint32_t RenderFlags, int GeometryGroup)
 {
 	auto deferred = VariableCache::GetSingleton()->deferred;
-	// Here is where the first opaque objects start rendering
-	deferred->StartDeferred();
-	func(This, StartRange, EndRanges, RenderFlags, GeometryGroup);  // RenderBatches
+	auto shaderCache = VariableCache::GetSingleton()->shaderCache;
+
+	if (shaderCache->IsEnabled() && deferred->inWorld) {
+		// Here is where the first opaque objects start rendering
+		deferred->StartDeferred();
+		func(This, StartRange, EndRanges, RenderFlags, GeometryGroup); // RenderBatches                                                               // RenderBatches
+	} else {
+		func(This, StartRange, EndRanges, RenderFlags, GeometryGroup);  // RenderBatches
+	}
 };
 
 void Deferred::Hooks::Main_RenderWorld_BlendedDecals::thunk(RE::BSShaderAccumulator* This, uint32_t RenderFlags)
 {
 	auto deferred = VariableCache::GetSingleton()->deferred;
+	auto terrainBlending = VariableCache::GetSingleton()->terrainBlending;
+	auto shaderCache = VariableCache::GetSingleton()->shaderCache;
+
+	if (shaderCache->IsEnabled() && deferred->inWorld) {                                                    
+		// Defer terrain rendering until after everything else
+		if (terrainBlending->loaded)
+			terrainBlending->RenderTerrain();
+	}
 
 	// Deferred blended decals
 	deferred->inBlendedDecals = true;

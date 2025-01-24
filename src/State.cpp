@@ -543,6 +543,7 @@ void State::ModifyShaderLookup(const RE::BSShader& a_shader, uint& a_vertexDescr
 					a_pixelDescriptor &= ~(uint32_t)SIE::ShaderCache::LightingShaderFlags::AdditionalAlphaMask;
 				}
 
+
 				static auto enableImprovedSnow = RE::GetINISetting("bEnableImprovedSnow:Display");
 				static bool vr = REL::Module::IsVR();
 

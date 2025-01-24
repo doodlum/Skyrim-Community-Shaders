@@ -1036,8 +1036,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif
 
 #	if defined(TERRAIN_BLENDING)
-	float depthSampled = TerrainBlending::GetTerrainOffsetDepth(screenUV, eyeIndex);
-	float depthComp = input.Position.z - depthSampled;
+	float depthSampled = TerrainBlending::TerrainBlendingMaskTexture[input.Position.xy];
 
 	float depthSampledLinear = SharedData::GetScreenDepth(depthSampled);
 	float depthPixelLinear = SharedData::GetScreenDepth(input.Position.z);
@@ -1047,7 +1046,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (input.Position.z == depthSampled)
 		blendFactorTerrain = 1;
 
-	clip(blendFactorTerrain);
 	blendFactorTerrain = saturate(blendFactorTerrain);
 #	endif
 
