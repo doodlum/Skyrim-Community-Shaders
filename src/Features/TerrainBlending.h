@@ -91,7 +91,7 @@ public:
 
 			// To manipulate the depth buffer write
 			stl::write_thunk_call<BSBatchRenderer__RenderPassImmediately>(REL::RelocationID(100852, 107642).address() + REL::Relocate(0x29E, 0x28F));
-			
+
 			// To manipulate depth testing
 			stl::write_thunk_call<Main_RenderWorld_RenderBatches>(REL::RelocationID(99938, 106583).address() + REL::Relocate(0x8E, 0x84));
 
