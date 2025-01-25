@@ -1061,7 +1061,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float parallaxShadowQuality = sqrt(1.0 - saturate(viewPosition.z / 2048.0));
 #	endif
 
-
 #	if defined(LANDSCAPE)
 	float mipLevels[6];
 #	else
@@ -1096,12 +1095,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	DisplacementParams displacementParams[6];
 	displacementParams[0].DisplacementScale = 1.f;
 	displacementParams[0].DisplacementOffset = 0.f;
-	displacementParams[0].HeightScale = saturate(1-curvature);
+	displacementParams[0].HeightScale = saturate(1 - curvature);
 #		else
 	DisplacementParams displacementParams;
 	displacementParams.DisplacementScale = 1.f;
 	displacementParams.DisplacementOffset = 0.f;
-	displacementParams.HeightScale = saturate(1-curvature);
+	displacementParams.HeightScale = saturate(1 - curvature);
 #		endif
 
 #	endif
