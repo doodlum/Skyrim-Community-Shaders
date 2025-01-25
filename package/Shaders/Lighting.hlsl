@@ -1069,7 +1069,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float sh0 = 0;
 	float pixelOffset = 0;
 
-
 	float curvature = 0;
 #	if !defined(MODELSPACENORMALS)
 	float3 vertexNormal = tbnTr[2];
@@ -1080,15 +1079,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		worldSpaceVertexNormal = normalize(mul(input.World[eyeIndex], float4(worldSpaceVertexNormal, 0)));
 #		endif
 
-
 	float3 ndx = ddx(worldSpaceVertexNormal);
 	float3 ndy = ddy(worldSpaceVertexNormal);
 	float3 fdx = ddx(input.WorldPosition.xyz);
 	float3 fdy = ddy(input.WorldPosition.xyz);
 	// magic number pow, lower removes more warping but kills parallax on subtle curved objects
-	curvature = pow(length(max(abs(ndx), abs(ndy)))/length(max(abs(fdx), abs(fdy))), 0.35);
+	curvature = pow(length(max(abs(ndx), abs(ndy))) / length(max(abs(fdx), abs(fdy))), 0.35);
 #	endif
-
 
 #	if defined(EMAT)
 #		if defined(LANDSCAPE)
@@ -1653,7 +1650,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 worldSpaceVertexNormal = worldSpaceNormal;
 #	endif
 
-
 	float3 screenSpaceNormal = normalize(FrameBuffer::WorldToView(worldSpaceNormal, false, eyeIndex));
 
 #	if defined(TRUE_PBR)
@@ -1751,7 +1747,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float pbrWeight = 1;
 	float pbrGlossiness = 1 - pbrSurfaceProperties.Roughness;
 #	endif  // TRUE_PBR
-
 
 	float porosity = 1.0;
 
