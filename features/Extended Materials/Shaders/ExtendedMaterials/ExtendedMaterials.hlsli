@@ -209,8 +209,9 @@ namespace ExtendedMaterials
 			uint numSteps = uint((max(4, scale * 8) * (1.0 - nearBlendToFar)) + 0.5);
 			numSteps = clamp((numSteps + 3) & ~0x03, 4, max(4, scale * 8));
 #else
-			uint numSteps = uint((16 * (1.0 - nearBlendToFar)) + 0.5);
-			numSteps = clamp((numSteps + 3) & ~0x03, 4, 16);
+			float maxSteps = SharedData::InInterior ? 8 : 16;
+			uint numSteps = uint((maxSteps * (1.0 - nearBlendToFar)) + 0.5);
+			numSteps = clamp((numSteps + 3) & ~0x03, 4, max(4, scale * maxSteps));
 #endif
 			float stepSize = rcp(numSteps);
 			stepSize += (noise * 2.0 - 1.0) * stepSize * stepSize;
