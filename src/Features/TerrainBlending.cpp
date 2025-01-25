@@ -92,15 +92,6 @@ void TerrainBlending::SetupResources()
 		auto& zPrepassCopy = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 		prepassSRVBackup = zPrepassCopy.depthSRV;
 	}
-
-	{
-		D3D11_DEPTH_STENCIL_DESC depthStencilDesc{};
-		depthStencilDesc.DepthEnable = true;
-		depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-		depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
-		depthStencilDesc.StencilEnable = false;
-		DX::ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, &terrainDepthStencilState));
-	}
 }
 
 void TerrainBlending::PostPostLoad()
@@ -136,32 +127,6 @@ void TerrainBlending::TerrainShaderHacks()
 		}
 		renderAltTerrain = !renderAltTerrain;
 	}
-
-	if (renderTerrainWorld)
-		OverrideTerrainWorld();
-}
-
-void TerrainBlending::OverrideTerrainWorld()
-{
-	auto context = VariableCache::GetSingleton()->context;
-
-	auto shadowState = VariableCache::GetSingleton()->shadowState;
-
-	static BlendStates* blendStates = (BlendStates*)REL::RelocationID(524749, 411364).address();
-
-	GET_INSTANCE_MEMBER(alphaBlendAlphaToCoverage, shadowState)
-	GET_INSTANCE_MEMBER(alphaBlendModeExtra, shadowState)
-	GET_INSTANCE_MEMBER(alphaBlendWriteMode, shadowState)
-
-	// Enable alpha blending
-	context->OMSetBlendState(blendStates->a[1][alphaBlendAlphaToCoverage][alphaBlendWriteMode][alphaBlendModeExtra], nullptr, 0xFFFFFFFF);
-
-	//// Enable rendering for depth below the surface
-	context->OMSetDepthStencilState(terrainDepthStencilState, 0xFF);
-
-	// Used to get the distance of the surface to the lowest depth
-	auto view = terrainDepth.depthSRV;
-	context->PSSetShaderResources(55, 1, &view);
 }
 
 void TerrainBlending::ResetDepth()
@@ -331,6 +296,27 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 void TerrainBlending::RenderTerrain()
 {
 	renderTerrainWorld = true;
+	
+	auto renderer = VariableCache::GetSingleton()->renderer;
+	auto context = VariableCache::GetSingleton()->context;
+	auto shadowState = VariableCache::GetSingleton()->shadowState;
+	auto stateUpdateFlags = VariableCache::GetSingleton()->stateUpdateFlags;
+
+	static BlendStates* blendStates = (BlendStates*)REL::RelocationID(524749, 411364).address();
+
+	// Enable alpha blending
+	GET_INSTANCE_MEMBER(alphaBlendMode, shadowState)
+	alphaBlendMode = 1;
+	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_ALPHA_BLEND);
+
+	// Enable rendering for depth below the surface
+	GET_INSTANCE_MEMBER(depthStencilDepthMode, shadowState)
+	depthStencilDepthMode = RE::BSGraphics::DepthStencilDepthMode::kTest;
+	stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_DEPTH_MODE);
+
+	// Used to get the distance of the surface to the lowest depth
+	auto view = terrainDepth.depthSRV;
+	context->PSSetShaderResources(55, 1, &view);
 
 	for (auto& renderPass : renderPasses)
 		TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::func(renderPass.a_pass, renderPass.a_technique, renderPass.a_alphaTest, renderPass.a_renderFlags);
@@ -341,7 +327,6 @@ void TerrainBlending::RenderTerrain()
 
 	ResetTerrainWorld();
 
-	auto renderer = VariableCache::GetSingleton()->renderer;
 	auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
 	mainDepth.depthSRV = depthSRVBackup;
 }

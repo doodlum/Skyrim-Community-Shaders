@@ -49,8 +49,6 @@ public:
 
 	void TerrainShaderHacks();
 
-	void OverrideTerrainWorld();
-
 	void ResetDepth();
 	void ResetTerrainDepth();
 	void BlendPrepassDepths();
