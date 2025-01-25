@@ -1165,8 +1165,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			refractedViewDirection = -refract(-viewDirection, entryNormal, eta);
 			refractedViewDirectionWS = normalize(mul(input.World[eyeIndex], float4(refractedViewDirection, 0)));
 		}
-		else{
-				displacementParams.HeightScale *= PBRParams1.y;
+		else
+		{
+			displacementParams.HeightScale *= PBRParams1.y;
 		}
 		mipLevel = ExtendedMaterials::GetMipLevel(uv, TexParallaxSampler);
 		uv = ExtendedMaterials::GetParallaxCoords(viewPosition.z, uv, mipLevel, refractedViewDirection, tbnTr, screenNoise, TexParallaxSampler, SampParallaxSampler, 0, displacementParams, pixelOffset);
