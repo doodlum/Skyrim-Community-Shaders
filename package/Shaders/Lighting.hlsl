@@ -1061,6 +1061,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float parallaxShadowQuality = sqrt(1.0 - saturate(viewPosition.z / 2048.0));
 #	endif
 
+
 #	if defined(LANDSCAPE)
 	float mipLevels[6];
 #	else
@@ -1069,17 +1070,32 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float sh0 = 0;
 	float pixelOffset = 0;
 
+#	if defined(MODELSPACENORMALS) && !defined(SKINNED)
+	float3 untexturedNormal = float3(0, 0, 1);
+#	else
+	float3 untexturedNormal = float4(normalize(mul(tbn, float3(0, 0, 1))), 1);
+#	endif
+	float3 untexturedWorldNormal = untexturedNormal.xyz;
+#	if !defined(DRAW_IN_WORLDSPACE)
+	[flatten] if (!input.WorldSpace)
+		untexturedWorldNormal = normalize(mul(input.World[eyeIndex], float4(untexturedWorldNormal, 0)));
+#	endif
+	//float3 flatWorldNormal = normalize(-cross(ddx(input.WorldPosition.xyz), ddy(input.WorldPosition.xyz)));
+	float3 ndx = ddx(untexturedWorldNormal);
+	float3 ndy = ddy(untexturedWorldNormal);
+	float curvature = length(max(abs(ndx), abs(ndy)))*4096.0/viewPosition.z;
+
 #	if defined(EMAT)
 #		if defined(LANDSCAPE)
 	DisplacementParams displacementParams[6];
 	displacementParams[0].DisplacementScale = 1.f;
 	displacementParams[0].DisplacementOffset = 0.f;
-	displacementParams[0].HeightScale = 1.f;
+	displacementParams[0].HeightScale = saturate(1-curvature);
 #		else
 	DisplacementParams displacementParams;
 	displacementParams.DisplacementScale = 1.f;
 	displacementParams.DisplacementOffset = 0.f;
-	displacementParams.HeightScale = 1.f;
+	displacementParams.HeightScale = saturate(1-curvature);
 #		endif
 
 #	endif
@@ -1129,7 +1145,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	[branch] if (SharedData::extendedMaterialSettings.EnableParallax && (PBRFlags & PBR::Flags::HasDisplacement) != 0)
 	{
 		PBRParallax = true;
-		displacementParams.HeightScale = PBRParams1.y;
+		displacementParams.HeightScale *= PBRParams1.y;
 		[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 		{
 			displacementParams.DisplacementScale = 0.5;
@@ -1203,12 +1219,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		displacementParams[4] = displacementParams[0];
 		displacementParams[5] = displacementParams[0];
 #			if defined(TRUE_PBR)
-		displacementParams[0].HeightScale = PBRParams1.y;
-		displacementParams[1].HeightScale = LandscapeTexture2PBRParams.y;
-		displacementParams[2].HeightScale = LandscapeTexture3PBRParams.y;
-		displacementParams[3].HeightScale = LandscapeTexture4PBRParams.y;
-		displacementParams[4].HeightScale = LandscapeTexture5PBRParams.y;
-		displacementParams[5].HeightScale = LandscapeTexture6PBRParams.y;
+		displacementParams[0].HeightScale *= PBRParams1.y;
+		displacementParams[1].HeightScale *= LandscapeTexture2PBRParams.y;
+		displacementParams[2].HeightScale *= LandscapeTexture3PBRParams.y;
+		displacementParams[3].HeightScale *= LandscapeTexture4PBRParams.y;
+		displacementParams[4].HeightScale *= LandscapeTexture5PBRParams.y;
+		displacementParams[5].HeightScale *= LandscapeTexture6PBRParams.y;
 #			endif
 
 		float weights[6];
