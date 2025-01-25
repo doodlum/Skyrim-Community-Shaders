@@ -1070,20 +1070,26 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float sh0 = 0;
 	float pixelOffset = 0;
 
-#	if defined(MODELSPACENORMALS) && !defined(SKINNED)
-	float3 untexturedNormal = float3(0, 0, 1);
-#	else
-	float3 untexturedNormal = float4(normalize(mul(tbn, float3(0, 0, 1))), 1);
-#	endif
-	float3 untexturedWorldNormal = untexturedNormal.xyz;
-#	if !defined(DRAW_IN_WORLDSPACE)
+
+	float curvature = 0;
+#	if !defined(MODELSPACENORMALS)
+	float3 vertexNormal = tbnTr[2];
+	float3 worldSpaceVertexNormal = vertexNormal;
+
+#		if !defined(DRAW_IN_WORLDSPACE)
 	[flatten] if (!input.WorldSpace)
-		untexturedWorldNormal = normalize(mul(input.World[eyeIndex], float4(untexturedWorldNormal, 0)));
+		worldSpaceVertexNormal = normalize(mul(input.World[eyeIndex], float4(worldSpaceVertexNormal, 0)));
+#		endif
+
+
+	float3 ndx = ddx(worldSpaceVertexNormal);
+	float3 ndy = ddy(worldSpaceVertexNormal);
+	float3 fdx = ddx(input.WorldPosition.xyz);
+	float3 fdy = ddy(input.WorldPosition.xyz);
+	// magic number pow, lower removes more warping but kills parallax on subtle curved objects
+	curvature = pow(length(max(abs(ndx), abs(ndy)))/length(max(abs(fdx), abs(fdy))), 0.35);
 #	endif
-	//float3 flatWorldNormal = normalize(-cross(ddx(input.WorldPosition.xyz), ddy(input.WorldPosition.xyz)));
-	float3 ndx = ddx(untexturedWorldNormal);
-	float3 ndy = ddy(untexturedWorldNormal);
-	float curvature = length(max(abs(ndx), abs(ndy)))*4096.0/viewPosition.z;
+
 
 #	if defined(EMAT)
 #		if defined(LANDSCAPE)
@@ -1644,6 +1650,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		worldSpaceNormal = normalize(mul(input.World[eyeIndex], float4(worldSpaceNormal, 0)));
 #	endif
 
+#	if defined(MODELSPACENORMALS)
+	float3 worldSpaceVertexNormal = worldSpaceNormal;
+#	endif
+
+
 	float3 screenSpaceNormal = normalize(FrameBuffer::WorldToView(worldSpaceNormal, false, eyeIndex));
 
 #	if defined(TRUE_PBR)
@@ -1742,17 +1753,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float pbrGlossiness = 1 - pbrSurfaceProperties.Roughness;
 #	endif  // TRUE_PBR
 
-#	if !defined(MODELSPACENORMALS)
-	float3 vertexNormal = tbnTr[2];
-	float3 worldSpaceVertexNormal = vertexNormal;
-
-#		if !defined(DRAW_IN_WORLDSPACE)
-	[flatten] if (!input.WorldSpace)
-		worldSpaceVertexNormal = normalize(mul(input.World[eyeIndex], float4(worldSpaceVertexNormal, 0)));
-#		endif
-#	else
-	float3 worldSpaceVertexNormal = worldSpaceNormal;
-#	endif
 
 	float porosity = 1.0;
 

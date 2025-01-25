@@ -181,7 +181,7 @@ namespace ExtendedMaterials
 #endif
 	{
 		float3 viewDirTS = normalize(mul(tbn, viewDir));
-		viewDirTS.xy /= saturate(viewDirTS.z) * 0.7 + 0.3;  // Fix for objects at extreme viewing angles
+		viewDirTS.xy /= viewDirTS.z * 0.7 + 0.3;  // Fix for objects at extreme viewing angles
 
 		float nearBlendToFar = saturate(distance / 2048.0);
 #if defined(LANDSCAPE)
