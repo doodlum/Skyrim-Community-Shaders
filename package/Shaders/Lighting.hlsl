@@ -945,6 +945,7 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		define EMAT
 #	endif
 
+#	if defined(EMAT) && (defined(ENVMAP) || defined(MULTI_LAYER_PARALLAX) || defined(EYE))
 	#define EMAT_ENVMAP
 #	endif
 
