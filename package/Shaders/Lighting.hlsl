@@ -946,7 +946,7 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #	endif
 
 #	if defined(EMAT) && (defined(ENVMAP) || defined(MULTI_LAYER_PARALLAX) || defined(EYE))
-	#define EMAT_ENVMAP
+#		define EMAT_ENVMAP
 #	endif
 
 #	if defined(DYNAMIC_CUBEMAPS)
@@ -2316,9 +2316,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if defined(ENVMAP) || defined(MULTI_LAYER_PARALLAX) || defined(EYE)
 	float envMask = EnvmapData.x * MaterialData.x;
-	
-	if (envMask > 0.0){
-		if (EnvmapData.y){
+
+	if (envMask > 0.0) {
+		if (EnvmapData.y) {
 			envMask *= TexEnvMaskSampler.Sample(SampEnvMaskSampler, uv).x;
 		} else {
 			envMask *= glossiness;
@@ -2329,12 +2329,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	bool dynamicCubemap = false;
 
 #		if defined(DYNAMIC_CUBEMAPS)
-		float3 F0 = 0.0;
-		float envRoughness = 1.0;
+	float3 F0 = 0.0;
+	float envRoughness = 1.0;
 #		endif
 
-	if (envMask > 0.0){
-
+	if (envMask > 0.0) {
 #		if defined(DYNAMIC_CUBEMAPS)
 		uint2 envSize;
 		TexEnvSampler.GetDimensions(envSize.x, envSize.y);
@@ -2382,9 +2381,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 					envColor = 0.0;
 			}
 		}
-#			endif
+#		endif
 
-		if (!dynamicCubemap){
+		if (!dynamicCubemap) {
 			float3 envColorBase = TexEnvSampler.Sample(SampEnvSampler, reflect(-viewDirection.xyz, modelNormal.xyz));
 			envColor = envColorBase.xyz * envMask;
 		}
