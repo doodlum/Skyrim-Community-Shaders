@@ -1061,7 +1061,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float parallaxShadowQuality = sqrt(1.0 - saturate(viewPosition.z / 2048.0));
 #	endif
 
-
 #	if defined(LANDSCAPE)
 	float mipLevels[6];
 #	else
@@ -1083,19 +1082,19 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	//float3 flatWorldNormal = normalize(-cross(ddx(input.WorldPosition.xyz), ddy(input.WorldPosition.xyz)));
 	float3 ndx = ddx(untexturedWorldNormal);
 	float3 ndy = ddy(untexturedWorldNormal);
-	float curvature = length(max(abs(ndx), abs(ndy)))*4096.0/viewPosition.z;
+	float curvature = length(max(abs(ndx), abs(ndy))) * 4096.0 / viewPosition.z;
 
 #	if defined(EMAT)
 #		if defined(LANDSCAPE)
 	DisplacementParams displacementParams[6];
 	displacementParams[0].DisplacementScale = 1.f;
 	displacementParams[0].DisplacementOffset = 0.f;
-	displacementParams[0].HeightScale = saturate(1-curvature);
+	displacementParams[0].HeightScale = saturate(1 - curvature);
 #		else
 	DisplacementParams displacementParams;
 	displacementParams.DisplacementScale = 1.f;
 	displacementParams.DisplacementOffset = 0.f;
-	displacementParams.HeightScale = saturate(1-curvature);
+	displacementParams.HeightScale = saturate(1 - curvature);
 #		endif
 
 #	endif
