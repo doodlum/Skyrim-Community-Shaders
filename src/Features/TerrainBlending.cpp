@@ -296,7 +296,7 @@ void TerrainBlending::Hooks::BSBatchRenderer__RenderPassImmediately::thunk(RE::B
 void TerrainBlending::RenderTerrain()
 {
 	renderTerrainWorld = true;
-	
+
 	auto renderer = VariableCache::GetSingleton()->renderer;
 	auto context = VariableCache::GetSingleton()->context;
 	auto shadowState = VariableCache::GetSingleton()->shadowState;
