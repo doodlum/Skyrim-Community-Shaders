@@ -9,7 +9,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	EnableTerrain,
 	EnableHeightBlending,
 	EnableShadows,
-	ExtendShadows)
+	ExtendShadows,
+	EnableParallaxWarpingFix)
 
 void ExtendedMaterials::DataLoaded()
 {
@@ -58,6 +59,10 @@ void ExtendedMaterials::DrawSettings()
 		ImGui::Checkbox("Enable Terrain Height Blending", (bool*)&settings.EnableHeightBlending);
 		if (auto _tt = Util::HoverTooltipWrapper()) {
 			ImGui::Text("Enables landscape texture blending based on parallax. ");
+		}
+		ImGui::Checkbox("Enable Parallax Warping Fix", (bool*)&settings.EnableParallaxWarpingFix);
+		if (auto _tt = Util::HoverTooltipWrapper()) {
+			ImGui::Text("Enables a fix reducing parallax scale on curved and smooth normal triangles.");
 		}
 
 		ImGui::Spacing();

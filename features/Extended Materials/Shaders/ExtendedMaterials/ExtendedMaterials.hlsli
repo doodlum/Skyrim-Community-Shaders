@@ -10,6 +10,7 @@ struct DisplacementParams
 	float DisplacementScale;
 	float DisplacementOffset;
 	float HeightScale;
+	float FlattenAmount;
 };
 
 namespace ExtendedMaterials
@@ -181,7 +182,11 @@ namespace ExtendedMaterials
 #endif
 	{
 		float3 viewDirTS = normalize(mul(tbn, viewDir));
-		viewDirTS.xy /= viewDirTS.z * 0.7 + 0.3;  // Fix for objects at extreme viewing angles
+#if defined(LANDSCAPE)
+		viewDirTS.xy /= viewDirTS.z * 0.7 + 0.3 + params[0].FlattenAmount;  // Fix for objects at extreme viewing angles
+#else
+		viewDirTS.xy /= viewDirTS.z * 0.7 + 0.3 + params.FlattenAmount;  // Fix for objects at extreme viewing angles
+#endif
 
 		float nearBlendToFar = saturate(distance / 2048.0);
 #if defined(LANDSCAPE)
