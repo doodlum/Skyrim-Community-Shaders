@@ -25,8 +25,8 @@ public:
 	struct Settings
 	{
 		uint EnableCharacterLighting = false;
-		DiffusionProfile BaseProfile{ 1.0f, 2.0f, { 0.48f, 0.41f, 0.28f }, { 0.56f, 0.56f, 0.56f } };
-		DiffusionProfile HumanProfile{ 1.0f, 2.0f, { 0.48f, 0.41f, 0.28f }, { 1.0f, 0.37f, 0.3f } };
+		DiffusionProfile BaseProfile{ 0.5f, 0.5f, { 0.48f, 0.41f, 0.28f }, { 0.56f, 0.56f, 0.56f } };
+		DiffusionProfile HumanProfile{ 0.5f, 0.5f, { 0.48f, 0.41f, 0.28f }, { 1.0f, 0.37f, 0.3f } };
 	};
 
 	Settings settings;
@@ -57,6 +57,7 @@ public:
 
 	ID3D11ComputeShader* horizontalSSBlur = nullptr;
 	ID3D11ComputeShader* verticalSSBlur = nullptr;
+	RE::BGSKeyword* isBeastRaceKeyword = nullptr;
 
 	virtual inline std::string GetName() override { return "Subsurface Scattering"; }
 	virtual inline std::string GetShortName() override { return "SubsurfaceScattering"; }
@@ -82,7 +83,8 @@ public:
 	virtual void ClearShaderCache() override;
 	ID3D11ComputeShader* GetComputeShaderHorizontalBlur();
 	ID3D11ComputeShader* GetComputeShaderVerticalBlur();
-
+	
+	virtual void DataLoaded() override;
 	virtual void PostPostLoad() override;
 
 	void BSLightingShader_SetupSkin(RE::BSRenderPass* Pass);
@@ -91,11 +93,7 @@ public:
 	{
 		struct BSLightingShader_SetupGeometry
 		{
-			static void thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
-			{
-				GetSingleton()->BSLightingShader_SetupSkin(Pass);
-				func(This, Pass, RenderFlags);
-			}
+			static void thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags);
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 

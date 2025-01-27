@@ -4,6 +4,7 @@
 
 #include "ScreenSpaceGI.h"
 #include "ShaderCache.h"
+#include "VariableCache.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	Skylighting::Settings,
@@ -364,6 +365,9 @@ RE::BSLightingShaderProperty::Data* Skylighting::BSLightingShaderProperty_GetPre
 	[[maybe_unused]] uint32_t renderMode,
 	[[maybe_unused]] RE::BSGraphics::BSShaderAccumulator* accumulator)
 {
+	auto variableCache = VariableCache::GetSingleton();
+	auto skylighting = variableCache->skylighting;
+
 	auto batch = accumulator->GetRuntimeData().batchRenderer;
 	batch->geometryGroups[14]->flags &= ~1;
 
@@ -373,7 +377,7 @@ RE::BSLightingShaderProperty::Data* Skylighting::BSLightingShaderProperty_GetPre
 	auto* precipitationOcclusionMapRenderPassList = &property->unk0C8;
 
 	precipitationOcclusionMapRenderPassList->Clear();
-	if (GetSingleton()->inOcclusion) {
+	if (skylighting->inOcclusion) {
 		if (property->flags.any(kSkinned) && property->flags.none(kTreeAnim))
 			return precipitationOcclusionMapRenderPassList;
 	} else {
@@ -381,7 +385,7 @@ RE::BSLightingShaderProperty::Data* Skylighting::BSLightingShaderProperty_GetPre
 			return precipitationOcclusionMapRenderPassList;
 	}
 
-	if (GetSingleton()->inOcclusion) {
+	if (skylighting->inOcclusion) {
 		if (auto userData = geometry->GetUserData()) {
 			RE::BSFadeNode* fadeNode = nullptr;
 
@@ -436,7 +440,7 @@ RE::BSLightingShaderProperty::Data* Skylighting::BSLightingShaderProperty_GetPre
 			}
 
 			precipitationOcclusionMapRenderPassList->EmplacePass(
-				RE::BSUtilityShader::GetSingleton(),
+				variableCache->utilityShader,
 				property,
 				geometry,
 				technique.underlying() + static_cast<uint32_t>(ShaderTechnique::UtilityGeneralStart));
@@ -447,8 +451,11 @@ RE::BSLightingShaderProperty::Data* Skylighting::BSLightingShaderProperty_GetPre
 
 void Skylighting::SetViewFrustum::thunk(RE::NiCamera* a_camera, RE::NiFrustum* a_frustum)
 {
-	if (GetSingleton()->inOcclusion) {
-		uint corner = GetSingleton()->frameCount % 4;
+	auto variableCache = VariableCache::GetSingleton();
+	auto skylighting = variableCache->skylighting;
+
+	if (skylighting->inOcclusion) {
+		uint corner = skylighting->frameCount % 4;
 
 		a_frustum->fBottom = (corner == 0 || corner == 1) ? -5000.0f : 0.0f;
 
@@ -463,21 +470,25 @@ void Skylighting::SetViewFrustum::thunk(RE::NiCamera* a_camera, RE::NiFrustum* a
 
 void Skylighting::RenderOcclusion()
 {
-	auto& shaderCache = SIE::ShaderCache::Instance();
+	auto variableCache = VariableCache::GetSingleton();
+	auto shaderCache = variableCache->shaderCache;
+	auto state = variableCache->state;
+	auto renderer = variableCache->renderer;
+	auto sky = variableCache->sky;
 
-	if (!shaderCache.IsEnabled()) {
+	if (!shaderCache->IsEnabled()) {
 		Main_Precipitation_RenderOcclusion::func();
-		State::GetSingleton()->EndPerfEvent();
+		state->EndPerfEvent();
 	}
 
-	if (auto sky = RE::Sky::GetSingleton()) {
+	if (sky) {
 		if (sky->mode.get() == RE::Sky::Mode::kFull) {
 			static bool doPrecip = false;
 
 			auto precip = sky->precip;
 
 			{
-				State::GetSingleton()->BeginPerfEvent("Precipitation Mask");
+				state->BeginPerfEvent("Precipitation Mask");
 
 				doPrecip = false;
 
@@ -496,11 +507,11 @@ void Skylighting::RenderOcclusion()
 					precip->RenderMask(rain);
 				}
 
-				State::GetSingleton()->EndPerfEvent();
+				state->EndPerfEvent();
 			}
 
 			{
-				State::GetSingleton()->BeginPerfEvent("Skylighting Mask");
+				state->BeginPerfEvent("Skylighting Mask");
 
 				if (queuedResetSkylighting)
 					ResetSkylighting();
@@ -513,7 +524,6 @@ void Skylighting::RenderOcclusion()
 					lastUpdateTimer = currentTimer;
 					frameCount++;
 
-					auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 					auto& precipitation = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPRECIPITATION_OCCLUSION_MAP];
 					RE::BSGraphics::DepthStencilData precipitationCopy = precipitation;
 
@@ -567,7 +577,7 @@ void Skylighting::RenderOcclusion()
 
 					BSParticleShaderRainEmitter* rain = new BSParticleShaderRainEmitter;
 					{
-						TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Skylighting - Render Height Map");
+						TracyD3D11Zone(state->tracyCtx, "Skylighting - Render Height Map");
 						precip->RenderMask((RE::BSParticleShaderRainEmitter*)rain);
 					}
 					inOcclusion = false;
@@ -584,7 +594,7 @@ void Skylighting::RenderOcclusion()
 
 					precipitation = precipitationCopy;
 
-					State::GetSingleton()->EndPerfEvent();
+					state->EndPerfEvent();
 				}
 			}
 		}

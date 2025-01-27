@@ -26,6 +26,8 @@ void VariableCache::OnInit()
 	truePBR = TruePBR::GetSingleton();
 	lightLimitFix = LightLimitFix::GetSingleton();
 	grassCollision = GrassCollision::GetSingleton();
+	subsurfaceScattering = SubsurfaceScattering::GetSingleton();
+	skylighting = Skylighting::GetSingleton();
 
 	particleLights = ParticleLights::GetSingleton();
 
@@ -42,6 +44,9 @@ void VariableCache::OnInit()
 void VariableCache::OnDataLoaded()
 {
 	tes = RE::TES::GetSingleton();
+	sky = RE::Sky::GetSingleton();
+
+	utilityShader = RE::BSUtilityShader::GetSingleton();
 
 	bEnableLandFade = iniSettingCollection->GetSetting("bEnableLandFade:Display");
 

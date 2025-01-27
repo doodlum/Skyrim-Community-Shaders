@@ -9,6 +9,8 @@
 #include "Features/GrassCollision.h"
 #include "Features/LightLimitFix.h"
 #include "Features/TerrainBlending.h"
+#include "Features/SubsurfaceScattering.h"
+#include "Features/Skylighting.h"
 
 #include "Features/LightLimitFix/ParticleLights.h"
 #include "TruePBR.h"
@@ -38,6 +40,8 @@ public:
 	LightLimitFix* lightLimitFix = nullptr;
 	ParticleLights* particleLights = nullptr;
 	GrassCollision* grassCollision = nullptr;
+	SubsurfaceScattering* subsurfaceScattering = nullptr;
+	Skylighting* skylighting = nullptr;
 
 	float* cameraNear = nullptr;
 	float* cameraFar = nullptr;
@@ -45,7 +49,9 @@ public:
 	RE::BSGraphics::State* graphicsState = nullptr;
 	RE::BSGraphics::Renderer* renderer = nullptr;
 	RE::BSShaderManager::State* smState = nullptr;
+	RE::BSUtilityShader* utilityShader = nullptr;
 	RE::TES* tes = nullptr;
+	RE::Sky* sky = nullptr;
 	bool isVR = false;
 	RE::MemoryManager* memoryManager = nullptr;
 	RE::INISettingCollection* iniSettingCollection = nullptr;
