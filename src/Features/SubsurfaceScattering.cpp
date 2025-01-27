@@ -6,6 +6,7 @@
 #include "ShaderCache.h"
 #include "State.h"
 #include "Util.h"
+#include "VariableCache.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SubsurfaceScattering::DiffusionProfile,
 	BlurRadius, Thickness, Strength, Falloff)
@@ -192,22 +193,42 @@ void SubsurfaceScattering::DrawSSS()
 
 		auto depth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 		auto mask = renderer->GetRuntimeData().renderTargets[MASKS];
+		auto albedo = renderer->GetRuntimeData().renderTargets[ALBEDO];
 
-		ID3D11UnorderedAccessView* uav = blurHorizontalTemp->uav.get();
+		ID3D11UnorderedAccessView* uav = subsurfaceRadiance->uav.get();
 		context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 
 		auto terrainBlending = TerrainBlending::GetSingleton();
 
 		ID3D11ShaderResourceView* views[3];
 		views[0] = main.SRV;
-		views[1] = terrainBlending->loaded ? terrainBlending->blendedDepthTexture16->srv.get() : depth.depthSRV,
+		views[1] = albedo.SRV,
 		views[2] = mask.SRV;
 
 		context->CSSetShaderResources(0, 3, views);
 
+		// Extract diffuse lighting with no albedo
+		{
+			TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Subsurface Scattering - Extract Diffuse");
+
+			auto shader = GetComputeShaderExtractDiffuse();
+			context->CSSetShader(shader, nullptr, 0);
+
+			context->Dispatch(dispatchCount.x, dispatchCount.y, 1);
+		}
+
+		views[1] = terrainBlending->loaded ? terrainBlending->blendedDepthTexture16->srv.get() : depth.depthSRV,
+		context->CSSetShaderResources(0, 3, views);
+
+		uav = subsurfaceRadianceTemp->uav.get();
+		context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+
 		// Horizontal pass to temporary texture
 		{
 			TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Subsurface Scattering - Horizontal");
+			
+			views[0] = subsurfaceRadiance->srv.get();
+			context->CSSetShaderResources(0, 1, views);
 
 			auto shader = GetComputeShaderHorizontalBlur();
 			context->CSSetShader(shader, nullptr, 0);
@@ -222,10 +243,10 @@ void SubsurfaceScattering::DrawSSS()
 		{
 			TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Subsurface Scattering - Vertical");
 
-			views[0] = blurHorizontalTemp->srv.get();
+			views[0] = subsurfaceRadianceTemp->srv.get();
 			context->CSSetShaderResources(0, 1, views);
 
-			ID3D11UnorderedAccessView* uavs[1] = { main.UAV };
+			ID3D11UnorderedAccessView* uavs[1] = { subsurfaceRadiance->uav.get() };
 			context->CSSetUnorderedAccessViews(0, 1, uavs, nullptr);
 
 			auto shader = GetComputeShaderVerticalBlur();
@@ -262,15 +283,24 @@ void SubsurfaceScattering::SetupResources()
 		D3D11_TEXTURE2D_DESC texDesc{};
 		main.texture->GetDesc(&texDesc);
 
-		blurHorizontalTemp = new Texture2D(texDesc);
-
 		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 		main.SRV->GetDesc(&srvDesc);
-		blurHorizontalTemp->CreateSRV(srvDesc);
 
 		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 		main.UAV->GetDesc(&uavDesc);
-		blurHorizontalTemp->CreateUAV(uavDesc);
+
+		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+		texDesc.Format = DXGI_FORMAT_R11G11B10_FLOAT;
+		srvDesc.Format = texDesc.Format;
+		uavDesc.Format = texDesc.Format;
+
+		subsurfaceRadianceTemp = new Texture2D(texDesc);
+		subsurfaceRadianceTemp->CreateSRV(srvDesc);
+		subsurfaceRadianceTemp->CreateUAV(uavDesc);
+
+		subsurfaceRadiance = new Texture2D(texDesc);
+		subsurfaceRadiance->CreateSRV(srvDesc);
+		subsurfaceRadiance->CreateUAV(uavDesc);
 	}
 }
 
@@ -303,32 +333,45 @@ void SubsurfaceScattering::SaveSettings(json& o_json)
 
 void SubsurfaceScattering::ClearShaderCache()
 {
-	if (horizontalSSBlur) {
-		horizontalSSBlur->Release();
-		horizontalSSBlur = nullptr;
+	if (horizontalSSBlurCS) {
+		horizontalSSBlurCS->Release();
+		horizontalSSBlurCS = nullptr;
 	}
-	if (verticalSSBlur) {
-		verticalSSBlur->Release();
-		verticalSSBlur = nullptr;
+	if (verticalSSBlurCS) {
+		verticalSSBlurCS->Release();
+		verticalSSBlurCS = nullptr;
 	}
+	if (extractDiffuseLightingCS) {
+		extractDiffuseLightingCS->Release();
+		extractDiffuseLightingCS = nullptr;
+	}
+}
+
+ID3D11ComputeShader* SubsurfaceScattering::GetComputeShaderExtractDiffuse()
+{
+	if (!extractDiffuseLightingCS) {
+		logger::debug("Compiling extractDiffuseLightingCS");
+		extractDiffuseLightingCS = (ID3D11ComputeShader*)Util::CompileShader(L"Data\\Shaders\\SubsurfaceScattering\\ExtractDiffuseLightingCS.hlsl", {}, "cs_5_0");
+	}
+	return extractDiffuseLightingCS;
 }
 
 ID3D11ComputeShader* SubsurfaceScattering::GetComputeShaderHorizontalBlur()
 {
-	if (!horizontalSSBlur) {
+	if (!horizontalSSBlurCS) {
 		logger::debug("Compiling horizontalSSBlur");
-		horizontalSSBlur = (ID3D11ComputeShader*)Util::CompileShader(L"Data\\Shaders\\SubsurfaceScattering\\SeparableSSSCS.hlsl", { { "HORIZONTAL", "" } }, "cs_5_0");
+		horizontalSSBlurCS = (ID3D11ComputeShader*)Util::CompileShader(L"Data\\Shaders\\SubsurfaceScattering\\SeparableSSSCS.hlsl", { { "HORIZONTAL", "" } }, "cs_5_0");
 	}
-	return horizontalSSBlur;
+	return horizontalSSBlurCS;
 }
 
 ID3D11ComputeShader* SubsurfaceScattering::GetComputeShaderVerticalBlur()
 {
-	if (!verticalSSBlur) {
+	if (!verticalSSBlurCS) {
 		logger::debug("Compiling verticalSSBlur");
-		verticalSSBlur = (ID3D11ComputeShader*)Util::CompileShader(L"Data\\Shaders\\SubsurfaceScattering\\SeparableSSSCS.hlsl", {}, "cs_5_0");
+		verticalSSBlurCS = (ID3D11ComputeShader*)Util::CompileShader(L"Data\\Shaders\\SubsurfaceScattering\\SeparableSSSCS.hlsl", {}, "cs_5_0");
 	}
-	return verticalSSBlur;
+	return verticalSSBlurCS;
 }
 
 void SubsurfaceScattering::PostPostLoad()
@@ -338,7 +381,11 @@ void SubsurfaceScattering::PostPostLoad()
 
 void SubsurfaceScattering::BSLightingShader_SetupSkin(RE::BSRenderPass* a_pass)
 {
-	if (Deferred::GetSingleton()->deferredPass) {
+	auto variableCache = VariableCache::GetSingleton();
+	auto deferred = variableCache->deferred;
+	auto state = variableCache->state;
+
+	if (deferred->deferredPass) {
 		if (a_pass->shaderProperty->flags.any(RE::BSShaderProperty::EShaderPropertyFlag::kFace, RE::BSShaderProperty::EShaderPropertyFlag::kFaceGenRGBTint)) {
 			bool isBeastRace = true;
 
@@ -355,7 +402,7 @@ void SubsurfaceScattering::BSLightingShader_SetupSkin(RE::BSRenderPass* a_pass)
 			validMaterials = true;
 
 			if (isBeastRace)
-				State::GetSingleton()->currentExtraDescriptor |= (uint)State::ExtraShaderDescriptors::IsBeastRace;
+				state->currentExtraDescriptor |= (uint)State::ExtraShaderDescriptors::IsBeastRace;
 		}
 	}
 }

@@ -53,10 +53,14 @@ public:
 	bool updateKernels = true;
 	bool validMaterials = false;
 
-	Texture2D* blurHorizontalTemp = nullptr;
+	Texture2D* subsurfaceRadianceTemp = nullptr;
+	Texture2D* subsurfaceRadiance = nullptr;
+	Texture2D* diffuseNoAlbedo = nullptr;
 
-	ID3D11ComputeShader* horizontalSSBlur = nullptr;
-	ID3D11ComputeShader* verticalSSBlur = nullptr;
+	ID3D11ComputeShader* extractDiffuseLightingCS = nullptr;
+
+	ID3D11ComputeShader* horizontalSSBlurCS = nullptr;
+	ID3D11ComputeShader* verticalSSBlurCS = nullptr;
 
 	virtual inline std::string GetName() override { return "Subsurface Scattering"; }
 	virtual inline std::string GetShortName() override { return "SubsurfaceScattering"; }
@@ -80,6 +84,7 @@ public:
 	virtual void SaveSettings(json& o_json) override;
 
 	virtual void ClearShaderCache() override;
+	ID3D11ComputeShader* GetComputeShaderExtractDiffuse();
 	ID3D11ComputeShader* GetComputeShaderHorizontalBlur();
 	ID3D11ComputeShader* GetComputeShaderVerticalBlur();
 

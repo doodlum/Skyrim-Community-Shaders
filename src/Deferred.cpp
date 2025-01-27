@@ -424,12 +424,13 @@ void Deferred::DeferredPasses()
 		dynamicCubemaps->UpdateCubemap();
 
 	auto terrainBlending = TerrainBlending::GetSingleton();
+	auto subsurfaceScattering = SubsurfaceScattering::GetSingleton();
 
 	// Deferred Composite
 	{
 		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Deferred Composite");
 
-		ID3D11ShaderResourceView* srvs[15]{
+		ID3D11ShaderResourceView* srvs[16]{
 			specular.SRV,
 			albedo.SRV,
 			normalRoughness.SRV,
@@ -445,6 +446,7 @@ void Deferred::DeferredPasses()
 			ssgi_hq_spec ? nullptr : ssgi_y,
 			ssgi_hq_spec ? nullptr : ssgi_cocg,
 			ssgi_hq_spec ? ssgi_gi_spec : nullptr,
+			subsurfaceScattering->loaded ? subsurfaceScattering->subsurfaceRadiance->srv.get() : nullptr,
 		};
 
 		if (dynamicCubemaps->loaded)
