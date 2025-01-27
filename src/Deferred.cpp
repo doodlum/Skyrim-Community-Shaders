@@ -41,14 +41,14 @@ void SetupRenderTarget(RE::RENDER_TARGET target, D3D11_TEXTURE2D_DESC texDesc, D
 
 	auto& data = renderer->GetRuntimeData().renderTargets[target];
 	DX::ThrowIfFailed(device->CreateTexture2D(&texDesc, nullptr, &data.texture));
-	
+
 	if (texDesc.BindFlags & D3D11_BIND_SHADER_RESOURCE)
 		DX::ThrowIfFailed(device->CreateShaderResourceView(data.texture, &srvDesc, &data.SRV));
 
-	if (texDesc.BindFlags & D3D11_BIND_RENDER_TARGET)	
+	if (texDesc.BindFlags & D3D11_BIND_RENDER_TARGET)
 		DX::ThrowIfFailed(device->CreateRenderTargetView(data.texture, &rtvDesc, &data.RTV));
-	
-	if (texDesc.BindFlags & D3D11_BIND_UNORDERED_ACCESS)	
+
+	if (texDesc.BindFlags & D3D11_BIND_UNORDERED_ACCESS)
 		DX::ThrowIfFailed(device->CreateUnorderedAccessView(data.texture, &uavDesc, &data.UAV));
 }
 

@@ -307,7 +307,7 @@ void Streamline::SetupResources()
 
 			copyDepthToSharedBufferCS = (ID3D11ComputeShader*)Util::CompileShader(L"Data\\Shaders\\Streamline\\CopyDepthToSharedBufferCS.hlsl", {}, "cs_5_0");
 		}
-		
+
 		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 
 		texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
