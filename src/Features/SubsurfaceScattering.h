@@ -83,7 +83,7 @@ public:
 	virtual void ClearShaderCache() override;
 	ID3D11ComputeShader* GetComputeShaderHorizontalBlur();
 	ID3D11ComputeShader* GetComputeShaderVerticalBlur();
-	
+
 	virtual void DataLoaded() override;
 	virtual void PostPostLoad() override;
 
