@@ -226,7 +226,7 @@ void SubsurfaceScattering::DrawSSS()
 		// Horizontal pass to temporary texture
 		{
 			TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Subsurface Scattering - Horizontal");
-			
+
 			views[0] = subsurfaceRadiance->srv.get();
 			context->CSSetShaderResources(0, 1, views);
 
