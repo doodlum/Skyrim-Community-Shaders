@@ -59,17 +59,14 @@ void TerrainBlending::SetupResources()
 		D3D11_TEXTURE2D_DESC texDesc{};
 		main.texture->GetDesc(&texDesc);
 		texDesc.Format = DXGI_FORMAT_R32_FLOAT;
+		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+
 		blendedDepthTexture = new Texture2D(texDesc);
 
 		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 		main.SRV->GetDesc(&srvDesc);
 		srvDesc.Format = texDesc.Format;
 		blendedDepthTexture->CreateSRV(srvDesc);
-
-		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-		main.RTV->GetDesc(&rtvDesc);
-		rtvDesc.Format = texDesc.Format;
-		blendedDepthTexture->CreateRTV(rtvDesc);
 
 		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 		main.UAV->GetDesc(&uavDesc);
@@ -78,12 +75,10 @@ void TerrainBlending::SetupResources()
 
 		texDesc.Format = DXGI_FORMAT_R16_UNORM;
 		srvDesc.Format = texDesc.Format;
-		rtvDesc.Format = texDesc.Format;
 		uavDesc.Format = texDesc.Format;
 
 		blendedDepthTexture16 = new Texture2D(texDesc);
 		blendedDepthTexture16->CreateSRV(srvDesc);
-		blendedDepthTexture16->CreateRTV(rtvDesc);
 		blendedDepthTexture16->CreateUAV(uavDesc);
 
 		auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
@@ -132,10 +127,6 @@ void TerrainBlending::TerrainShaderHacks()
 void TerrainBlending::ResetDepth()
 {
 	auto context = VariableCache::GetSingleton()->context;
-
-	auto rtv = blendedDepthTexture->rtv.get();
-	FLOAT clearColor[4]{ 1, 0, 0, 0 };
-	context->ClearRenderTargetView(rtv, clearColor);
 
 	auto dsv = terrainDepth.views[0];
 	context->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH, 1.0f, 0u);

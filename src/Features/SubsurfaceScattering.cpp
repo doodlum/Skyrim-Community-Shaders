@@ -263,14 +263,16 @@ void SubsurfaceScattering::SetupResources()
 		D3D11_TEXTURE2D_DESC texDesc{};
 		main.texture->GetDesc(&texDesc);
 
-		blurHorizontalTemp = new Texture2D(texDesc);
+		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 
 		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 		main.SRV->GetDesc(&srvDesc);
-		blurHorizontalTemp->CreateSRV(srvDesc);
 
 		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 		main.UAV->GetDesc(&uavDesc);
+
+		blurHorizontalTemp = new Texture2D(texDesc);
+		blurHorizontalTemp->CreateSRV(srvDesc);
 		blurHorizontalTemp->CreateUAV(uavDesc);
 	}
 }

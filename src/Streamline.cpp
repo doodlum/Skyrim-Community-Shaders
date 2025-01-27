@@ -295,6 +295,7 @@ void Streamline::SetupResources()
 
 		if (featureDLSSG && !REL::Module::IsVR()) {
 			texDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+			texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 
 			texDesc.Format = DXGI_FORMAT_R16_UNORM;
 			srvDesc.Format = texDesc.Format;
@@ -302,12 +303,12 @@ void Streamline::SetupResources()
 			uavDesc.Format = texDesc.Format;
 
 			depthBufferShared = new Texture2D(texDesc);
-			depthBufferShared->CreateSRV(srvDesc);
-			depthBufferShared->CreateRTV(rtvDesc);
 			depthBufferShared->CreateUAV(uavDesc);
 
 			copyDepthToSharedBufferCS = (ID3D11ComputeShader*)Util::CompileShader(L"Data\\Shaders\\Streamline\\CopyDepthToSharedBufferCS.hlsl", {}, "cs_5_0");
 		}
+		
+		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 
 		texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		srvDesc.Format = texDesc.Format;
@@ -315,9 +316,6 @@ void Streamline::SetupResources()
 		uavDesc.Format = texDesc.Format;
 
 		colorBufferShared = new Texture2D(texDesc);
-		colorBufferShared->CreateSRV(srvDesc);
-		colorBufferShared->CreateRTV(rtvDesc);
-		colorBufferShared->CreateUAV(uavDesc);
 	}
 }
 
