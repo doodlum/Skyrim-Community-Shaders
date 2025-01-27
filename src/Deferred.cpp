@@ -409,12 +409,15 @@ void Deferred::DeferredPasses()
 
 	auto terrainBlending = TerrainBlending::GetSingleton();
 	auto physSky = PhysicalSky::GetSingleton();
+	auto weather = Weather::GetSingleton();
+
+	auto shadowMask = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kSHADOW_MASK];
 
 	// Deferred Composite
 	{
 		TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Deferred Composite");
 
-		ID3D11ShaderResourceView* srvs[16]{
+		ID3D11ShaderResourceView* srvs[18]{
 			specular.SRV,
 			albedo.SRV,
 			normalRoughness.SRV,
@@ -431,6 +434,8 @@ void Deferred::DeferredPasses()
 			ssgi_hq_spec ? ssgi_gi_spec : nullptr,
 			physSky->loaded ? physSky->main_view_tr_tex->srv.get() : nullptr,
 			physSky->loaded ? physSky->main_view_lum_tex->srv.get() : nullptr,
+			weather->loaded ? weather->diffuseIBLTexture->srv.get() : nullptr,
+			shadowMask.SRV
 		};
 
 		if (dynamicCubemaps->loaded)
