@@ -8,9 +8,9 @@
 #include "Features/CloudShadows.h"
 #include "Features/GrassCollision.h"
 #include "Features/LightLimitFix.h"
-#include "Features/TerrainBlending.h"
-#include "Features/SubsurfaceScattering.h"
 #include "Features/Skylighting.h"
+#include "Features/SubsurfaceScattering.h"
+#include "Features/TerrainBlending.h"
 
 #include "Features/LightLimitFix/ParticleLights.h"
 #include "TruePBR.h"
