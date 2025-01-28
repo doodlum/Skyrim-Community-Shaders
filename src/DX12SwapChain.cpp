@@ -1,9 +1,22 @@
 #include "DX12SwapChain.h"
 #include <dxgi1_6.h>
 
+#include <Streamline.h>
+
 void DX12SwapChain::CreateD3D12Device(IDXGIAdapter* adapter)
 {
-	DX::ThrowIfFailed(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&d3d12Device)));
+	//winrt::com_ptr<ID3D12Debug> debugController;
+	//if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+	//	debugController->EnableDebugLayer();
+	//}
+
+	auto streamline = Streamline::GetSingleton();
+	auto slD3D12CreateDevice = reinterpret_cast<decltype(&D3D12CreateDevice)>(GetProcAddress(streamline->interposer, "D3D12CreateDevice"));
+
+	streamline->featureDLSSG = true;
+	streamline->featureReflex = true;
+
+	DX::ThrowIfFailed(slD3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&d3d12Device)));
 
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -13,6 +26,42 @@ void DX12SwapChain::CreateD3D12Device(IDXGIAdapter* adapter)
 	DX::ThrowIfFailed(d3d12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator)));
 	DX::ThrowIfFailed(d3d12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.get(), nullptr, IID_PPV_ARGS(&commandList)));
 	DX::ThrowIfFailed(commandList->Close());
+
+	streamline->slSetD3DDevice(d3d12Device.get());
+
+	DXGI_ADAPTER_DESC adapterDesc;
+	adapter->GetDesc(&adapterDesc);
+
+	sl::AdapterInfo adapterInfo;
+	adapterInfo.deviceLUID = (uint8_t*)&adapterDesc.AdapterLuid;
+	adapterInfo.deviceLUIDSizeInBytes = sizeof(LUID);
+
+	streamline->slIsFeatureLoaded(sl::kFeatureDLSS_G, streamline->featureDLSSG);
+	if (streamline->featureDLSSG && !REL::Module::IsVR()) {
+		logger::info("[Streamline] DLSSG feature is loaded");
+		streamline->featureDLSSG = streamline->slIsFeatureSupported(sl::kFeatureDLSS_G, adapterInfo) == sl::Result::eOk;
+	} else {
+		logger::info("[Streamline] DLSSG feature is not loaded");
+		sl::FeatureRequirements featureRequirements;
+		sl::Result result = streamline->slGetFeatureRequirements(sl::kFeatureDLSS_G, featureRequirements);
+		if (result != sl::Result::eOk) {
+			logger::info("[Streamline] DLSSG feature failed to load due to: {}", magic_enum::enum_name(result));
+		}
+	}
+
+	streamline->slIsFeatureLoaded(sl::kFeatureReflex, streamline->featureReflex);
+	if (streamline->featureReflex) {
+		logger::info("[Streamline] Reflex feature is loaded");
+		streamline->featureReflex = streamline->slIsFeatureSupported(sl::kFeatureReflex, adapterInfo) == sl::Result::eOk;
+	} else {
+		logger::info("[Streamline] Reflex feature is not loaded");
+		sl::FeatureRequirements featureRequirements;
+		sl::Result result = streamline->slGetFeatureRequirements(sl::kFeatureReflex, featureRequirements);
+		if (result != sl::Result::eOk) {
+			logger::info("[Streamline] Reflex feature failed to load due to: {}", magic_enum::enum_name(result));
+		}
+	}
+	streamline->PostDevice();
 }
 
 void DX12SwapChain::CreateSwapChain(IDXGIAdapter* adapter, DXGI_SWAP_CHAIN_DESC a_swapChainDesc)
@@ -20,7 +69,7 @@ void DX12SwapChain::CreateSwapChain(IDXGIAdapter* adapter, DXGI_SWAP_CHAIN_DESC 
 	IDXGIFactory4* dxgiFactory;
 	DX::ThrowIfFailed(adapter->GetParent(IID_PPV_ARGS(&dxgiFactory)));
 
-	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+	swapChainDesc = {};
 	swapChainDesc.Width = a_swapChainDesc.BufferDesc.Width;
 	swapChainDesc.Height = a_swapChainDesc.BufferDesc.Height;
 	swapChainDesc.Format = a_swapChainDesc.BufferDesc.Format;
@@ -28,7 +77,7 @@ void DX12SwapChain::CreateSwapChain(IDXGIAdapter* adapter, DXGI_SWAP_CHAIN_DESC 
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = 2;
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	swapChainDesc.Flags = 0;
+	swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
 	DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscreenDesc = {};
 	fullscreenDesc.Windowed = TRUE;
@@ -39,9 +88,7 @@ void DX12SwapChain::CreateSwapChain(IDXGIAdapter* adapter, DXGI_SWAP_CHAIN_DESC 
 		&swapChainDesc,
 		&fullscreenDesc,
 		nullptr,
-		swapChain.put()));
-
-	DX::ThrowIfFailed(swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainBuffer)));
+		(IDXGISwapChain1**)swapChain.put()));
 }
 
 void DX12SwapChain::CreateInterop()
@@ -62,22 +109,21 @@ void DX12SwapChain::CreateInterop()
 
 	swapChainProxy = new DXGISwapChainProxy(swapChain.get());
 
-	auto texDesc12 = swapChainBuffer->GetDesc();
-
 	D3D11_TEXTURE2D_DESC texDesc11{};
-	texDesc11.Width = (UINT)texDesc12.Width;
-	texDesc11.Height = (UINT)texDesc12.Height;
-	texDesc11.MipLevels = (UINT)texDesc12.MipLevels;
-	texDesc11.ArraySize = (UINT)texDesc12.DepthOrArraySize;
-	texDesc11.Format = texDesc12.Format;
-	texDesc11.SampleDesc.Count = (UINT)texDesc12.SampleDesc.Count;
-	texDesc11.SampleDesc.Quality = (UINT)texDesc12.SampleDesc.Quality;
+	texDesc11.Width = swapChainDesc.Width;
+	texDesc11.Height = swapChainDesc.Height;
+	texDesc11.MipLevels = 1;
+	texDesc11.ArraySize = 1;
+	texDesc11.Format = swapChainDesc.Format;
+	texDesc11.SampleDesc.Count = 1;
+	texDesc11.SampleDesc.Quality = 0;
 	texDesc11.Usage = D3D11_USAGE_DEFAULT;
 	texDesc11.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 	texDesc11.CPUAccessFlags = 0;
 	texDesc11.MiscFlags = D3D11_RESOURCE_MISC_SHARED | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
 
 	swapChainBufferWrapped = new WrappedResource(texDesc11, d3d11Device.get(), d3d12Device.get());
+	swapChainBufferWrappedDummy = new WrappedResource(texDesc11, d3d11Device.get(), d3d12Device.get());
 }
 
 DXGISwapChainProxy* DX12SwapChain::GetSwapChainProxy()
@@ -101,57 +147,155 @@ HRESULT DX12SwapChain::GetBuffer(void** ppSurface)
 	return S_OK;
 }
 
-HRESULT DX12SwapChain::Present(UINT SyncInterval, UINT Flags)
+void DX12SwapChain::BeginFrame()
+{
+	//DX::ThrowIfFailed(commandAllocator->Reset());
+	//DX::ThrowIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
+	//
+	//DX::ThrowIfFailed(commandQueue->Signal(d3d12Fence.get(), currentSharedFenceValue));
+	//DX::ThrowIfFailed(d3d11Context->Wait(d3d11Fence.get(), currentSharedFenceValue));
+
+	//currentSharedFenceValue++;
+	//auto streamline = Streamline::GetSingleton();
+	//auto frameToken = streamline->frameToken;
+
+	//streamline->slReflexSetMarker(sl::ReflexMarker::eInputSample, *frameToken);
+	//streamline->slReflexSetMarker(sl::ReflexMarker::eSimulationStart, *frameToken);
+	//streamline->slReflexSetMarker(sl::ReflexMarker::eSimulationEnd, *frameToken);
+	//streamline->slReflexSetMarker(sl::ReflexMarker::eRenderSubmitStart, *frameToken);
+
+}
+
+HRESULT DX12SwapChain::Present(UINT , UINT )
 {
 	DX::ThrowIfFailed(commandAllocator->Reset());
-	DX::ThrowIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
+
+	bool needsReset2 = true;
+	if (needsReset2) {
+		DX::ThrowIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
+		needsReset2 = false;
+		OpenSharedHandles();
+	}
 
 	// Wait for D3D11 work to finish
 	DX::ThrowIfFailed(d3d11Context->Signal(d3d11Fence.get(), currentSharedFenceValue));
 	DX::ThrowIfFailed(commandQueue->Wait(d3d12Fence.get(), currentSharedFenceValue));
+	
+	Streamline::GetSingleton()->Present();
+
 	currentSharedFenceValue++;
 
+	auto index = swapChain->GetCurrentBackBufferIndex();
+
+	winrt::com_ptr<ID3D12Resource> swapChainBuffer;
+	DX::ThrowIfFailed(swapChain->GetBuffer(index, IID_PPV_ARGS(&swapChainBuffer)));
+
 	// Copy D3D11 result to D3D12
-	auto fakeSwapChain = swapChainBufferWrapped->resource.get();
-	auto realSwapchain = swapChainBuffer.get();
 	{
-		std::vector<D3D12_RESOURCE_BARRIER> barriers;
-		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(fakeSwapChain, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE));
-		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(realSwapchain, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_DEST));
-		commandList->ResourceBarrier(static_cast<UINT>(barriers.size()), barriers.data());
-	}
+		auto fakeSwapChain = swapChainBufferWrapped->resource.get();
+		auto realSwapchain = swapChainBuffer.get();
+		{
+			std::vector<D3D12_RESOURCE_BARRIER> barriers;
+			barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(fakeSwapChain, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE));
+			barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(realSwapchain, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_DEST));
+			commandList->ResourceBarrier(static_cast<UINT>(barriers.size()), barriers.data());
+		}
 
-	commandList->CopyResource(realSwapchain, fakeSwapChain);
+		commandList->CopyResource(realSwapchain, fakeSwapChain);
 
-	{
-		std::vector<D3D12_RESOURCE_BARRIER> barriers;
-		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(fakeSwapChain, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON));
-		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(realSwapchain, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT));
-		commandList->ResourceBarrier(static_cast<UINT>(barriers.size()), barriers.data());
+		{
+			std::vector<D3D12_RESOURCE_BARRIER> barriers;
+			barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(fakeSwapChain, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON));
+			barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(realSwapchain, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT));
+			commandList->ResourceBarrier(static_cast<UINT>(barriers.size()), barriers.data());
+		}
 	}
 
 	// Because D3D12 was accessing D3D11 resources we need to sync
 	DX::ThrowIfFailed(commandQueue->Signal(d3d12Fence2.get(), currentSharedFenceValue));
 	DX::ThrowIfFailed(d3d11Context->Wait(d3d11Fence2.get(), currentSharedFenceValue));
+
 	currentSharedFenceValue++;
 
 	DX::ThrowIfFailed(commandList->Close());
 
 	ID3D12CommandList* commandLists[] = { commandList.get() };
 	commandQueue->ExecuteCommandLists(1, commandLists);
+	
+	auto streamline = Streamline::GetSingleton();
+	auto frameToken = streamline->frameToken;
 
-	auto hr = swapChain->Present(SyncInterval, Flags);
+	streamline->slReflexSetMarker(sl::ReflexMarker::eRenderSubmitEnd, *frameToken);
+	streamline->slReflexSetMarker(sl::ReflexMarker::ePresentStart, *frameToken);
 
-	// Schedule a Signal command in the queue.
+	auto hr = swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
+
+	streamline->slReflexSetMarker(sl::ReflexMarker::ePresentEnd, *frameToken);
+
 	DX::ThrowIfFailed(commandQueue->Signal(d3d12OnlyFence.get(), currentSharedFenceValue));
 
-	// If the next frame is not ready to be rendered yet, wait until it is ready.
-	if (d3d12OnlyFence->GetCompletedValue() < currentSharedFenceValue) {
-		DX::ThrowIfFailed(d3d12OnlyFence->SetEventOnCompletion(currentSharedFenceValue, fenceEvent));
-		WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
-	}
+	// Wait until the fence has been processed.
+	DX::ThrowIfFailed(d3d12OnlyFence->SetEventOnCompletion(currentSharedFenceValue, fenceEvent));
+	WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
+
+	//// Fake start of frame
+	//DX::ThrowIfFailed(commandAllocator->Reset());
+	//DX::ThrowIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
+
+	//{
+	//	auto fakeSwapChain = swapChainBufferWrapped->resource.get();
+	//	auto realSwapchain = swapChainBufferWrappedDummy->resource.get();
+	//	{
+	//		std::vector<D3D12_RESOURCE_BARRIER> barriers;
+	//		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(fakeSwapChain, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE));
+	//		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(realSwapchain, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
+	//		commandList->ResourceBarrier(static_cast<UINT>(barriers.size()), barriers.data());
+	//	}
+
+	//	commandList->CopyResource(realSwapchain, fakeSwapChain);
+
+	//	{
+	//		std::vector<D3D12_RESOURCE_BARRIER> barriers;
+	//		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(fakeSwapChain, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON));
+	//		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(realSwapchain, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON));
+	//		commandList->ResourceBarrier(static_cast<UINT>(barriers.size()), barriers.data());
+	//	}
+	//}
+
+	//DX::ThrowIfFailed(commandList->Close());
+
+	//commandQueue->ExecuteCommandLists(1, commandLists);
+
+	//DX::ThrowIfFailed(commandAllocator->Reset());
+	//DX::ThrowIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
+
+	auto start = std::chrono::high_resolution_clock::now();
+	if (streamline->reflex)
+		streamline->slReflexSleep(*frameToken);
+	auto end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> duration = end - start;
+	logger::info("Sleep duration: {} seconds", duration.count());
+
+	streamline->slReflexSetMarker(sl::ReflexMarker::eInputSample, *frameToken);
+	streamline->slReflexSetMarker(sl::ReflexMarker::eSimulationStart, *frameToken);
+	streamline->slReflexSetMarker(sl::ReflexMarker::eSimulationEnd, *frameToken);
+	streamline->slReflexSetMarker(sl::ReflexMarker::eRenderSubmitStart, *frameToken);
+
+	//DX::ThrowIfFailed(commandQueue->Signal(d3d12Fence.get(), currentSharedFenceValue));
+	//DX::ThrowIfFailed(d3d11Context->Wait(d3d11Fence.get(), currentSharedFenceValue));
+
+	//currentSharedFenceValue++;
 
 	return hr;
+}
+
+void DX12SwapChain::OpenSharedHandles()
+{
+	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+
+	for (int i = 0; i < RE::RENDER_TARGET::kTOTAL; i++) {
+		renderTargetsD3D12[i] = RenderTargetDataD3D12::ConvertD3D11TextureToD3D12(&renderer->GetRuntimeData().renderTargets[i], d3d12Device.get());
+	}
 }
 
 WrappedResource::WrappedResource(D3D11_TEXTURE2D_DESC a_texDesc, ID3D11Device5* a_d3d11Device, ID3D12Device* a_d3d12Device)
@@ -232,7 +376,7 @@ RenderTargetDataD3D12 RenderTargetDataD3D12::ConvertD3D11TextureToD3D12(RE::BSGr
 	return renderTargetData;
 }
 
-DXGISwapChainProxy::DXGISwapChainProxy(IDXGISwapChain1* a_swapChain)
+DXGISwapChainProxy::DXGISwapChainProxy(IDXGISwapChain3* a_swapChain)
 {
 	swapChain = a_swapChain;
 }

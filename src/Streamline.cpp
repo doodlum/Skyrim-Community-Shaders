@@ -6,6 +6,7 @@
 #include "Util.h"
 
 #include "Upscaling.h"
+#include "DX12SwapChain.h"
 
 void LoggingCallback(sl::LogType type, const char* msg)
 {
@@ -39,6 +40,8 @@ void Streamline::DrawSettings()
 			}
 			ImGui::TreePop();
 		}
+		ImGui::Checkbox("reflex", &reflex);
+
 		if (ImGui::TreeNodeEx("AMD FSR 3.1 Frame Generation", ImGuiTreeNodeFlags_DefaultOpen)) {
 			ImGui::Text("Not currently supported");
 			ImGui::TreePop();
@@ -71,16 +74,16 @@ void Streamline::Initialize()
 	pref.featuresToLoad = featuresToLoad;
 	pref.numFeaturesToLoad = _countof(featuresToLoad);
 
-	pref.logLevel = sl::LogLevel::eOff;
+	pref.logLevel = sl::LogLevel::eVerbose;
 	pref.logMessageCallback = LoggingCallback;
 	pref.showConsole = false;
 
 	pref.engine = sl::EngineType::eCustom;
 	pref.engineVersion = "1.0.0";
 	pref.projectId = "f8776929-c969-43bd-ac2b-294b4de58aac";
-	pref.flags |= sl::PreferenceFlags::eUseManualHooking;
+	//pref.flags |= sl::PreferenceFlags::eUseDXGIFactoryProxy;
 
-	pref.renderAPI = sl::RenderAPI::eD3D11;
+	pref.renderAPI = sl::RenderAPI::eD3D12;
 
 	// Hook up all of the functions exported by the SL Interposer Library
 	slInit = (PFun_slInit*)GetProcAddress(interposer, "slInit");
@@ -253,8 +256,8 @@ void Streamline::SetupResources()
 {
 	if (featureDLSSG && !REL::Module::IsVR()) {
 		sl::DLSSGOptions options{};
-		options.mode = sl::DLSSGMode::eAuto;
-		options.flags = sl::DLSSGFlags::eRetainResourcesWhenOff;
+		options.mode = sl::DLSSGMode::eOn;
+		//options.flags = sl::DLSSGFlags::eRetainResourcesWhenOff;
 
 		if (SL_FAILED(result, slDLSSGSetOptions(viewport, options))) {
 			logger::critical("[Streamline] Could not enable DLSSG");
@@ -318,6 +321,42 @@ void Streamline::SetupResources()
 		colorBufferShared->CreateSRV(srvDesc);
 		colorBufferShared->CreateRTV(rtvDesc);
 		colorBufferShared->CreateUAV(uavDesc);
+
+		{
+			IDXGIResource1* dxgiResource = nullptr;
+			DX::ThrowIfFailed(colorBufferShared->resource->QueryInterface(IID_PPV_ARGS(&dxgiResource)));
+
+			HANDLE sharedHandle = nullptr;
+			DX::ThrowIfFailed(dxgiResource->CreateSharedHandle(
+				nullptr,
+				DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+				nullptr,
+				&sharedHandle));
+
+			DX::ThrowIfFailed(DX12SwapChain::GetSingleton()->d3d12Device->OpenSharedHandle(
+				sharedHandle,
+				IID_PPV_ARGS(&colorBufferShared12)));
+
+			CloseHandle(sharedHandle);
+		}
+		
+		{
+			IDXGIResource1* dxgiResource = nullptr;
+			DX::ThrowIfFailed(depthBufferShared->resource->QueryInterface(IID_PPV_ARGS(&dxgiResource)));
+
+			HANDLE sharedHandle = nullptr;
+			DX::ThrowIfFailed(dxgiResource->CreateSharedHandle(
+				nullptr,
+				DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+				nullptr,
+				&sharedHandle));
+
+			DX::ThrowIfFailed(DX12SwapChain::GetSingleton()->d3d12Device->OpenSharedHandle(
+				sharedHandle,
+				IID_PPV_ARGS(&depthBufferShared12)));
+
+			CloseHandle(sharedHandle);
+		}
 	}
 }
 
@@ -393,7 +432,7 @@ void Streamline::Present()
 
 		sl::DLSSGOptions options{};
 		options.mode = frameGenerationMode;
-		options.flags = sl::DLSSGFlags::eRetainResourcesWhenOff;
+		//options.flags = sl::DLSSGFlags::eRetainResourcesWhenOff;
 
 		if (SL_FAILED(result, slDLSSGSetOptions(viewport, options))) {
 			logger::error("[Streamline] Could not set DLSSG");
@@ -402,18 +441,18 @@ void Streamline::Present()
 
 	if (featureReflex) {
 		// Fake NVIDIA Reflex to prevent DLSSG errors
-		slReflexSetMarker(sl::ReflexMarker::eInputSample, *frameToken);
-		slReflexSetMarker(sl::ReflexMarker::eSimulationStart, *frameToken);
-		slReflexSetMarker(sl::ReflexMarker::eSimulationEnd, *frameToken);
-		slReflexSetMarker(sl::ReflexMarker::eRenderSubmitStart, *frameToken);
-		slReflexSetMarker(sl::ReflexMarker::eRenderSubmitEnd, *frameToken);
-		slReflexSetMarker(sl::ReflexMarker::ePresentStart, *frameToken);
-		slReflexSetMarker(sl::ReflexMarker::ePresentEnd, *frameToken);
+		//slReflexSetMarker(sl::ReflexMarker::eInputSample, *frameToken);
+		//slReflexSetMarker(sl::ReflexMarker::eSimulationStart, *frameToken);
+		//slReflexSetMarker(sl::ReflexMarker::eSimulationEnd, *frameToken);
+		//slReflexSetMarker(sl::ReflexMarker::eRenderSubmitStart, *frameToken);
+		//slReflexSetMarker(sl::ReflexMarker::eRenderSubmitEnd, *frameToken);
+		//slReflexSetMarker(sl::ReflexMarker::ePresentStart, *frameToken);
+		//slReflexSetMarker(sl::ReflexMarker::ePresentEnd, *frameToken);
 	}
 
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
+	//auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 
-	auto& motionVectorsBuffer = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::RENDER_TARGET::kMOTION_VECTOR];
+	//auto& motionVectorsBuffer = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::RENDER_TARGET::kMOTION_VECTOR];
 
 	auto state = State::GetSingleton();
 
@@ -422,20 +461,23 @@ void Streamline::Present()
 	float2 dynamicScreenSize = Util::ConvertToDynamic(State::GetSingleton()->screenSize);
 	sl::Extent dynamicExtent{ 0, 0, (uint)dynamicScreenSize.x, (uint)dynamicScreenSize.y };
 
-	sl::Resource depth = { sl::ResourceType::eTex2d, depthBufferShared->resource.get(), 0 };
+	sl::Resource depth = { sl::ResourceType::eTex2d, depthBufferShared12.get(), 0 };
 	sl::ResourceTag depthTag = sl::ResourceTag{ &depth, sl::kBufferTypeDepth, sl::ResourceLifecycle::eValidUntilPresent, &dynamicExtent };
 
-	sl::Resource mvec = { sl::ResourceType::eTex2d, motionVectorsBuffer.texture, 0 };
+	sl::Resource mvec = { sl::ResourceType::eTex2d, DX12SwapChain::GetSingleton()->renderTargetsD3D12[RE::RENDER_TARGETS::RENDER_TARGET::kMOTION_VECTOR].d3d12Resource.get(), 0 };
 	sl::ResourceTag mvecTag = sl::ResourceTag{ &mvec, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eValidUntilPresent, &dynamicExtent };
 
-	sl::Resource hudLess = { sl::ResourceType::eTex2d, colorBufferShared->resource.get(), 0 };
+	sl::Resource hudLess = { sl::ResourceType::eTex2d, colorBufferShared12.get(), 0 };
 	sl::ResourceTag hudLessTag = sl::ResourceTag{ &hudLess, sl::kBufferTypeHUDLessColor, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
 
 	sl::Resource ui = { sl::ResourceType::eTex2d, nullptr, 0 };
 	sl::ResourceTag uiTag = sl::ResourceTag{ &ui, sl::kBufferTypeUIColorAndAlpha, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
 
 	sl::ResourceTag inputs[] = { depthTag, mvecTag, hudLessTag, uiTag };
-	slSetTag(viewport, inputs, _countof(inputs), state->context);
+	
+	auto context = DX12SwapChain::GetSingleton()->commandList.get();
+
+	slSetTag(viewport, inputs, _countof(inputs), context);
 }
 
 void Streamline::Upscale(Texture2D* a_upscaleTexture, Texture2D* a_alphaMask, sl::DLSSPreset a_preset)
@@ -474,6 +516,8 @@ void Streamline::Upscale(Texture2D* a_upscaleTexture, Texture2D* a_alphaMask, sl
 		}
 	}
 
+	auto context = DX12SwapChain::GetSingleton()->commandList.get();
+
 	{
 		sl::Extent fullExtent{ 0, 0, (uint)state->screenSize.x, (uint)state->screenSize.y };
 
@@ -493,12 +537,13 @@ void Streamline::Upscale(Texture2D* a_upscaleTexture, Texture2D* a_alphaMask, sl
 		sl::ResourceTag alphaTag = sl::ResourceTag{ &alpha, sl::kBufferTypeBiasCurrentColorHint, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
 
 		sl::ResourceTag resourceTags[] = { colorInTag, colorOutTag, depthTag, mvecTag, alphaTag };
-		slSetTag(viewport, resourceTags, _countof(resourceTags), state->context);
+		slSetTag(viewport, resourceTags, _countof(resourceTags), context);
 	}
 
 	sl::ViewportHandle view(viewport);
 	const sl::BaseStructure* inputs[] = { &view };
-	slEvaluateFeature(sl::kFeatureDLSS, *frameToken, inputs, _countof(inputs), state->context);
+
+	slEvaluateFeature(sl::kFeatureDLSS, *frameToken, inputs, _countof(inputs), context);
 }
 
 void Streamline::UpdateConstants()

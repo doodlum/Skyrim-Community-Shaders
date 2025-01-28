@@ -177,7 +177,7 @@ struct IDXGISwapChain_Present
 	{
 		State::GetSingleton()->Reset();
 		Menu::GetSingleton()->DrawOverlay();
-		Streamline::GetSingleton()->Present();
+		//Streamline::GetSingleton()->Present();
 		auto retval = func(This, SyncInterval, Flags);
 		TracyD3D11Collect(State::GetSingleton()->tracyCtx);
 		return retval;
@@ -223,22 +223,33 @@ decltype(&CreateDXGIFactory) ptrCreateDXGIFactory;
 
 HRESULT WINAPI hk_CreateDXGIFactory(REFIID, void** ppFactory)
 {
-	if (SUCCEEDED(ptrCreateDXGIFactory(__uuidof(IDXGIFactory4), ppFactory))) {
-		return S_OK;
-	}
+	return Streamline::GetSingleton()->CreateDXGIFactory(__uuidof(IDXGIFactory4), ppFactory);
 
-	if (SUCCEEDED(ptrCreateDXGIFactory(__uuidof(IDXGIFactory3), ppFactory))) {
-		return S_OK;
-	}
+	//if (SUCCEEDED(ptrCreateDXGIFactory(__uuidof(IDXGIFactory4), ppFactory))) {
+	//	return S_OK;
+	//}
 
-	if (SUCCEEDED(ptrCreateDXGIFactory(__uuidof(IDXGIFactory2), ppFactory))) {
-		return S_OK;
-	}
+	//if (SUCCEEDED(ptrCreateDXGIFactory(__uuidof(IDXGIFactory3), ppFactory))) {
+	//	return S_OK;
+	//}
 
-	auto hr = ptrCreateDXGIFactory(__uuidof(IDXGIFactory), ppFactory);
+	//if (SUCCEEDED(ptrCreateDXGIFactory(__uuidof(IDXGIFactory2), ppFactory))) {
+	//	return S_OK;
+	//}
 
-	return hr;
+	//auto hr = ptrCreateDXGIFactory(__uuidof(IDXGIFactory), ppFactory);
+
+	//return hr;
 }
+
+decltype(&ID3D11DeviceContext::ClearState) ptrClearState;
+
+void WINAPI hk_ClearState(ID3D11DeviceContext* This)
+{
+	DX12SwapChain::GetSingleton()->BeginFrame();;
+	(This->*ptrClearState)();
+}
+
 
 decltype(&D3D11CreateDeviceAndSwapChain) ptrD3D11CreateDeviceAndSwapChain;
 
@@ -428,6 +439,8 @@ namespace Hooks
 				stl::detour_vfunc<12, ID3D11Device_CreateVertexShader>(device);
 				stl::detour_vfunc<15, ID3D11Device_CreatePixelShader>(device);
 			}
+			*(uintptr_t*)&ptrClearState = Detours::X64::DetourClassVTable(*(uintptr_t*)context, &hk_ClearState, 110);
+
 			Menu::GetSingleton()->Init(swapchain, device, context);
 
 			VariableCache::GetSingleton()->OnInit();
@@ -795,8 +808,15 @@ namespace Hooks
 
 		//streamline->LoadInterposer();
 
+		auto streamline = Streamline::GetSingleton();
+	//	auto state = State::GetSingleton();
+
+		streamline->LoadInterposer();
+
 		*(uintptr_t*)&ptrD3D11CreateDeviceAndSwapChain = SKSE::PatchIAT(hk_D3D11CreateDeviceAndSwapChain, "d3d11.dll", "D3D11CreateDeviceAndSwapChain");
 		*(uintptr_t*)&ptrCreateDXGIFactory = SKSE::PatchIAT(hk_CreateDXGIFactory, "dxgi.dll", !REL::Module::IsVR() ? "CreateDXGIFactory" : "CreateDXGIFactory1");
+		
+		Streamline::InstallHooks();
 
 		//if (streamline->interposer && !state->IsFeatureDisabled("Frame Generation")) {
 		//	Streamline::InstallHooks();

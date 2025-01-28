@@ -3,6 +3,9 @@
 #include "Buffer.h"
 #include "State.h"
 
+#include <d3d11_4.h>
+#include <d3d12.h>
+
 #define NV_WINDOWS
 #include <sl.h>
 #include <sl_consts.h>
@@ -28,6 +31,8 @@ public:
 	bool featureDLSS = false;
 	bool featureDLSSG = false;
 	bool featureReflex = false;
+
+	bool reflex = true;
 
 	sl::ViewportHandle viewport{ 0 };
 	sl::FrameToken* frameToken;
@@ -72,6 +77,9 @@ public:
 
 	Texture2D* colorBufferShared;
 	Texture2D* depthBufferShared;
+
+	winrt::com_ptr<ID3D12Resource> colorBufferShared12;
+	winrt::com_ptr<ID3D12Resource> depthBufferShared12;
 
 	ID3D11ComputeShader* copyDepthToSharedBufferCS;
 
