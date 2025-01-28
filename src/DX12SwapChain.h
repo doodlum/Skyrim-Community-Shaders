@@ -82,7 +82,7 @@ public:
 
 	winrt::com_ptr<IDXGISwapChain3> swapChain;
 
-	DXGI_SWAP_CHAIN_DESC1 swapChainDesc; 
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc;
 	WrappedResource* swapChainBufferWrapped = nullptr;
 	WrappedResource* swapChainBufferWrappedDummy = nullptr;
 

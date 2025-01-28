@@ -5,8 +5,8 @@
 #include "Hooks.h"
 #include "Util.h"
 
-#include "Upscaling.h"
 #include "DX12SwapChain.h"
+#include "Upscaling.h"
 
 void LoggingCallback(sl::LogType type, const char* msg)
 {
@@ -339,7 +339,7 @@ void Streamline::SetupResources()
 
 			CloseHandle(sharedHandle);
 		}
-		
+
 		{
 			IDXGIResource1* dxgiResource = nullptr;
 			DX::ThrowIfFailed(depthBufferShared->resource->QueryInterface(IID_PPV_ARGS(&dxgiResource)));
@@ -474,7 +474,7 @@ void Streamline::Present()
 	sl::ResourceTag uiTag = sl::ResourceTag{ &ui, sl::kBufferTypeUIColorAndAlpha, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
 
 	sl::ResourceTag inputs[] = { depthTag, mvecTag, hudLessTag, uiTag };
-	
+
 	auto context = DX12SwapChain::GetSingleton()->commandList.get();
 
 	slSetTag(viewport, inputs, _countof(inputs), context);

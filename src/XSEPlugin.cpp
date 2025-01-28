@@ -1,5 +1,6 @@
 #include "Hooks.h"
 
+#include "DX12SwapChain.h"
 #include "Deferred.h"
 #include "Feature.h"
 #include "FrameAnnotations.h"
@@ -9,7 +10,6 @@
 #include "TruePBR.h"
 #include "Upscaling.h"
 #include "VariableCache.h"
-#include "DX12SwapChain.h"
 
 #include "ENB/ENBSeriesAPI.h"
 
@@ -49,9 +49,9 @@ void InitializeLog([[maybe_unused]] spdlog::level::level_enum a_level = spdlog::
 
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
 {
-//#ifndef NDEBUG
-//	while (!REX::W32::IsDebuggerPresent()) {};
-//#endif
+	//#ifndef NDEBUG
+	//	while (!REX::W32::IsDebuggerPresent()) {};
+	//#endif
 	InitializeLog();
 	logger::info("Loaded {} {}", Plugin::NAME, Plugin::VERSION.string());
 	SKSE::Init(a_skse);

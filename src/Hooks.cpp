@@ -246,10 +246,10 @@ decltype(&ID3D11DeviceContext::ClearState) ptrClearState;
 
 void WINAPI hk_ClearState(ID3D11DeviceContext* This)
 {
-	DX12SwapChain::GetSingleton()->BeginFrame();;
+	DX12SwapChain::GetSingleton()->BeginFrame();
+	;
 	(This->*ptrClearState)();
 }
-
 
 decltype(&D3D11CreateDeviceAndSwapChain) ptrD3D11CreateDeviceAndSwapChain;
 
@@ -809,13 +809,13 @@ namespace Hooks
 		//streamline->LoadInterposer();
 
 		auto streamline = Streamline::GetSingleton();
-	//	auto state = State::GetSingleton();
+		//	auto state = State::GetSingleton();
 
 		streamline->LoadInterposer();
 
 		*(uintptr_t*)&ptrD3D11CreateDeviceAndSwapChain = SKSE::PatchIAT(hk_D3D11CreateDeviceAndSwapChain, "d3d11.dll", "D3D11CreateDeviceAndSwapChain");
 		*(uintptr_t*)&ptrCreateDXGIFactory = SKSE::PatchIAT(hk_CreateDXGIFactory, "dxgi.dll", !REL::Module::IsVR() ? "CreateDXGIFactory" : "CreateDXGIFactory1");
-		
+
 		Streamline::InstallHooks();
 
 		//if (streamline->interposer && !state->IsFeatureDisabled("Frame Generation")) {

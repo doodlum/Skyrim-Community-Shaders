@@ -163,10 +163,9 @@ void DX12SwapChain::BeginFrame()
 	//streamline->slReflexSetMarker(sl::ReflexMarker::eSimulationStart, *frameToken);
 	//streamline->slReflexSetMarker(sl::ReflexMarker::eSimulationEnd, *frameToken);
 	//streamline->slReflexSetMarker(sl::ReflexMarker::eRenderSubmitStart, *frameToken);
-
 }
 
-HRESULT DX12SwapChain::Present(UINT , UINT )
+HRESULT DX12SwapChain::Present(UINT, UINT)
 {
 	DX::ThrowIfFailed(commandAllocator->Reset());
 
@@ -180,7 +179,7 @@ HRESULT DX12SwapChain::Present(UINT , UINT )
 	// Wait for D3D11 work to finish
 	DX::ThrowIfFailed(d3d11Context->Signal(d3d11Fence.get(), currentSharedFenceValue));
 	DX::ThrowIfFailed(commandQueue->Wait(d3d12Fence.get(), currentSharedFenceValue));
-	
+
 	Streamline::GetSingleton()->Present();
 
 	currentSharedFenceValue++;
@@ -221,7 +220,7 @@ HRESULT DX12SwapChain::Present(UINT , UINT )
 
 	ID3D12CommandList* commandLists[] = { commandList.get() };
 	commandQueue->ExecuteCommandLists(1, commandLists);
-	
+
 	auto streamline = Streamline::GetSingleton();
 	auto frameToken = streamline->frameToken;
 
