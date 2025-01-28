@@ -142,6 +142,15 @@ HRESULT DX12SwapChain::Present(UINT SyncInterval, UINT Flags)
 
 	auto hr = swapChain->Present(SyncInterval, Flags);
 
+	// Schedule a Signal command in the queue.
+	DX::ThrowIfFailed(commandQueue->Signal(d3d12OnlyFence.get(), currentSharedFenceValue));
+
+	// If the next frame is not ready to be rendered yet, wait until it is ready.
+	if (d3d12OnlyFence->GetCompletedValue() < currentSharedFenceValue) {
+		DX::ThrowIfFailed(d3d12OnlyFence->SetEventOnCompletion(currentSharedFenceValue, fenceEvent));
+		WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
+	}
+
 	return hr;
 }
 
@@ -154,6 +163,8 @@ WrappedResource::WrappedResource(D3D11_TEXTURE2D_DESC a_texDesc, ID3D11Device5* 
 		flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 	if (!(a_texDesc.BindFlags & D3D11_BIND_SHADER_RESOURCE))
 		flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+	if (!(a_texDesc.BindFlags & D3D11_BIND_RENDER_TARGET))
+		flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 	D3D12_RESOURCE_DESC desc12{ D3D12_RESOURCE_DIMENSION_TEXTURE2D, 0, a_texDesc.Width, a_texDesc.Height, (UINT16)a_texDesc.ArraySize, (UINT16)a_texDesc.MipLevels, a_texDesc.Format, { a_texDesc.SampleDesc.Count, a_texDesc.SampleDesc.Quality }, D3D12_TEXTURE_LAYOUT_UNKNOWN, flags };
 	D3D12_HEAP_PROPERTIES heapProp = { D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
 
