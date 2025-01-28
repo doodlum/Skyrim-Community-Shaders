@@ -10,8 +10,8 @@
 
 #include "Streamline.h"
 
-#include "VariableCache.h"
 #include "DX12SwapChain.h"
+#include "VariableCache.h"
 
 std::unordered_map<void*, std::pair<std::unique_ptr<uint8_t[]>, size_t>> ShaderBytecodeMap;
 
@@ -296,7 +296,7 @@ HRESULT WINAPI hk_D3D11CreateDeviceAndSwapChain(
 	auto proxy = DX12SwapChain::GetSingleton();
 
 	proxy->CreateD3D12Device(pAdapter);
-	
+
 	const D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_1;
 
 	D3D11CreateDevice(

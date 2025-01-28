@@ -17,32 +17,31 @@ void DX12SwapChain::CreateD3D12Device(IDXGIAdapter* adapter)
 
 void DX12SwapChain::CreateSwapChain(IDXGIAdapter* adapter, DXGI_SWAP_CHAIN_DESC a_swapChainDesc)
 {
-    IDXGIFactory4* dxgiFactory;
+	IDXGIFactory4* dxgiFactory;
 	DX::ThrowIfFailed(adapter->GetParent(IID_PPV_ARGS(&dxgiFactory)));
 
-    DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	swapChainDesc.Width = a_swapChainDesc.BufferDesc.Width;
 	swapChainDesc.Height = a_swapChainDesc.BufferDesc.Height;
 	swapChainDesc.Format = a_swapChainDesc.BufferDesc.Format;
-    swapChainDesc.SampleDesc.Count = 1;
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.BufferCount = 2;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-    swapChainDesc.Flags = 0;
+	swapChainDesc.SampleDesc.Count = 1;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.BufferCount = 2;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDesc.Flags = 0;
 
-    DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscreenDesc = {};
-    fullscreenDesc.Windowed = TRUE;
+	DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscreenDesc = {};
+	fullscreenDesc.Windowed = TRUE;
 
-    DX::ThrowIfFailed(dxgiFactory->CreateSwapChainForHwnd(
-        commandQueue.get(),
+	DX::ThrowIfFailed(dxgiFactory->CreateSwapChainForHwnd(
+		commandQueue.get(),
 		a_swapChainDesc.OutputWindow,
-        &swapChainDesc,
-        &fullscreenDesc,
-        nullptr,
-        swapChain.put()
-    ));
+		&swapChainDesc,
+		&fullscreenDesc,
+		nullptr,
+		swapChain.put()));
 
-    DX::ThrowIfFailed(swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainBuffer)));
+	DX::ThrowIfFailed(swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainBuffer)));
 }
 
 void DX12SwapChain::CreateInterop()
@@ -52,12 +51,12 @@ void DX12SwapChain::CreateInterop()
 	HANDLE sharedFenceHandle;
 	DX::ThrowIfFailed(d3d12Device->CreateSharedHandle(d3d12Fence.get(), nullptr, GENERIC_ALL, nullptr, &sharedFenceHandle));
 	DX::ThrowIfFailed(d3d11Device->OpenSharedFence(sharedFenceHandle, IID_PPV_ARGS(&d3d11Fence)));
-	
+
 	HANDLE sharedFenceHandle2;
 	DX::ThrowIfFailed(d3d12Device->CreateFence(0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&d3d12Fence2)));
 	DX::ThrowIfFailed(d3d12Device->CreateSharedHandle(d3d12Fence2.get(), nullptr, GENERIC_ALL, nullptr, &sharedFenceHandle2));
 	DX::ThrowIfFailed(d3d11Device->OpenSharedFence(sharedFenceHandle2, IID_PPV_ARGS(&d3d11Fence2)));
-	
+
 	DX::ThrowIfFailed(d3d12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12OnlyFence)));
 	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
@@ -80,7 +79,6 @@ void DX12SwapChain::CreateInterop()
 
 	swapChainBufferWrapped = new WrappedResource(texDesc11, d3d11Device.get(), d3d12Device.get());
 }
-
 
 DXGISwapChainProxy* DX12SwapChain::GetSwapChainProxy()
 {
@@ -112,7 +110,7 @@ HRESULT DX12SwapChain::Present(UINT SyncInterval, UINT Flags)
 	DX::ThrowIfFailed(d3d11Context->Signal(d3d11Fence.get(), currentSharedFenceValue));
 	DX::ThrowIfFailed(commandQueue->Wait(d3d12Fence.get(), currentSharedFenceValue));
 	currentSharedFenceValue++;
-	
+
 	// Copy D3D11 result to D3D12
 	auto fakeSwapChain = swapChainBufferWrapped->resource.get();
 	auto realSwapchain = swapChainBuffer.get();
@@ -137,12 +135,12 @@ HRESULT DX12SwapChain::Present(UINT SyncInterval, UINT Flags)
 	DX::ThrowIfFailed(d3d11Context->Wait(d3d11Fence2.get(), currentSharedFenceValue));
 	currentSharedFenceValue++;
 
-    DX::ThrowIfFailed(commandList->Close());
+	DX::ThrowIfFailed(commandList->Close());
 
-    ID3D12CommandList* commandLists[] = { commandList.get() };
-    commandQueue->ExecuteCommandLists(1, commandLists);
+	ID3D12CommandList* commandLists[] = { commandList.get() };
+	commandQueue->ExecuteCommandLists(1, commandLists);
 
-    auto hr = swapChain->Present(SyncInterval, Flags);
+	auto hr = swapChain->Present(SyncInterval, Flags);
 
 	return hr;
 }

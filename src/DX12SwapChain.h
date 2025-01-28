@@ -6,8 +6,8 @@
 #include <wrl\client.h>
 #include <wrl\wrappers\corewrappers.h>
 
-#include <d3d12.h>
 #include <d3d11_4.h>
+#include <d3d12.h>
 
 #include <FidelityFX/host/backends/dx12/d3dx12.h>
 
