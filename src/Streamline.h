@@ -11,12 +11,10 @@
 #include <sl_matrix_helpers.h>
 #include <sl_reflex.h>
 
-
 #pragma warning(push)
 #pragma warning(disable: 4244)
 #include "latencyflex.h"
 #pragma warning(pop)
-
 
 struct PresentInfo
 {
@@ -194,6 +192,5 @@ public:
 		stl::write_thunk_call<Main_RenderWorld>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x831, 0x841, 0x791));
 		stl::write_thunk_call<MenuManagerDrawInterfaceStartHook>(REL::RelocationID(79947, 82084).address() + REL::Relocate(0x7E, 0x83, 0x97));
 		stl::write_thunk_call<Main_Update_Start>(REL::RelocationID(35565, 36564).address() + REL::Relocate(0x1E, 0x3E, 0x33));
-
 	}
 };

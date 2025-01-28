@@ -31,7 +31,7 @@ void Streamline::DrawSettings()
 	if (!state->isVR) {
 		ImGui::Text("Frame Generation uses a D3D11 to D3D12 proxy which can create compatibility issues");
 		ImGui::Text("Frame Generation can only be enabled or disabled in the mod manager, it can only be temporarily toggled in-game");
-		
+
 		ImGui::Checkbox("LatencyFlex", &latencyFlex);
 
 		if (ImGui::TreeNodeEx("NVIDIA DLSS Frame Generation", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -626,7 +626,7 @@ void Streamline::BeginFrame()
 		manager.Reset();
 	}
 
-    uint64_t now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+	uint64_t now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 	uint64_t target;
 	uint64_t wakeup;
 	{
@@ -713,7 +713,7 @@ void FenceWaitThread::Worker()
 		}
 
 		uint64_t complete = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-		
+
 		info.fenceQuery->Release();
 
 		uint64_t latency;
