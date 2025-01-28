@@ -11,6 +11,44 @@
 #include <sl_matrix_helpers.h>
 #include <sl_reflex.h>
 
+
+#pragma warning(push)
+#pragma warning(disable: 4244)
+#include "latencyflex.h"
+#pragma warning(pop)
+
+
+struct PresentInfo
+{
+	ID3D11DeviceContext* context = nullptr;
+	ID3D11Query* fenceQuery = nullptr;
+	uint64_t frame_id = 0;
+};
+
+class FenceWaitThread
+{
+public:
+	FenceWaitThread();
+
+	~FenceWaitThread();
+
+	void Push(PresentInfo&& info)
+	{
+		std::scoped_lock l(local_lock_);
+		queue_.push_back(info);
+		notify_.notify_all();
+	}
+
+private:
+	void Worker();
+
+	std::thread thread_;
+	std::mutex local_lock_;
+	std::condition_variable notify_;
+	std::deque<PresentInfo> queue_;
+	bool running_ = true;
+};
+
 class Streamline
 {
 public:
@@ -29,12 +67,16 @@ public:
 	bool featureDLSSG = false;
 	bool featureReflex = false;
 
+	bool latencyFlex = true;
+
 	sl::ViewportHandle viewport{ 0 };
 	sl::FrameToken* frameToken;
 
 	sl::DLSSGMode frameGenerationMode = sl::DLSSGMode::eOn;
 
 	HMODULE interposer = NULL;
+
+	//std::map<void*, std::unique_ptr<FenceWaitThread>> wait_threads;
 
 	// SL Interposer Functions
 	PFun_slInit* slInit{};
@@ -75,11 +117,18 @@ public:
 
 	ID3D11ComputeShader* copyDepthToSharedBufferCS;
 
+	lfx::LatencyFleX manager;
+	std::mutex global_lock;
+	FenceWaitThread* waitThread = nullptr;
+
+	void BeginFrame();
+	void EndFrame();
+
 	void DrawSettings();
 
 	void LoadInterposer();
 	void Initialize();
-	void PostDevice();
+	void PostDevice(ID3D11Device* device);
 
 	HRESULT CreateDXGIFactory(REFIID riid, void** ppFactory);
 
@@ -130,9 +179,21 @@ public:
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
+	struct Main_Update_Start
+	{
+		static void thunk(INT64 a_unk)
+		{
+			GetSingleton()->BeginFrame();
+			func(a_unk);
+		}
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
 	static void InstallHooks()
 	{
 		stl::write_thunk_call<Main_RenderWorld>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x831, 0x841, 0x791));
 		stl::write_thunk_call<MenuManagerDrawInterfaceStartHook>(REL::RelocationID(79947, 82084).address() + REL::Relocate(0x7E, 0x83, 0x97));
+		stl::write_thunk_call<Main_Update_Start>(REL::RelocationID(35565, 36564).address() + REL::Relocate(0x1E, 0x3E, 0x33));
+
 	}
 };

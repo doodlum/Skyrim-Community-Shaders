@@ -6,6 +6,7 @@
 #include "Util.h"
 
 #include "Upscaling.h"
+#include "VariableCache.h"
 
 void LoggingCallback(sl::LogType type, const char* msg)
 {
@@ -22,12 +23,16 @@ void LoggingCallback(sl::LogType type, const char* msg)
 	}
 }
 
+typedef std::lock_guard<std::mutex> scoped_lock;
+
 void Streamline::DrawSettings()
 {
 	auto state = State::GetSingleton();
 	if (!state->isVR) {
 		ImGui::Text("Frame Generation uses a D3D11 to D3D12 proxy which can create compatibility issues");
 		ImGui::Text("Frame Generation can only be enabled or disabled in the mod manager, it can only be temporarily toggled in-game");
+		
+		ImGui::Checkbox("LatencyFlex", &latencyFlex);
 
 		if (ImGui::TreeNodeEx("NVIDIA DLSS Frame Generation", ImGuiTreeNodeFlags_DefaultOpen)) {
 			ImGui::Text("Requires an NVIDIA GeForce RTX 40 Series or newer");
@@ -109,7 +114,7 @@ void Streamline::Initialize()
 	}
 }
 
-void Streamline::PostDevice()
+void Streamline::PostDevice(ID3D11Device* device)
 {
 	// Hook up all of the feature functions using the sl function slGetFeatureFunction
 
@@ -130,6 +135,8 @@ void Streamline::PostDevice()
 		slGetFeatureFunction(sl::kFeatureReflex, "slReflexSleep", (void*&)slReflexSleep);
 		slGetFeatureFunction(sl::kFeatureReflex, "slReflexSetOptions", (void*&)slReflexSetOptions);
 	}
+
+	waitThread = new FenceWaitThread();
 }
 
 HRESULT Streamline::CreateDXGIFactory(REFIID riid, void** ppFactory)
@@ -244,7 +251,7 @@ HRESULT Streamline::CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter,
 		slSetD3DDevice(*ppDevice);
 	}
 
-	PostDevice();
+	PostDevice(*ppDevice);
 
 	return hr;
 }
@@ -436,6 +443,8 @@ void Streamline::Present()
 
 	sl::ResourceTag inputs[] = { depthTag, mvecTag, hudLessTag, uiTag };
 	slSetTag(viewport, inputs, _countof(inputs), state->context);
+
+	EndFrame();
 }
 
 void Streamline::Upscale(Texture2D* a_upscaleTexture, Texture2D* a_alphaMask, sl::DLSSPreset a_preset)
@@ -579,4 +588,138 @@ void Streamline::DestroyDLSSResources()
 	dlssOptions.mode = sl::DLSSMode::eOff;
 	slDLSSSetOptions(viewport, dlssOptions);
 	slFreeResources(sl::kFeatureDLSS, viewport);
+}
+
+std::atomic_uint64_t frame_counter = 0;
+std::atomic_bool ticker_needs_reset = false;
+std::atomic_uint64_t frame_counter_render = 0;
+const int kMaxFrameDrift = 16;
+const std::chrono::milliseconds kRecalibrationSleepTime(200);
+
+void Streamline::BeginFrame()
+{
+	frame_counter++;
+	uint64_t frame_counter_local = frame_counter.load();
+	uint64_t frame_counter_render_local = frame_counter_render.load();
+
+	if (frame_counter_local <= frame_counter_render_local) {
+		// Presentation has happened without going through the Tick() hook!
+		// This typically happens during initialization (where graphics are redrawn
+		// without ticking the platform loop).
+		ticker_needs_reset.store(true);
+	}
+
+	if (ticker_needs_reset.load()) {
+		logger::info("LatencyFleX: Performing recalibration!");
+		// Try to reset (recalibrate) the state by sleeping for a slightly long
+		// period and force any work in the rendering thread or the RHI thread to be
+		// flushed. The frame counter is reset after the calibration.
+		std::this_thread::sleep_for(kRecalibrationSleepTime);
+		// The ticker thread has already incremented the frame counter above. Start
+		// from 1, or otherwise it will result in frame ID mismatch.
+		frame_counter.store(1);
+		frame_counter_local = 1;
+		frame_counter_render.store(0);
+		frame_counter_render_local = 0;
+		ticker_needs_reset.store(false);
+		scoped_lock l(global_lock);
+		manager.Reset();
+	}
+
+    uint64_t now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+	uint64_t target;
+	uint64_t wakeup;
+	{
+		scoped_lock l(global_lock);
+		target = manager.GetWaitTarget(frame_counter_local);
+	}
+	if (latencyFlex && target > now) {
+		// failsafe: if something ever goes wrong, sustain an interactive framerate
+		// so the user can at least quit the application
+		static uint64_t failsafe_triggered = 0;
+		uint64_t failsafe = now + UINT64_C(50000000);
+		if (target > failsafe) {
+			wakeup = failsafe;
+			failsafe_triggered++;
+			if (failsafe_triggered > 5) {
+				// If failsafe is triggered multiple times in a row, initiate a recalibration.
+				ticker_needs_reset.store(true);
+			}
+		} else {
+			wakeup = target;
+			failsafe_triggered = 0;
+		}
+		std::this_thread::sleep_for(std::chrono::nanoseconds(wakeup - now));
+	} else {
+		wakeup = now;
+	}
+
+	scoped_lock l(global_lock);
+	manager.target_frame_time = uint64_t(1000000000.0 / (165.0 * 0.5));
+
+	manager.BeginFrame(frame_counter_local, target, wakeup);
+}
+
+void Streamline::EndFrame()
+{
+	frame_counter_render++;
+	uint64_t frame_counter_local = frame_counter.load();
+	uint64_t frame_counter_render_local = frame_counter_render.load();
+	if (frame_counter_local > frame_counter_render_local + kMaxFrameDrift) {
+		ticker_needs_reset.store(true);
+	}
+
+	auto device = VariableCache::GetSingleton()->device;
+	auto context = VariableCache::GetSingleton()->context;
+
+	D3D11_QUERY_DESC queryDesc = {};
+	queryDesc.Query = D3D11_QUERY_EVENT;
+
+	ID3D11Query* fenceQuery;
+	device->CreateQuery(&queryDesc, &fenceQuery);
+
+	waitThread->Push({ context, fenceQuery, frame_counter_render_local });
+}
+
+FenceWaitThread::FenceWaitThread() :
+	thread_(&FenceWaitThread::Worker, this) {}
+
+FenceWaitThread::~FenceWaitThread()
+{
+	running_ = false;
+	notify_.notify_all();
+	thread_.join();
+}
+
+void FenceWaitThread::Worker()
+{
+	while (true) {
+		PresentInfo info;
+		{
+			std::unique_lock<std::mutex> l(local_lock_);
+			while (queue_.empty()) {
+				if (!running_)
+					return;
+				notify_.wait(l);
+			}
+			info = queue_.front();
+			queue_.pop_front();
+		}
+
+		auto context = info.context;
+
+		while (context->GetData(info.fenceQuery, nullptr, 0, 0) == S_FALSE) {
+			std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+		}
+
+		uint64_t complete = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		
+		info.fenceQuery->Release();
+
+		uint64_t latency;
+		{
+			scoped_lock l(Streamline::GetSingleton()->global_lock);
+			Streamline::GetSingleton()->manager.EndFrame(info.frame_id, complete, &latency, nullptr);
+		}
+	}
 }
