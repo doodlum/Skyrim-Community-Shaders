@@ -147,7 +147,7 @@ void Streamline::PostDevice(IDXGISwapChain* a_swapChain)
 	devMode.dmSize = sizeof(DEVMODE);
 
 	EnumDisplaySettings(monitorInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode);
-	refreshRate = devMode.dmDisplayFrequency;	
+	refreshRate = devMode.dmDisplayFrequency;
 }
 
 HRESULT Streamline::CreateDXGIFactory(REFIID riid, void** ppFactory)
