@@ -170,19 +170,25 @@ namespace EffectExtensions
 	};
 }
 
-struct IDXGISwapChain_Present
+decltype(&ID3D11DeviceContext::ClearState) ptrClearState;
+
+void WINAPI hk_ClearState(ID3D11DeviceContext* This)
 {
-	static HRESULT WINAPI thunk(IDXGISwapChain* This, UINT SyncInterval, UINT Flags)
-	{
-		State::GetSingleton()->Reset();
-		Menu::GetSingleton()->DrawOverlay();
-		Streamline::GetSingleton()->Present();
-		auto retval = func(This, SyncInterval, Flags);
-		TracyD3D11Collect(State::GetSingleton()->tracyCtx);
-		return retval;
-	}
-	static inline REL::Relocation<decltype(thunk)> func;
-};
+	Streamline::GetSingleton()->BeginFrame();
+	(This->*ptrClearState)();
+}
+
+HRESULT WINAPI Hooks::IDXGISwapChain_Present::thunk(IDXGISwapChain* , UINT , UINT)
+{
+	State::GetSingleton()->Reset();
+	Menu::GetSingleton()->DrawOverlay();
+	Streamline::GetSingleton()->Present();
+	Streamline::GetSingleton()->PresentAsync();
+	//auto retval = func(This, SyncInterval, Flags);
+	TracyD3D11Collect(State::GetSingleton()->tracyCtx);
+	return S_OK;
+}
+
 
 void Hooks::BSGraphics_SetDirtyStates::thunk(bool isCompute)
 {
@@ -385,6 +391,7 @@ namespace Hooks
 				stl::detour_vfunc<15, ID3D11Device_CreatePixelShader>(device);
 			}
 			Menu::GetSingleton()->Init(swapchain, device, context);
+			*(uintptr_t*)&ptrClearState = Detours::X64::DetourClassVTable(*(uintptr_t*)context, &hk_ClearState, 110);
 
 			VariableCache::GetSingleton()->OnInit();
 		}

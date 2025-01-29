@@ -75,6 +75,11 @@ public:
 
 	ID3D11ComputeShader* copyDepthToSharedBufferCS;
 
+	ID3D11Query* presentQuery;
+	std::jthread presentQueryThread;
+	std::atomic<bool> presentDone = true;
+	std::mutex presentQueryMutex;
+
 	void DrawSettings();
 
 	void LoadInterposer();
@@ -108,11 +113,13 @@ public:
 	
 	void BeginFrame();
 
+	void PresentAsync();
+
 	struct Main_Update_Start
 	{
 		static void thunk(INT64 a_unk)
 		{
-			GetSingleton()->BeginFrame();
+		//	GetSingleton()->BeginFrame();
 			func(a_unk);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;

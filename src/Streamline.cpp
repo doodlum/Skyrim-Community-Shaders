@@ -247,6 +247,12 @@ HRESULT Streamline::CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter,
 		slSetD3DDevice(*ppDevice);
 	}
 
+	D3D11_QUERY_DESC queryDesc = {};
+	queryDesc.Query = D3D11_QUERY_EVENT;
+	queryDesc.MiscFlags = 0;
+
+	DX::ThrowIfFailed((*ppDevice)->CreateQuery(&queryDesc, &presentQuery));
+
 	(*((IDXGISwapChain2**)ppSwapChain))->SetMaximumFrameLatency(1);
 
 	PostDevice();
@@ -592,30 +598,103 @@ static void TimerSleepQPC(int64_t targetQPC)
 	} while (currentQPC.QuadPart < targetQPC);
 }
 
-void Streamline::BeginFrame()
+// Function to wait for a query on a separate thread
+static void WaitForQueryCompletion(Streamline* This)
 {
 	auto manager = RE::BSGraphics::Renderer::GetSingleton();
-	auto swapchain = reinterpret_cast<IDXGISwapChain2*>(manager->GetRuntimeData().renderWindows->swapChain);
-	
-	auto handle = swapchain->GetFrameLatencyWaitableObject();
-	WaitForSingleObjectEx(handle, 1000, true);
-	CloseHandle(handle);
 
-	LARGE_INTEGER qpf;
-	QueryPerformanceFrequency(&qpf);
-	int64_t targetFrameTicks;
+	auto context = reinterpret_cast<ID3D11DeviceContext*>(manager->GetRuntimeData().context);
+	auto swapchain = reinterpret_cast<IDXGISwapChain*>(manager->GetRuntimeData().renderWindows->swapChain);
 
-	if (frameGenerationMode == sl::DLSSGMode::eOff)
-		targetFrameTicks = int64_t(double(qpf.QuadPart) / 165.0);
-	else
-		targetFrameTicks = int64_t(double(qpf.QuadPart) / (165.0 * 0.5));
-
-	static LARGE_INTEGER lastFrame = {};
-	LARGE_INTEGER timeNow;
-	QueryPerformanceCounter(&timeNow);
-	int64_t delta = timeNow.QuadPart - lastFrame.QuadPart;
-	if (delta < targetFrameTicks) {
-		TimerSleepQPC(lastFrame.QuadPart + targetFrameTicks);
+	while (true) {	
+		if (context->GetData(This->presentQuery, nullptr, 0, 0) == S_OK) {
+			std::lock_guard<std::mutex> lock(This->presentQueryMutex);
+			if (!This->presentDone)
+				Hooks::IDXGISwapChain_Present::func(swapchain, 0, 0);
+			This->presentDone = true;
+			break;
+		
+		}
+		std::this_thread::yield();
 	}
-	QueryPerformanceCounter(&lastFrame);
+}
+
+bool newFrame = true;
+
+void Streamline::BeginFrame()
+{
+	if (!newFrame)
+		return;
+	newFrame = false;
+	auto manager = RE::BSGraphics::Renderer::GetSingleton();
+	auto swapchain = reinterpret_cast<IDXGISwapChain*>(manager->GetRuntimeData().renderWindows->swapChain);
+
+	{
+		std::lock_guard<std::mutex> lock(presentQueryMutex);
+
+		if (!presentDone) {
+			Hooks::IDXGISwapChain_Present::func(swapchain, 0, 0);
+			presentDone = true;
+		}
+	}
+
+	if (presentQueryThread.joinable()) {
+		presentQueryThread.join();
+	}
+	//std::lock_guard<std::mutex> lock(presentQueryMutex);
+
+	//if (!presentDone)
+	//{
+	//	Hooks::IDXGISwapChain_Present::func(swapchain, 0, 0);
+	//	presentDone = true;
+	//}
+
+	//if (presentQueryThread.joinable()) {
+	//	presentQueryThread.join();
+	//}
+
+	//auto manager = RE::BSGraphics::Renderer::GetSingleton();
+	//auto swapchain = reinterpret_cast<IDXGISwapChain2*>(manager->GetRuntimeData().renderWindows->swapChain);
+	//
+	//auto handle = swapchain->GetFrameLatencyWaitableObject();
+	//WaitForSingleObjectEx(handle, 1000, true);
+	//CloseHandle(handle);
+
+	//LARGE_INTEGER qpf;
+	//QueryPerformanceFrequency(&qpf);
+	//int64_t targetFrameTicks;
+
+	//if (frameGenerationMode == sl::DLSSGMode::eOff)
+	//	targetFrameTicks = int64_t(double(qpf.QuadPart) / 165.0);
+	//else
+	//	targetFrameTicks = int64_t(double(qpf.QuadPart) / (165.0 * 0.5));
+
+	//static LARGE_INTEGER lastFrame = {};
+	//LARGE_INTEGER timeNow;
+	//QueryPerformanceCounter(&timeNow);
+	//int64_t delta = timeNow.QuadPart - lastFrame.QuadPart;
+	//if (delta < targetFrameTicks) {
+	//	TimerSleepQPC(lastFrame.QuadPart + targetFrameTicks);
+	//}
+	//QueryPerformanceCounter(&lastFrame);
+}
+//
+//void Streamline::EndFrame()
+//{
+//	presentQueryThread = std::thread(&WaitForQueryCompletion, this);
+//}
+
+void Streamline::PresentAsync()
+{
+	auto manager = RE::BSGraphics::Renderer::GetSingleton();
+	auto context = reinterpret_cast<ID3D11DeviceContext*>(manager->GetRuntimeData().context);
+
+	context->End(presentQuery);
+
+	context->Flush();
+
+	presentDone = false;
+	presentQueryThread = std::jthread(&WaitForQueryCompletion, this);
+
+	newFrame = true;
 }

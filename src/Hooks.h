@@ -12,6 +12,11 @@ namespace Hooks
 		static void thunk(bool isCompute);
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
+	struct IDXGISwapChain_Present
+	{
+		static HRESULT WINAPI thunk(IDXGISwapChain* This, UINT SyncInterval, UINT Flags);
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
 	void Install();
 	void InstallD3DHooks();
 }
