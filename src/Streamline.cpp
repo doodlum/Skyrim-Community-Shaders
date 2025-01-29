@@ -33,7 +33,7 @@ void Streamline::DrawSettings()
 	if (ImGui::TreeNodeEx("LatencyFleX", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::Text("Vendor agnostic latency reduction middleware. An alternative to NVIDIA Reflex.");
 		ImGui::SliderInt("LatencyFleX", (int*)&latencyFlexMode, 0, 1, std::format("{}", offOnModes[(uint)latencyFlexMode]).c_str());
-			
+
 		if (latencyFlexMode) {
 			ImGui::SliderInt("Frame Limiter", (int*)&frameLimitMode, 0, 1, std::format("{}", offOnModes[(uint)frameLimitMode]).c_str());
 			ImGui::SliderInt("Frame Limit", (int*)&frameLimit, 30, 165);
@@ -45,7 +45,7 @@ void Streamline::DrawSettings()
 	if (!state->isVR) {
 		ImGui::Text("Frame Generation uses a D3D11 to D3D12 proxy which can create compatibility issues");
 		ImGui::Text("Frame Generation can only be enabled or disabled in the mod manager, it can only be temporarily toggled in-game");
-		
+
 		if (ImGui::TreeNodeEx("NVIDIA DLSS Frame Generation", ImGuiTreeNodeFlags_DefaultOpen)) {
 			ImGui::Text("Requires an NVIDIA GeForce RTX 40 Series or newer");
 			if (featureDLSSG) {
@@ -272,7 +272,7 @@ void Streamline::SetupResources()
 	if (featureDLSSG && !REL::Module::IsVR()) {
 		sl::DLSSGOptions options{};
 		options.mode = sl::DLSSGMode::eOn;
-	//	options.flags = sl::DLSSGFlags::eRetainResourcesWhenOff;
+		//	options.flags = sl::DLSSGFlags::eRetainResourcesWhenOff;
 
 		if (SL_FAILED(result, slDLSSGSetOptions(viewport, options))) {
 			logger::critical("[Streamline] Could not enable DLSSG");
@@ -620,8 +620,7 @@ void Streamline::BeginFrame()
 
 	static bool wasDisabled = false;
 
-	if (latencyFlexMode == 1 && wasDisabled)
-	{
+	if (latencyFlexMode == 1 && wasDisabled) {
 		ticker_needs_reset.store(true);
 	}
 
@@ -679,7 +678,7 @@ void Streamline::BeginFrame()
 			manager.target_frame_time = uint64_t(1000000000.0 / (double(frameLimit) * 0.5));
 		else
 			manager.target_frame_time = uint64_t(1000000000.0 / (double(frameLimit)));
-	} else {	
+	} else {
 		manager.target_frame_time = 0;
 	}
 
