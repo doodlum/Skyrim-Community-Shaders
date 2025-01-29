@@ -289,7 +289,7 @@ void State::Load(ConfigMode a_configMode, bool a_allowReload)
 		if (streamlineJson.is_object()) {
 			logger::info("Loading Streamline settings");
 			try {
-				streamline->LoadSettings(upscalingJson);
+				streamline->LoadSettings(streamlineJson);
 			} catch (...) {
 				logger::warn("Invalid settings for Streamline, using default.");
 				streamline->RestoreDefaultSettings();
