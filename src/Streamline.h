@@ -110,7 +110,7 @@ public:
 	void UpdateConstants();
 
 	void DestroyDLSSResources();
-	
+
 	void BeginFrame();
 
 	void PresentAsync();
@@ -119,7 +119,7 @@ public:
 	{
 		static void thunk(INT64 a_unk)
 		{
-		//	GetSingleton()->BeginFrame();
+			//	GetSingleton()->BeginFrame();
 			func(a_unk);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;

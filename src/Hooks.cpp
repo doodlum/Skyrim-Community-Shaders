@@ -178,7 +178,7 @@ void WINAPI hk_ClearState(ID3D11DeviceContext* This)
 	(This->*ptrClearState)();
 }
 
-HRESULT WINAPI Hooks::IDXGISwapChain_Present::thunk(IDXGISwapChain* , UINT , UINT)
+HRESULT WINAPI Hooks::IDXGISwapChain_Present::thunk(IDXGISwapChain*, UINT, UINT)
 {
 	State::GetSingleton()->Reset();
 	Menu::GetSingleton()->DrawOverlay();
@@ -188,7 +188,6 @@ HRESULT WINAPI Hooks::IDXGISwapChain_Present::thunk(IDXGISwapChain* , UINT , UIN
 	TracyD3D11Collect(State::GetSingleton()->tracyCtx);
 	return S_OK;
 }
-
 
 void Hooks::BSGraphics_SetDirtyStates::thunk(bool isCompute)
 {

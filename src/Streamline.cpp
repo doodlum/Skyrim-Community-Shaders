@@ -606,14 +606,13 @@ static void WaitForQueryCompletion(Streamline* This)
 	auto context = reinterpret_cast<ID3D11DeviceContext*>(manager->GetRuntimeData().context);
 	auto swapchain = reinterpret_cast<IDXGISwapChain*>(manager->GetRuntimeData().renderWindows->swapChain);
 
-	while (true) {	
+	while (true) {
 		if (context->GetData(This->presentQuery, nullptr, 0, 0) == S_OK) {
 			std::lock_guard<std::mutex> lock(This->presentQueryMutex);
 			if (!This->presentDone)
 				Hooks::IDXGISwapChain_Present::func(swapchain, 0, 0);
 			This->presentDone = true;
 			break;
-		
 		}
 		std::this_thread::yield();
 	}
