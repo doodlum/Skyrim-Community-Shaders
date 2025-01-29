@@ -177,6 +177,12 @@ struct IDXGISwapChain_Present
 		State::GetSingleton()->Reset();
 		Menu::GetSingleton()->DrawOverlay();
 		Streamline::GetSingleton()->Present();
+
+		if (Streamline::GetSingleton()->frameGenerationMode == sl::DLSSGMode::eOn) {
+			SyncInterval = 0;
+			Flags = DXGI_PRESENT_ALLOW_TEARING;
+		}
+
 		auto retval = func(This, SyncInterval, Flags);
 		TracyD3D11Collect(State::GetSingleton()->tracyCtx);
 		return retval;

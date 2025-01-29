@@ -110,7 +110,7 @@ void Streamline::Initialize()
 	}
 }
 
-void Streamline::PostDevice()
+void Streamline::PostDevice(IDXGISwapChain* a_swapChain)
 {
 	// Hook up all of the feature functions using the sl function slGetFeatureFunction
 
@@ -131,6 +131,23 @@ void Streamline::PostDevice()
 		slGetFeatureFunction(sl::kFeatureReflex, "slReflexSleep", (void*&)slReflexSleep);
 		slGetFeatureFunction(sl::kFeatureReflex, "slReflexSetOptions", (void*&)slReflexSetOptions);
 	}
+
+	DXGI_SWAP_CHAIN_DESC swapChainDesc;
+	a_swapChain->GetDesc(&swapChainDesc);
+
+	DXGI_RATIONAL refreshRateRational = swapChainDesc.BufferDesc.RefreshRate;
+
+	MONITORINFOEX monitorInfo = {};
+	monitorInfo.cbSize = sizeof(MONITORINFOEX);
+
+	HMONITOR monitor = MonitorFromWindow(swapChainDesc.OutputWindow, MONITOR_DEFAULTTONEAREST);
+	GetMonitorInfo(monitor, &monitorInfo);
+
+	DEVMODE devMode = {};
+	devMode.dmSize = sizeof(DEVMODE);
+
+	EnumDisplaySettings(monitorInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode);
+	refreshRate = devMode.dmDisplayFrequency;	
 }
 
 HRESULT Streamline::CreateDXGIFactory(REFIID riid, void** ppFactory)
@@ -208,6 +225,7 @@ HRESULT Streamline::CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter,
 	logger::info("[Streamline] Reflex {} available", featureReflex ? "is" : "is not");
 
 	pSwapChainDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+	pSwapChainDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
 	HRESULT hr = S_OK;
 
@@ -247,9 +265,7 @@ HRESULT Streamline::CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter,
 		slSetD3DDevice(*ppDevice);
 	}
 
-	(*((IDXGISwapChain2**)ppSwapChain))->SetMaximumFrameLatency(1);
-
-	PostDevice();
+	PostDevice(*ppSwapChain);
 
 	return hr;
 }
@@ -597,18 +613,25 @@ void Streamline::BeginFrame()
 	auto manager = RE::BSGraphics::Renderer::GetSingleton();
 	auto swapchain = reinterpret_cast<IDXGISwapChain2*>(manager->GetRuntimeData().renderWindows->swapChain);
 
-	auto handle = swapchain->GetFrameLatencyWaitableObject();
-	WaitForSingleObjectEx(handle, 1000, true);
-	CloseHandle(handle);
+	if (frameGenerationMode == sl::DLSSGMode::eOn) {
+		auto handle = swapchain->GetFrameLatencyWaitableObject();
+		WaitForSingleObjectEx(handle, 1000, true);
+		CloseHandle(handle);
+		swapchain->SetMaximumFrameLatency(1);
+	} else {
+		swapchain->SetMaximumFrameLatency(0);
+	}
 
 	LARGE_INTEGER qpf;
 	QueryPerformanceFrequency(&qpf);
 	int64_t targetFrameTicks;
 
-	if (frameGenerationMode == sl::DLSSGMode::eOff)
-		targetFrameTicks = int64_t(double(qpf.QuadPart) / 165.0);
+	double bestRefreshRate = refreshRate - (refreshRate * refreshRate) / 3600.0;
+
+	if (frameGenerationMode == sl::DLSSGMode::eOn)
+		targetFrameTicks = int64_t(double(qpf.QuadPart) / (bestRefreshRate * 0.5));
 	else
-		targetFrameTicks = int64_t(double(qpf.QuadPart) / (165.0 * 0.5));
+		targetFrameTicks = int64_t(double(qpf.QuadPart) / bestRefreshRate);
 
 	static LARGE_INTEGER lastFrame = {};
 	LARGE_INTEGER timeNow;
