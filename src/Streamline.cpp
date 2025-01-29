@@ -11,8 +11,7 @@
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	Streamline::Settings,
 	frameLimitMode,
-	frameGenerationMode
-);
+	frameGenerationMode);
 
 void LoggingCallback(sl::LogType type, const char* msg)
 {
@@ -230,7 +229,7 @@ HRESULT Streamline::CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter,
 
 	if (featureDLSSG && !REL::Module::IsVR()) {
 		logger::info("[Streamline] Proxying D3D11CreateDeviceAndSwapChain to add D3D12 swapchain");
-		
+
 		pSwapChainDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
 		auto slD3D11CreateDeviceAndSwapChain = reinterpret_cast<decltype(&D3D11CreateDeviceAndSwapChain)>(GetProcAddress(interposer, "D3D11CreateDeviceAndSwapChain"));
@@ -600,7 +599,7 @@ void Streamline::SaveSettings(json& o_json)
 
 void Streamline::LoadSettings(json& o_json)
 {
-	settings = o_json; 
+	settings = o_json;
 }
 
 void Streamline::RestoreDefaultSettings()
