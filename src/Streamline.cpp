@@ -1,6 +1,7 @@
 #include "Streamline.h"
 
 #include <dxgi.h>
+#include <dxgi1_3.h>
 
 #include "Hooks.h"
 #include "Util.h"
@@ -149,7 +150,7 @@ HRESULT Streamline::CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter,
 	const D3D_FEATURE_LEVEL* pFeatureLevels,
 	UINT FeatureLevels,
 	UINT SDKVersion,
-	const DXGI_SWAP_CHAIN_DESC* pSwapChainDesc,
+	DXGI_SWAP_CHAIN_DESC* pSwapChainDesc,
 	IDXGISwapChain** ppSwapChain,
 	ID3D11Device** ppDevice,
 	D3D_FEATURE_LEVEL* pFeatureLevel,
@@ -206,6 +207,8 @@ HRESULT Streamline::CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter,
 	logger::info("[Streamline] DLSSG {} available", featureDLSSG && !REL::Module::IsVR() ? "is" : "is not");
 	logger::info("[Streamline] Reflex {} available", featureReflex ? "is" : "is not");
 
+	pSwapChainDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+
 	HRESULT hr = S_OK;
 
 	if (featureDLSSG && !REL::Module::IsVR()) {
@@ -243,6 +246,8 @@ HRESULT Streamline::CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter,
 
 		slSetD3DDevice(*ppDevice);
 	}
+
+	(*((IDXGISwapChain2**)ppSwapChain))->SetMaximumFrameLatency(1);
 
 	PostDevice();
 
@@ -577,4 +582,40 @@ void Streamline::DestroyDLSSResources()
 	dlssOptions.mode = sl::DLSSMode::eOff;
 	slDLSSSetOptions(viewport, dlssOptions);
 	slFreeResources(sl::kFeatureDLSS, viewport);
+}
+
+static void TimerSleepQPC(int64_t targetQPC)
+{
+	LARGE_INTEGER currentQPC;
+	do {
+		QueryPerformanceCounter(&currentQPC);
+	} while (currentQPC.QuadPart < targetQPC);
+}
+
+void Streamline::BeginFrame()
+{
+	auto manager = RE::BSGraphics::Renderer::GetSingleton();
+	auto swapchain = reinterpret_cast<IDXGISwapChain2*>(manager->GetRuntimeData().renderWindows->swapChain);
+	
+	auto handle = swapchain->GetFrameLatencyWaitableObject();
+	WaitForSingleObjectEx(handle, 1000, true);
+	CloseHandle(handle);
+
+	LARGE_INTEGER qpf;
+	QueryPerformanceFrequency(&qpf);
+	int64_t targetFrameTicks;
+
+	if (frameGenerationMode == sl::DLSSGMode::eOff)
+		targetFrameTicks = int64_t(double(qpf.QuadPart) / 165.0);
+	else
+		targetFrameTicks = int64_t(double(qpf.QuadPart) / (165.0 * 0.5));
+
+	static LARGE_INTEGER lastFrame = {};
+	LARGE_INTEGER timeNow;
+	QueryPerformanceCounter(&timeNow);
+	int64_t delta = timeNow.QuadPart - lastFrame.QuadPart;
+	if (delta < targetFrameTicks) {
+		TimerSleepQPC(lastFrame.QuadPart + targetFrameTicks);
+	}
+	QueryPerformanceCounter(&lastFrame);
 }
