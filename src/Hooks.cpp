@@ -176,9 +176,11 @@ struct IDXGISwapChain_Present
 	{
 		State::GetSingleton()->Reset();
 		Menu::GetSingleton()->DrawOverlay();
-		Streamline::GetSingleton()->Present();
 
-		if (Streamline::GetSingleton()->frameGenerationMode == sl::DLSSGMode::eOn) {
+		auto streamline = Streamline::GetSingleton();
+		streamline->Present();
+
+		if (streamline->settings.frameGenerationMode == sl::DLSSGMode::eOn) {
 			SyncInterval = 0;
 			Flags = DXGI_PRESENT_ALLOW_TEARING;
 		}

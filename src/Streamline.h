@@ -34,7 +34,13 @@ public:
 	sl::ViewportHandle viewport{ 0 };
 	sl::FrameToken* frameToken;
 
-	sl::DLSSGMode frameGenerationMode = sl::DLSSGMode::eOn;
+	struct Settings
+	{
+		sl::DLSSGMode frameGenerationMode = sl::DLSSGMode::eOn;
+		int frameLimitMode = 0;
+	};
+
+	Settings settings{};
 
 	HMODULE interposer = NULL;
 
@@ -81,7 +87,7 @@ public:
 
 	void LoadInterposer();
 	void Initialize();
-	void PostDevice(IDXGISwapChain* a_swapChain);
+	void PostDevice(DXGI_SWAP_CHAIN_DESC* a_swapChainDesc);
 
 	HRESULT CreateDXGIFactory(REFIID riid, void** ppFactory);
 
@@ -105,6 +111,11 @@ public:
 
 	void Upscale(Texture2D* a_color, Texture2D* a_alphaMask, sl::DLSSPreset a_preset);
 	void UpdateConstants();
+
+	void SaveSettings(json& o_json);
+	void LoadSettings(json& o_json);
+
+	void RestoreDefaultSettings();
 
 	void DestroyDLSSResources();
 

@@ -8,6 +8,12 @@
 
 #include "Upscaling.h"
 
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
+	Streamline::Settings,
+	frameLimitMode,
+	frameGenerationMode
+);
+
 void LoggingCallback(sl::LogType type, const char* msg)
 {
 	switch (type) {
@@ -31,11 +37,12 @@ void Streamline::DrawSettings()
 		ImGui::Text("Frame Generation can only be enabled or disabled in the mod manager, it can only be temporarily toggled in-game");
 
 		if (ImGui::TreeNodeEx("NVIDIA DLSS Frame Generation", ImGuiTreeNodeFlags_DefaultOpen)) {
-			ImGui::Text("Requires an NVIDIA GeForce RTX 40 Series or newer");
+			ImGui::Text("Requires an NVIDIA GeForce RTX 40/50 Series or newer");
 			if (featureDLSSG) {
 				const char* frameGenerationModes[] = { "Off", "On" };
-				ImGui::SliderInt("Frame Generation", (int*)&frameGenerationMode, 0, 1, std::format("{}", frameGenerationModes[(uint)frameGenerationMode]).c_str());
-				frameGenerationMode = (sl::DLSSGMode)std::min(2u, (uint)frameGenerationMode);
+				ImGui::SliderInt("Frame Limit (Refresh Rate)", (int*)&settings.frameLimitMode, 0, 1, std::format("{}", frameGenerationModes[(uint)settings.frameLimitMode]).c_str());
+				ImGui::SliderInt("Frame Generation", (int*)&settings.frameGenerationMode, 0, 1, std::format("{}", frameGenerationModes[(uint)settings.frameGenerationMode]).c_str());
+				settings.frameGenerationMode = (sl::DLSSGMode)std::min(2u, (uint)settings.frameGenerationMode);
 			} else {
 			}
 			ImGui::TreePop();
@@ -110,7 +117,7 @@ void Streamline::Initialize()
 	}
 }
 
-void Streamline::PostDevice(IDXGISwapChain* a_swapChain)
+void Streamline::PostDevice(DXGI_SWAP_CHAIN_DESC* a_swapChainDesc)
 {
 	// Hook up all of the feature functions using the sl function slGetFeatureFunction
 
@@ -132,15 +139,10 @@ void Streamline::PostDevice(IDXGISwapChain* a_swapChain)
 		slGetFeatureFunction(sl::kFeatureReflex, "slReflexSetOptions", (void*&)slReflexSetOptions);
 	}
 
-	DXGI_SWAP_CHAIN_DESC swapChainDesc;
-	a_swapChain->GetDesc(&swapChainDesc);
-
-	DXGI_RATIONAL refreshRateRational = swapChainDesc.BufferDesc.RefreshRate;
-
 	MONITORINFOEX monitorInfo = {};
 	monitorInfo.cbSize = sizeof(MONITORINFOEX);
 
-	HMONITOR monitor = MonitorFromWindow(swapChainDesc.OutputWindow, MONITOR_DEFAULTTONEAREST);
+	HMONITOR monitor = MonitorFromWindow(a_swapChainDesc->OutputWindow, MONITOR_DEFAULTTONEAREST);
 	GetMonitorInfo(monitor, &monitorInfo);
 
 	DEVMODE devMode = {};
@@ -224,13 +226,12 @@ HRESULT Streamline::CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter,
 	logger::info("[Streamline] DLSSG {} available", featureDLSSG && !REL::Module::IsVR() ? "is" : "is not");
 	logger::info("[Streamline] Reflex {} available", featureReflex ? "is" : "is not");
 
-	pSwapChainDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-	pSwapChainDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-
 	HRESULT hr = S_OK;
 
 	if (featureDLSSG && !REL::Module::IsVR()) {
 		logger::info("[Streamline] Proxying D3D11CreateDeviceAndSwapChain to add D3D12 swapchain");
+		
+		pSwapChainDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
 		auto slD3D11CreateDeviceAndSwapChain = reinterpret_cast<decltype(&D3D11CreateDeviceAndSwapChain)>(GetProcAddress(interposer, "D3D11CreateDeviceAndSwapChain"));
 
@@ -265,7 +266,7 @@ HRESULT Streamline::CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter,
 		slSetD3DDevice(*ppDevice);
 	}
 
-	PostDevice(*ppSwapChain);
+	PostDevice(pSwapChainDesc);
 
 	return hr;
 }
@@ -342,7 +343,7 @@ void Streamline::SetupResources()
 
 void Streamline::CopyResourcesToSharedBuffers()
 {
-	if (!(featureDLSSG && !REL::Module::IsVR()) || frameGenerationMode == sl::DLSSGMode::eOff)
+	if (!(featureDLSSG && !REL::Module::IsVR()) || settings.frameGenerationMode == sl::DLSSGMode::eOff)
 		return;
 
 	auto& context = State::GetSingleton()->context;
@@ -405,13 +406,13 @@ void Streamline::Present()
 
 	UpdateConstants();
 
-	static auto currentFrameGenerationMode = frameGenerationMode;
+	static auto currentFrameGenerationMode = settings.frameGenerationMode;
 
-	if (currentFrameGenerationMode != frameGenerationMode) {
-		currentFrameGenerationMode = frameGenerationMode;
+	if (currentFrameGenerationMode != settings.frameGenerationMode) {
+		currentFrameGenerationMode = settings.frameGenerationMode;
 
 		sl::DLSSGOptions options{};
-		options.mode = frameGenerationMode;
+		options.mode = settings.frameGenerationMode;
 		options.flags = sl::DLSSGFlags::eRetainResourcesWhenOff;
 
 		if (SL_FAILED(result, slDLSSGSetOptions(viewport, options))) {
@@ -592,6 +593,21 @@ void Streamline::UpdateConstants()
 	}
 }
 
+void Streamline::SaveSettings(json& o_json)
+{
+	o_json = settings;
+}
+
+void Streamline::LoadSettings(json& o_json)
+{
+	settings = o_json; 
+}
+
+void Streamline::RestoreDefaultSettings()
+{
+	settings = {};
+}
+
 void Streamline::DestroyDLSSResources()
 {
 	sl::DLSSOptions dlssOptions{};
@@ -610,35 +626,20 @@ static void TimerSleepQPC(int64_t targetQPC)
 
 void Streamline::BeginFrame()
 {
-	auto manager = RE::BSGraphics::Renderer::GetSingleton();
-	auto swapchain = reinterpret_cast<IDXGISwapChain2*>(manager->GetRuntimeData().renderWindows->swapChain);
+	if (featureDLSSG && settings.frameGenerationMode == sl::DLSSGMode::eOn && settings.frameLimitMode) {
+		LARGE_INTEGER qpf;
+		QueryPerformanceFrequency(&qpf);
 
-	if (frameGenerationMode == sl::DLSSGMode::eOn) {
-		auto handle = swapchain->GetFrameLatencyWaitableObject();
-		WaitForSingleObjectEx(handle, 1000, true);
-		CloseHandle(handle);
-		swapchain->SetMaximumFrameLatency(1);
-	} else {
-		swapchain->SetMaximumFrameLatency(0);
+		double bestRefreshRate = refreshRate - (refreshRate * refreshRate) / 3600.0;
+		int64_t targetFrameTicks = int64_t(double(qpf.QuadPart) / (bestRefreshRate * 0.5));
+
+		static LARGE_INTEGER lastFrame = {};
+		LARGE_INTEGER timeNow;
+		QueryPerformanceCounter(&timeNow);
+		int64_t delta = timeNow.QuadPart - lastFrame.QuadPart;
+		if (delta < targetFrameTicks) {
+			TimerSleepQPC(lastFrame.QuadPart + targetFrameTicks);
+		}
+		QueryPerformanceCounter(&lastFrame);
 	}
-
-	LARGE_INTEGER qpf;
-	QueryPerformanceFrequency(&qpf);
-	int64_t targetFrameTicks;
-
-	double bestRefreshRate = refreshRate - (refreshRate * refreshRate) / 3600.0;
-
-	if (frameGenerationMode == sl::DLSSGMode::eOn)
-		targetFrameTicks = int64_t(double(qpf.QuadPart) / (bestRefreshRate * 0.5));
-	else
-		targetFrameTicks = int64_t(double(qpf.QuadPart) / bestRefreshRate);
-
-	static LARGE_INTEGER lastFrame = {};
-	LARGE_INTEGER timeNow;
-	QueryPerformanceCounter(&timeNow);
-	int64_t delta = timeNow.QuadPart - lastFrame.QuadPart;
-	if (delta < targetFrameTicks) {
-		TimerSleepQPC(lastFrame.QuadPart + targetFrameTicks);
-	}
-	QueryPerformanceCounter(&lastFrame);
 }

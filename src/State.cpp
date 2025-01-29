@@ -284,6 +284,20 @@ void State::Load(ConfigMode a_configMode, bool a_allowReload)
 			logger::warn("Missing settings for Upscaling, using default.");
 		}
 
+		auto streamline = Streamline::GetSingleton();
+		auto& streamlineJson = settings[streamline->GetShortName()];
+		if (streamlineJson.is_object()) {
+			logger::info("Loading Streamline settings");
+			try {
+				streamline->LoadSettings(upscalingJson);
+			} catch (...) {
+				logger::warn("Invalid settings for Streamline, using default.");
+				streamline->RestoreDefaultSettings();
+			}
+		} else {
+			logger::warn("Missing settings for Streamline, using default.");
+		}
+
 		for (auto* feature : Feature::GetFeatureList()) {
 			try {
 				const std::string featureName = feature->GetShortName();
@@ -363,6 +377,10 @@ void State::Save(ConfigMode a_configMode)
 	auto upscaling = Upscaling::GetSingleton();
 	auto& upscalingJson = settings[upscaling->GetShortName()];
 	upscaling->SaveSettings(upscalingJson);
+
+	auto streamline = Streamline::GetSingleton();
+	auto& streamlineJson = settings[streamline->GetShortName()];
+	streamline->SaveSettings(streamlineJson);
 
 	json originalShaders;
 	for (int classIndex = 0; classIndex < RE::BSShader::Type::Total - 1; ++classIndex) {
