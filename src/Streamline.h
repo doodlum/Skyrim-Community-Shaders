@@ -131,16 +131,6 @@ public:
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	struct Job_PollControls
-	{
-		static void thunk()
-		{
-			GetSingleton()->BeginFrame();
-			return func();
-		}
-		static inline REL::Relocation<decltype(thunk)> func;
-	};
-
 	struct Main_RenderWorld
 	{
 		static void thunk(bool a1)
@@ -168,8 +158,6 @@ public:
 	static void InstallHooks()
 	{
 		stl::write_thunk_call<Main_Update_Start>(REL::RelocationID(35565, 36564).address() + REL::Relocate(0x1E, 0x3E, 0x33));
-		//stl::write_thunk_call<Job_PollControls>(REL::RelocationID(35575, 36564).address() + REL::Relocate(0xB, 0x3E, 0x33));
-
 		stl::write_thunk_call<Main_RenderWorld>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x831, 0x841, 0x791));
 		stl::write_thunk_call<MenuManagerDrawInterfaceStartHook>(REL::RelocationID(79947, 82084).address() + REL::Relocate(0x7E, 0x83, 0x97));
 	}
