@@ -105,7 +105,7 @@ public:
 	void UpdateConstants();
 
 	void DestroyDLSSResources();
-	
+
 	void BeginFrame();
 
 	struct Main_Update_Start

@@ -596,7 +596,7 @@ void Streamline::BeginFrame()
 {
 	auto manager = RE::BSGraphics::Renderer::GetSingleton();
 	auto swapchain = reinterpret_cast<IDXGISwapChain2*>(manager->GetRuntimeData().renderWindows->swapChain);
-	
+
 	auto handle = swapchain->GetFrameLatencyWaitableObject();
 	WaitForSingleObjectEx(handle, 1000, true);
 	CloseHandle(handle);
