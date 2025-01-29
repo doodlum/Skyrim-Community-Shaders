@@ -65,7 +65,9 @@ public:
 	bool featureDLSSG = false;
 	bool featureReflex = false;
 
-	bool latencyFlex = true;
+	int latencyFlexMode = 1;
+	int frameLimitMode = 60;
+	int frameLimit = 60;
 
 	sl::ViewportHandle viewport{ 0 };
 	sl::FrameToken* frameToken;

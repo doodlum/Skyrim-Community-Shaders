@@ -177,7 +177,10 @@ struct IDXGISwapChain_Present
 		State::GetSingleton()->Reset();
 		Menu::GetSingleton()->DrawOverlay();
 		Streamline::GetSingleton()->Present();
+		Streamline::GetSingleton()->EndFrame();
+
 		auto retval = func(This, SyncInterval, Flags);
+
 		TracyD3D11Collect(State::GetSingleton()->tracyCtx);
 		return retval;
 	}
