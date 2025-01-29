@@ -1061,6 +1061,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float parallaxShadowQuality = sqrt(1.0 - saturate(viewPosition.z / 2048.0));
 #	endif
 
+
 #	if defined(LANDSCAPE)
 	float mipLevels[6];
 #	else
@@ -1068,6 +1069,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif  // LANDSCAPE
 	float sh0 = 0;
 	float pixelOffset = 0;
+
+
 
 #	if defined(EMAT)
 #		if defined(LANDSCAPE)
@@ -1105,16 +1108,16 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		float3 fdx = ddx(input.WorldPosition.xyz);
 		float3 fdy = ddy(input.WorldPosition.xyz);
 		float fragSize = rcp(length(max(abs(fdx), abs(fdy))));
-		curvature = pow(length(max(abs(ndx), abs(ndy))) * fragSize, 0.5);
+		curvature = pow(length(max(abs(ndx), abs(ndy)))*fragSize, 0.5);
 		float3 flatWorldNormal = normalize(-cross(ddx(input.WorldPosition.xyz), ddy(input.WorldPosition.xyz)));
-		normalSmoothness = (1 - dot(worldSpaceVertexNormal, flatWorldNormal));
-#			if defined(LANDSCAPE)
-		displacementParams[0].HeightScale = saturate(1 - curvature);
-		displacementParams[0].FlattenAmount = (normalSmoothness + curvature);
-#			else
-		displacementParams.HeightScale = saturate(1 - curvature);
-		displacementParams.FlattenAmount = (normalSmoothness + curvature);
-#			endif
+		normalSmoothness = (1-dot(worldSpaceVertexNormal, flatWorldNormal));
+#		if defined(LANDSCAPE)
+		displacementParams[0].HeightScale = saturate(1-curvature);
+		displacementParams[0].FlattenAmount = (normalSmoothness+curvature);
+#		else
+		displacementParams.HeightScale = saturate(1-curvature);
+		displacementParams.FlattenAmount = (normalSmoothness+curvature);
+#		endif
 	}
 #		endif
 #	endif
@@ -1182,9 +1185,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			refractedViewDirection = -refract(-viewDirection, entryNormal, eta);
 			refractedViewDirectionWS = normalize(mul(input.World[eyeIndex], float4(refractedViewDirection, 0)));
 		}
-		else
-		{
-			displacementParams.HeightScale *= PBRParams1.y;
+		else{
+				displacementParams.HeightScale *= PBRParams1.y;
 		}
 		mipLevel = ExtendedMaterials::GetMipLevel(uv, TexParallaxSampler);
 		uv = ExtendedMaterials::GetParallaxCoords(viewPosition.z, uv, mipLevel, refractedViewDirection, tbnTr, screenNoise, TexParallaxSampler, SampParallaxSampler, 0, displacementParams, pixelOffset);
@@ -1671,6 +1673,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 worldSpaceVertexNormal = worldSpaceNormal;
 #	endif
 
+
 	float3 screenSpaceNormal = normalize(FrameBuffer::WorldToView(worldSpaceNormal, false, eyeIndex));
 
 #	if defined(TRUE_PBR)
@@ -1768,6 +1771,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float pbrWeight = 1;
 	float pbrGlossiness = 1 - pbrSurfaceProperties.Roughness;
 #	endif  // TRUE_PBR
+
 
 	float porosity = 1.0;
 
@@ -2789,15 +2793,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	psout.Masks = float4(0, 0, 0, psout.Diffuse.w);
 #		endif
 #	endif
-
-	if (SharedData::extendedMaterialSettings.ExtendShadows) {
-#	if defined(SKINNED) || !defined(MODELSPACENORMALS)
-		psout.Diffuse.xyz = float3(curvature, normalSmoothness, 0);
-#		if defined(DEFERRED)
-		psout.Albedo.xyz = float3(curvature, normalSmoothness, 0);
-#		endif
-#	endif
-	}
 
 	return psout;
 }
