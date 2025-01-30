@@ -1,8 +1,8 @@
 #include "DX12SwapChain.h"
 #include <dxgi1_6.h>
 
-#include <Streamline.h>
 #include "Features/TerrainBlending.h"
+#include <Streamline.h>
 
 void DX12SwapChain::CacheFramebuffer()
 {
@@ -199,7 +199,6 @@ HRESULT DX12SwapChain::GetBuffer(void** ppSurface)
 
 void DX12SwapChain::BeginFrame()
 {
-
 }
 
 HRESULT DX12SwapChain::Present(UINT, UINT)
@@ -265,7 +264,6 @@ HRESULT DX12SwapChain::Present(UINT, UINT)
 	streamline->slPCLSetMarker2(sl::PCLMarker::eRenderSubmitEnd, *frameToken);
 	streamline->slPCLSetMarker2(sl::PCLMarker::ePresentStart, *frameToken);
 
-
 	//    float4x4 worldToViewMatrix;
 	//float4x4 viewToClipMatrix;
 	//float4x4 prevRenderedWorldToViewMatrix;
@@ -317,9 +315,8 @@ HRESULT DX12SwapChain::Present(UINT, UINT)
 	//! @param outCameraData Predicted Camera data for an upcoming render frame
 	//! @return sl::ResultCode::eOk if successful, error code otherwise (see sl_result.h for details)
 	//!
-	//! 
+	//!
 	//! This method is thread safe.
-	
 
 	auto hr = swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
 
@@ -333,7 +330,6 @@ HRESULT DX12SwapChain::Present(UINT, UINT)
 
 	frameToken = streamline->GetFrameToken(++streamline->frameID);
 
-
 	//sl::ReflexPredictedCameraData outCameraData;
 	//if (sl::Result::eOk == streamline->slReflexGetPredictedCameraData(streamline->viewport, *frameToken, outCameraData))
 	//{
@@ -341,7 +337,7 @@ HRESULT DX12SwapChain::Present(UINT, UINT)
 	//	inCameraData.prevRenderedWorldToViewMatrix = *(sl::float4x4*)&prevRenderedWorldToViewMatrix;
 	//	inCameraData.viewToClipMatrix = outCameraData.predictedViewToClipMatrix;
 	//	inCameraData.prevRenderedViewToClipMatrix = *(sl::float4x4*)&prevRenderedViewToClipMatrix;
-	//	
+	//
 	//	streamline->slReflexSetCameraData(streamline->viewport, *frameToken, inCameraData);
 	//}
 

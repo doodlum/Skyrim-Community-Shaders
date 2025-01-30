@@ -17,12 +17,12 @@
 #include <sl_version.h>
 
 // Streamline Features
+#include <sl_deepdvc.h>
 #include <sl_dlss.h>
-#include <sl_reflex.h>
-#include <sl_nis.h>
 #include <sl_dlss_g.h>
 #include <sl_matrix_helpers.h>
-#include <sl_deepdvc.h>
+#include <sl_nis.h>
+#include <sl_reflex.h>
 #pragma warning(pop)
 
 class Streamline
@@ -67,8 +67,6 @@ public:
 	sl::DLSSGMode frameGenerationMode = sl::DLSSGMode::eOn;
 
 	HMODULE interposer = NULL;
-
-
 
 	// SL Interposer Functions
 	PFun_slInit* slInit{};
