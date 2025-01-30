@@ -2,6 +2,53 @@
 #include <dxgi1_6.h>
 
 #include <Streamline.h>
+#include "Features/TerrainBlending.h"
+
+void DX12SwapChain::CacheFramebuffer()
+{
+	auto frameBuffer = (FrameBuffer*)mappedFrameBuffer->pData;
+	frameBufferCached = *frameBuffer;
+	mappedFrameBuffer = nullptr;
+}
+
+void DX12SwapChain::Main_RenderDepth::thunk(bool a1, bool a2)
+{
+	DX12SwapChain::GetSingleton()->UpdateFrameBuffer();
+	func(a1, a2);
+}
+
+void DX12SwapChain::UpdateFrameBuffer()
+{
+	auto cameraViewInverseAdjusted = frameBufferCached.CameraViewInverse.Transpose();
+	cameraViewInverseAdjusted._41 += frameBufferCached.CameraPosAdjust.x;
+	cameraViewInverseAdjusted._42 += frameBufferCached.CameraPosAdjust.y;
+	cameraViewInverseAdjusted._43 += frameBufferCached.CameraPosAdjust.z;
+
+	auto worldToViewMatrix = cameraViewInverseAdjusted.Invert();
+	auto viewToClipMatrix = frameBufferCached.CameraProjUnjittered.Transpose();
+
+	static auto prevRenderedWorldToViewMatrix = worldToViewMatrix;
+	static auto prevRenderedViewToClipMatrix = viewToClipMatrix;
+
+	sl::ReflexCameraData inCameraData{};
+	inCameraData.worldToViewMatrix = *(sl::float4x4*)&worldToViewMatrix;
+	inCameraData.prevRenderedWorldToViewMatrix = *(sl::float4x4*)&prevRenderedWorldToViewMatrix;
+	inCameraData.viewToClipMatrix = *(sl::float4x4*)&viewToClipMatrix;
+	inCameraData.prevRenderedViewToClipMatrix = *(sl::float4x4*)&prevRenderedViewToClipMatrix;
+
+	auto streamline = Streamline::GetSingleton();
+	auto frameToken = streamline->frameTokenPrevious;
+	static uint32_t lastFrameID = 0;
+
+	if (frameToken && streamline->frameID > lastFrameID) {
+		prevRenderedWorldToViewMatrix = worldToViewMatrix;
+		prevRenderedViewToClipMatrix = viewToClipMatrix;
+		if (sl::Result::eOk != streamline->slReflexSetCameraData(streamline->viewport, *frameToken, inCameraData)) {
+			logger::error("error");
+		}
+		lastFrameID = streamline->frameID;
+	}
+}
 
 void DX12SwapChain::CreateD3D12Device(IDXGIAdapter* adapter)
 {
@@ -139,6 +186,9 @@ void DX12SwapChain::SetD3D11Device(ID3D11Device* a_d3d11Device)
 void DX12SwapChain::SetD3D11DeviceContext(ID3D11DeviceContext* a_d3d11Context)
 {
 	DX::ThrowIfFailed(a_d3d11Context->QueryInterface(IID_PPV_ARGS(&d3d11Context)));
+
+	stl::detour_vfunc<14, ID3D11DeviceContext_Map>(a_d3d11Context);
+	stl::detour_vfunc<15, ID3D11DeviceContext_Unmap>(a_d3d11Context);
 }
 
 HRESULT DX12SwapChain::GetBuffer(void** ppSurface)
@@ -149,20 +199,7 @@ HRESULT DX12SwapChain::GetBuffer(void** ppSurface)
 
 void DX12SwapChain::BeginFrame()
 {
-	//DX::ThrowIfFailed(commandAllocator->Reset());
-	//DX::ThrowIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
-	//
-	//DX::ThrowIfFailed(commandQueue->Signal(d3d12Fence.get(), currentSharedFenceValue));
-	//DX::ThrowIfFailed(d3d11Context->Wait(d3d11Fence.get(), currentSharedFenceValue));
 
-	//currentSharedFenceValue++;
-	//auto streamline = Streamline::GetSingleton();
-	//auto frameToken = streamline->frameToken;
-
-	//streamline->slReflexSetMarker(sl::ReflexMarker::eInputSample, *frameToken);
-	//streamline->slReflexSetMarker(sl::ReflexMarker::eSimulationStart, *frameToken);
-	//streamline->slReflexSetMarker(sl::ReflexMarker::eSimulationEnd, *frameToken);
-	//streamline->slReflexSetMarker(sl::ReflexMarker::eRenderSubmitStart, *frameToken);
 }
 
 HRESULT DX12SwapChain::Present(UINT, UINT)
@@ -222,14 +259,71 @@ HRESULT DX12SwapChain::Present(UINT, UINT)
 	commandQueue->ExecuteCommandLists(1, commandLists);
 
 	auto streamline = Streamline::GetSingleton();
-	auto frameToken = streamline->frameToken;
 
-	streamline->slReflexSetMarker(sl::ReflexMarker::eRenderSubmitEnd, *frameToken);
-	streamline->slReflexSetMarker(sl::ReflexMarker::ePresentStart, *frameToken);
+	auto frameToken = streamline->GetFrameToken(streamline->frameID);
+
+	streamline->slPCLSetMarker2(sl::PCLMarker::eRenderSubmitEnd, *frameToken);
+	streamline->slPCLSetMarker2(sl::PCLMarker::ePresentStart, *frameToken);
+
+
+	//    float4x4 worldToViewMatrix;
+	//float4x4 viewToClipMatrix;
+	//float4x4 prevRenderedWorldToViewMatrix;
+	//float4x4 prevRenderedViewToClipMatrix;
+
+	//auto cameraViewInverseAdjusted = frameBufferCached.CameraViewInverse.Transpose();
+	//cameraViewInverseAdjusted._41 += frameBufferCached.CameraPosAdjust.x;
+	//cameraViewInverseAdjusted._42 += frameBufferCached.CameraPosAdjust.y;
+	//cameraViewInverseAdjusted._43 += frameBufferCached.CameraPosAdjust.z;
+
+	//auto worldToViewMatrix = cameraViewInverseAdjusted.Invert();
+	//auto viewToClipMatrix = frameBufferCached.CameraProjUnjittered.Transpose();
+
+	//static auto prevRenderedWorldToViewMatrix = worldToViewMatrix;
+	//static auto prevRenderedViewToClipMatrix = viewToClipMatrix;
+
+	////! Sets Reflex camera data
+	////!
+	////! Call this method to inform Reflex of upcoming camera data
+	////!
+	////! @param viewport The viewport the camera corresponds to
+	////! @param frame The frame to set camera data for
+	////! @param inCameraData Camera data for an upcoming render frame
+	////! @return sl::ResultCode::eOk if successful, error code otherwise (see sl_result.h for details)
+	////!
+	////! This method is thread safe.
+	////using PFun_slReflexSetCameraData = sl::Result(const sl::ViewportHandle& viewport, const sl::FrameToken& frame, const sl::ReflexCameraData& inCameraData);
+
+	//sl::ReflexCameraData inCameraData{};
+	//inCameraData.worldToViewMatrix = *(sl::float4x4*)&worldToViewMatrix;
+	//inCameraData.prevRenderedWorldToViewMatrix = *(sl::float4x4*)&prevRenderedWorldToViewMatrix;
+	//inCameraData.viewToClipMatrix = *(sl::float4x4*)&viewToClipMatrix;
+	//inCameraData.prevRenderedViewToClipMatrix = *(sl::float4x4*)&prevRenderedViewToClipMatrix;
+
+	//if (sl::Result::eOk != streamline->slReflexSetCameraData(streamline->viewport, *frameToken, inCameraData))
+	//{
+	//	logger::error("ererer");
+	//}
+
+	//prevRenderedWorldToViewMatrix = worldToViewMatrix;
+	//prevRenderedViewToClipMatrix = viewToClipMatrix;
+
+	//! Gets predicted Reflex camera data
+	//!
+	//! Call this method to get a prediction of upcoming camera data
+	//!
+	//! @param viewport The viewport the camera corresponds to
+	//! @param frame The frame to get camera data for (if available)
+	//! @param outCameraData Predicted Camera data for an upcoming render frame
+	//! @return sl::ResultCode::eOk if successful, error code otherwise (see sl_result.h for details)
+	//!
+	//! 
+	//! This method is thread safe.
+	
 
 	auto hr = swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
 
-	streamline->slReflexSetMarker(sl::ReflexMarker::ePresentEnd, *frameToken);
+	streamline->slPCLSetMarker2(sl::PCLMarker::ePresentEnd, *frameToken);
 
 	DX::ThrowIfFailed(commandQueue->Signal(d3d12OnlyFence.get(), currentSharedFenceValue));
 
@@ -237,53 +331,25 @@ HRESULT DX12SwapChain::Present(UINT, UINT)
 	DX::ThrowIfFailed(d3d12OnlyFence->SetEventOnCompletion(currentSharedFenceValue, fenceEvent));
 	WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
 
-	//// Fake start of frame
-	//DX::ThrowIfFailed(commandAllocator->Reset());
-	//DX::ThrowIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
+	frameToken = streamline->GetFrameToken(++streamline->frameID);
 
+
+	//sl::ReflexPredictedCameraData outCameraData;
+	//if (sl::Result::eOk == streamline->slReflexGetPredictedCameraData(streamline->viewport, *frameToken, outCameraData))
 	//{
-	//	auto fakeSwapChain = swapChainBufferWrapped->resource.get();
-	//	auto realSwapchain = swapChainBufferWrappedDummy->resource.get();
-	//	{
-	//		std::vector<D3D12_RESOURCE_BARRIER> barriers;
-	//		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(fakeSwapChain, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE));
-	//		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(realSwapchain, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
-	//		commandList->ResourceBarrier(static_cast<UINT>(barriers.size()), barriers.data());
-	//	}
-
-	//	commandList->CopyResource(realSwapchain, fakeSwapChain);
-
-	//	{
-	//		std::vector<D3D12_RESOURCE_BARRIER> barriers;
-	//		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(fakeSwapChain, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON));
-	//		barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(realSwapchain, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON));
-	//		commandList->ResourceBarrier(static_cast<UINT>(barriers.size()), barriers.data());
-	//	}
+	//	inCameraData.worldToViewMatrix = outCameraData.predictedWorldToViewMatrix;
+	//	inCameraData.prevRenderedWorldToViewMatrix = *(sl::float4x4*)&prevRenderedWorldToViewMatrix;
+	//	inCameraData.viewToClipMatrix = outCameraData.predictedViewToClipMatrix;
+	//	inCameraData.prevRenderedViewToClipMatrix = *(sl::float4x4*)&prevRenderedViewToClipMatrix;
+	//	
+	//	streamline->slReflexSetCameraData(streamline->viewport, *frameToken, inCameraData);
 	//}
 
-	//DX::ThrowIfFailed(commandList->Close());
+	streamline->slReflexSleep(*frameToken);
 
-	//commandQueue->ExecuteCommandLists(1, commandLists);
-
-	//DX::ThrowIfFailed(commandAllocator->Reset());
-	//DX::ThrowIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
-
-	auto start = std::chrono::high_resolution_clock::now();
-	if (streamline->reflex)
-		streamline->slReflexSleep(*frameToken);
-	auto end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> duration = end - start;
-	logger::info("Sleep duration: {} seconds", duration.count());
-
-	streamline->slReflexSetMarker(sl::ReflexMarker::eInputSample, *frameToken);
-	streamline->slReflexSetMarker(sl::ReflexMarker::eSimulationStart, *frameToken);
-	streamline->slReflexSetMarker(sl::ReflexMarker::eSimulationEnd, *frameToken);
-	streamline->slReflexSetMarker(sl::ReflexMarker::eRenderSubmitStart, *frameToken);
-
-	//DX::ThrowIfFailed(commandQueue->Signal(d3d12Fence.get(), currentSharedFenceValue));
-	//DX::ThrowIfFailed(d3d11Context->Wait(d3d11Fence.get(), currentSharedFenceValue));
-
-	//currentSharedFenceValue++;
+	streamline->slPCLSetMarker2(sl::PCLMarker::eSimulationStart, *frameToken);
+	streamline->slPCLSetMarker2(sl::PCLMarker::eSimulationEnd, *frameToken);
+	streamline->slPCLSetMarker2(sl::PCLMarker::eRenderSubmitStart, *frameToken);
 
 	return hr;
 }

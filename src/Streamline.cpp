@@ -70,7 +70,7 @@ void Streamline::Initialize()
 
 	sl::Preferences pref;
 
-	sl::Feature featuresToLoad[] = { sl::kFeatureDLSS, sl::kFeatureDLSS_G, sl::kFeatureReflex };
+	sl::Feature featuresToLoad[] = { sl::kFeatureDLSS, sl::kFeatureDLSS_G, sl::kFeatureReflex, sl::kFeaturePCL };
 	pref.featuresToLoad = featuresToLoad;
 	pref.numFeaturesToLoad = _countof(featuresToLoad);
 
@@ -129,10 +129,16 @@ void Streamline::PostDevice()
 
 	if (featureReflex) {
 		slGetFeatureFunction(sl::kFeatureReflex, "slReflexGetState", (void*&)slReflexGetState);
-		slGetFeatureFunction(sl::kFeatureReflex, "slReflexSetMarker", (void*&)slReflexSetMarker);
+		//slGetFeatureFunction(sl::kFeatureReflex, "slReflexSetMarker", (void*&)slReflexSetMarker);
 		slGetFeatureFunction(sl::kFeatureReflex, "slReflexSleep", (void*&)slReflexSleep);
 		slGetFeatureFunction(sl::kFeatureReflex, "slReflexSetOptions", (void*&)slReflexSetOptions);
+		slGetFeatureFunction(sl::kFeatureReflex, "slReflexGetPredictedCameraData", (void*&)slReflexGetPredictedCameraData);
+		slGetFeatureFunction(sl::kFeatureReflex, "slReflexSetCameraData", (void*&)slReflexSetCameraData);
+
 	}
+
+	slGetFeatureFunction(sl::kFeaturePCL, "slPCLSetMarker", (void*&)slPCLSetMarker2);
+	
 }
 
 HRESULT Streamline::CreateDXGIFactory(REFIID riid, void** ppFactory)
@@ -268,10 +274,10 @@ void Streamline::SetupResources()
 
 	if (featureReflex) {
 		sl::ReflexOptions reflexOptions{};
-		reflexOptions.mode = sl::ReflexMode::eLowLatencyWithBoost;
+		reflexOptions.mode = reflex ? sl::ReflexMode::eLowLatencyWithBoost : sl::ReflexMode::eOff;
 		reflexOptions.useMarkersToOptimize = false;
 		reflexOptions.virtualKey = 0;
-		reflexOptions.frameLimitUs = 0;
+		reflexOptions.frameLimitUs = int(1000000. / 30.);
 
 		if (SL_FAILED(res, slReflexSetOptions(reflexOptions))) {
 			logger::error("[Streamline] Failed to set reflex options");
@@ -458,6 +464,16 @@ void Streamline::Present()
 
 	sl::Extent fullExtent{ 0, 0, (uint)state->screenSize.x, (uint)state->screenSize.y };
 
+	auto context = DX12SwapChain::GetSingleton()->commandList.get();
+
+	{
+		// tag backbuffer resource mainly to pass extent data and therefore resource can be nullptr.
+		// If the viewport extent is invalid - set extent to null. This informs streamline that full resource extent needs to be used
+		sl::ResourceTag backBufferResourceTag = sl::ResourceTag{ nullptr, sl::kBufferTypeBackbuffer, sl::ResourceLifecycle{}, nullptr };
+		sl::ResourceTag inputs[] = { backBufferResourceTag };
+		slSetTag(viewport, inputs, _countof(inputs), context);
+	}
+
 	float2 dynamicScreenSize = Util::ConvertToDynamic(State::GetSingleton()->screenSize);
 	sl::Extent dynamicExtent{ 0, 0, (uint)dynamicScreenSize.x, (uint)dynamicScreenSize.y };
 
@@ -475,7 +491,6 @@ void Streamline::Present()
 
 	sl::ResourceTag inputs[] = { depthTag, mvecTag, hudLessTag, uiTag };
 
-	auto context = DX12SwapChain::GetSingleton()->commandList.get();
 
 	slSetTag(viewport, inputs, _countof(inputs), context);
 }
@@ -608,10 +623,7 @@ void Streamline::UpdateConstants()
 	slConstants.motionVectorsDilated = sl::Boolean::eFalse;
 	slConstants.motionVectorsJittered = sl::Boolean::eFalse;
 
-	if (SL_FAILED(res, slGetNewFrameToken(frameToken, nullptr))) {
-		logger::error("[Streamline] Could not get frame token");
-		return;
-	}
+	GetFrameToken(frameID);
 
 	if (SL_FAILED(res, slSetConstants(slConstants, *frameToken, viewport))) {
 		logger::error("[Streamline] Could not set constants");

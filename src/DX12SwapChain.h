@@ -73,6 +73,32 @@ public:
 		return &singleton;
 	}
 
+	struct FrameBuffer
+	{
+		Matrix CameraView;
+		Matrix CameraProj;
+		Matrix CameraViewProj;
+		Matrix CameraViewProjUnjittered;
+		Matrix CameraPreviousViewProjUnjittered;
+		Matrix CameraProjUnjittered;
+		Matrix CameraProjUnjitteredInverse;
+		Matrix CameraViewInverse;
+		Matrix CameraViewProjInverse;
+		Matrix CameraProjInverse;
+		float4 CameraPosAdjust;
+		float4 CameraPreviousPosAdjust;
+		float4 FrameParams;
+		float4 DynamicResolutionParams1;
+		float4 DynamicResolutionParams2;
+	};
+
+	D3D11_MAPPED_SUBRESOURCE* mappedFrameBuffer = nullptr;
+	FrameBuffer frameBufferCached{};
+
+	void CacheFramebuffer();
+
+	void UpdateFrameBuffer();
+
 	winrt::com_ptr<IDXGIFactory4> factory;
 
 	winrt::com_ptr<ID3D12Device> d3d12Device;
@@ -221,9 +247,46 @@ public:
 		trampoline.write_branch<6>(func.address() + REL::VariantOffset(0x98, 0x85, 0x97).offset(), trampoline.allocate(patch));
 	}
 
+	struct ID3D11DeviceContext_Map
+	{
+		static HRESULT thunk(ID3D11DeviceContext* This, ID3D11Resource* pResource, UINT Subresource, D3D11_MAP MapType, UINT MapFlags, D3D11_MAPPED_SUBRESOURCE* pMappedResource)
+		{
+			HRESULT hr = func(This, pResource, Subresource, MapType, MapFlags, pMappedResource);
+
+			static REL::Relocation<ID3D11Buffer**> perFrame{ REL::RelocationID(524768, 411384) };
+
+			if (*perFrame.get() == pResource)
+				GetSingleton()->mappedFrameBuffer = pMappedResource;
+
+			return hr;
+		}
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
+	struct ID3D11DeviceContext_Unmap
+	{
+		static void thunk(ID3D11DeviceContext* This, ID3D11Resource* pResource, UINT Subresource)
+		{
+			static REL::Relocation<ID3D11Buffer**> perFrame{ REL::RelocationID(524768, 411384) };
+
+			if (*perFrame.get() == pResource && GetSingleton()->mappedFrameBuffer)
+				GetSingleton()->CacheFramebuffer();
+
+			func(This, pResource, Subresource);
+		}
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
+	struct Main_RenderDepth
+	{
+		static void thunk(bool a1, bool a2);
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
 	static void Install()
 	{
 		PatchCreateRenderTarget();
+		stl::write_thunk_call<Main_RenderDepth>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x395, 0x395, 0x2EE));
 
 		//stl::write_thunk_call<Main_Update_Start>(REL::RelocationID(35565, 36564).address() + REL::Relocate(0x1E, 0x3E, 0x33));
 	}
