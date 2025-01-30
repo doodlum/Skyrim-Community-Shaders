@@ -77,8 +77,7 @@ void CloudShadows::ModifySky(RE::BSRenderPass* Pass)
 void CloudShadows::ReflectionsPrepass()
 {
 	Util::FrameChecker frameChecker;
-	if (frameChecker.IsNewFrame())
-	{
+	if (frameChecker.IsNewFrame()) {
 		if ((RE::Sky::GetSingleton()->mode.get() != RE::Sky::Mode::kFull) ||
 			!RE::Sky::GetSingleton()->currentClimate)
 			return;
@@ -92,7 +91,6 @@ void CloudShadows::ReflectionsPrepass()
 		context->CSSetShaderResources(25, 1, &srv);
 	}
 }
-
 
 void CloudShadows::EarlyPrepass()
 {

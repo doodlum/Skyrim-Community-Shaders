@@ -821,7 +821,6 @@ void Deferred::Hooks::BSShaderAccumulator_ShadowMapOrMask_BlendedDecals::thunk(R
 	deferred->inDecals = false;
 };
 
-
 void Deferred::Hooks::BSCubeMapCamera_RenderCubemap::thunk(RE::NiAVObject* camera, int a2, bool a3, bool a4, bool a5)
 {
 	auto deferred = VariableCache::GetSingleton()->deferred;
