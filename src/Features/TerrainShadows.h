@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Feature.h"
-
 #include <filesystem>
 
 struct TerrainShadows : public Feature

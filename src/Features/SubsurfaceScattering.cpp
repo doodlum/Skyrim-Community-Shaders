@@ -2,8 +2,8 @@
 
 #include "Deferred.h"
 #include "Features/TerrainBlending.h"
+#include "ShaderCache.h"
 #include "State.h"
-#include "Util.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SubsurfaceScattering::DiffusionProfile,
 	BlurRadius, Thickness, Strength, Falloff)
@@ -277,7 +277,8 @@ void SubsurfaceScattering::SetupResources()
 void SubsurfaceScattering::Reset()
 {
 	auto shaderManager = globals::game::smState;
-	shaderManager->characterLightEnabled = SIE::ShaderCache::Instance().IsEnabled() ? settings.EnableCharacterLighting : true;
+	auto shaderCache = globals::shaderCache;
+	shaderManager->characterLightEnabled = shaderCache->IsEnabled() ? settings.EnableCharacterLighting : true;
 
 	if (updateKernels) {
 		updateKernels = false;

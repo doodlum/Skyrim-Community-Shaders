@@ -1,25 +1,22 @@
 #include "Menu.h"
-#include "Util.h"
 
 #ifndef DIRECTINPUT_VERSION
 #	define DIRECTINPUT_VERSION 0x0800
 #endif
 #include <dinput.h>
+#include <imgui_impl_dx11.h>
+#include <imgui_impl_win32.h>
 #include <imgui_internal.h>
 #include <imgui_stdlib.h>
-#include <magic_enum.hpp>
-
-#include "ShaderCache.h"
-#include "State.h"
-
-#include "Feature.h"
-#include "Features/LightLimitFix/ParticleLights.h"
 
 #include "Deferred.h"
-#include "TruePBR.h"
-
+#include "ShaderCache.h"
+#include "State.h"
 #include "Streamline.h"
+#include "TruePBR.h"
 #include "Upscaling.h"
+
+#include "Features/LightLimitFix/ParticleLights.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	Menu::ThemeSettings::PaletteColors,

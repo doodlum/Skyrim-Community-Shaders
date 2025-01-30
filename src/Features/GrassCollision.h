@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Feature.h"
-
 struct GrassCollision : Feature
 {
 	static GrassCollision* GetSingleton()

@@ -2,20 +2,15 @@
 
 #include <codecvt>
 
-#include <magic_enum.hpp>
 #include <pystring/pystring.h>
-
-#include "Menu.h"
-#include "ShaderCache.h"
-
-#include "Feature.h"
 
 #include "Deferred.h"
 #include "Features/CloudShadows.h"
 #include "Features/TerrainBlending.h"
-#include "TruePBR.h"
-
+#include "Menu.h"
+#include "ShaderCache.h"
 #include "Streamline.h"
+#include "TruePBR.h"
 #include "Upscaling.h"
 
 void State::Draw()

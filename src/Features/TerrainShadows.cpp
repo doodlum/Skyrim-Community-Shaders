@@ -1,11 +1,10 @@
 #include "TerrainShadows.h"
 
-#include "Menu.h"
-#include "State.h"
-#include "Util.h"
-
 #include <DirectXTex.h>
 #include <pystring/pystring.h>
+
+#include "Menu.h"
+#include "State.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	TerrainShadows::Settings,

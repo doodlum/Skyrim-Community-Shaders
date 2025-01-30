@@ -1,7 +1,5 @@
 #include "WaterEffects.h"
 
-#include "Util.h"
-
 #include <DDSTextureLoader.h>
 
 void WaterEffects::SetupResources()

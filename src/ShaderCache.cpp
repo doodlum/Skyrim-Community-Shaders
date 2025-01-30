@@ -1,14 +1,8 @@
 #include "ShaderCache.h"
 
-#include <RE/V/VertexDesc.h>
-
-#include <d3d11.h>
 #include <d3dcompiler.h>
-#include <fmt/std.h>
-#include <wrl/client.h>
 
 #include "Deferred.h"
-#include "Feature.h"
 #include "State.h"
 
 #include "Features/DynamicCubemaps.h"

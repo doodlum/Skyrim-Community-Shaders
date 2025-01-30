@@ -1,9 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Feature.h"
-#include "Util.h"
-
 class MenuOpenCloseEventHandler : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
 {
 public:

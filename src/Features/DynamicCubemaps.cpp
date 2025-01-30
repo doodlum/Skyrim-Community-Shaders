@@ -1,11 +1,10 @@
 #include "DynamicCubemaps.h"
-#include "ShaderCache.h"
-
-#include "State.h"
-#include "Util.h"
 
 #include <DDSTextureLoader.h>
 #include <DirectXTex.h>
+
+#include "ShaderCache.h"
+#include "State.h"
 
 constexpr auto MIPLEVELS = 8;
 

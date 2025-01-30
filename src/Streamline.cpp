@@ -4,8 +4,7 @@
 #include <dxgi1_3.h>
 
 #include "Hooks.h"
-#include "Util.h"
-
+#include "State.h"
 #include "Upscaling.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
@@ -639,4 +638,13 @@ void Streamline::BeginFrame()
 		}
 		QueryPerformanceCounter(&lastFrame);
 	}
+}
+
+void Streamline::Main_RenderWorld::thunk(bool a1)
+{
+	if (!globals::game::isVR || !globals::state->upscalerLoaded) {
+		// With upscaler, VR hangs on this function, specifically at slSetConstants
+		GetSingleton()->UpdateConstants();
+	}
+	func(a1);
 }

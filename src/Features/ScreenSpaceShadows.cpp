@@ -1,7 +1,6 @@
 #include "ScreenSpaceShadows.h"
 
 #include "State.h"
-#include "Util.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4838 4244)

@@ -1,12 +1,6 @@
 #pragma once
 
-#include "imgui.h"
-#include "imgui_impl_dx11.h"
-#include "imgui_impl_win32.h"
-#include <chrono>
 #include <dxgi1_4.h>
-#include <shared_mutex>
-#include <winrt/base.h>
 
 using namespace std::chrono;
 #define BUFFER_VIEWER_NODE(a_value, a_scale)                                                                 \

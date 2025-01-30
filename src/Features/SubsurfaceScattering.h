@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Feature.h"
-
 #define SSSS_N_SAMPLES 21
 
 struct SubsurfaceScattering : Feature

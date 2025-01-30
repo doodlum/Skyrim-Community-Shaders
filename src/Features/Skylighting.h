@@ -1,10 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Feature.h"
-#include "State.h"
-#include "Util.h"
-
 struct Skylighting : Feature
 {
 	static Skylighting* GetSingleton()

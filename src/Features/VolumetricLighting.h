@@ -1,9 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Feature.h"
-#include "Util.h"
-
 struct VolumetricLighting : Feature
 {
 public:

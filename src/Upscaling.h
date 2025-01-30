@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "State.h"
-
 #include "FidelityFX.h"
 #include "Streamline.h"
 
@@ -128,22 +125,5 @@ public:
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	static void InstallHooks()
-	{
-		if (!globals::state->upscalerLoaded) {
-			bool isGOG = !GetModuleHandle(L"steam_api64.dll");
-
-			stl::write_thunk_call<Main_UpdateJitter>(REL::RelocationID(75460, 77245).address() + REL::Relocate(0xE5, isGOG ? 0x133 : 0xE2, 0x104));
-			stl::write_thunk_call<TAA_BeginTechnique>(REL::RelocationID(100540, 107270).address() + REL::Relocate(0x3E9, 0x3EA, 0x448));
-			stl::write_thunk_call<TAA_EndTechnique>(REL::RelocationID(100540, 107270).address() + REL::Relocate(0x3F3, 0x3F4, 0x452));
-			stl::write_thunk_call<BSImageSpacerShader_RenderPassImmediately>(REL::RelocationID(100951, 107733).address() + REL::Relocate(0x82, 0x78, 0x7E));
-
-			logger::info("[Upscaling] Installed hooks");
-
-			RE::UI::GetSingleton()->GetEventSource<RE::MenuOpenCloseEvent>()->AddEventSink(Upscaling::GetSingleton());
-			logger::info("[Upscaling] Registered for MenuOpenCloseEvent");
-		} else {
-			logger::info("[Upscaling] Not installing hooks due to Skyrim Upscaler");
-		}
-	}
+	static void InstallHooks();
 };

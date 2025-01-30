@@ -1,13 +1,7 @@
 #pragma once
 
-#include <RE/B/BSShader.h>
-
-#include "BS_thread_pool.hpp"
-#include "efsw/efsw.hpp"
-#include <chrono>
-#include <condition_variable>
-#include <unordered_map>
-#include <unordered_set>
+#include <BS_thread_pool.hpp>
+#include <efsw/efsw.hpp>
 
 static constexpr REL::Version SHADER_CACHE_VERSION = { 0, 0, 0, 27 };
 

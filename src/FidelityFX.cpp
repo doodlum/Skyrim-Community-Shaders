@@ -1,9 +1,7 @@
 #include "FidelityFX.h"
 
-#include "Upscaling.h"
-
 #include "State.h"
-#include "Util.h"
+#include "Upscaling.h"
 
 FfxResource ffxGetResource(ID3D11Resource* dx11Resource,
 	[[maybe_unused]] wchar_t const* ffxResName,

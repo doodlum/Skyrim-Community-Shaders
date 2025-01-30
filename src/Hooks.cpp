@@ -1,14 +1,12 @@
 #include "Hooks.h"
 
+#include "ShaderTools/BSShaderHooks.h"
+
 #include "Menu.h"
 #include "ShaderCache.h"
 #include "State.h"
-#include "TruePBR.h"
-#include "Util.h"
-
-#include "ShaderTools/BSShaderHooks.h"
-
 #include "Streamline.h"
+#include "TruePBR.h"
 
 std::unordered_map<void*, std::pair<std::unique_ptr<uint8_t[]>, size_t>> ShaderBytecodeMap;
 

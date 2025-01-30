@@ -1,7 +1,8 @@
 #include "TerrainBlending.h"
 
-#include "Util.h"
 #include "Deferred.h"
+#include "ShaderCache.h"
+#include "State.h"
 
 ID3D11VertexShader* TerrainBlending::GetTerrainVertexShader()
 {
