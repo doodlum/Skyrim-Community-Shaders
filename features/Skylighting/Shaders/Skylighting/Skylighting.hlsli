@@ -1,3 +1,6 @@
+#ifndef __SKYLIGHTING_DEPENDENCY_HLSL__
+#define __SKYLIGHTING_DEPENDENCY_HLSL__
+
 #include "Common/Math.hlsli"
 #include "Common/Random.hlsli"
 #include "Common/SharedData.hlsli"
@@ -138,3 +141,5 @@ namespace Skylighting
 		return SphericalHarmonics::Scale(sum, rcp(wsum + 1e-10));
 	}
 }
+
+#endif
