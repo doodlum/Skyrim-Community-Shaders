@@ -768,9 +768,8 @@ namespace Hooks
 
 		logger::info("Hooking BSEffectShader");
 		stl::write_vfunc<0x6, EffectExtensions::BSEffectShader_SetupGeometry>(RE::VTABLE_BSEffectShader[0]);
-	
-	
-	{
+
+		{
 			const auto renderPassCacheCtor = REL::RelocationID(100720, 107500);
 			const int32_t passCount = 4194240;
 			const int32_t passCountSE = 4194240 * 16;
