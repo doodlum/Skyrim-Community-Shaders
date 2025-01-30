@@ -1013,11 +1013,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
 	float screenNoise = Random::InterleavedGradientNoise(input.Position.xy, SharedData::FrameCount);
 
-#if defined(DEFERRED)
+#	if defined(DEFERRED)
 	const bool inWorld = true;
-#else
+#	else
 	const bool inWorld = (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::InWorld);
-#endif
+#	endif
 
 	float nearFactor = smoothstep(4096.0 * 2.5, 0.0, viewPosition.z);
 
