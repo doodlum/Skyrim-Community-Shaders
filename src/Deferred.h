@@ -22,6 +22,7 @@ public:
 
 	void SetupResources();
 	void CopyShadowData();
+	void ReflectionsPrepasses();
 	void EarlyPrepasses();
 	void StartDeferred();
 	void OverrideBlendStates();
@@ -52,6 +53,7 @@ public:
 	bool inWorld = false;
 	bool inBlendedDecals = false;
 	bool inDecals = false;
+	bool inReflections = false;
 	bool deferredPass = false;
 
 	Texture2D* prevDiffuseAmbientTexture = nullptr;
@@ -123,8 +125,16 @@ public:
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
+		struct BSCubeMapCamera_RenderCubemap
+		{
+			static void thunk(RE::NiAVObject* camera, int a2, bool a3, bool a4, bool a5);
+			static inline REL::Relocation<decltype(thunk)> func;
+		};
+
 		static void Install()
 		{
+			stl::write_vfunc<0x35, BSCubeMapCamera_RenderCubemap>(RE::VTABLE_BSCubeMapCamera[0]);
+
 			stl::write_thunk_call<Main_RenderShadowMaps>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x2EC, 0x2EC, 0x248));
 
 			stl::write_thunk_call<Main_RenderWorld>(REL::RelocationID(35560, 36559).address() + REL::Relocate(0x831, 0x841, 0x791));

@@ -121,12 +121,13 @@ public:
 	enum class ExtraShaderDescriptors : uint32_t
 	{
 		InWorld = 1 << 0,
-		IsBeastRace = 1 << 1,
-		EffectShadows = 1 << 2,
-		IsDecal = 1 << 3
+		IsReflections = 1 << 1,
+		IsBeastRace = 1 << 2,
+		EffectShadows = 1 << 3,
+		IsDecal = 1 << 4
 	};
 
-	void UpdateSharedData();
+	void UpdateSharedData(bool a_inWorld);
 
 	struct alignas(16) PermutationCB
 	{

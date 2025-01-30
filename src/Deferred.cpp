@@ -219,6 +219,32 @@ void Deferred::CopyShadowData()
 	}
 }
 
+void Deferred::ReflectionsPrepasses()
+{
+	auto& shaderCache = SIE::ShaderCache::Instance();
+
+	if (!shaderCache.IsEnabled())
+		return;
+
+	State::GetSingleton()->UpdateSharedData(false);
+
+	auto variableCache = VariableCache::GetSingleton();
+
+	ZoneScoped;
+	TracyD3D11Zone(variableCache->state->tracyCtx, "Early Prepass");
+
+	auto context = variableCache->context;
+	context->OMSetRenderTargets(0, nullptr, nullptr);  // Unbind all bound render targets
+
+	variableCache->stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);  // Run OMSetRenderTargets again
+
+	for (auto* feature : Feature::GetFeatureList()) {
+		if (feature->loaded) {
+			feature->ReflectionsPrepass();
+		}
+	}
+}
+
 void Deferred::EarlyPrepasses()
 {
 	auto& shaderCache = SIE::ShaderCache::Instance();
@@ -226,7 +252,7 @@ void Deferred::EarlyPrepasses()
 	if (!shaderCache.IsEnabled())
 		return;
 
-	State::GetSingleton()->UpdateSharedData();
+	State::GetSingleton()->UpdateSharedData(false);
 
 	auto variableCache = VariableCache::GetSingleton();
 
@@ -273,7 +299,7 @@ void Deferred::PrepassPasses()
 
 void Deferred::StartDeferred()
 {
-	State::GetSingleton()->UpdateSharedData();
+	State::GetSingleton()->UpdateSharedData(true);
 
 	auto shadowState = RE::BSGraphics::RendererShadowState::GetSingleton();
 	GET_INSTANCE_MEMBER(renderTargets, shadowState)
@@ -794,3 +820,14 @@ void Deferred::Hooks::BSShaderAccumulator_ShadowMapOrMask_BlendedDecals::thunk(R
 	func(This, RenderFlags);
 	deferred->inDecals = false;
 };
+
+
+void Deferred::Hooks::BSCubeMapCamera_RenderCubemap::thunk(RE::NiAVObject* camera, int a2, bool a3, bool a4, bool a5)
+{
+	auto deferred = VariableCache::GetSingleton()->deferred;
+
+	deferred->inReflections = true;
+	deferred->ReflectionsPrepasses();
+	func(camera, a2, a3, a4, a5);
+	deferred->inReflections = false;
+}

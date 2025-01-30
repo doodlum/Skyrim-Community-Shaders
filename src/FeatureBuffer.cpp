@@ -26,7 +26,7 @@ std::pair<unsigned char*, size_t> _GetFeatureBufferData(Ts... feat_datas)
 	return std::make_pair(data, totalSize);
 }
 
-std::pair<unsigned char*, size_t> GetFeatureBufferData()
+std::pair<unsigned char*, size_t> GetFeatureBufferData(bool a_inWorld)
 {
 	return _GetFeatureBufferData(
 		GrassLighting::GetSingleton()->settings,
@@ -35,5 +35,5 @@ std::pair<unsigned char*, size_t> GetFeatureBufferData()
 		TerrainShadows::GetSingleton()->GetCommonBufferData(),
 		LightLimitFix::GetSingleton()->GetCommonBufferData(),
 		WetnessEffects::GetSingleton()->GetCommonBufferData(),
-		Skylighting::GetSingleton()->GetCommonBufferData());
+		Skylighting::GetSingleton()->GetCommonBufferData(a_inWorld));
 }

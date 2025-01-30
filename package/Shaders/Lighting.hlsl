@@ -9,6 +9,8 @@
 #include "Common/SharedData.hlsli"
 #include "Common/Skinned.hlsli"
 
+#define LIGHTING
+
 #if defined(FACEGEN) || defined(FACEGEN_RGB_TINT)
 #	define SKIN
 #endif
@@ -1011,7 +1013,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
 	float screenNoise = Random::InterleavedGradientNoise(input.Position.xy, SharedData::FrameCount);
 
-	bool inWorld = Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::InWorld;
+#if defined(DEFERRED)
+	const bool inWorld = true;
+#else
+	const bool inWorld = (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::InWorld);
+#endif
 
 	float nearFactor = smoothstep(4096.0 * 2.5, 0.0, viewPosition.z);
 
@@ -1928,75 +1934,42 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float dirShadow = 1.0;
 	float parallaxShadow = 1;
 
-#	if defined(DEFERRED)
-#		if defined(SOFT_LIGHTING) || defined(BACK_LIGHTING) || defined(RIM_LIGHTING)
-	bool extraDirShadows = !inDirShadow && inWorld;
-#		else
-	// If lighting cannot hit the backface of the object, do not render shadows
-	bool extraDirShadows = !inDirShadow && dirLightAngle > 0.0 && inWorld;
-#		endif
-#	else
-#		if defined(SOFT_LIGHTING) || defined(BACK_LIGHTING) || defined(RIM_LIGHTING)
-	bool extraDirShadows = !inDirShadow && inWorld;
-#		else
-	bool extraDirShadows = !inDirShadow && dirLightAngle > 0.0 && inWorld;
-#		endif
-#	endif
+	bool inReflection = Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::InReflection;
 
-	if (extraDirShadows) {
 #	if defined(SCREEN_SPACE_SHADOWS)
 #		if defined(DEFERRED)
-		bool useScreenSpaceShadows = true;
+	bool useScreenSpaceShadows = true;
 #		else
-		bool useScreenSpaceShadows = Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsDecal;
+	bool useScreenSpaceShadows = inWorld && !SharedData::InInterior && Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsDecal;
 #		endif
 
-#		if defined(SOFT_LIGHTING) || defined(BACK_LIGHTING) || defined(RIM_LIGHTING)
-		useScreenSpaceShadows = useScreenSpaceShadows && (dirLightAngle > 0.0);
-#		endif
-
-		if (useScreenSpaceShadows) {
-			dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.Position.xyz, screenUV, screenNoise, eyeIndex);
-#		if defined(TREE_ANIM)
-			ShadowSampling::ShadowData sD = ShadowSampling::SharedShadowData[0];
-			dirDetailShadow = lerp(1.0, dirDetailShadow, saturate(viewPosition.z / sqrt(sD.ShadowLightParam.z)));
-#		endif
-		}
+	if (useScreenSpaceShadows)
+		dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.Position.xyz, screenUV, screenNoise, eyeIndex);
 #	endif
 
 #	if defined(EMAT) && (defined(SKINNED) || !defined(MODELSPACENORMALS))
-		[branch] if (!inDirShadow && SharedData::extendedMaterialSettings.EnableShadows)
-		{
-			float3 dirLightDirectionTS = mul(refractedDirLightDirection, tbn).xyz;
+	[branch] if (inWorld && SharedData::extendedMaterialSettings.EnableShadows)
+	{
+		float3 dirLightDirectionTS = mul(refractedDirLightDirection, tbn).xyz;
 #		if defined(LANDSCAPE)
-			[branch] if (SharedData::extendedMaterialSettings.EnableTerrainParallax)
-				parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplierTerrain(input, uv, mipLevels, dirLightDirectionTS, sh0, parallaxShadowQuality, screenNoise, displacementParams);
+		[branch] if (SharedData::extendedMaterialSettings.EnableTerrainParallax)
+			parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplierTerrain(input, uv, mipLevels, dirLightDirectionTS, sh0, parallaxShadowQuality, screenNoise, displacementParams);
 #		elif defined(PARALLAX)
-			[branch] if (SharedData::extendedMaterialSettings.EnableParallax)
-				parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, dirLightDirectionTS, sh0, TexParallaxSampler, SampParallaxSampler, 0, lerp(parallaxShadowQuality, 1.0, SharedData::extendedMaterialSettings.ExtendShadows), screenNoise, displacementParams);
+		[branch] if (SharedData::extendedMaterialSettings.EnableParallax)
+			parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, dirLightDirectionTS, sh0, TexParallaxSampler, SampParallaxSampler, 0, lerp(parallaxShadowQuality, 1.0, SharedData::extendedMaterialSettings.ExtendShadows), screenNoise, displacementParams);
 #		elif defined(EMAT_ENVMAP)
-			[branch] if (complexMaterialParallax)
-				parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, dirLightDirectionTS, sh0, TexEnvMaskSampler, SampEnvMaskSampler, 3, lerp(parallaxShadowQuality, 1.0, SharedData::extendedMaterialSettings.ExtendShadows), screenNoise, displacementParams);
+		[branch] if (complexMaterialParallax)
+			parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, dirLightDirectionTS, sh0, TexEnvMaskSampler, SampEnvMaskSampler, 3, lerp(parallaxShadowQuality, 1.0, SharedData::extendedMaterialSettings.ExtendShadows), screenNoise, displacementParams);
 #		elif defined(TRUE_PBR) && !defined(LODLANDSCAPE)
-			[branch] if (PBRParallax)
-				parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, dirLightDirectionTS, sh0, TexParallaxSampler, SampParallaxSampler, 0, lerp(parallaxShadowQuality, 1.0, SharedData::extendedMaterialSettings.ExtendShadows), screenNoise, displacementParams);
+		[branch] if (PBRParallax)
+			parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, dirLightDirectionTS, sh0, TexParallaxSampler, SampParallaxSampler, 0, lerp(parallaxShadowQuality, 1.0, SharedData::extendedMaterialSettings.ExtendShadows), screenNoise, displacementParams);
 #		endif  // LANDSCAPE
-		}
+	}
 #	endif  // defined(EMAT) && (defined (SKINNED) || !defined \
 				// (MODELSPACENORMALS))
 
-#	if defined(TERRAIN_SHADOWS)
-		float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, SampColorSampler);
-		dirShadow *= terrainShadow;
-		inDirShadow = inDirShadow || dirShadow == 0.0;
-#	endif
-	}
-
-#	if defined(CLOUD_SHADOWS)
-	if (!inDirShadow) {
-		dirShadow *= CloudShadows::GetCloudShadowMult(input.WorldPosition.xyz, SampColorSampler);
-	}
-#	endif
+	if (dirShadow != 0.0 && !SharedData::InInterior && (inWorld || inReflection))
+		dirShadow *= ShadowSampling::GetWorldShadow(input.WorldPosition, FrameBuffer::CameraPosAdjust[eyeIndex], eyeIndex);
 
 	dirLightColorMultiplier *= dirShadow;
 

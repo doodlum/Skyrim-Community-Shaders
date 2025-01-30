@@ -535,7 +535,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 		float3 finalSsrReflectionColor = 0.0.xxx;
 		float ssrFraction = 0;
 		float3 reflectionColor = 0;
-		float3 R = reflect(viewDirection, normal);
+		float3 R = reflect(viewDirection, WaterParams.y * normal + float3(0, 0, 1 - WaterParams.y));
 
 		if (Permutation::PixelShaderDescriptor & Permutation::WaterFlags::Cubemap) {
 #			if defined(DYNAMIC_CUBEMAPS)
@@ -597,9 +597,11 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 
 #			if !defined(LOD) && NUM_SPECULAR_LIGHTS == 0
 		if (Permutation::PixelShaderDescriptor & Permutation::WaterFlags::Cubemap) {
+			R = reflect(viewDirection, normal);
 			float pointingDirection = dot(viewDirection, R);
 			float pointingAlignment = dot(reflect(viewDirection, float3(0, 0, 1)), R);
-			if (SSRParams.x > 0.0 && pointingDirection > 0.0 && pointingAlignment > 0.0) {
+			float ssrAmount = pointingDirection * pointingAlignment;
+			if (SSRParams.x > 0.0 && ssrAmount > 0.0) {
 				float2 ssrReflectionUv = ((FrameBuffer::DynamicResolutionParams2.xy * input.HPosition.xy) * SSRParams.zw) + SSRParams2.x * normal.xy;
 				float2 ssrReflectionUvDR = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(ssrReflectionUv);
 				float4 ssrReflectionColorBlurred = SSRReflectionTex.Sample(SSRReflectionSampler, ssrReflectionUvDR);
@@ -609,7 +611,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 				float4 ssrReflectionColor = lerp(ssrReflectionColorRaw, ssrReflectionColorBlurred, effectiveBlurFactor);
 
 				finalSsrReflectionColor = max(0, ssrReflectionColor.xyz);
-				ssrFraction = saturate(ssrReflectionColor.w * distanceFactor * SSRParams.x) * min(pointingDirection, pointingAlignment);
+				ssrFraction = saturate(ssrReflectionColor.w * distanceFactor * SSRParams.x) * ssrAmount;
 			}
 		}
 #			endif
