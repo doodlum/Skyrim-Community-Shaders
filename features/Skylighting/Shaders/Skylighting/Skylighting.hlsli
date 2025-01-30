@@ -11,7 +11,7 @@ namespace Skylighting
 #endif
 
 	const static uint3 ARRAY_DIM = uint3(256, 256, 128);
-	const static float3 ARRAY_SIZE = 4096.f * 3.f * float3(1, 1, 0.5);
+	const static float3 ARRAY_SIZE = 4096.f * 2.5f * float3(1, 1, 0.5);
 	const static float3 CELL_SIZE = ARRAY_SIZE / ARRAY_DIM;
 
 	float getFadeOutFactor(float3 positionMS)

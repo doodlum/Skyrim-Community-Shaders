@@ -74,14 +74,13 @@ struct Skylighting : Feature
 
 	// misc parameters
 	uint probeArrayDims[3] = { 256, 256, 128 };
-	float occlusionDistance = 4096.f * 3.f;  // 3 cells
+	float occlusionDistance = 4096.f * 2.5f;  // 5 ugrids
 
 	// cached variables
 	bool queuedResetSkylighting = true;
 	bool inOcclusion = false;
 	REX::W32::XMFLOAT4X4 OcclusionTransform;
 	float4 OcclusionDir;
-	uint forceFrames = 255 * 4;
 	uint frameCount = 0;
 
 	void ResetSkylighting();
