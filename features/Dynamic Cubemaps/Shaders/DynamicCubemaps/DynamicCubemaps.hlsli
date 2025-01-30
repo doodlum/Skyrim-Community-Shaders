@@ -1,7 +1,7 @@
 
-#	if defined(SKYLIGHTING)
-#		include "Skylighting/Skylighting.hlsli"
-#	endif
+#if defined(SKYLIGHTING)
+#	include "Skylighting/Skylighting.hlsli"
+#endif
 
 namespace DynamicCubemaps
 {
@@ -62,8 +62,8 @@ namespace DynamicCubemaps
 
 		float3 finalIrradiance = 0;
 
-#	if defined(SKYLIGHTING)
-		if (SharedData::InInterior){
+#		if defined(SKYLIGHTING)
+		if (SharedData::InInterior) {
 			float3 specularIrradiance = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level).xyz;
 			specularIrradiance = Color::GammaToLinear(specularIrradiance);
 
@@ -90,18 +90,18 @@ namespace DynamicCubemaps
 			specularIrradianceReflections = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level).xyz;
 			specularIrradianceReflections = Color::GammaToLinear(specularIrradianceReflections);
 		}
-		
+
 		finalIrradiance = finalIrradiance * skylightingSpecular + lerp(specularIrradiance, specularIrradianceReflections, skylightingSpecular);
-		
+
 		return horizon * (1 + F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1)) * finalIrradiance;
-#	else
+#		else
 		float3 specularIrradiance = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level).xyz;
 		specularIrradiance = Color::GammaToLinear(specularIrradiance);
 
 		finalIrradiance += specularIrradiance;
 
 		return horizon * (1 + F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1)) * finalIrradiance;
-#	endif
+#		endif
 #	endif
 	}
 #endif  // !WATER
