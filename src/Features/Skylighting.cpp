@@ -456,12 +456,12 @@ void Skylighting::SetViewFrustum::thunk(RE::NiCamera* a_camera, RE::NiFrustum* a
 	if (skylighting->inOcclusion) {
 		uint corner = skylighting->frameCount % 4;
 
-		a_frustum->fBottom = (corner == 0 || corner == 1) ? -5000.0f : 0.0f;
+		float frustumSize = a_frustum->fTop * 0.5f;
 
-		a_frustum->fLeft = (corner == 0 || corner == 2) ? -5000.0f : 0.0f;
-		a_frustum->fRight = (corner == 1 || corner == 3) ? 5000.0f : 0.0f;
-
-		a_frustum->fTop = (corner == 2 || corner == 3) ? 5000.0f : 0.0f;
+		a_frustum->fBottom = (corner == 0 || corner == 1) ? -frustumSize : 0.0f;
+		a_frustum->fLeft = (corner == 0 || corner == 2) ? -frustumSize : 0.0f;
+		a_frustum->fRight = (corner == 1 || corner == 3) ? frustumSize : 0.0f;
+		a_frustum->fTop = (corner == 2 || corner == 3) ? frustumSize : 0.0f;
 	}
 
 	func(a_camera, a_frustum);
