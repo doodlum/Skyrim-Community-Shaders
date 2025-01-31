@@ -122,7 +122,7 @@ float smoothbumpstep(float edge0, float edge1, float x)
 
 	float distance = length(position.xyz);
 	float distanceFactor = smoothbumpstep(0.0, 4.0, distance);
-	
+
 	if (distance < 1.0)
 		distanceFactor = sqrt(distanceFactor);
 

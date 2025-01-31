@@ -21,7 +21,7 @@ namespace SharedData
 		uint FrameCountAlwaysActive;
 		bool InInterior;  // If the area lacks a directional shadow light e.g. the sun or moon
 		bool InMapMenu;   // If the world/local map is open (note that the renderer is still deferred here)
-		bool HideSky;   // HideSky flag in WorldSpace, e.g. Blackreach
+		bool HideSky;     // HideSky flag in WorldSpace, e.g. Blackreach
 	};
 
 	struct GrassLightingSettings
