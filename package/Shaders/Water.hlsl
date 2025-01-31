@@ -542,7 +542,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 #				if defined(SKYLIGHTING)
 
 			float3 dynamicCubemap;
-			if (SharedData::InInterior){
+			if (SharedData::InInterior) {
 				dynamicCubemap = DynamicCubemaps::EnvTexture.SampleLevel(CubeMapSampler, R, 0).xyz;
 			} else {
 #					if defined(VR)
