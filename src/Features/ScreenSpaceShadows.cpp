@@ -259,7 +259,7 @@ void ScreenSpaceShadows::SetupResources()
 	raymarchCB = new ConstantBuffer(ConstantBufferDesc<RaymarchCB>());
 
 	{
-		auto& device = globals::d3d::device;
+		auto device = globals::d3d::device;
 
 		D3D11_SAMPLER_DESC samplerDesc = {};
 		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;

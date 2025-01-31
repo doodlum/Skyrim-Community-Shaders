@@ -29,7 +29,7 @@ struct BlendStates
 void SetupRenderTarget(RE::RENDER_TARGET target, D3D11_TEXTURE2D_DESC texDesc, D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc, D3D11_RENDER_TARGET_VIEW_DESC rtvDesc, D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc, DXGI_FORMAT format, uint bindFlags)
 {
 	auto renderer = globals::game::renderer;
-	auto& device = globals::d3d::device;
+	auto device = globals::d3d::device;
 
 	texDesc.BindFlags = bindFlags;
 	texDesc.Format = format;
@@ -106,7 +106,7 @@ void Deferred::SetupResources()
 	}
 
 	{
-		auto& device = globals::d3d::device;
+		auto device = globals::d3d::device;
 
 		D3D11_SAMPLER_DESC samplerDesc = {};
 		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -182,7 +182,7 @@ void Deferred::CopyShadowData()
 	ZoneScoped;
 	TracyD3D11Zone(globals::state->tracyCtx, "CopyShadowData");
 
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	ID3D11UnorderedAccessView* uavs[1]{ perShadow->uav.get() };
 	context->CSSetUnorderedAccessViews(0, 1, uavs, nullptr);
@@ -299,7 +299,7 @@ void Deferred::StartDeferred()
 	deferredPass = true;
 
 	{
-		auto& context = globals::d3d::context;
+		auto context = globals::d3d::context;
 
 		static REL::Relocation<ID3D11Buffer**> perFrame{ REL::RelocationID(524768, 411384) };
 		ID3D11Buffer* buffers[1] = { *perFrame.get() };
@@ -329,7 +329,7 @@ void Deferred::DeferredPasses()
 	TracyD3D11Zone(globals::state->tracyCtx, "Deferred");
 
 	auto renderer = globals::game::renderer;
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	{
 		static REL::Relocation<ID3D11Buffer**> perFrame{ REL::RelocationID(524768, 411384) };
@@ -502,7 +502,7 @@ void Deferred::EndDeferred()
 		renderTargets[i] = RE::RENDER_TARGET::kNONE;
 	}
 
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 	context->OMSetRenderTargets(0, nullptr, nullptr);  // Unbind all bound render targets
 
 	DeferredPasses();  // Perform deferred passes and composite forward buffers
@@ -520,7 +520,7 @@ void Deferred::OverrideBlendStates()
 
 	static std::once_flag setup;
 	std::call_once(setup, [&]() {
-		auto& device = globals::d3d::device;
+		auto device = globals::d3d::device;
 
 		for (int a = 0; a < 7; a++) {
 			for (int b = 0; b < 2; b++) {

@@ -328,7 +328,7 @@ void ScreenSpaceGI::SaveSettings(json& o_json)
 void ScreenSpaceGI::SetupResources()
 {
 	auto renderer = globals::game::renderer;
-	auto& device = globals::d3d::device;
+	auto device = globals::d3d::device;
 
 	logger::debug("Creating buffers...");
 	{
@@ -621,7 +621,7 @@ void ScreenSpaceGI::UpdateSB()
 
 void ScreenSpaceGI::DrawSSGI(Texture2D* srcPrevAmbient)
 {
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	if (!(settings.Enabled && ShadersOK())) {
 		FLOAT clr[4] = { 0.f, 0.f, 0.f, 0.f };

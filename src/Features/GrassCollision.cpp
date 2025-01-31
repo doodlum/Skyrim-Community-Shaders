@@ -179,7 +179,7 @@ void GrassCollision::Update()
 		updatePerFrame = false;
 	}
 
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	static Util::FrameChecker frameChecker;
 	if (frameChecker.IsNewFrame()) {

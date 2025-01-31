@@ -180,7 +180,7 @@ void SubsurfaceScattering::DrawSSS()
 	}
 
 	auto renderer = globals::game::renderer;
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	{
 		ID3D11Buffer* buffer[1] = { blurCB->CB() };

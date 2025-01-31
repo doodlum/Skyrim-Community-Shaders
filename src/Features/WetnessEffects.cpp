@@ -266,7 +266,7 @@ void WetnessEffects::Prepass()
 	static auto renderer = globals::game::renderer;
 	static auto& precipOcclusionTexture = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPRECIPITATION_OCCLUSION_MAP];
 
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	context->PSSetShaderResources(70, 1, &precipOcclusionTexture.depthSRV);
 }

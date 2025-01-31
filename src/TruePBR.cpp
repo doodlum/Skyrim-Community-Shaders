@@ -1407,7 +1407,7 @@ struct BSGrassShader_SetupMaterial
 {
 	static void thunk(RE::BSShader* shader, RE::BSLightingShaderMaterialBase const* material)
 	{
-		const auto& state = globals::state;
+		const auto state = globals::state;
 		const auto technique = static_cast<SIE::ShaderCache::GrassShaderTechniques>(state->currentPixelDescriptor & 0b1111);
 
 		const auto& grassPSConstants = ShaderConstants::GrassPS::Get();

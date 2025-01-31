@@ -51,8 +51,8 @@ void DynamicCubemaps::DrawSettings()
 				ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&settings.CubemapColor));
 				ImGui::SliderFloat("Roughness", &settings.CubemapColor.w, 0.0f, 1.0f, "%.2f");
 				if (ImGui::Button("Export")) {
-					auto& device = globals::d3d::device;
-					auto& context = globals::d3d::context;
+					auto device = globals::d3d::device;
+					auto context = globals::d3d::context;
 
 					D3D11_TEXTURE2D_DESC texDesc{};
 					texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -295,7 +295,7 @@ ID3D11ComputeShader* DynamicCubemaps::GetComputeShaderSpecularIrradiance()
 void DynamicCubemaps::UpdateCubemapCapture(bool a_reflections)
 {
 	auto renderer = globals::game::renderer;
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	auto& depth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 	auto& main = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMAIN];
@@ -367,7 +367,7 @@ void DynamicCubemaps::UpdateCubemapCapture(bool a_reflections)
 void DynamicCubemaps::Inferrence(bool a_reflections)
 {
 	auto renderer = globals::game::renderer;
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	// Infer local reflection information
 	ID3D11UnorderedAccessView* uav = envInferredTexture->uav.get();
@@ -404,7 +404,7 @@ void DynamicCubemaps::Inferrence(bool a_reflections)
 
 void DynamicCubemaps::Irradiance(bool a_reflections)
 {
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	// Copy cubemap to other resources
 	for (uint face = 0; face < 6; face++) {
@@ -503,7 +503,7 @@ void DynamicCubemaps::UpdateCubemap()
 
 void DynamicCubemaps::PostDeferred()
 {
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	ID3D11ShaderResourceView* views[2] = { (activeReflections ? envReflectionsTexture : envTexture)->srv.get(), envTexture->srv.get() };
 	context->PSSetShaderResources(30, 2, views);
@@ -518,7 +518,7 @@ void DynamicCubemaps::SetupResources()
 	GetComputeShaderSpecularIrradiance();
 
 	auto renderer = globals::game::renderer;
-	auto& device = globals::d3d::device;
+	auto device = globals::d3d::device;
 
 	{
 		D3D11_SAMPLER_DESC samplerDesc = {};

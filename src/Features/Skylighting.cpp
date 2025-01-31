@@ -30,7 +30,7 @@ void Skylighting::RestoreDefaultSettings()
 
 void Skylighting::ResetSkylighting()
 {
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 	UINT clr[1] = { 0 };
 	context->ClearUnorderedAccessViewUint(texAccumFramesArray->uav.get(), clr);
 	queuedResetSkylighting = false;
@@ -63,7 +63,7 @@ void Skylighting::DrawSettings()
 void Skylighting::SetupResources()
 {
 	auto renderer = globals::game::renderer;
-	auto& device = globals::d3d::device;
+	auto device = globals::d3d::device;
 
 	{
 		auto& precipitationOcclusion = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPRECIPITATION_OCCLUSION_MAP];
@@ -235,7 +235,7 @@ void Skylighting::Prepass()
 
 	TracyD3D11Zone(globals::state->tracyCtx, "Skylighting - Update Probes");
 
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	{
 		std::array<ID3D11ShaderResourceView*, 1> srvs = { texOcclusion->srv.get() };

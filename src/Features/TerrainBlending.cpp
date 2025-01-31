@@ -34,7 +34,7 @@ ID3D11ComputeShader* TerrainBlending::GetDepthBlendShader()
 void TerrainBlending::SetupResources()
 {
 	auto renderer = globals::game::renderer;
-	auto& device = globals::d3d::device;
+	auto device = globals::d3d::device;
 
 	{
 		auto& mainDepth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kMAIN];
@@ -144,7 +144,7 @@ void TerrainBlending::ResetTerrainDepth()
 
 void TerrainBlending::BlendPrepassDepths()
 {
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 	context->OMSetRenderTargets(0, nullptr, nullptr);
 
 	auto dispatchCount = Util::GetScreenDispatchCount();

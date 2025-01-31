@@ -209,7 +209,7 @@ void TerrainShadows::LoadHeightmap()
 	if (cachedHeightmap && cachedHeightmap->worldspace == worldspace_name)  // already cached
 		return;
 
-	auto& device = globals::d3d::device;
+	auto device = globals::d3d::device;
 
 	logger::debug("Loading height map...");
 	{
@@ -304,7 +304,7 @@ void TerrainShadows::UpdateShadow()
 	constexpr uint updateLength = 128u;
 	constexpr uint logUpdateLength = std::bit_width(128u) - 1;  // integer log2, https://stackoverflow.com/questions/994593/how-to-do-an-integer-log2-in-c
 
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 	auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator();
 	auto sunLight = skyrim_cast<RE::NiDirectionalLight*>(accumulator->GetRuntimeData().activeShadowSceneNode->GetRuntimeData().sunLight->light.get());
 	if (!sunLight)

@@ -6,7 +6,7 @@ void CloudShadows::CheckResourcesSide(int side)
 	if (!frame_checker[side].IsNewFrame())
 		return;
 
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	float black[4] = { 0, 0, 0, 0 };
 	context->ClearRenderTargetView(cubemapCloudOccRTVs[side], black);
@@ -73,7 +73,7 @@ void CloudShadows::EarlyPrepass()
 		!globals::game::sky->currentClimate)
 		return;
 
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	ID3D11ShaderResourceView* srv = texCubemapCloudOcc->srv.get();
 	context->PSSetShaderResources(25, 1, &srv);
@@ -83,7 +83,7 @@ void CloudShadows::EarlyPrepass()
 void CloudShadows::SetupResources()
 {
 	auto renderer = globals::game::renderer;
-	auto& device = globals::d3d::device;
+	auto device = globals::d3d::device;
 
 	{
 		auto reflections = renderer->GetRendererData().cubemapRenderTargets[RE::RENDER_TARGET_CUBEMAP::kREFLECTIONS];

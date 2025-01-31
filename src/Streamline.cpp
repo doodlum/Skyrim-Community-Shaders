@@ -343,7 +343,7 @@ void Streamline::CopyResourcesToSharedBuffers()
 	if (!(featureDLSSG && !REL::Module::IsVR()) || settings.frameGenerationMode == sl::DLSSGMode::eOff)
 		return;
 
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 	auto renderer = globals::game::renderer;
 
 	ID3D11RenderTargetView* backupViews[8];

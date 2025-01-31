@@ -234,7 +234,7 @@ void Upscaling::Upscale()
 
 	auto state = globals::state;
 
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	ID3D11ShaderResourceView* inputTextureSRV;
 	context->PSGetShaderResources(0, 1, &inputTextureSRV);
@@ -345,7 +345,7 @@ void Upscaling::SharpenTAA()
 	CheckResources();
 
 	auto state = globals::state;
-	auto& context = globals::d3d::context;
+	auto context = globals::d3d::context;
 
 	ID3D11ShaderResourceView* inputTextureSRV;
 	context->PSGetShaderResources(0, 1, &inputTextureSRV);
