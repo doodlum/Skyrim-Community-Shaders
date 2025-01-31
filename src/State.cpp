@@ -705,10 +705,13 @@ void State::UpdateSharedData(bool a_inWorld)
 			}
 		}
 
-		if (auto sky = RE::Sky::GetSingleton())
+		if (auto sky = RE::Sky::GetSingleton()) {
 			data.InInterior = sky->mode.get() != RE::Sky::Mode::kFull;
-		else
+			data.HideSky = !data.InInterior && sky->flags.any(RE::Sky::Flags::kHideSky);
+		} else {
 			data.InInterior = true;
+			data.HideSky = true;
+		}
 
 		if (auto ui = RE::UI::GetSingleton())
 			data.InMapMenu = ui->IsMenuOpen(RE::MapMenu::MENU_NAME);

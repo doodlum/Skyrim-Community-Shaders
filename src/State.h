@@ -152,7 +152,8 @@ public:
 		uint FrameCountAlwaysActive;
 		uint InInterior;
 		uint InMapMenu;
-		float3 pad0;
+		uint HideSky;
+		float2 pad0;
 	};
 
 	ConstantBuffer* sharedDataCB = nullptr;

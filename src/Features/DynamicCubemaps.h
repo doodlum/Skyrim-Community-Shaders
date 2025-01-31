@@ -49,11 +49,13 @@ public:
 
 	ID3D11ComputeShader* updateCubemapCS = nullptr;
 	ID3D11ComputeShader* updateCubemapReflectionsCS = nullptr;
+	ID3D11ComputeShader* updateCubemapFakeReflectionsCS = nullptr;
 
 	ConstantBuffer* updateCubemapCB = nullptr;
 
 	ID3D11ComputeShader* inferCubemapCS = nullptr;
 	ID3D11ComputeShader* inferCubemapReflectionsCS = nullptr;
+	ID3D11ComputeShader* inferCubemapFakeReflectionsCS = nullptr;
 
 	Texture2D* envCaptureTexture = nullptr;
 	Texture2D* envCaptureRawTexture = nullptr;
@@ -68,6 +70,8 @@ public:
 	ID3D11ShaderResourceView* defaultCubemap = nullptr;
 
 	bool activeReflections = false;
+	bool fakeReflections = false;
+
 	bool resetCapture[2] = { true, true };
 	bool recompileFlag = false;
 
@@ -140,8 +144,12 @@ public:
 	virtual void ClearShaderCache() override;
 	ID3D11ComputeShader* GetComputeShaderUpdate();
 	ID3D11ComputeShader* GetComputeShaderUpdateReflections();
+	ID3D11ComputeShader* GetComputeShaderUpdateFakeReflections();
+
 	ID3D11ComputeShader* GetComputeShaderInferrence();
 	ID3D11ComputeShader* GetComputeShaderInferrenceReflections();
+	ID3D11ComputeShader* GetComputeShaderInferrenceFakeReflections();
+
 	ID3D11ComputeShader* GetComputeShaderSpecularIrradiance();
 
 	void UpdateCubemapCapture(bool a_reflections);
