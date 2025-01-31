@@ -178,7 +178,7 @@ Skylighting::SkylightingCB Skylighting::GetCommonBufferData()
 	if (frameChecker.IsNewFrame())
 		return Skylighting::SkylightingCB{};
 
-	if (auto ui = RE::UI::GetSingleton())
+	if (auto ui = globals::game::ui)
 		if (ui->IsMenuOpen(RE::MapMenu::MENU_NAME))
 			return Skylighting::SkylightingCB{};
 
@@ -221,13 +221,13 @@ Skylighting::SkylightingCB Skylighting::GetCommonBufferData()
 
 void Skylighting::Prepass()
 {
-	if (auto ui = RE::UI::GetSingleton())
+	if (auto ui = globals::game::ui)
 		if (ui->IsMenuOpen(RE::MapMenu::MENU_NAME))
 			return;
 
 	bool interior = true;
 
-	if (auto sky = RE::Sky::GetSingleton())
+	if (auto sky = globals::game::sky)
 		interior = sky->mode.get() != RE::Sky::Mode::kFull;
 
 	if (interior)

@@ -213,7 +213,7 @@ RE::BSEventNotifyControl MenuOpenCloseEventHandler::ProcessEvent(const RE::MenuO
 bool MenuOpenCloseEventHandler::Register()
 {
 	static MenuOpenCloseEventHandler singleton;
-	auto ui = RE::UI::GetSingleton();
+	auto ui = globals::game::ui;
 
 	if (!ui) {
 		logger::error("UI event source not found");
@@ -458,10 +458,10 @@ void DynamicCubemaps::UpdateCubemap()
 	TracyD3D11Zone(globals::state->tracyCtx, "Cubemap Update");
 	if (recompileFlag) {
 		logger::debug("Recompiling for Dynamic Cubemaps");
-		auto& shaderCache = SIE::ShaderCache::Instance();
-		if (!shaderCache.Clear("Data//Shaders//ISReflectionsRayTracing.hlsl"))
+		auto shaderCache = globals::shaderCache;
+		if (!shaderCache->Clear("Data//Shaders//ISReflectionsRayTracing.hlsl"))
 			// if can't find specific hlsl file cache, clear all image space files
-			shaderCache.Clear(RE::BSShader::Types::ImageSpace);
+			shaderCache->Clear(RE::BSShader::Types::ImageSpace);
 		recompileFlag = false;
 	}
 
@@ -629,7 +629,7 @@ void DynamicCubemaps::SetupResources()
 
 void DynamicCubemaps::Reset()
 {
-	if (auto sky = RE::Sky::GetSingleton())
+	if (auto sky = globals::game::sky)
 		activeReflections = sky->mode.get() == RE::Sky::Mode::kFull;
 	else
 		activeReflections = false;

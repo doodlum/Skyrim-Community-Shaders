@@ -160,7 +160,7 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 	data.PuddleWetness = 0.0f;
 
 	if (settings.EnableWetnessEffects) {
-		if (auto sky = RE::Sky::GetSingleton()) {
+		if (auto sky = globals::game::sky) {
 			if (sky->mode.get() == RE::Sky::Mode::kFull) {
 				if (auto precip = sky->precip) {
 					float currentRaining = 0.0f;
@@ -244,7 +244,7 @@ WetnessEffects::PerFrame WetnessEffects::GetCommonBufferData()
 	}
 
 	static size_t rainTimer = 0;  // size_t for precision
-	if (!RE::UI::GetSingleton()->GameIsPaused())
+	if (!globals::game::ui->GameIsPaused())
 		rainTimer += (size_t)(RE::GetSecondsSinceLastFrame() * 1000);  // BSTimer::delta is always 0 for some reason
 	data.Time = rainTimer / 1000.f;
 

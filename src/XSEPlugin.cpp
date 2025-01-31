@@ -87,12 +87,12 @@ void MessageHandler(SKSE::MessagingInterface::Message* message)
 				Hooks::Install();
 				FrameAnnotations::OnPostPostLoad();
 
-				auto& shaderCache = SIE::ShaderCache::Instance();
+				auto shaderCache = globals::shaderCache;
 
-				shaderCache.ValidateDiskCache();
+				shaderCache->ValidateDiskCache();
 
-				if (shaderCache.UseFileWatcher())
-					shaderCache.StartFileWatcher();
+				if (shaderCache->UseFileWatcher())
+					shaderCache->StartFileWatcher();
 
 				for (auto* feature : Feature::GetFeatureList()) {
 					if (feature->loaded) {
@@ -114,14 +114,14 @@ void MessageHandler(SKSE::MessagingInterface::Message* message)
 				globals::OnDataLoaded();
 				FrameAnnotations::OnDataLoaded();
 
-				auto& shaderCache = SIE::ShaderCache::Instance();
-				shaderCache.menuLoaded = true;
-				while (shaderCache.IsCompiling() && !shaderCache.backgroundCompilation) {
+				auto shaderCache = globals::shaderCache;
+				shaderCache->menuLoaded = true;
+				while (shaderCache->IsCompiling() && !shaderCache->backgroundCompilation) {
 					std::this_thread::sleep_for(100ms);
 				}
 
-				if (shaderCache.IsDiskCache()) {
-					shaderCache.WriteDiskCacheInfo();
+				if (shaderCache->IsDiskCache()) {
+					shaderCache->WriteDiskCacheInfo();
 				}
 
 				if (!REL::Module::IsVR()) {

@@ -127,7 +127,7 @@ struct Skylighting : Feature
 		static bool Register()
 		{
 			static MenuOpenCloseEventHandler singleton;
-			auto ui = RE::UI::GetSingleton();
+			auto ui = globals::game::ui;
 
 			if (!ui) {
 				logger::error("UI event source not found");

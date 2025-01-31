@@ -258,7 +258,7 @@ void Menu::DrawSettings()
 			ImGui::Spacing();
 		}
 
-		auto& shaderCache = SIE::ShaderCache::Instance();
+		auto shaderCache = globals::shaderCache;
 
 		if (ImGui::BeginTable("##LeButtons", 4, ImGuiTableFlags_SizingStretchSame)) {
 			ImGui::TableNextColumn();
@@ -269,12 +269,12 @@ void Menu::DrawSettings()
 			ImGui::TableNextColumn();
 			if (ImGui::Button("Load Settings", { -1, 0 })) {
 				globals::state->Load();
-				ParticleLights::GetSingleton()->GetConfigs();
+				globals::features::llf::particleLights->GetConfigs();
 			}
 
 			ImGui::TableNextColumn();
 			if (ImGui::Button("Clear Shader Cache", { -1, 0 })) {
-				shaderCache.Clear();
+				shaderCache->Clear();
 				// any features should be added to shadercache's clear.
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
@@ -286,7 +286,7 @@ void Menu::DrawSettings()
 
 			ImGui::TableNextColumn();
 			if (ImGui::Button("Clear Disk Cache", { -1, 0 })) {
-				shaderCache.DeleteDiskCache();
+				shaderCache->DeleteDiskCache();
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
 				ImGui::Text(
@@ -296,11 +296,11 @@ void Menu::DrawSettings()
 					"Only delete the Disk Cache manually if you are encountering issues. ");
 			}
 
-			if (shaderCache.GetFailedTasks()) {
+			if (shaderCache->GetFailedTasks()) {
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 				if (ImGui::Button("Toggle Error Message", { -1, 0 })) {
-					shaderCache.ToggleErrorMessages();
+					shaderCache->ToggleErrorMessages();
 				}
 				if (auto _tt = Util::HoverTooltipWrapper()) {
 					ImGui::Text(
@@ -352,7 +352,7 @@ void Menu::DrawSettings()
 					bool isDisabled = globals::state->IsFeatureDisabled(featureName);
 					bool isLoaded = feat->loaded;
 					bool hasFailedMessage = !feat->failedLoadedMessage.empty();
-					auto& themeSettings = Menu::GetSingleton()->settings.Theme;
+					auto& themeSettings = globals::menu->settings.Theme;
 
 					ImVec4 textColor;
 
@@ -416,7 +416,7 @@ void Menu::DrawSettings()
 					bool isDisabled = globals::state->IsFeatureDisabled(featureName);
 					bool isLoaded = feat->loaded;
 					bool hasFailedMessage = !feat->failedLoadedMessage.empty();
-					auto& themeSettings = Menu::GetSingleton()->settings.Theme;
+					auto& themeSettings = globals::menu->settings.Theme;
 
 					if (ImGui::BeginTable("##FeatureButtons", 2, ImGuiTableFlags_SizingStretchSame)) {
 						ImGui::TableNextColumn();
@@ -549,33 +549,33 @@ void Menu::DrawSettings()
 
 void Menu::DrawGeneralSettings()
 {
-	auto& shaderCache = SIE::ShaderCache::Instance();
-	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
+	auto shaderCache = globals::shaderCache;
+	auto& themeSettings = settings.Theme;
 
 	if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
-		bool useCustomShaders = shaderCache.IsEnabled();
+		bool useCustomShaders = shaderCache->IsEnabled();
 		if (ImGui::BeginTable("##GeneralToggles", 3, ImGuiTableFlags_SizingStretchSame)) {
 			ImGui::TableNextColumn();
 			if (ImGui::Checkbox("Enable Shaders", &useCustomShaders)) {
-				shaderCache.SetEnabled(useCustomShaders);
+				shaderCache->SetEnabled(useCustomShaders);
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
 				ImGui::Text("Disabling this effectively disables all features.");
 			}
 
-			bool useDiskCache = shaderCache.IsDiskCache();
+			bool useDiskCache = shaderCache->IsDiskCache();
 			ImGui::TableNextColumn();
 			if (ImGui::Checkbox("Enable Disk Cache", &useDiskCache)) {
-				shaderCache.SetDiskCache(useDiskCache);
+				shaderCache->SetDiskCache(useDiskCache);
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
 				ImGui::Text("Disabling this stops shaders from being loaded from disk, as well as stops shaders from being saved to it.");
 			}
 
-			bool useAsync = shaderCache.IsAsync();
+			bool useAsync = shaderCache->IsAsync();
 			ImGui::TableNextColumn();
 			if (ImGui::Checkbox("Enable Async", &useAsync)) {
-				shaderCache.SetAsync(useAsync);
+				shaderCache->SetAsync(useAsync);
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
 				ImGui::Text("Skips a shader being replaced if it hasn't been compiled yet. Also makes compilation blazingly fast!");
@@ -737,11 +737,11 @@ void Menu::DrawGeneralSettings()
 
 void Menu::DrawAdvancedSettings()
 {
-	auto& shaderCache = SIE::ShaderCache::Instance();
+	auto shaderCache = globals::shaderCache;
 	if (ImGui::CollapsingHeader("Advanced", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
-		bool useDump = shaderCache.IsDump();
+		bool useDump = shaderCache->IsDump();
 		if (ImGui::Checkbox("Dump Shaders", &useDump)) {
-			shaderCache.SetDump(useDump);
+			shaderCache->SetDump(useDump);
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
 			ImGui::Text("Dump shaders at startup. This should be used only when reversing shaders. Normal users don't need this.");
@@ -773,19 +773,19 @@ void Menu::DrawAdvancedSettings()
 													   (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)) ||
 														   ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_KeypadEnter))))) {
 			globals::state->SetDefines(shaderDefines);
-			shaderCache.Clear();
+			shaderCache->Clear();
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
 			ImGui::Text("Defines for Shader Compiler. Semicolon \";\" separated. Clear with space. Rebuild shaders after making change. Compute Shaders require a restart to recompile.");
 		}
 		ImGui::Spacing();
-		ImGui::SliderInt("Compiler Threads", &shaderCache.compilationThreadCount, 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
+		ImGui::SliderInt("Compiler Threads", &shaderCache->compilationThreadCount, 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
 		if (auto _tt = Util::HoverTooltipWrapper()) {
 			ImGui::Text(
 				"Number of threads to use to compile shaders. "
 				"The more threads the faster compilation will finish but may make the system unresponsive. ");
 		}
-		ImGui::SliderInt("Background Compiler Threads", &shaderCache.backgroundCompilationThreadCount, 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
+		ImGui::SliderInt("Background Compiler Threads", &shaderCache->backgroundCompilationThreadCount, 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
 		if (auto _tt = Util::HoverTooltipWrapper()) {
 			ImGui::Text(
 				"Number of threads to use to compile shaders while playing game. "
@@ -813,10 +813,10 @@ void Menu::DrawAdvancedSettings()
 				"Enabling will save current settings as TEST config. "
 				"This has no impact if no settings are changed. ");
 		}
-		bool useFileWatcher = shaderCache.UseFileWatcher();
+		bool useFileWatcher = shaderCache->UseFileWatcher();
 		ImGui::TableNextColumn();
 		if (ImGui::Checkbox("Enable File Watcher", &useFileWatcher)) {
-			shaderCache.SetFileWatcher(useFileWatcher);
+			shaderCache->SetFileWatcher(useFileWatcher);
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
 			ImGui::Text(
@@ -827,10 +827,10 @@ void Menu::DrawAdvancedSettings()
 		if (ImGui::Button("Dump Ini Settings", { -1, 0 })) {
 			Util::DumpSettingsOptions();
 		}
-		if (!shaderCache.blockedKey.empty()) {
-			auto blockingButtonString = std::format("Stop Blocking {} Shaders", shaderCache.blockedIDs.size());
+		if (!shaderCache->blockedKey.empty()) {
+			auto blockingButtonString = std::format("Stop Blocking {} Shaders", shaderCache->blockedIDs.size());
 			if (ImGui::Button(blockingButtonString.c_str(), { -1, 0 })) {
-				shaderCache.DisableShaderBlocking();
+				shaderCache->DisableShaderBlocking();
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
 				ImGui::Text(
@@ -850,7 +850,7 @@ void Menu::DrawAdvancedSettings()
 			ImGui::TreePop();
 		}
 		if (ImGui::TreeNodeEx("Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
-			ImGui::Text(std::format("Shader Compiler : {}", shaderCache.GetShaderStatsString()).c_str());
+			ImGui::Text(std::format("Shader Compiler : {}", shaderCache->GetShaderStatsString()).c_str());
 			ImGui::TreePop();
 		}
 		ImGui::Checkbox("Frame Annotations", &globals::state->frameAnnotations);
@@ -957,11 +957,11 @@ void Menu::DrawDisableAtBootSettings()
 void Menu::DrawDisplaySettings()
 {
 	if (!globals::state->upscalerLoaded) {
-		auto& themeSettings = Menu::GetSingleton()->settings.Theme;
+		auto& themeSettings = settings.Theme;
 
 		const std::vector<std::pair<std::string, std::function<void()>>> features = {
-			{ "Upscaling", []() { Upscaling::GetSingleton()->DrawSettings(); } },
-			{ "Frame Generation", []() { Streamline::GetSingleton()->DrawSettings(); } }
+			{ "Upscaling", []() { globals::upscaling->DrawSettings(); } },
+			{ "Frame Generation", []() { globals::streamline->DrawSettings(); } }
 		};
 
 		for (const auto& [featureName, drawFunc] : features) {
@@ -996,7 +996,7 @@ void Menu::DrawFooter()
 {
 	ImGui::BulletText(std::format("Game Version: {} {}", magic_enum::enum_name(REL::Module::GetRuntime()), Util::GetFormattedVersion(REL::Module::get().version()).c_str()).c_str());
 	ImGui::SameLine();
-	ImGui::BulletText(std::format("D3D12 Interop: {}", Streamline::GetSingleton()->featureDLSSG && !REL::Module::IsVR() ? "Active" : "Inactive").c_str());
+	ImGui::BulletText(std::format("D3D12 Interop: {}", globals::streamline->featureDLSSG && !REL::Module::IsVR() ? "Active" : "Inactive").c_str());
 	ImGui::SameLine();
 	ImGui::BulletText(std::format("GPU: {}", globals::state->adapterDescription.c_str()).c_str());
 
@@ -1018,11 +1018,11 @@ void Menu::DrawOverlay()
 {
 	ProcessInputEventQueue();  //Synchronize Inputs to frame
 
-	auto& shaderCache = SIE::ShaderCache::Instance();
-	auto failed = shaderCache.GetFailedTasks();
-	auto hide = shaderCache.IsHideErrors();
+	auto shaderCache = globals::shaderCache;
+	auto failed = shaderCache->GetFailedTasks();
+	auto hide = shaderCache->IsHideErrors();
 
-	if (!(shaderCache.IsCompiling() || IsEnabled || inTestMode || (failed && !hide))) {
+	if (!(shaderCache->IsCompiling() || IsEnabled || inTestMode || (failed && !hide))) {
 		auto& io = ImGui::GetIO();
 		io.ClearInputKeys();
 		io.ClearEventsQueue();
@@ -1040,18 +1040,18 @@ void Menu::DrawOverlay()
 	uint64_t totalShaders = 0;
 	uint64_t compiledShaders = 0;
 
-	compiledShaders = shaderCache.GetCompletedTasks();
-	totalShaders = shaderCache.GetTotalTasks();
+	compiledShaders = shaderCache->GetCompletedTasks();
+	totalShaders = shaderCache->GetTotalTasks();
 
 	auto state = globals::state;
-	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
+	auto& themeSettings = settings.Theme;
 
 	auto progressTitle = fmt::format("{}Compiling Shaders: {}",
-		shaderCache.backgroundCompilation ? "Background " : "",
-		shaderCache.GetShaderStatsString(!state->IsDeveloperMode()).c_str());
+		shaderCache->backgroundCompilation ? "Background " : "",
+		shaderCache->GetShaderStatsString(!state->IsDeveloperMode()).c_str());
 	auto percent = (float)compiledShaders / (float)totalShaders;
 	auto progressOverlay = fmt::format("{}/{} ({:2.1f}%)", compiledShaders, totalShaders, 100 * percent);
-	if (shaderCache.IsCompiling()) {
+	if (shaderCache->IsCompiling()) {
 		ImGui::SetNextWindowPos(ImVec2(10, 10));
 		if (!ImGui::Begin("ShaderCompilationInfo", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
 			ImGui::End();
@@ -1059,7 +1059,7 @@ void Menu::DrawOverlay()
 		}
 		ImGui::TextUnformatted(progressTitle.c_str());
 		ImGui::ProgressBar(percent, ImVec2(0.0f, 0.0f), progressOverlay.c_str());
-		if (!shaderCache.backgroundCompilation && shaderCache.menuLoaded) {
+		if (!shaderCache->backgroundCompilation && shaderCache->menuLoaded) {
 			auto skipShadersText = fmt::format(
 				"Press {} to proceed without completing shader compilation. ",
 				KeyIdToString(settings.SkipCompilationKey));
@@ -1432,17 +1432,17 @@ void Menu::ProcessInputEventQueue()
 				} else if (key == settings.ToggleKey) {
 					IsEnabled = !IsEnabled;
 				} else if (key == settings.SkipCompilationKey) {
-					auto& shaderCache = SIE::ShaderCache::Instance();
-					shaderCache.backgroundCompilation = true;
+					auto shaderCache = globals::shaderCache;
+					shaderCache->backgroundCompilation = true;
 				} else if (key == settings.EffectToggleKey) {
-					auto& shaderCache = SIE::ShaderCache::Instance();
-					shaderCache.SetEnabled(!shaderCache.IsEnabled());
+					auto shaderCache = globals::shaderCache;
+					shaderCache->SetEnabled(!shaderCache->IsEnabled());
 				} else if (key == priorShaderKey && globals::state->IsDeveloperMode()) {
-					auto& shaderCache = SIE::ShaderCache::Instance();
-					shaderCache.IterateShaderBlock();
+					auto shaderCache = globals::shaderCache;
+					shaderCache->IterateShaderBlock();
 				} else if (key == nextShaderKey && globals::state->IsDeveloperMode()) {
-					auto& shaderCache = SIE::ShaderCache::Instance();
-					shaderCache.IterateShaderBlock(false);
+					auto shaderCache = globals::shaderCache;
+					shaderCache->IterateShaderBlock(false);
 				}
 				if (key == VK_ESCAPE && IsEnabled) {
 					IsEnabled = false;

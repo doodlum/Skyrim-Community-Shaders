@@ -285,7 +285,7 @@ void ScreenSpaceGI::DrawSettings()
 	ImGui::SeparatorText("Debug");
 
 	if (ImGui::TreeNode("Buffer Viewer")) {
-		auto deferred = Deferred::GetSingleton();
+		auto deferred = globals::deferred;
 
 		static float debugRescale = .3f;
 		ImGui::SliderFloat("View Resize", &debugRescale, 0.f, 1.f);
@@ -311,7 +311,7 @@ void ScreenSpaceGI::LoadSettings(json& o_json)
 {
 	settings = o_json;
 
-	if (auto iniSettingCollection = RE::INIPrefSettingCollection::GetSingleton()) {
+	if (auto iniSettingCollection = globals::game::iniPrefSettingCollection) {
 		if (auto setting = iniSettingCollection->GetSetting("bSAOEnable:Display")) {
 			setting->data.b = false;
 		}

@@ -6,6 +6,8 @@
 #include "Menu.h"
 #include "ShaderCache.h"
 #include "State.h"
+#include "Streamline.h"
+#include "Upscaling.h"
 
 #include "Features/CloudShadows.h"
 #include "Features/DynamicCubemaps.h"
@@ -54,7 +56,10 @@ namespace globals
 		WaterEffects* waterEffects = nullptr;
 		WetnessEffects* wetnessEffects = nullptr;
 
-		ParticleLights* particleLights = nullptr;
+		namespace llf
+		{
+			ParticleLights* particleLights = nullptr;
+		}
 	}
 
 	namespace game
@@ -67,10 +72,13 @@ namespace globals
 		bool isVR = false;
 		RE::MemoryManager* memoryManager = nullptr;
 		RE::INISettingCollection* iniSettingCollection = nullptr;
+		RE::INIPrefSettingCollection* iniPrefSettingCollection = nullptr;
+		RE::GameSettingCollection* gameSettingCollection = nullptr;
 		float* cameraNear = nullptr;
 		float* cameraFar = nullptr;
 		RE::BSUtilityShader* utilityShader = nullptr;
 		RE::Sky* sky = nullptr;
+		RE::UI* ui = nullptr;
 
 		RE::BSGraphics::PixelShader** currentPixelShader = nullptr;
 		RE::BSGraphics::VertexShader** currentVertexShader = nullptr;
@@ -86,6 +94,8 @@ namespace globals
 	TruePBR* truePBR = nullptr;
 	Menu* menu = nullptr;
 	SIE::ShaderCache* shaderCache = nullptr;
+	Streamline* streamline = nullptr;
+	Upscaling* upscaling = nullptr;
 
 	void OnInit()
 	{
@@ -99,6 +109,8 @@ namespace globals
 			isVR = REL::Module::IsVR();
 			memoryManager = RE::MemoryManager::GetSingleton();
 			iniSettingCollection = RE::INISettingCollection::GetSingleton();
+			iniPrefSettingCollection = RE::INIPrefSettingCollection::GetSingleton();
+			gameSettingCollection = RE::GameSettingCollection::GetSingleton();
 			cameraNear = (float*)(REL::RelocationID(517032, 403540).address() + 0x40);
 			cameraFar = (float*)(REL::RelocationID(517032, 403540).address() + 0x44);
 
@@ -115,6 +127,8 @@ namespace globals
 		shaderCache = &SIE::ShaderCache::Instance();
 		deferred = Deferred::GetSingleton();
 		truePBR = TruePBR::GetSingleton();
+		streamline = Streamline::GetSingleton();
+		upscaling = Upscaling::GetSingleton();
 
 		features::cloudShadows = CloudShadows::GetSingleton();
 		features::dynamicCubemaps = DynamicCubemaps::GetSingleton();
@@ -132,7 +146,7 @@ namespace globals
 		features::waterEffects = WaterEffects::GetSingleton();
 		features::wetnessEffects = WetnessEffects::GetSingleton();
 
-		features::particleLights = ParticleLights::GetSingleton();
+		features::llf::particleLights = ParticleLights::GetSingleton();
 	}
 
 	void OnDataLoaded()
@@ -141,6 +155,7 @@ namespace globals
 		tes = RE::TES::GetSingleton();
 		sky = RE::Sky::GetSingleton();
 		utilityShader = RE::BSUtilityShader::GetSingleton();
+		ui = RE::UI::GetSingleton();
 
 		bEnableLandFade = iniSettingCollection->GetSetting("bEnableLandFade:Display");
 

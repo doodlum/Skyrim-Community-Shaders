@@ -566,7 +566,7 @@ void Streamline::UpdateConstants()
 	slConstants.clipToPrevClip = *(sl::float4x4*)&cameraToPrevCamera;
 	slConstants.depthInverted = sl::Boolean::eFalse;
 
-	auto upscaling = Upscaling::GetSingleton();
+	auto upscaling = globals::upscaling;
 	auto jitter = upscaling->jitter;
 	slConstants.jitterOffset = { -jitter.x, -jitter.y };
 	slConstants.reset = upscaling->reset ? sl::Boolean::eTrue : sl::Boolean::eFalse;
@@ -644,7 +644,7 @@ void Streamline::Main_RenderWorld::thunk(bool a1)
 {
 	if (!globals::game::isVR || !globals::state->upscalerLoaded) {
 		// With upscaler, VR hangs on this function, specifically at slSetConstants
-		GetSingleton()->UpdateConstants();
+		globals::streamline->UpdateConstants();
 	}
 	func(a1);
 }

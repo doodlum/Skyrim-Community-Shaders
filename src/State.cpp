@@ -95,7 +95,7 @@ void State::Reset()
 	for (auto* feature : Feature::GetFeatureList())
 		if (feature->loaded)
 			feature->Reset();
-	if (!RE::UI::GetSingleton()->GameIsPaused())
+	if (!globals::game::ui->GameIsPaused())
 		timer += RE::GetSecondsSinceLastFrame();
 	lastModifiedPixelDescriptor = 0;
 	lastModifiedVertexDescriptor = 0;
@@ -112,10 +112,10 @@ void State::Setup()
 	for (auto* feature : Feature::GetFeatureList())
 		if (feature->loaded)
 			feature->SetupResources();
-	Deferred::GetSingleton()->SetupResources();
-	Streamline::GetSingleton()->SetupResources();
+	globals::deferred->SetupResources();
+	globals::streamline->SetupResources();
 	if (!upscalerLoaded)
-		Upscaling::GetSingleton()->CreateUpscalingResources();
+		globals::upscaling->CreateUpscalingResources();
 	if (initialized)
 		return;
 	initialized = true;
@@ -137,7 +137,7 @@ static const std::string& GetConfigPath(State::ConfigMode a_configMode)
 void State::Load(ConfigMode a_configMode, bool a_allowReload)
 {
 	ConfigMode configMode = a_configMode;
-	auto& shaderCache = SIE::ShaderCache::Instance();
+	auto shaderCache = globals::shaderCache;
 	json settings;
 	bool errorDetected = false;
 
@@ -193,24 +193,24 @@ void State::Load(ConfigMode a_configMode, bool a_allowReload)
 
 		if (settings["Menu"].is_object()) {
 			logger::info("Loading 'Menu' settings");
-			Menu::GetSingleton()->Load(settings["Menu"]);
+			globals::menu->Load(settings["Menu"]);
 		}
 
 		if (settings["Advanced"].is_object()) {
 			logger::info("Loading 'Advanced' settings");
 			json& advanced = settings["Advanced"];
 			if (advanced["Dump Shaders"].is_boolean())
-				shaderCache.SetDump(advanced["Dump Shaders"]);
+				shaderCache->SetDump(advanced["Dump Shaders"]);
 			if (advanced["Log Level"].is_number_integer())
 				logLevel = static_cast<spdlog::level::level_enum>((int)advanced["Log Level"]);
 			if (advanced["Shader Defines"].is_string())
 				SetDefines(advanced["Shader Defines"]);
 			if (advanced["Compiler Threads"].is_number_integer())
-				shaderCache.compilationThreadCount = std::clamp(advanced["Compiler Threads"].get<int32_t>(), 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
+				shaderCache->compilationThreadCount = std::clamp(advanced["Compiler Threads"].get<int32_t>(), 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
 			if (advanced["Background Compiler Threads"].is_number_integer())
-				shaderCache.backgroundCompilationThreadCount = std::clamp(advanced["Background Compiler Threads"].get<int32_t>(), 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
+				shaderCache->backgroundCompilationThreadCount = std::clamp(advanced["Background Compiler Threads"].get<int32_t>(), 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
 			if (advanced["Use FileWatcher"].is_boolean())
-				shaderCache.SetFileWatcher(advanced["Use FileWatcher"]);
+				shaderCache->SetFileWatcher(advanced["Use FileWatcher"]);
 			if (advanced["Frame Annotations"].is_boolean())
 				frameAnnotations = advanced["Frame Annotations"];
 		}
@@ -220,13 +220,13 @@ void State::Load(ConfigMode a_configMode, bool a_allowReload)
 			json& general = settings["General"];
 
 			if (general["Enable Shaders"].is_boolean())
-				shaderCache.SetEnabled(general["Enable Shaders"]);
+				shaderCache->SetEnabled(general["Enable Shaders"]);
 
 			if (general["Enable Disk Cache"].is_boolean())
-				shaderCache.SetDiskCache(general["Enable Disk Cache"]);
+				shaderCache->SetDiskCache(general["Enable Disk Cache"]);
 
 			if (general["Enable Async"].is_boolean())
-				shaderCache.SetAsync(general["Enable Async"]);
+				shaderCache->SetAsync(general["Enable Async"]);
 		}
 
 		if (settings["Replace Original Shaders"].is_object()) {
@@ -263,7 +263,7 @@ void State::Load(ConfigMode a_configMode, bool a_allowReload)
 			}
 		}
 
-		auto upscaling = Upscaling::GetSingleton();
+		auto upscaling = globals::upscaling;
 		auto& upscalingJson = settings[upscaling->GetShortName()];
 		if (upscalingJson.is_object()) {
 			logger::info("Loading Upscaling settings");
@@ -277,7 +277,7 @@ void State::Load(ConfigMode a_configMode, bool a_allowReload)
 			logger::warn("Missing settings for Upscaling, using default.");
 		}
 
-		auto streamline = Streamline::GetSingleton();
+		auto streamline = globals::streamline;
 		auto& streamlineJson = settings[streamline->GetShortName()];
 		if (streamlineJson.is_object()) {
 			logger::info("Loading Streamline settings");
@@ -329,7 +329,7 @@ void State::Load(ConfigMode a_configMode, bool a_allowReload)
 
 void State::Save(ConfigMode a_configMode)
 {
-	const auto& shaderCache = SIE::ShaderCache::Instance();
+	const auto shaderCache = globals::shaderCache;
 	std::string configPath = GetConfigPath(a_configMode);
 	std::ofstream o{ configPath };
 
@@ -348,30 +348,30 @@ void State::Save(ConfigMode a_configMode)
 
 	json settings;
 
-	Menu::GetSingleton()->Save(settings["Menu"]);
+	globals::menu->Save(settings["Menu"]);
 
 	json advanced;
-	advanced["Dump Shaders"] = shaderCache.IsDump();
+	advanced["Dump Shaders"] = shaderCache->IsDump();
 	advanced["Log Level"] = logLevel;
 	advanced["Shader Defines"] = shaderDefinesString;
-	advanced["Compiler Threads"] = shaderCache.compilationThreadCount;
-	advanced["Background Compiler Threads"] = shaderCache.backgroundCompilationThreadCount;
-	advanced["Use FileWatcher"] = shaderCache.UseFileWatcher();
+	advanced["Compiler Threads"] = shaderCache->compilationThreadCount;
+	advanced["Background Compiler Threads"] = shaderCache->backgroundCompilationThreadCount;
+	advanced["Use FileWatcher"] = shaderCache->UseFileWatcher();
 	advanced["Frame Annotations"] = frameAnnotations;
 	settings["Advanced"] = advanced;
 
 	json general;
-	general["Enable Shaders"] = shaderCache.IsEnabled();
-	general["Enable Disk Cache"] = shaderCache.IsDiskCache();
-	general["Enable Async"] = shaderCache.IsAsync();
+	general["Enable Shaders"] = shaderCache->IsEnabled();
+	general["Enable Disk Cache"] = shaderCache->IsDiskCache();
+	general["Enable Async"] = shaderCache->IsAsync();
 
 	settings["General"] = general;
 
-	auto upscaling = Upscaling::GetSingleton();
+	auto upscaling = globals::upscaling;
 	auto& upscalingJson = settings[upscaling->GetShortName()];
 	upscaling->SaveSettings(upscalingJson);
 
-	auto streamline = Streamline::GetSingleton();
+	auto streamline = globals::streamline;
 	auto& streamlineJson = settings[streamline->GetShortName()];
 	streamline->SaveSettings(streamlineJson);
 
@@ -688,12 +688,12 @@ void State::UpdateSharedData()
 			}
 		}
 
-		if (auto sky = RE::Sky::GetSingleton())
+		if (auto sky = globals::game::sky)
 			data.InInterior = sky->mode.get() != RE::Sky::Mode::kFull;
 		else
 			data.InInterior = true;
 
-		if (auto ui = RE::UI::GetSingleton())
+		if (auto ui = globals::game::ui)
 			data.InMapMenu = ui->IsMenuOpen(RE::MapMenu::MENU_NAME);
 		else
 			data.InMapMenu = true;

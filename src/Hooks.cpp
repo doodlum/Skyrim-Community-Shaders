@@ -168,9 +168,9 @@ struct IDXGISwapChain_Present
 	static HRESULT WINAPI thunk(IDXGISwapChain* This, UINT SyncInterval, UINT Flags)
 	{
 		globals::state->Reset();
-		Menu::GetSingleton()->DrawOverlay();
+		globals::menu->DrawOverlay();
 
-		auto streamline = Streamline::GetSingleton();
+		auto streamline = globals::streamline;
 		streamline->Present();
 
 		if (streamline->settings.frameGenerationMode == sl::DLSSGMode::eOn) {
@@ -223,7 +223,7 @@ decltype(&CreateDXGIFactory) ptrCreateDXGIFactory;
 
 HRESULT WINAPI hk_CreateDXGIFactory(REFIID, void** ppFactory)
 {
-	return Streamline::GetSingleton()->CreateDXGIFactory(__uuidof(IDXGIFactory1), ppFactory);
+	return globals::streamline->CreateDXGIFactory(__uuidof(IDXGIFactory1), ppFactory);
 }
 
 decltype(&D3D11CreateDeviceAndSwapChain) ptrD3D11CreateDeviceAndSwapChain;
@@ -280,7 +280,7 @@ HRESULT WINAPI hk_D3D11CreateDeviceAndSwapChain(
 	globals::state->SetAdapterDescription(adapterDesc.Description);
 
 	const D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_1;  // Create a device with only the latest feature level
-	auto result = Streamline::GetSingleton()->CreateDeviceAndSwapChain(
+	auto result = globals::streamline->CreateDeviceAndSwapChain(
 		pAdapter,
 		DriverType,
 		Software,
@@ -374,12 +374,12 @@ namespace Hooks
 			logger::info("Detouring virtual function tables");
 			stl::detour_vfunc<8, IDXGISwapChain_Present>(globals::d3d::swapchain);
 
-			auto& shaderCache = SIE::ShaderCache::Instance();
-			if (shaderCache.IsDump()) {
+			auto shaderCache = globals::shaderCache;
+			if (shaderCache->IsDump()) {
 				stl::detour_vfunc<12, ID3D11Device_CreateVertexShader>(globals::d3d::device);
 				stl::detour_vfunc<15, ID3D11Device_CreatePixelShader>(globals::d3d::device);
 			}
-			Menu::GetSingleton()->Init();
+			globals::menu->Init();
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
@@ -388,7 +388,7 @@ namespace Hooks
 	{
 		static LRESULT thunk(HWND a_hwnd, UINT a_msg, WPARAM a_wParam, LPARAM a_lParam)
 		{
-			auto menu = Menu::GetSingleton();
+			auto menu = globals::menu;
 			if (a_msg == WM_KILLFOCUS && menu->initialized) {
 				menu->OnFocusLost();
 				auto& io = ImGui::GetIO();
@@ -736,7 +736,7 @@ namespace Hooks
 
 	void InstallD3DHooks()
 	{
-		auto streamline = Streamline::GetSingleton();
+		auto streamline = globals::streamline;
 		auto state = globals::state;
 
 		streamline->LoadInterposer();

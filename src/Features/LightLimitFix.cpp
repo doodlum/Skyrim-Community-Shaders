@@ -71,7 +71,7 @@ void LightLimitFix::DrawSettings()
 		ImGui::TreePop();
 	}
 
-	auto& shaderCache = SIE::ShaderCache::Instance();
+	auto shaderCache = globals::shaderCache;
 
 	if (ImGui::TreeNodeEx("Light Limit Visualization", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::Checkbox("Enable Lights Visualisation", &settings.EnableLightsVisualisation);
@@ -93,7 +93,7 @@ void LightLimitFix::DrawSettings()
 		currentEnableLightsVisualisation = settings.EnableLightsVisualisation;
 		if (previousEnableLightsVisualisation != currentEnableLightsVisualisation) {
 			globals::state->SetDefines(settings.EnableLightsVisualisation ? "LLFDEBUG" : "");
-			shaderCache.Clear(RE::BSShader::Type::Lighting);
+			shaderCache->Clear(RE::BSShader::Type::Lighting);
 			previousEnableLightsVisualisation = currentEnableLightsVisualisation;
 		}
 
@@ -477,7 +477,7 @@ std::string ExtractTextureStem(std::string_view a_path)
 
 LightLimitFix::ParticleLightReference LightLimitFix::GetParticleLightConfigs(RE::BSRenderPass* a_pass)
 {
-	auto particleLights = globals::features::particleLights;
+	auto particleLights = globals::features::llf::particleLights;
 
 	// see https://www.nexusmods.com/skyrimspecialedition/articles/1391
 	if (settings.EnableParticleLights) {
@@ -657,13 +657,13 @@ bool LightLimitFix::AddParticleLight(RE::BSRenderPass* a_pass, ParticleLightRefe
 
 void LightLimitFix::PostPostLoad()
 {
-	ParticleLights::GetSingleton()->GetConfigs();
+	globals::features::llf::particleLights->GetConfigs();
 	Hooks::Install();
 }
 
 void LightLimitFix::DataLoaded()
 {
-	auto iMagicLightMaxCount = RE::GameSettingCollection::GetSingleton()->GetSetting("iMagicLightMaxCount");
+	auto iMagicLightMaxCount = globals::game::gameSettingCollection->GetSetting("iMagicLightMaxCount");
 	iMagicLightMaxCount->data.i = MAXINT32;
 	logger::info("[LLF] Unlocked magic light limit");
 }

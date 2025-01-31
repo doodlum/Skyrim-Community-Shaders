@@ -69,8 +69,8 @@ void CloudShadows::ModifySky(RE::BSRenderPass* Pass)
 
 void CloudShadows::EarlyPrepass()
 {
-	if ((RE::Sky::GetSingleton()->mode.get() != RE::Sky::Mode::kFull) ||
-		!RE::Sky::GetSingleton()->currentClimate)
+	if ((globals::game::sky->mode.get() != RE::Sky::Mode::kFull) ||
+		!globals::game::sky->currentClimate)
 		return;
 
 	auto& context = globals::d3d::context;

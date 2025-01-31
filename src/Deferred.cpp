@@ -219,9 +219,9 @@ void Deferred::CopyShadowData()
 
 void Deferred::EarlyPrepasses()
 {
-	auto& shaderCache = SIE::ShaderCache::Instance();
+	auto shaderCache = globals::shaderCache;
 
-	if (!shaderCache.IsEnabled())
+	if (!shaderCache->IsEnabled())
 		return;
 
 	globals::state->UpdateSharedData();
@@ -246,9 +246,9 @@ void Deferred::PrepassPasses()
 	ZoneScoped;
 	TracyD3D11Zone(globals::state->tracyCtx, "Prepass");
 
-	auto& shaderCache = SIE::ShaderCache::Instance();
+	auto shaderCache = globals::shaderCache;
 
-	if (!shaderCache.IsEnabled())
+	if (!shaderCache->IsEnabled())
 		return;
 
 	auto context = globals::game::renderer->GetRuntimeData().context;
@@ -362,7 +362,7 @@ void Deferred::DeferredPasses()
 	auto motionVectors = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMOTION_VECTOR];
 
 	bool interior = true;
-	if (auto sky = RE::Sky::GetSingleton())
+	if (auto sky = globals::game::sky)
 		interior = sky->mode.get() != RE::Sky::Mode::kFull;
 
 	auto skylighting = globals::features::skylighting;
@@ -484,7 +484,7 @@ void Deferred::EndDeferred()
 	if (!inWorld)
 		return;
 
-	auto& shaderCache = globals::shaderCache;
+	auto shaderCache = globals::shaderCache;
 
 	if (!shaderCache->IsEnabled())
 		return;

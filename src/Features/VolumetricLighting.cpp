@@ -52,14 +52,14 @@ void VolumetricLighting::RestoreDefaultSettings()
 
 void VolumetricLighting::DataLoaded()
 {
-	auto& shaderCache = SIE::ShaderCache::Instance();
+	auto shaderCache = globals::shaderCache;
 	const static auto address = REL::Offset{ 0x1ec6b88 }.address();
 	bool& bDepthBufferCulling = *reinterpret_cast<bool*>(address);
 
-	if (REL::Module::IsVR() && bDepthBufferCulling && shaderCache.IsDiskCache()) {
+	if (REL::Module::IsVR() && bDepthBufferCulling && shaderCache->IsDiskCache()) {
 		// clear cache to fix bug caused by bDepthBufferCulling
 		logger::info("Force clearing cache due to bDepthBufferCulling");
-		shaderCache.Clear();
+		shaderCache->Clear();
 	}
 }
 

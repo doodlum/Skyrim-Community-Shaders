@@ -17,7 +17,7 @@ void Upscaling::DrawSettings()
 
 	auto state = globals::state;
 	auto imageSpaceManager = RE::ImageSpaceManager::GetSingleton();
-	auto streamline = Streamline::GetSingleton();
+	auto streamline = globals::streamline;
 	GET_INSTANCE_MEMBER(BSImagespaceShaderISTemporalAA, imageSpaceManager);
 	auto& bTAA = BSImagespaceShaderISTemporalAA->taaEnabled;  // Setting used by shaders
 
@@ -56,7 +56,7 @@ void Upscaling::DrawSettings()
 	bTAA = *currentUpscaleMode != (uint)UpscaleMethod::kNONE;
 
 	// settings for scaleform/ini
-	if (auto iniSettingCollection = RE::INIPrefSettingCollection::GetSingleton()) {
+	if (auto iniSettingCollection = globals::game::iniPrefSettingCollection) {
 		if (auto setting = iniSettingCollection->GetSetting("bUseTAA:Display")) {
 			setting->data.b = bTAA;
 		}
@@ -101,7 +101,7 @@ void Upscaling::SaveSettings(json& o_json)
 	std::lock_guard<std::mutex> lock(settingsMutex);
 
 	o_json = settings;
-	auto iniSettingCollection = RE::INIPrefSettingCollection::GetSingleton();
+	auto iniSettingCollection = globals::game::iniPrefSettingCollection;
 	if (iniSettingCollection) {
 		auto setting = iniSettingCollection->GetSetting("bUseTAA:Display");
 		if (setting) {
@@ -114,7 +114,7 @@ void Upscaling::LoadSettings(json& o_json)
 {
 	std::lock_guard<std::mutex> lock(settingsMutex);
 	settings = o_json;
-	auto iniSettingCollection = RE::INIPrefSettingCollection::GetSingleton();
+	auto iniSettingCollection = globals::game::iniPrefSettingCollection;
 	if (iniSettingCollection) {
 		auto setting = iniSettingCollection->GetSetting("bUseTAA:Display");
 		if (setting) {
@@ -133,7 +133,7 @@ Upscaling::UpscaleMethod Upscaling::GetUpscaleMethod()
 	if (globals::state->featureLevel != D3D_FEATURE_LEVEL_11_1)
 		return (Upscaling::UpscaleMethod)settings.upscaleMethodNoFSR;
 
-	if (Streamline::GetSingleton()->featureDLSS)
+	if (globals::streamline->featureDLSS)
 		return (Upscaling::UpscaleMethod)settings.upscaleMethod;
 
 	return (Upscaling::UpscaleMethod)settings.upscaleMethodNoDLSS;
@@ -144,7 +144,7 @@ void Upscaling::CheckResources()
 	static auto previousUpscaleMode = UpscaleMethod::kTAA;
 	auto currentUpscaleMode = GetUpscaleMethod();
 
-	auto streamline = Streamline::GetSingleton();
+	auto streamline = globals::streamline;
 	auto fidelityFX = FidelityFX::GetSingleton();
 
 	if (previousUpscaleMode != currentUpscaleMode) {
@@ -295,7 +295,7 @@ void Upscaling::Upscale()
 		context->CopyResource(upscalingTexture->resource.get(), inputTextureResource);
 
 		if (upscaleMethod == UpscaleMethod::kDLSS)
-			Streamline::GetSingleton()->Upscale(upscalingTexture, alphaMaskTexture, (sl::DLSSPreset)settings.dlssPreset);
+			globals::streamline->Upscale(upscalingTexture, alphaMaskTexture, (sl::DLSSPreset)settings.dlssPreset);
 		else if (upscaleMethod == UpscaleMethod::kFSR)
 			FidelityFX::GetSingleton()->Upscale(upscalingTexture, alphaMaskTexture, jitter, reset, settings.sharpness);
 
@@ -461,7 +461,7 @@ void Upscaling::InstallHooks()
 
 		logger::info("[Upscaling] Installed hooks");
 
-		RE::UI::GetSingleton()->GetEventSource<RE::MenuOpenCloseEvent>()->AddEventSink(Upscaling::GetSingleton());
+		globals::game::ui->GetEventSource<RE::MenuOpenCloseEvent>()->AddEventSink(globals::upscaling);
 		logger::info("[Upscaling] Registered for MenuOpenCloseEvent");
 	} else {
 		logger::info("[Upscaling] Not installing hooks due to Skyrim Upscaler");

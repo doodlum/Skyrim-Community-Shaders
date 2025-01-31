@@ -1261,7 +1261,7 @@ struct BSTempEffectGeometryDecal_Initialize
 		auto* singleton = globals::truePBR;
 
 		if (decal->decal != nullptr && singleton->IsPBRTextureSet(decal->texSet)) {
-			auto shaderProperty = static_cast<RE::BSLightingShaderProperty*>(RE::MemoryManager::GetSingleton()->Allocate(sizeof(RE::BSLightingShaderProperty), 0, false));
+			auto shaderProperty = static_cast<RE::BSLightingShaderProperty*>(globals::game::memoryManager->Allocate(sizeof(RE::BSLightingShaderProperty), 0, false));
 			shaderProperty->Ctor();
 
 			{

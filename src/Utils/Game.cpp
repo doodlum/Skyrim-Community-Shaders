@@ -31,7 +31,7 @@ namespace Util
 	float4 TryGetWaterData(float offsetX, float offsetY)
 	{
 		if (globals::game::shadowState) {
-			if (auto tes = RE::TES::GetSingleton()) {
+			if (auto tes = globals::game::tes) {
 				auto position = GetEyePosition(0);
 				position.x += offsetX;
 				position.y += offsetY;
@@ -77,7 +77,7 @@ namespace Util
 						}
 					}
 
-					if (auto sky = RE::Sky::GetSingleton()) {
+					if (auto sky = globals::game::sky) {
 						const auto& color = sky->skyColor[RE::TESWeather::ColorTypes::kWaterMultiplier];
 						data.x *= color.red;
 						data.y *= color.green;

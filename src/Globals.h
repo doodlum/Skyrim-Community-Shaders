@@ -22,6 +22,8 @@ class State;
 class Deferred;
 struct TruePBR;
 class Menu;
+class Streamline;
+class Upscaling;
 
 namespace SIE
 {
@@ -55,7 +57,10 @@ namespace globals
 		extern WaterEffects* waterEffects;
 		extern WetnessEffects* wetnessEffects;
 
-		extern ParticleLights* particleLights;
+		namespace llf
+		{
+			extern ParticleLights* particleLights;
+		}
 	}
 
 	namespace game
@@ -68,10 +73,13 @@ namespace globals
 		extern bool isVR;
 		extern RE::MemoryManager* memoryManager;
 		extern RE::INISettingCollection* iniSettingCollection;
+		extern RE::INIPrefSettingCollection* iniPrefSettingCollection;
+		extern RE::GameSettingCollection* gameSettingCollection;
 		extern float* cameraNear;
 		extern float* cameraFar;
 		extern RE::BSUtilityShader* utilityShader;
 		extern RE::Sky* sky;
+		extern RE::UI* ui;
 
 		extern RE::BSGraphics::PixelShader** currentPixelShader;
 		extern RE::BSGraphics::VertexShader** currentVertexShader;
@@ -87,6 +95,8 @@ namespace globals
 	extern TruePBR* truePBR;
 	extern Menu* menu;
 	extern SIE::ShaderCache* shaderCache;
+	extern Streamline* streamline;
+	extern Upscaling* upscaling;
 
 	void OnInit();
 	void OnDataLoaded();
