@@ -540,34 +540,40 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 		if (Permutation::PixelShaderDescriptor & Permutation::WaterFlags::Cubemap) {
 #			if defined(DYNAMIC_CUBEMAPS)
 #				if defined(SKYLIGHTING)
+
+			float3 dynamicCubemap;
+			if (SharedData::InInterior){
+				dynamicCubemap = DynamicCubemaps::EnvTexture.SampleLevel(CubeMapSampler, R, 0).xyz;
+			} else {
 #					if defined(VR)
-			float3 positionMSSkylight = input.WPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
+				float3 positionMSSkylight = input.WPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #					else
-			float3 positionMSSkylight = input.WPosition.xyz;
+				float3 positionMSSkylight = input.WPosition.xyz;
 #					endif
 
-			sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, R);
-			sh2 specularLobe = SphericalHarmonics::FauxSpecularLobe(normal, -viewDirection, 0.0);
+				sh2 skylighting = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, R);
+				sh2 specularLobe = SphericalHarmonics::FauxSpecularLobe(normal, -viewDirection, 0.0);
 
-			float skylightingSpecular = SphericalHarmonics::FuncProductIntegral(skylighting, specularLobe);
-			skylightingSpecular = lerp(1.0, skylightingSpecular, Skylighting::getFadeOutFactor(input.WPosition.xyz));
-			skylightingSpecular = Skylighting::mixSpecular(SharedData::skylightingSettings, skylightingSpecular);
+				float skylightingSpecular = SphericalHarmonics::FuncProductIntegral(skylighting, specularLobe);
+				skylightingSpecular = lerp(1.0, skylightingSpecular, Skylighting::getFadeOutFactor(input.WPosition.xyz));
+				skylightingSpecular = Skylighting::mixSpecular(SharedData::skylightingSettings, skylightingSpecular);
 
-			float3 specularIrradiance = 1;
+				float3 specularIrradiance = 1;
 
-			if (skylightingSpecular < 1.0) {
-				specularIrradiance = DynamicCubemaps::EnvTexture.SampleLevel(CubeMapSampler, R, 0).xyz;
-				specularIrradiance = Color::GammaToLinear(specularIrradiance);
+				if (skylightingSpecular < 1.0) {
+					specularIrradiance = DynamicCubemaps::EnvTexture.SampleLevel(CubeMapSampler, R, 0).xyz;
+					specularIrradiance = Color::GammaToLinear(specularIrradiance);
+				}
+
+				float3 specularIrradianceReflections = 1.0;
+
+				if (skylightingSpecular > 0.0) {
+					specularIrradianceReflections = DynamicCubemaps::EnvReflectionsTexture.SampleLevel(CubeMapSampler, R, 0).xyz;
+					specularIrradianceReflections = Color::GammaToLinear(specularIrradianceReflections);
+				}
+
+				dynamicCubemap = Color::LinearToGamma(lerp(specularIrradiance, specularIrradianceReflections, skylightingSpecular));
 			}
-
-			float3 specularIrradianceReflections = 1.0;
-
-			if (skylightingSpecular > 0.0) {
-				specularIrradianceReflections = DynamicCubemaps::EnvReflectionsTexture.SampleLevel(CubeMapSampler, R, 0).xyz;
-				specularIrradianceReflections = Color::GammaToLinear(specularIrradianceReflections);
-			}
-
-			float3 dynamicCubemap = Color::LinearToGamma(lerp(specularIrradiance, specularIrradianceReflections, skylightingSpecular));
 #				else
 			float3 dynamicCubemap = DynamicCubemaps::EnvReflectionsTexture.SampleLevel(CubeMapSampler, R, 0);
 #				endif

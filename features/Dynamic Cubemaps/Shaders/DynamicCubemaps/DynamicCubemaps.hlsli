@@ -39,9 +39,9 @@ namespace DynamicCubemaps
 	}
 
 #	if defined(SKYLIGHTING)
-	float3 GetDynamicCubemap(float2 uv, float3 N, float3 VN, float3 V, float roughness, float3 F0, sh2 skylighting)
+	float3 GetDynamicCubemap(float3 N, float3 VN, float3 V, float roughness, float3 F0, sh2 skylighting)
 #	else
-	float3 GetDynamicCubemap(float2 uv, float3 N, float3 VN, float3 V, float roughness, float3 F0)
+	float3 GetDynamicCubemap(float3 N, float3 VN, float3 V, float roughness, float3 F0)
 #	endif
 	{
 		float3 R = reflect(-V, N);

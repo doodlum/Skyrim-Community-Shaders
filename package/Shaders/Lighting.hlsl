@@ -2321,6 +2321,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(ENVMAP) || defined(MULTI_LAYER_PARALLAX) || defined(EYE)
 	float envMask = EnvmapData.x * MaterialData.x;
 
+	float viewNormalAngle = dot(worldSpaceNormal.xyz, viewDirection);
+	float3 envSamplingPoint = (viewNormalAngle * 2) * modelNormal.xyz - viewDirection;
+
 	if (envMask > 0.0) {
 		if (EnvmapData.y) {
 			envMask *= TexEnvMaskSampler.Sample(SampEnvMaskSampler, uv).x;
@@ -2381,9 +2384,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 				if (any(F0 > 0.0))
 #			if defined(SKYLIGHTING)
-					envColor = DynamicCubemaps::GetDynamicCubemap(screenUV, worldSpaceNormal, worldSpaceVertexNormal, worldSpaceViewDirection, envRoughness, F0, skylightingSH) * envMask;
+					envColor = DynamicCubemaps::GetDynamicCubemap(worldSpaceNormal, worldSpaceVertexNormal, worldSpaceViewDirection, envRoughness, F0, skylightingSH) * envMask;
 #			else
-					envColor = DynamicCubemaps::GetDynamicCubemap(screenUV, worldSpaceNormal, worldSpaceVertexNormal, worldSpaceViewDirection, envRoughness, F0, ) * envMask;
+					envColor = DynamicCubemaps::GetDynamicCubemap(worldSpaceNormal, worldSpaceVertexNormal, worldSpaceViewDirection, envRoughness, F0, ) * envMask;
 #			endif
 				else
 					envColor = 0.0;
@@ -2392,7 +2395,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 
 		if (!dynamicCubemap) {
-			float3 envColorBase = TexEnvSampler.Sample(SampEnvSampler, reflect(-viewDirection.xyz, modelNormal.xyz));
+			float3 envColorBase = TexEnvSampler.Sample(SampEnvSampler, envSamplingPoint);
 			envColor = envColorBase.xyz * envMask;
 		}
 	}
