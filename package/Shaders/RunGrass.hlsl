@@ -550,7 +550,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
 #			endif  // SCREEN_SPACE_SHADOWS
 		}
-		
+
 		if (dirShadow != 0.0)
 			dirShadow *= ShadowSampling::GetWorldShadow(input.WorldPosition, FrameBuffer::CameraPosAdjust[eyeIndex], eyeIndex);
 
