@@ -21,23 +21,25 @@ struct GrassCollision : Feature
 	{
 		bool EnableGrassCollision = 1;
 	};
-
-	struct alignas(16) CollisionData
+	
+	struct Capsule
 	{
-		float4 centre[2];
+		float4 TopPosRadius;
+		float4 BottomPos;
 	};
 
 	struct alignas(16) PerFrame
 	{
-		CollisionData collisionData[256];
-		uint numCollisions;
-		uint pad0[3];
+		Capsule Capsules[256];
+		float4 CapsuleInfo;
 	};
+
+	const RE::hkpCapsuleShape* GetNodeCapsuleShape(RE::bhkNiCollisionObject* a_collisionObject);
+	bool GetCapsuleParams(RE::NiAVObject* a_node, Capsule& a_outCapsule);
 
 	std::uint32_t totalActorCount = 0;
 	std::uint32_t activeActorCount = 0;
-	std::uint32_t currentCollisionCount = 0;
-	std::vector<RE::Actor*> actorList{};
+	std::uint32_t numCapsules = 0;
 	std::uint32_t colllisionCount = 0;
 
 	Settings settings;
