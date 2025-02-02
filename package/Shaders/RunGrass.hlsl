@@ -414,6 +414,10 @@ cbuffer AlphaTestRefCB : register(b11)
 #		include "WaterLighting/WaterCaustics.hlsli"
 #	endif
 
+#	define LinearSampler SampBaseSampler
+
+#	include "Common/ShadowSampling.hlsli"
+
 #	ifdef GRASS_LIGHTING
 #		if defined(TRUE_PBR)
 
@@ -546,19 +550,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
 #			endif  // SCREEN_SPACE_SHADOWS
 		}
-
-#			if defined(TERRAIN_SHADOWS)
-		if (dirShadow > 0.0) {
-			float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, SampBaseSampler);
-			dirShadow *= terrainShadow;
-		}
-#			endif  // TERRAIN_SHADOWS
-
-#			if defined(CLOUD_SHADOWS)
-		if (dirShadow > 0.0) {
-			dirShadow *= CloudShadows::GetCloudShadowMult(input.WorldPosition.xyz, SampBaseSampler);
-		}
-#			endif  // CLOUD_SHADOWS
+		
+		if (dirShadow != 0.0)
+			dirShadow *= ShadowSampling::GetWorldShadow(input.WorldPosition, FrameBuffer::CameraPosAdjust[eyeIndex], eyeIndex);
 
 #			if defined(WATER_LIGHTING)
 		if (dirShadow > 0.0) {
@@ -778,18 +772,8 @@ PS_OUTPUT main(PS_INPUT input)
 		dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
 #			endif  // SCREEN_SPACE_SHADOWS
 
-#			if defined(TERRAIN_SHADOWS)
-		if (dirShadow > 0.0) {
-			float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, SampBaseSampler);
-			dirShadow *= terrainShadow;
-		}
-#			endif  // TERRAIN_SHADOWS
-
-#			if defined(CLOUD_SHADOWS)
-		if (dirShadow > 0.0) {
-			dirShadow *= CloudShadows::GetCloudShadowMult(input.WorldPosition.xyz, SampBaseSampler);
-		}
-#			endif  // CLOUD_SHADOWS
+		if (dirShadow != 0.0)
+			dirShadow *= ShadowSampling::GetWorldShadow(input.WorldPosition, FrameBuffer::CameraPosAdjust[eyeIndex], eyeIndex);
 
 #			if defined(WATER_LIGHTING)
 		if (dirShadow > 0.0) {
