@@ -43,7 +43,7 @@ namespace GrassCollision
 				displacement += shift;
 			}
 
-			ClampDisplacement(displacement, 20);
+			ClampDisplacement(displacement, 10);
 			return displacement * saturate(alpha * 10);
 		}
 

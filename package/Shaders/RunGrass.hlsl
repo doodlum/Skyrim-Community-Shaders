@@ -233,7 +233,7 @@ VS_OUTPUT main(VS_INPUT input)
 
 	// Vertex normal needs to be transformed to world-space for lighting calculations.
 	vsout.VertexNormal.xyz = mul(world3x3, input.Normal.xyz * 2.0 - 1.0);
-	vsout.VertexNormal.w = saturate(sqrt(input.Color.w));
+	vsout.VertexNormal.w = input.Color.w;
 
 	return vsout;
 }
@@ -581,18 +581,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	dirLightColor *= dirLightColorMultiplier;
 	dirLightColor *= dirShadow;
 
-	float wrapAmount = saturate(input.VertexNormal.w);
-	float wrapMultiplier = rcp((1.0 + wrapAmount) * (1.0 + wrapAmount));
-
-	float dirDiffuse = (dirLightAngle + wrapAmount) * wrapMultiplier;
-	lightsDiffuseColor += dirLightColor * saturate(dirDiffuse) * dirDetailShadow;
+	lightsDiffuseColor += dirLightColor * saturate(dirLightAngle) * dirDetailShadow;
 
 	float3 albedo = max(0, baseColor.xyz * input.VertexColor.xyz);
 
-	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * input.VertexNormal.w;
+	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * saturate(input.VertexNormal.w * 10.0);
 
-	float dirLightBacklighting = 1.0 + saturate(dot(viewDirection, -SharedData::DirLightDirection.xyz));
-	float3 sss = dirLightColor * saturate(-dirLightAngle) * dirLightBacklighting;
+	float3 sss = dirLightColor * saturate(-dirLightAngle);
 
 	if (complex)
 		lightsSpecularColor += GrassLighting::GetLightSpecularInput(DirLightDirection, viewDirection, normal, dirLightColor, SharedData::grassLightingSettings.Glossiness);
@@ -645,11 +640,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #				else
 				lightColor *= lightShadow;
 
-				float lightDiffuse = (lightAngle + wrapAmount) * wrapMultiplier;
-				float3 lightDiffuseColor = lightColor * saturate(lightDiffuse);
-
-				float lightBacklighting = 1.0 + saturate(dot(viewDirection, -normalizedLightDirection.xyz));
-				sss += lightColor * saturate(-lightAngle) * lightBacklighting;
+				float3 lightDiffuseColor = lightColor * saturate(dirLightAngle);
+				sss += lightColor * saturate(-lightAngle);
 
 				lightsDiffuseColor += lightDiffuseColor;
 
