@@ -1968,7 +1968,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif  // defined(EMAT) && (defined (SKINNED) || !defined \
 				// (MODELSPACENORMALS))
 
-	if (dirShadow != 0.0 && !SharedData::InInterior && (inWorld || inReflection))
+	if (dirShadow != 0.0 && (inWorld || inReflection))
 		dirShadow *= ShadowSampling::GetWorldShadow(input.WorldPosition, FrameBuffer::CameraPosAdjust[eyeIndex], eyeIndex);
 
 	dirLightColorMultiplier *= dirShadow;

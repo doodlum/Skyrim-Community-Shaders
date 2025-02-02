@@ -542,7 +542,7 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 #				if defined(SKYLIGHTING)
 
 			float3 dynamicCubemap;
-			if (SharedData::InInterior) {
+			if (SharedData::InInterior){
 				dynamicCubemap = DynamicCubemaps::EnvTexture.SampleLevel(CubeMapSampler, R, 0).xyz;
 			} else {
 #					if defined(VR)
@@ -608,18 +608,16 @@ float3 GetWaterSpecularColor(PS_INPUT input, float3 normal, float3 viewDirection
 		if (Permutation::PixelShaderDescriptor & Permutation::WaterFlags::Cubemap) {
 			float pointingDirection = dot(viewDirection, R);
 			float pointingAlignment = dot(reflect(viewDirection, float3(0, 0, 1)), R);
-			float ssrAmount = pointingDirection * pointingAlignment;
+			float ssrAmount = min(pointingAlignment, pointingDirection);
 			if (SSRParams.x > 0.0 && ssrAmount > 0.0) {
-				float2 ssrReflectionUv = ((FrameBuffer::DynamicResolutionParams2.xy * input.HPosition.xy) * SSRParams.zw) + SSRParams2.x * normal.xy;
+				float2 ssrReflectionUv = ((FrameBuffer::DynamicResolutionParams2.xy * input.HPosition.xy) * SSRParams.zw) + 0.05 * normal.xy;
 				float2 ssrReflectionUvDR = FrameBuffer::GetDynamicResolutionAdjustedScreenPosition(ssrReflectionUv);
-				float4 ssrReflectionColorBlurred = SSRReflectionTex.Sample(SSRReflectionSampler, ssrReflectionUvDR);
+				float4 ssrReflectionColorBlurred = RawSSRReflectionTex.Sample(RawSSRReflectionSampler, ssrReflectionUvDR);
 				float4 ssrReflectionColorRaw = RawSSRReflectionTex.Sample(RawSSRReflectionSampler, ssrReflectionUvDR);
-
-				float effectiveBlurFactor = saturate(SSRParams.y);
-				float4 ssrReflectionColor = lerp(ssrReflectionColorRaw, ssrReflectionColorBlurred, effectiveBlurFactor);
+				float4 ssrReflectionColor = lerp(ssrReflectionColorBlurred, ssrReflectionColorRaw, ssrAmount * ssrAmount);
 
 				finalSsrReflectionColor = max(0, ssrReflectionColor.xyz);
-				ssrFraction = saturate(ssrReflectionColor.w * distanceFactor * SSRParams.x) * ssrAmount;
+				ssrFraction = saturate(ssrReflectionColor.w * distanceFactor * ssrAmount);
 			}
 		}
 #			endif
