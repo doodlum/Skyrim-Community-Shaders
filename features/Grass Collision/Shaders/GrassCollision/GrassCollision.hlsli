@@ -14,8 +14,8 @@ namespace GrassCollision
 	void ClampDisplacement(inout float3 displacement, float maxLength)
 	{
 		float lengthSq = displacement.x * displacement.x +
-						displacement.y * displacement.y +
-						displacement.z * displacement.z;
+		                 displacement.y * displacement.y +
+		                 displacement.z * displacement.z;
 
 		if (lengthSq > maxLength * maxLength)  // Compare squared values for performance
 		{
