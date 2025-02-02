@@ -6,7 +6,7 @@
 #include "State.h"
 #include "Util.h"
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(WeatherWidget::Settings, currentParentBuffer)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WeatherWidget::Settings, currentParentBuffer, windSpeed)
 
 WeatherWidget::~WeatherWidget()
 {
@@ -22,10 +22,8 @@ void WeatherWidget::DrawWidget()
 
 		// Sets the parent widget if settings have been loaded.
 		if (settings.currentParentBuffer != "None") {
-			auto temp = std::find_if(widgets.begin(), widgets.end(), [&](Widget* w) { return w->GetEditorID() == settings.currentParentBuffer; });
-			if (temp != widgets.end())
-				parent = (WeatherWidget*)*temp;
-			else
+			parent = GetParent();
+			if (parent == nullptr)
 				settings.currentParentBuffer = "None";
 			strncpy(currentParentBuffer, settings.currentParentBuffer.c_str(), sizeof(settings.currentParentBuffer));
 		}
@@ -82,4 +80,32 @@ void WeatherWidget::LoadSettings()
 void WeatherWidget::SaveSettings()
 {
 	j = settings;
+}
+
+WeatherWidget* WeatherWidget::GetParent()
+{
+	auto editorWindow = EditorWindow::GetSingleton();
+	auto& widgets = editorWindow->weatherWidgets;
+
+	auto temp = std::find_if(widgets.begin(), widgets.end(), [&](Widget* w) { return w->GetEditorID() == settings.currentParentBuffer; });
+	if (temp != widgets.end())
+		return (WeatherWidget*)*temp;
+
+	return nullptr;
+}
+
+const int WeatherWidget::GetSetting(const std::string& settingName)
+{
+	j = settings;
+
+	try {
+		int setting = j[setting];
+
+		if (setting == -128) {
+			return GetParent()->GetSetting(settingName);
+		}
+		return setting;
+	} catch (const nlohmann::json::parse_error& e) {
+		logger::warn("{} setting does not exist in WeatherWidget", settingName);
+	}
 }

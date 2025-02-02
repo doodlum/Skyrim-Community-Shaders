@@ -19,6 +19,24 @@ public:
 	struct Settings
 	{
 		std::string currentParentBuffer;
+
+		int windSpeed; // underlying type uint8_t
+		
+		// underlying type int8_t
+		int transDelta;
+		int sunGlare;
+		int sunDamage;
+		int precipitationBeginFadeIn;
+		int precipitationEndFadeOut;
+		int thunderLightningBeginFadeIn;
+		int thunderLightningEndFadeOut;
+		int thunderLightningFrequency;
+		int visualEffectBegin;
+		int visualEffectEnd;
+		int windDirection;
+		int windDirectionRange;
+
+		float3 lightningColor;
 	};
 
 	Settings settings;
@@ -28,4 +46,7 @@ public:
 	virtual void DrawWidget() override;
 	virtual void LoadSettings() override;
 	virtual void SaveSettings() override;
+
+	WeatherWidget* GetParent();
+	const int GetSetting(const std::string&);
 };

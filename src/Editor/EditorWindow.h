@@ -36,6 +36,8 @@ public:
 
 	void Draw();
 
+	void LerpWeather(WeatherWidget&, WeatherWidget&, float);
+
 private:
 	void SaveAll();
 };
