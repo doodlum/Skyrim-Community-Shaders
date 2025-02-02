@@ -39,9 +39,6 @@ void DynamicCubemaps::DrawSettings()
 					ImGui::PopStyleColor();
 				}
 			}
-			if (settings.EnabledSSR) {
-				Util::RenderImGuiSettingsTree(SSRSettings, "Skyrim SSR");
-			}
 			ImGui::TreePop();
 		}
 
@@ -142,7 +139,6 @@ void DynamicCubemaps::DrawSettings()
 void DynamicCubemaps::LoadSettings(json& o_json)
 {
 	settings = o_json;
-	Util::LoadGameSettings(SSRSettings);
 	if (REL::Module::IsVR()) {
 		Util::LoadGameSettings(iniVRCubeMapSettings);
 	}
@@ -152,7 +148,6 @@ void DynamicCubemaps::LoadSettings(json& o_json)
 void DynamicCubemaps::SaveSettings(json& o_json)
 {
 	o_json = settings;
-	Util::SaveGameSettings(SSRSettings);
 	if (REL::Module::IsVR()) {
 		Util::SaveGameSettings(iniVRCubeMapSettings);
 	}
@@ -161,7 +156,6 @@ void DynamicCubemaps::SaveSettings(json& o_json)
 void DynamicCubemaps::RestoreDefaultSettings()
 {
 	settings = {};
-	Util::ResetGameSettingsToDefaults(SSRSettings);
 	if (REL::Module::IsVR()) {
 		Util::ResetGameSettingsToDefaults(iniVRCubeMapSettings);
 		Util::ResetGameSettingsToDefaults(hiddenVRCubeMapSettings);

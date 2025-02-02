@@ -120,13 +120,6 @@ public:
 	virtual void DataLoaded() override;
 	virtual void PostPostLoad() override;
 
-	std::map<std::string, Util::GameSetting> SSRSettings{
-		{ "fWaterSSRNormalPerturbationScale:Display", { "Water Normal Perturbation Scale", "Controls the scale of normal perturbations for Screen Space Reflections (SSR) on water surfaces.", 0, 0.05f, 0.f, 1.f } },
-		{ "fWaterSSRBlurAmount:Display", { "Water SSR Blur Amount", "Defines the amount of blur applied to Screen Space Reflections on water surfaces.", 0, 0.3f, 0.f, 1.f } },
-		{ "fWaterSSRIntensity:Display", { "Water SSR Intensity", "Adjusts the intensity or strength of Screen Space Reflections on water.", 0, 1.3f, 0.f, 5.f } },
-		{ "bDownSampleNormalSSR:Display", { "Down Sample Normal SSR", "Enables or disables downsampling of normals for SSR to improve performance.", 0, true, false, true } }
-	};
-
 	std::map<std::string, Util::GameSetting> iniVRCubeMapSettings{
 		{ "bAutoWaterSilhouetteReflections:Water", { "Auto Water Silhouette Reflections", "Automatically reflects silhouettes on water surfaces.", 0, true, false, true } },
 		{ "bForceHighDetailReflections:Water", { "Force High Detail Reflections", "Forces the use of high-detail reflections on water surfaces.", 0, true, false, true } }
