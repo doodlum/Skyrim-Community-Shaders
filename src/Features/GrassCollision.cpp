@@ -56,7 +56,7 @@ void GrassCollision::UpdateCollisions(PerFrame& perFrameData)
 		if (numCapsules == 256)
 			break;
 		if (auto root = actor->Get3D(false)) {
-			float distance = cameraPosition.GetDistance(actor->GetPosition()); 
+			float distance = cameraPosition.GetDistance(actor->GetPosition());
 			if (distance > 1024.0f)
 				continue;
 
@@ -68,7 +68,7 @@ void GrassCollision::UpdateCollisions(PerFrame& perFrameData)
 					// Ignore very small capsules
 					if (perFrameData.Capsules[numCapsules].TopPosRadius.w < distance * 0.01f)
 						return RE::BSVisit::BSVisitControl::kContinue;
-					
+
 					// The shader's world position has eye offset already applied
 					perFrameData.Capsules[numCapsules].TopPosRadius.x -= eyePosition.x;
 					perFrameData.Capsules[numCapsules].TopPosRadius.y -= eyePosition.y;

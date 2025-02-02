@@ -21,7 +21,7 @@ struct GrassCollision : Feature
 	{
 		bool EnableGrassCollision = 1;
 	};
-	
+
 	struct Capsule
 	{
 		float4 TopPosRadius;

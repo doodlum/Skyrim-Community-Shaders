@@ -11,7 +11,7 @@ namespace GrassCollision
 		Capsule Capsules[256];
 		float4 CapsuleInfo;
 	}
-	
+
 	float3 GetDisplacedPosition(float3 position, float alpha, uint eyeIndex = 0)
 	{
 		float3 worldPosition = mul(World[eyeIndex], float4(position, 1.0)).xyz;
@@ -24,7 +24,7 @@ namespace GrassCollision
 				float3 A = Capsules[i].BottomPos.xyz;
 				float3 B = Capsules[i].TopPosRadius.xyz;
 				float radius = Capsules[i].TopPosRadius.w * 4;
-				
+
 				// Compute closest point on the capsule center line
 				float3 AP = worldPosition - A;
 				float3 AB = B - A;
