@@ -551,7 +551,7 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 
 		if (!SharedData::InInterior)
 			color += dirLightColor * ShadowSampling::GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
-		else 
+		else
 			color += dirLightColor;
 	} else {
 #		if defined(SKYLIGHTING)
