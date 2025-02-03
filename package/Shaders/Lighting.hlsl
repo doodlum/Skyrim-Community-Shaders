@@ -1943,11 +1943,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	bool useScreenSpaceShadows = inWorld && !SharedData::InInterior && Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsDecal;
 #		endif
 
-	if (useScreenSpaceShadows){
+	if (useScreenSpaceShadows) {
 		dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.Position.xyz, screenUV, screenNoise, eyeIndex);
 #		if defined(TREE_ANIM)
-			ShadowSampling::ShadowData sD = ShadowSampling::SharedShadowData[0];
-			dirDetailShadow = lerp(1.0, dirDetailShadow, saturate(viewPosition.z / sqrt(sD.ShadowLightParam.z)));
+		ShadowSampling::ShadowData sD = ShadowSampling::SharedShadowData[0];
+		dirDetailShadow = lerp(1.0, dirDetailShadow, saturate(viewPosition.z / sqrt(sD.ShadowLightParam.z)));
 #		endif
 	}
 #	endif
