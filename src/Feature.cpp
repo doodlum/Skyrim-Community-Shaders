@@ -4,6 +4,7 @@
 #include "Features/CloudShadows.h"
 #include "Features/DynamicCubemaps.h"
 #include "Features/ExtendedMaterials.h"
+#include "Features/ExtendedTranslucency.h"
 #include "Features/GrassCollision.h"
 #include "Features/GrassLighting.h"
 #include "Features/LightLimitFix.h"
@@ -133,7 +134,8 @@ const std::vector<Feature*>& Feature::GetFeatureList()
 		ScreenSpaceGI::GetSingleton(),
 		Skylighting::GetSingleton(),
 		TerrainBlending::GetSingleton(),
-		VolumetricLighting::GetSingleton()
+		VolumetricLighting::GetSingleton(),
+		ExtendedTranslucency::GetSingleton()
 	};
 
 	static std::vector<Feature*> featuresVR(features);

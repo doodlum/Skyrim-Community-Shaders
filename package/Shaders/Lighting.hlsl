@@ -999,6 +999,14 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		include "Skylighting/Skylighting.hlsli"
 #	endif
 
+#	if defined(EXTENDED_TRANSLUCENCY) && !(defined(LOD) || defined(SKIN) || defined(HAIR) || defined(EYE) || defined(TREE_ANIM) || defined(LODOBJECTSHD) || defined(LODOBJECTS))
+#		define ANISOTROPIC_ALPHA
+#	endif
+
+#	if defined(ANISOTROPIC_ALPHA)
+#		include "ExtendedTranslucency/ExtendedTranslucency.hlsli"
+#	endif
+
 #	define LinearSampler SampColorSampler
 
 #	include "Common/ShadowSampling.hlsli"
@@ -2674,6 +2682,29 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		discard;
 	}
 #		endif      // DO_ALPHA_TEST
+
+#		if defined(ANISOTROPIC_ALPHA)
+	if (AnisotropicAlphaFlags > ExtendedTranslucency::MaterialModel::Disabled) {
+		if (alpha >= 0.0156862754 && alpha < 1.0) {
+			float originalAlpha = alpha;
+			alpha = alpha * (1.0 - AnisotropicAlphaReduction);
+			if (AnisotropicAlphaFlags == ExtendedTranslucency::MaterialModel::AnisotropicFabric) {
+#			if defined(SKINNED) || !defined(MODELSPACENORMALS)
+				alpha = ExtendedTransclucency::GetViewDependentAlphaFabric2D(alpha, viewDirection, tbnTr);
+#			else
+				alpha = ExtendedTranslucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
+#			endif
+			} else if (AnisotropicAlphaFlags == ExtendedTranslucency::MaterialModel::IsotropicFabric) {
+				alpha = ExtendedTranslucency::GetViewDependentAlphaFabric1D(alpha, viewDirection, modelNormal.xyz);
+			} else {
+				alpha = ExtendedTranslucency::GetViewDependentAlphaNaive(alpha, viewDirection, modelNormal.xyz);
+			}
+			alpha = saturate(ExtendedTranslucency::SoftClamp(alpha, 2.0f - AnisotropicAlphaSoftness));
+			alpha = lerp(alpha, originalAlpha, AnisotropicAlphaStrength);
+		}
+	}
+#		endif  // EXTENDED_TRANSLUCENCY
+
 	psout.Diffuse.w = alpha;
 
 #	endif
