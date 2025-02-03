@@ -1048,7 +1048,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float depthSampledLinear = SharedData::GetScreenDepth(depthSampled);
 	float depthPixelLinear = SharedData::GetScreenDepth(input.Position.z);
 
-	float blendFactorTerrain = saturate((depthSampledLinear - depthPixelLinear) / 4.0);
+	float blendFactorTerrain = saturate((depthSampledLinear - depthPixelLinear) / 5.0);
 
 	if (input.Position.z == depthSampled)
 		blendFactorTerrain = 1;
@@ -1943,8 +1943,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	bool useScreenSpaceShadows = inWorld && !SharedData::InInterior && Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsDecal;
 #		endif
 
-	if (useScreenSpaceShadows)
+	if (useScreenSpaceShadows){
 		dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.Position.xyz, screenUV, screenNoise, eyeIndex);
+#		if defined(TREE_ANIM)
+			ShadowSampling::ShadowData sD = ShadowSampling::SharedShadowData[0];
+			dirDetailShadow = lerp(1.0, dirDetailShadow, saturate(viewPosition.z / sqrt(sD.ShadowLightParam.z)));
+#		endif
+	}
 #	endif
 
 #	if defined(EMAT) && (defined(SKINNED) || !defined(MODELSPACENORMALS))
