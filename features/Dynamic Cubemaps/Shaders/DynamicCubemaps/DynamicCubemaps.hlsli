@@ -57,7 +57,7 @@ namespace DynamicCubemaps
 		horizon *= horizon * horizon;
 
 #	if defined(DEFERRED)
-		return horizon * (1 + F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1));
+		return horizon * (F0 * specularBRDF.x + specularBRDF.y);
 #	else
 
 		float3 finalIrradiance = 0;
@@ -92,16 +92,13 @@ namespace DynamicCubemaps
 		}
 
 		finalIrradiance = finalIrradiance * skylightingSpecular + lerp(specularIrradiance, specularIrradianceReflections, skylightingSpecular);
-
-		return horizon * (1 + F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1)) * finalIrradiance;
 #		else
 		float3 specularIrradiance = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level).xyz;
 		specularIrradiance = Color::GammaToLinear(specularIrradiance);
 
 		finalIrradiance += specularIrradiance;
-
-		return horizon * (1 + F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1)) * finalIrradiance;
 #		endif
+		return horizon * (F0 * specularBRDF.x + specularBRDF.y) * finalIrradiance;
 #	endif
 	}
 #endif  // !WATER
