@@ -653,7 +653,7 @@ void DynamicCubemaps::SetupResources()
 
 void DynamicCubemaps::Reset()
 {
-	if (auto sky = globals::game::sky){
+	if (auto sky = globals::game::sky) {
 		activeReflections = sky->mode.get() == RE::Sky::Mode::kFull;
 		fakeReflections = activeReflections && sky->flags.any(RE::Sky::Flags::kHideSky);
 	} else {
