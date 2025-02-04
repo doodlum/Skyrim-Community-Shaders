@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Feature.h"
-
 struct ScreenSpaceGI : Feature
 {
 	static ScreenSpaceGI* GetSingleton()

@@ -1,9 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "State.h"
-#include "Util.h"
-
 #define ALBEDO RE::RENDER_TARGETS::kINDIRECT
 #define SPECULAR RE::RENDER_TARGETS::kINDIRECT_DOWNSCALED
 #define REFLECTANCE RE::RENDER_TARGETS::kRAWINDIRECT

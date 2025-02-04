@@ -1,11 +1,10 @@
 #include "DynamicCubemaps.h"
-#include "ShaderCache.h"
-
-#include "State.h"
-#include "Util.h"
 
 #include <DDSTextureLoader.h>
 #include <DirectXTex.h>
+
+#include "ShaderCache.h"
+#include "State.h"
 
 constexpr auto MIPLEVELS = 8;
 
@@ -49,8 +48,8 @@ void DynamicCubemaps::DrawSettings()
 				ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&settings.CubemapColor));
 				ImGui::SliderFloat("Roughness", &settings.CubemapColor.w, 0.0f, 1.0f, "%.2f");
 				if (ImGui::Button("Export")) {
-					auto& device = State::GetSingleton()->device;
-					auto& context = State::GetSingleton()->context;
+					auto device = globals::d3d::device;
+					auto context = globals::d3d::context;
 
 					D3D11_TEXTURE2D_DESC texDesc{};
 					texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -208,7 +207,7 @@ RE::BSEventNotifyControl MenuOpenCloseEventHandler::ProcessEvent(const RE::MenuO
 bool MenuOpenCloseEventHandler::Register()
 {
 	static MenuOpenCloseEventHandler singleton;
-	auto ui = RE::UI::GetSingleton();
+	auto ui = globals::game::ui;
 
 	if (!ui) {
 		logger::error("UI event source not found");
@@ -319,9 +318,8 @@ ID3D11ComputeShader* DynamicCubemaps::GetComputeShaderSpecularIrradiance()
 
 void DynamicCubemaps::UpdateCubemapCapture(bool a_reflections)
 {
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-
-	auto& context = State::GetSingleton()->context;
+	auto renderer = globals::game::renderer;
+	auto context = globals::d3d::context;
 
 	auto& depth = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPOST_ZPREPASS_COPY];
 	auto& main = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMAIN];
@@ -392,8 +390,8 @@ void DynamicCubemaps::UpdateCubemapCapture(bool a_reflections)
 
 void DynamicCubemaps::Inferrence(bool a_reflections)
 {
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-	auto& context = State::GetSingleton()->context;
+	auto renderer = globals::game::renderer;
+	auto context = globals::d3d::context;
 
 	// Infer local reflection information
 	ID3D11UnorderedAccessView* uav = envInferredTexture->uav.get();
@@ -430,7 +428,7 @@ void DynamicCubemaps::Inferrence(bool a_reflections)
 
 void DynamicCubemaps::Irradiance(bool a_reflections)
 {
-	auto& context = State::GetSingleton()->context;
+	auto context = globals::d3d::context;
 
 	// Copy cubemap to other resources
 	for (uint face = 0; face < 6; face++) {
@@ -481,13 +479,13 @@ void DynamicCubemaps::Irradiance(bool a_reflections)
 
 void DynamicCubemaps::UpdateCubemap()
 {
-	TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Cubemap Update");
+	TracyD3D11Zone(globals::state->tracyCtx, "Cubemap Update");
 	if (recompileFlag) {
 		logger::debug("Recompiling for Dynamic Cubemaps");
-		auto& shaderCache = SIE::ShaderCache::Instance();
-		if (!shaderCache.Clear("Data//Shaders//ISReflectionsRayTracing.hlsl"))
+		auto shaderCache = globals::shaderCache;
+		if (!shaderCache->Clear("Data//Shaders//ISReflectionsRayTracing.hlsl"))
 			// if can't find specific hlsl file cache, clear all image space files
-			shaderCache.Clear(RE::BSShader::Types::ImageSpace);
+			shaderCache->Clear(RE::BSShader::Types::ImageSpace);
 		recompileFlag = false;
 	}
 
@@ -529,7 +527,7 @@ void DynamicCubemaps::UpdateCubemap()
 
 void DynamicCubemaps::PostDeferred()
 {
-	auto& context = State::GetSingleton()->context;
+	auto context = globals::d3d::context;
 
 	ID3D11ShaderResourceView* views[2] = { (activeReflections ? envReflectionsTexture : envTexture)->srv.get(), envTexture->srv.get() };
 	context->PSSetShaderResources(30, 2, views);
@@ -543,8 +541,8 @@ void DynamicCubemaps::SetupResources()
 	GetComputeShaderInferrenceReflections();
 	GetComputeShaderSpecularIrradiance();
 
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-	auto& device = State::GetSingleton()->device;
+	auto renderer = globals::game::renderer;
+	auto device = globals::d3d::device;
 
 	{
 		D3D11_SAMPLER_DESC samplerDesc = {};
@@ -655,7 +653,7 @@ void DynamicCubemaps::SetupResources()
 
 void DynamicCubemaps::Reset()
 {
-	if (auto sky = RE::Sky::GetSingleton()) {
+	if (auto sky = globals::game::sky) {
 		activeReflections = sky->mode.get() == RE::Sky::Mode::kFull;
 		fakeReflections = activeReflections && sky->flags.any(RE::Sky::Flags::kHideSky);
 	} else {

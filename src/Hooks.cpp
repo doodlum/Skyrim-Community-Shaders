@@ -1,16 +1,12 @@
 #include "Hooks.h"
 
+#include "ShaderTools/BSShaderHooks.h"
+
 #include "Menu.h"
 #include "ShaderCache.h"
 #include "State.h"
-#include "TruePBR.h"
-#include "Util.h"
-
-#include "ShaderTools/BSShaderHooks.h"
-
 #include "Streamline.h"
-
-#include "VariableCache.h"
+#include "TruePBR.h"
 
 std::unordered_map<void*, std::pair<std::unique_ptr<uint8_t[]>, size_t>> ShaderBytecodeMap;
 
@@ -67,10 +63,9 @@ struct BSShader_LoadShaders
 	{
 		func(shader, stream);
 
-		auto variableCache = VariableCache::GetSingleton();
-		auto state = variableCache->state;
-		auto shaderCache = variableCache->shaderCache;
-		auto truePBR = variableCache->truePBR;
+		auto state = globals::state;
+		auto shaderCache = globals::shaderCache;
+		auto truePBR = globals::truePBR;
 
 		if (shaderCache->IsDiskCache() || shaderCache->IsDump()) {
 			if (shaderCache->IsDiskCache()) {
@@ -107,9 +102,8 @@ struct BSShader_LoadShaders
 
 bool Hooks::BSShader_BeginTechnique::thunk(RE::BSShader* shader, uint32_t vertexDescriptor, uint32_t pixelDescriptor, bool skipPixelShader)
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto state = variableCache->state;
-	auto shaderCache = variableCache->shaderCache;
+	auto state = globals::state;
+	auto shaderCache = globals::shaderCache;
 
 	state->updateShader = true;
 	state->currentShader = shader;
@@ -131,15 +125,15 @@ bool Hooks::BSShader_BeginTechnique::thunk(RE::BSShader* shader, uint32_t vertex
 			shaderFound = false;
 		} else {
 			state->settingCustomShader = true;
-			state->context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(vertexShader->shader), NULL, NULL);
-			*variableCache->currentVertexShader = vertexShader;
-			variableCache->stateUpdateFlags->set(RE::BSGraphics::DIRTY_VERTEX_DESC);
+			globals::d3d::context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(vertexShader->shader), NULL, NULL);
+			*globals::game::currentVertexShader = vertexShader;
+			globals::game::stateUpdateFlags->set(RE::BSGraphics::DIRTY_VERTEX_DESC);
 			if (skipPixelShader) {
 				pixelShader = nullptr;
 			}
-			*variableCache->currentPixelShader = pixelShader;
+			*globals::game::currentPixelShader = pixelShader;
 			if (pixelShader)
-				state->context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(pixelShader->shader), NULL, NULL);
+				globals::d3d::context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(pixelShader->shader), NULL, NULL);
 			state->settingCustomShader = false;
 			shaderFound = true;
 		}
@@ -160,8 +154,7 @@ namespace EffectExtensions
 			func(shader, pass, renderFlags);
 			if (auto* shaderProperty = static_cast<RE::BSShaderProperty*>(pass->geometry->GetGeometryRuntimeData().properties[1].get())) {
 				if (shaderProperty->flags.any(RE::BSShaderProperty::EShaderPropertyFlag::kUniformScale)) {
-					auto variableCache = VariableCache::GetSingleton();
-					auto state = variableCache->state;
+					auto state = globals::state;
 					state->currentExtraDescriptor |= (uint)State::ExtraShaderDescriptors::EffectShadows;
 				}
 			}
@@ -174,10 +167,10 @@ struct IDXGISwapChain_Present
 {
 	static HRESULT WINAPI thunk(IDXGISwapChain* This, UINT SyncInterval, UINT Flags)
 	{
-		State::GetSingleton()->Reset();
-		Menu::GetSingleton()->DrawOverlay();
+		globals::state->Reset();
+		globals::menu->DrawOverlay();
 
-		auto streamline = Streamline::GetSingleton();
+		auto streamline = globals::streamline;
 		streamline->Present();
 
 		if (streamline->featureDLSSG && streamline->settings.frameGenerationMode == sl::DLSSGMode::eOn) {
@@ -186,7 +179,7 @@ struct IDXGISwapChain_Present
 		}
 
 		auto retval = func(This, SyncInterval, Flags);
-		TracyD3D11Collect(State::GetSingleton()->tracyCtx);
+		TracyD3D11Collect(globals::state->tracyCtx);
 		return retval;
 	}
 	static inline REL::Relocation<decltype(thunk)> func;
@@ -195,7 +188,7 @@ struct IDXGISwapChain_Present
 void Hooks::BSGraphics_SetDirtyStates::thunk(bool isCompute)
 {
 	func(isCompute);
-	State::GetSingleton()->Draw();
+	globals::state->Draw();
 }
 
 struct ID3D11Device_CreateVertexShader
@@ -230,7 +223,7 @@ decltype(&CreateDXGIFactory) ptrCreateDXGIFactory;
 
 HRESULT WINAPI hk_CreateDXGIFactory(REFIID, void** ppFactory)
 {
-	return Streamline::GetSingleton()->CreateDXGIFactory(__uuidof(IDXGIFactory1), ppFactory);
+	return globals::streamline->CreateDXGIFactory(__uuidof(IDXGIFactory1), ppFactory);
 }
 
 decltype(&D3D11CreateDeviceAndSwapChain) ptrD3D11CreateDeviceAndSwapChain;
@@ -251,7 +244,7 @@ HRESULT WINAPI hk_D3D11CreateDeviceAndSwapChainNoStreamline(
 {
 	DXGI_ADAPTER_DESC adapterDesc;
 	pAdapter->GetDesc(&adapterDesc);
-	State::GetSingleton()->SetAdapterDescription(adapterDesc.Description);
+	globals::state->SetAdapterDescription(adapterDesc.Description);
 
 	const D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_1;  // Create a device with only the latest feature level
 	return ptrD3D11CreateDeviceAndSwapChain(pAdapter,
@@ -284,10 +277,10 @@ HRESULT WINAPI hk_D3D11CreateDeviceAndSwapChain(
 {
 	DXGI_ADAPTER_DESC adapterDesc;
 	pAdapter->GetDesc(&adapterDesc);
-	State::GetSingleton()->SetAdapterDescription(adapterDesc.Description);
+	globals::state->SetAdapterDescription(adapterDesc.Description);
 
 	const D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_1;  // Create a device with only the latest feature level
-	auto result = Streamline::GetSingleton()->CreateDeviceAndSwapChain(
+	auto result = globals::streamline->CreateDeviceAndSwapChain(
 		pAdapter,
 		DriverType,
 		Software,
@@ -322,7 +315,8 @@ struct BSShaderRenderTargets_Create
 	static void thunk()
 	{
 		func();
-		State::GetSingleton()->Setup();
+		globals::ReInit();
+		globals::state->Setup();
 	}
 	static inline REL::Relocation<decltype(thunk)> func;
 };
@@ -332,8 +326,8 @@ struct BSInputDeviceManager_PollInputDevices
 	static void thunk(RE::BSTEventSource<RE::InputEvent*>* a_dispatcher, RE::InputEvent* const* a_events)
 	{
 		bool blockedDevice = true;
-		auto variableCache = VariableCache::GetSingleton();
-		auto menu = variableCache->menu;
+
+		auto menu = globals::menu;
 
 		if (a_events) {
 			menu->ProcessInputEvents(a_events);
@@ -343,7 +337,7 @@ struct BSInputDeviceManager_PollInputDevices
 					// Check that the device is not a Gamepad or VR controller. If it is, unblock input.
 					bool vrDevice = false;
 #ifdef ENABLE_SKYRIM_VR
-					vrDevice = (variableCache->isVR && ((device == RE::INPUT_DEVICES::INPUT_DEVICE::kVivePrimary) ||
+					vrDevice = (globals::game::isVR && ((device == RE::INPUT_DEVICES::INPUT_DEVICE::kVivePrimary) ||
 														   (device == RE::INPUT_DEVICES::INPUT_DEVICE::kViveSecondary) ||
 														   (device == RE::INPUT_DEVICES::INPUT_DEVICE::kOculusPrimary) ||
 														   (device == RE::INPUT_DEVICES::INPUT_DEVICE::kOculusSecondary) ||
@@ -373,28 +367,20 @@ namespace Hooks
 		static void thunk()
 		{
 			logger::info("Calling original Init3D");
-
 			func();
 
 			logger::info("Accessing render device information");
-
-			auto manager = RE::BSGraphics::Renderer::GetSingleton();
-
-			auto context = reinterpret_cast<ID3D11DeviceContext*>(manager->GetRuntimeData().context);
-			auto swapchain = reinterpret_cast<IDXGISwapChain*>(manager->GetRuntimeData().renderWindows->swapChain);
-			auto device = reinterpret_cast<ID3D11Device*>(manager->GetRuntimeData().forwarder);
+			globals::ReInit();
 
 			logger::info("Detouring virtual function tables");
-			stl::detour_vfunc<8, IDXGISwapChain_Present>(swapchain);
+			stl::detour_vfunc<8, IDXGISwapChain_Present>(globals::d3d::swapchain);
 
-			auto& shaderCache = SIE::ShaderCache::Instance();
-			if (shaderCache.IsDump()) {
-				stl::detour_vfunc<12, ID3D11Device_CreateVertexShader>(device);
-				stl::detour_vfunc<15, ID3D11Device_CreatePixelShader>(device);
+			auto shaderCache = globals::shaderCache;
+			if (shaderCache->IsDump()) {
+				stl::detour_vfunc<12, ID3D11Device_CreateVertexShader>(globals::d3d::device);
+				stl::detour_vfunc<15, ID3D11Device_CreatePixelShader>(globals::d3d::device);
 			}
-			Menu::GetSingleton()->Init(swapchain, device, context);
-
-			VariableCache::GetSingleton()->OnInit();
+			globals::menu->Init();
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
@@ -403,7 +389,7 @@ namespace Hooks
 	{
 		static LRESULT thunk(HWND a_hwnd, UINT a_msg, WPARAM a_wParam, LPARAM a_lParam)
 		{
-			auto menu = Menu::GetSingleton();
+			auto menu = globals::menu;
 			if (a_msg == WM_KILLFOCUS && menu->initialized) {
 				menu->OnFocusLost();
 				auto& io = ImGui::GetIO();
@@ -431,7 +417,7 @@ namespace Hooks
 	{
 		static void thunk(RE::BSGraphics::Renderer* This, RE::RENDER_TARGETS::RENDER_TARGET a_target, RE::BSGraphics::RenderTargetProperties* a_properties)
 		{
-			State::GetSingleton()->ModifyRenderTarget(a_target, a_properties);
+			globals::state->ModifyRenderTarget(a_target, a_properties);
 			func(This, a_target, a_properties);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -441,7 +427,7 @@ namespace Hooks
 	{
 		static void thunk(RE::BSGraphics::Renderer* This, RE::RENDER_TARGETS::RENDER_TARGET a_target, RE::BSGraphics::RenderTargetProperties* a_properties)
 		{
-			State::GetSingleton()->ModifyRenderTarget(a_target, a_properties);
+			globals::state->ModifyRenderTarget(a_target, a_properties);
 			func(This, a_target, a_properties);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -451,7 +437,7 @@ namespace Hooks
 	{
 		static void thunk(RE::BSGraphics::Renderer* This, RE::RENDER_TARGETS::RENDER_TARGET a_target, RE::BSGraphics::RenderTargetProperties* a_properties)
 		{
-			State::GetSingleton()->ModifyRenderTarget(a_target, a_properties);
+			globals::state->ModifyRenderTarget(a_target, a_properties);
 			func(This, a_target, a_properties);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -461,7 +447,7 @@ namespace Hooks
 	{
 		static void thunk(RE::BSGraphics::Renderer* This, RE::RENDER_TARGETS::RENDER_TARGET a_target, RE::BSGraphics::RenderTargetProperties* a_properties)
 		{
-			State::GetSingleton()->ModifyRenderTarget(a_target, a_properties);
+			globals::state->ModifyRenderTarget(a_target, a_properties);
 			func(This, a_target, a_properties);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -471,7 +457,7 @@ namespace Hooks
 	{
 		static void thunk(RE::BSGraphics::Renderer* This, RE::RENDER_TARGETS::RENDER_TARGET a_target, RE::BSGraphics::RenderTargetProperties* a_properties)
 		{
-			State::GetSingleton()->ModifyRenderTarget(a_target, a_properties);
+			globals::state->ModifyRenderTarget(a_target, a_properties);
 			func(This, a_target, a_properties);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -481,9 +467,8 @@ namespace Hooks
 	{
 		static void thunk(RE::BSGraphics::Renderer*, RE::BSGraphics::VertexShader* a_vertexShader)
 		{
-			auto variableCache = VariableCache::GetSingleton();
-			auto state = variableCache->state;
-			auto shaderCache = variableCache->shaderCache;
+			auto state = globals::state;
+			auto shaderCache = globals::shaderCache;
 
 			if (!state->settingCustomShader) {
 				if (shaderCache->IsEnabled()) {
@@ -493,9 +478,9 @@ namespace Hooks
 						if (state->enabledClasses[type - 1]) {
 							RE::BSGraphics::VertexShader* vertexShader = shaderCache->GetVertexShader(*currentShader, state->modifiedVertexDescriptor);
 							if (vertexShader) {
-								state->context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(vertexShader->shader), NULL, NULL);
-								*variableCache->currentVertexShader = a_vertexShader;
-								variableCache->stateUpdateFlags->set(RE::BSGraphics::DIRTY_VERTEX_DESC);
+								globals::d3d::context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(vertexShader->shader), NULL, NULL);
+								*globals::game::currentVertexShader = a_vertexShader;
+								globals::game::stateUpdateFlags->set(RE::BSGraphics::DIRTY_VERTEX_DESC);
 								return;
 							}
 						}
@@ -503,10 +488,10 @@ namespace Hooks
 				}
 			}
 
-			variableCache->stateUpdateFlags->set(RE::BSGraphics::DIRTY_VERTEX_DESC);
+			globals::game::stateUpdateFlags->set(RE::BSGraphics::DIRTY_VERTEX_DESC);
 
-			*variableCache->currentVertexShader = a_vertexShader;
-			variableCache->context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(a_vertexShader->shader), NULL, NULL);
+			*globals::game::currentVertexShader = a_vertexShader;
+			globals::d3d::context->VSSetShader(reinterpret_cast<ID3D11VertexShader*>(a_vertexShader->shader), NULL, NULL);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
@@ -515,9 +500,8 @@ namespace Hooks
 	{
 		static void thunk(RE::BSGraphics::Renderer*, RE::BSGraphics::PixelShader* a_pixelShader)
 		{
-			auto variableCache = VariableCache::GetSingleton();
-			auto state = variableCache->state;
-			auto shaderCache = variableCache->shaderCache;
+			auto state = globals::state;
+			auto shaderCache = globals::shaderCache;
 
 			if (!state->settingCustomShader) {
 				if (shaderCache->IsEnabled()) {
@@ -527,8 +511,8 @@ namespace Hooks
 						if (state->enabledClasses[type - 1]) {
 							RE::BSGraphics::PixelShader* pixelShader = shaderCache->GetPixelShader(*currentShader, state->modifiedPixelDescriptor);
 							if (pixelShader) {
-								state->context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(pixelShader->shader), NULL, NULL);
-								*variableCache->currentPixelShader = a_pixelShader;
+								globals::d3d::context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(pixelShader->shader), NULL, NULL);
+								*globals::game::currentPixelShader = a_pixelShader;
 								return;
 							}
 						}
@@ -536,10 +520,10 @@ namespace Hooks
 				}
 			}
 
-			*variableCache->currentPixelShader = a_pixelShader;
+			*globals::game::currentPixelShader = a_pixelShader;
 
 			if (a_pixelShader)
-				variableCache->context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(a_pixelShader->shader), NULL, NULL);
+				globals::d3d::context->PSSetShader(reinterpret_cast<ID3D11PixelShader*>(a_pixelShader->shader), NULL, NULL);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
@@ -671,9 +655,8 @@ namespace Hooks
 		{
 			static void thunk(RE::BSGraphics::Renderer* renderer, RE::BSGraphics::ComputeShader* shader, uint32_t threadGroupCountX, uint32_t threadGroupCountY, uint32_t threadGroupCountZ)
 			{
-				auto variableCache = VariableCache::GetSingleton();
-				auto state = variableCache->state;
-				auto shaderCache = variableCache->shaderCache;
+				auto state = globals::state;
+				auto shaderCache = globals::shaderCache;
 				if (state->enabledClasses[RE::BSShader::Type::ImageSpace]) {
 					RE::BSImagespaceShader* isShader = CurrentlyDispatchedShader;
 					uint32_t techniqueId = CurrentComputeShaderTechniqueId;
@@ -811,8 +794,8 @@ namespace Hooks
 
 	void InstallD3DHooks()
 	{
-		auto streamline = Streamline::GetSingleton();
-		auto state = State::GetSingleton();
+		auto streamline = globals::streamline;
+		auto state = globals::state;
 
 		streamline->LoadInterposer();
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Feature.h"
-
 struct ExtendedMaterials : Feature
 {
 	static ExtendedMaterials* GetSingleton()

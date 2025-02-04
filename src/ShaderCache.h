@@ -1,13 +1,7 @@
 #pragma once
 
-#include <RE/B/BSShader.h>
-
-#include "BS_thread_pool.hpp"
-#include "efsw/efsw.hpp"
-#include <chrono>
-#include <condition_variable>
-#include <unordered_map>
-#include <unordered_set>
+#include <BS_thread_pool.hpp>
+#include <efsw/efsw.hpp>
 
 static constexpr REL::Version SHADER_CACHE_VERSION = { 0, 0, 0, 28 };
 
@@ -709,7 +703,7 @@ namespace SIE
 		 * 
 		 * @return Void. Updates internal state and modifies `clearCache` and `fileDone` by reference.
 		 */
-		void UpdateCache(const std::filesystem::path& filePath, SIE::ShaderCache& cache, bool& clearCache, bool& retFlag);
+		void UpdateCache(const std::filesystem::path& filePath, SIE::ShaderCache* cache, bool& clearCache, bool& retFlag);
 		void processQueue();
 		void handleFileAction(efsw::WatchID, const std::string& dir, const std::string& filename, efsw::Action action, std::string) override;
 

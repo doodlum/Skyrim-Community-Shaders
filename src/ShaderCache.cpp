@@ -1,16 +1,9 @@
 #include "ShaderCache.h"
 
-#include <RE/V/VertexDesc.h>
-
-#include <d3d11.h>
 #include <d3dcompiler.h>
-#include <fmt/std.h>
-#include <wrl/client.h>
 
 #include "Deferred.h"
-#include "Feature.h"
 #include "State.h"
-#include "VariableCache.h"
 
 #include "Features/DynamicCubemaps.h"
 
@@ -1304,13 +1297,13 @@ namespace SIE
 			} else if (shaderClass == ShaderClass::Compute) {
 				defines[lastIndex++] = { "CSHADER", nullptr };
 			}
-			if (State::GetSingleton()->IsDeveloperMode()) {
+			if (globals::state->IsDeveloperMode()) {
 				defines[lastIndex++] = { "D3DCOMPILE_SKIP_OPTIMIZATION", nullptr };
 				defines[lastIndex++] = { "D3DCOMPILE_DEBUG", nullptr };
 			}
 			if (REL::Module::IsVR())
 				defines[lastIndex++] = { "VR", nullptr };
-			auto shaderDefines = State::GetSingleton()->GetDefines();
+			auto shaderDefines = globals::state->GetDefines();
 			if (!shaderDefines->empty()) {
 				for (unsigned int i = 0; i < shaderDefines->size(); i++)
 					defines[lastIndex++] = { shaderDefines->at(i).first.c_str(), shaderDefines->at(i).second.c_str() };
@@ -1331,7 +1324,7 @@ namespace SIE
 
 			// compile shaders
 			ID3DBlob* errorBlob = nullptr;
-			const uint32_t flags = !State::GetSingleton()->IsDeveloperMode() ? D3DCOMPILE_OPTIMIZATION_LEVEL3 : D3DCOMPILE_DEBUG;
+			const uint32_t flags = !globals::state->IsDeveloperMode() ? D3DCOMPILE_OPTIMIZATION_LEVEL3 : D3DCOMPILE_DEBUG;
 			const HRESULT compileResult = D3DCompileFromFile(path.c_str(), defines.data(), D3D_COMPILE_STANDARD_FILE_INCLUDE, "main",
 				GetShaderProfile(shaderClass), flags, 0, &shaderBlob, &errorBlob);
 
@@ -1357,7 +1350,7 @@ namespace SIE
 			logger::debug("Compiled shader {}:{}:{:X}", magic_enum::enum_name(type), magic_enum::enum_name(shaderClass), descriptor);
 
 			// strip debug info
-			if (!State::GetSingleton()->IsDeveloperMode()) {
+			if (!globals::state->IsDeveloperMode()) {
 				ID3DBlob* strippedShaderBlob = nullptr;
 
 				const uint32_t stripFlags = D3DCOMPILER_STRIP_DEBUG_INFO |
@@ -1675,8 +1668,8 @@ namespace SIE
 			}
 		}
 
-		auto state = VariableCache::GetSingleton()->state;
-		if (state->isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
+		auto state = globals::state;
+		if (globals::game::isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
 			// use vanilla shader
 			return nullptr;
 
@@ -1716,8 +1709,8 @@ namespace SIE
 	RE::BSGraphics::PixelShader* ShaderCache::GetPixelShader(const RE::BSShader& shader,
 		uint32_t descriptor)
 	{
-		auto state = VariableCache::GetSingleton()->state;
-		if (state->isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
+		auto state = globals::state;
+		if (globals::game::isVR && strcmp(shader.fxpFilename, "OBBOcclusionTesting") == 0)
 			// use vanilla shader
 			return nullptr;
 
@@ -1764,7 +1757,7 @@ namespace SIE
 	RE::BSGraphics::ComputeShader* ShaderCache::GetComputeShader(const RE::BSShader& shader,
 		uint32_t descriptor)
 	{
-		auto state = State::GetSingleton();
+		auto state = globals::state;
 		if (!((ShaderCache::IsSupportedShader(shader) || state->IsDeveloperMode() && state->IsShaderEnabled(shader)) && state->enableCShaders)) {
 			return nullptr;
 		}
@@ -1855,7 +1848,7 @@ namespace SIE
 			hlslToShaderMap.clear();
 		}
 		compilationSet.Clear();
-		Deferred::GetSingleton()->ClearShaderCache();
+		globals::deferred->ClearShaderCache();
 		for (auto* feature : Feature::GetFeatureList()) {
 			if (feature->loaded) {
 				feature->ClearShaderCache();
@@ -2151,7 +2144,7 @@ namespace SIE
 		bool valid = true;
 
 		if (auto version = ini.GetValue("Cache", "Version")) {
-			if (strcmp(SHADER_CACHE_VERSION.string().c_str(), version) != 0 || !(State::GetSingleton()->ValidateCache(ini))) {
+			if (strcmp(SHADER_CACHE_VERSION.string().c_str(), version) != 0 || !(globals::state->ValidateCache(ini))) {
 				logger::info("Disk cache outdated or invalid");
 				valid = false;
 			}
@@ -2172,7 +2165,7 @@ namespace SIE
 		CSimpleIniA ini;
 		ini.SetUnicode();
 		ini.SetValue("Cache", "Version", SHADER_CACHE_VERSION.string().c_str());
-		State::GetSingleton()->WriteDiskCacheInfo(ini);
+		globals::state->WriteDiskCacheInfo(ini);
 		ini.SaveFile(L"Data\\ShaderCache\\Info.ini");
 		logger::info("Saved disk cache info");
 	}
@@ -2285,7 +2278,7 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Vertex, shader, descriptor, isDiskCache)) {
-			auto device = VariableCache::GetSingleton()->device;
+			auto device = globals::d3d::device;
 
 			auto newShader = SShaderCache::CreateVertexShader(*shaderBlob, shader,
 				descriptor);
@@ -2314,7 +2307,7 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Pixel, shader, descriptor, isDiskCache)) {
-			auto device = VariableCache::GetSingleton()->device;
+			auto device = globals::d3d::device;
 
 			auto newShader = SShaderCache::CreatePixelShader(*shaderBlob, shader,
 				descriptor);
@@ -2343,7 +2336,7 @@ namespace SIE
 	{
 		if (const auto shaderBlob =
 				SShaderCache::CompileShader(ShaderClass::Compute, shader, descriptor, isDiskCache)) {
-			auto device = VariableCache::GetSingleton()->device;
+			auto device = globals::d3d::device;
 
 			auto newShader = SShaderCache::CreateComputeShader(*shaderBlob, shader,
 				descriptor);
@@ -2518,17 +2511,17 @@ namespace SIE
 	std::optional<ShaderCompilationTask> CompilationSet::WaitTake(std::stop_token stoken)
 	{
 		std::unique_lock lock(compilationMutex);
-		auto& shaderCache = ShaderCache::Instance();
+		auto shaderCache = globals::shaderCache;
 		if (!conditionVariable.wait(
 				lock, stoken,
 				[this, &shaderCache]() { return !availableTasks.empty() &&
 			                                    // check against all tasks in queue to trickle the work. It cannot be the active tasks count because the thread pool itself is maximum.
-			                                    (int)shaderCache.compilationPool.get_tasks_total() <=
-			                                        (!shaderCache.backgroundCompilation ? shaderCache.compilationThreadCount : shaderCache.backgroundCompilationThreadCount); })) {
+			                                    (int)shaderCache->compilationPool.get_tasks_total() <=
+			                                        (!shaderCache->backgroundCompilation ? shaderCache->compilationThreadCount : shaderCache->backgroundCompilationThreadCount); })) {
 			/*Woke up because of a stop request. */
 			return std::nullopt;
 		}
-		if (!ShaderCache::Instance().IsCompiling()) {  // we just got woken up because there's a task, start clock
+		if (!shaderCache->IsCompiling()) {  // we just got woken up because there's a task, start clock
 			lastCalculation = lastReset = high_resolution_clock::now();
 		}
 		auto node = availableTasks.extract(availableTasks.begin());
@@ -2542,7 +2535,7 @@ namespace SIE
 		std::unique_lock lock(compilationMutex);
 		auto inProgressIt = tasksInProgress.find(task);
 		auto processedIt = processedTasks.find(task);
-		if (inProgressIt == tasksInProgress.end() && processedIt == processedTasks.end() && !ShaderCache::Instance().GetCompletedShader(task)) {
+		if (inProgressIt == tasksInProgress.end() && processedIt == processedTasks.end() && !globals::shaderCache->GetCompletedShader(task)) {
 			auto [availableIt, wasAdded] = availableTasks.insert(task);
 			lock.unlock();
 			if (wasAdded) {
@@ -2622,7 +2615,7 @@ namespace SIE
 			GetHumanTime(GetEta() + totalMs));
 	}
 
-	void UpdateListener::UpdateCache(const std::filesystem::path& filePath, SIE::ShaderCache& cache, bool& clearCache, bool& fileDone)
+	void UpdateListener::UpdateCache(const std::filesystem::path& filePath, SIE::ShaderCache* cache, bool& clearCache, bool& fileDone)
 	{
 		// Extract file components
 		const std::string extension = filePath.extension().string();
@@ -2644,10 +2637,10 @@ namespace SIE
 			[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 		if (!std::filesystem::is_directory(filePath) && lowerExtension == ".hlsl") {
 			// Update cache with the modified shader
-			cache.InsertModifiedShaderMap(shaderTypeString, modifiedTime);
+			cache->InsertModifiedShaderMap(shaderTypeString, modifiedTime);
 
 			// Attempt to mark the shader for recompilation
-			bool foundPath = cache.Clear(filePath.string());
+			bool foundPath = cache->Clear(filePath.string());
 
 			if (!foundPath) {
 				// File was not found in the the map so check its shader type
@@ -2657,7 +2650,7 @@ namespace SIE
 
 				// Check if the parent directory name matches "shaders" in a case-insensitive way
 				if (lowerExtension == ".hlsl" && parentDirName == "shaders" && shaderType.has_value()) {
-					cache.Clear(shaderType.value());
+					cache->Clear(shaderType.value());
 				} else {
 					// If it's not specifically handled, clear all cache
 					clearCache = true;
@@ -2672,8 +2665,8 @@ namespace SIE
 	{
 		SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
 		std::unique_lock lock(actionMutex, std::defer_lock);
-		auto& cache = SIE::ShaderCache::Instance();
-		while (cache.UseFileWatcher()) {
+		auto cache = globals::shaderCache;
+		while (cache->UseFileWatcher()) {
 			lock.lock();
 			if (!queue.empty() && queue.size() == lastQueueSize) {
 				bool clearCache = false;
@@ -2702,8 +2695,8 @@ namespace SIE
 						continue;
 				}
 				if (clearCache) {
-					cache.DeleteDiskCache();
-					cache.Clear();
+					cache->DeleteDiskCache();
+					cache->Clear();
 				}
 				queue.clear();
 			}

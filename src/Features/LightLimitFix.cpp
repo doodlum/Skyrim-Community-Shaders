@@ -2,8 +2,6 @@
 
 #include "Shadercache.h"
 #include "State.h"
-#include "Util.h"
-#include "VariableCache.h"
 
 static constexpr uint CLUSTER_MAX_LIGHTS = 256;
 static constexpr uint MAX_LIGHTS = 1024;
@@ -73,7 +71,7 @@ void LightLimitFix::DrawSettings()
 		ImGui::TreePop();
 	}
 
-	auto& shaderCache = SIE::ShaderCache::Instance();
+	auto shaderCache = globals::shaderCache;
 
 	if (ImGui::TreeNodeEx("Light Limit Visualization", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::Checkbox("Enable Lights Visualisation", &settings.EnableLightsVisualisation);
@@ -94,8 +92,8 @@ void LightLimitFix::DrawSettings()
 		}
 		currentEnableLightsVisualisation = settings.EnableLightsVisualisation;
 		if (previousEnableLightsVisualisation != currentEnableLightsVisualisation) {
-			VariableCache::GetSingleton()->state->SetDefines(settings.EnableLightsVisualisation ? "LLFDEBUG" : "");
-			shaderCache.Clear(RE::BSShader::Type::Lighting);
+			globals::state->SetDefines(settings.EnableLightsVisualisation ? "LLFDEBUG" : "");
+			shaderCache->Clear(RE::BSShader::Type::Lighting);
 			previousEnableLightsVisualisation = currentEnableLightsVisualisation;
 		}
 
@@ -129,7 +127,7 @@ void LightLimitFix::CleanupParticleLights(RE::NiNode* a_node)
 
 void LightLimitFix::SetupResources()
 {
-	auto screenSize = Util::ConvertToDynamic(State::GetSingleton()->screenSize);
+	auto screenSize = Util::ConvertToDynamic(globals::state->screenSize);
 	if (REL::Module::IsVR())
 		screenSize.x *= .5;
 	clusterSize[0] = ((uint)screenSize.x + 63) / 64;
@@ -284,8 +282,7 @@ RE::NiNode* GetParentRoomNode(RE::NiAVObject* object)
 
 void LightLimitFix::BSLightingShader_SetupGeometry_Before(RE::BSRenderPass* a_pass)
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto shaderCache = variableCache->shaderCache;
+	auto shaderCache = globals::shaderCache;
 
 	if (!shaderCache->IsEnabled())
 		return;
@@ -304,14 +301,13 @@ void LightLimitFix::BSLightingShader_SetupGeometry_Before(RE::BSRenderPass* a_pa
 
 void LightLimitFix::BSLightingShader_SetupGeometry_GeometrySetupConstantPointLights(RE::BSRenderPass* a_pass, DirectX::XMMATRIX&, uint32_t, uint32_t, float, Space)
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto shaderCache = variableCache->shaderCache;
+	auto shaderCache = globals::shaderCache;
 
 	if (!shaderCache->IsEnabled())
 		return;
 
 	auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator();
-	bool inWorld = accumulator->GetRuntimeData().activeShadowSceneNode == variableCache->smState->shadowSceneNode[0];
+	bool inWorld = accumulator->GetRuntimeData().activeShadowSceneNode == globals::game::smState->shadowSceneNode[0];
 
 	strictLightDataTemp.NumStrictLights = inWorld ? 0 : (a_pass->numLights - 1);
 
@@ -345,10 +341,9 @@ void LightLimitFix::BSLightingShader_SetupGeometry_GeometrySetupConstantPointLig
 
 void LightLimitFix::BSLightingShader_SetupGeometry_After(RE::BSRenderPass*)
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto shaderCache = variableCache->shaderCache;
-	auto context = variableCache->context;
-	auto smState = variableCache->smState;
+	auto shaderCache = globals::shaderCache;
+	auto context = globals::d3d::context;
+	auto smState = globals::game::smState;
 
 	if (!shaderCache->IsEnabled())
 		return;
@@ -411,8 +406,7 @@ float LightLimitFix::CalculateLuminance(CachedParticleLight& light, RE::NiPoint3
 
 void LightLimitFix::AddParticleLightLuminance(RE::NiPoint3& targetPosition, int& numHits, float& lightLevel)
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto shaderCache = variableCache->shaderCache;
+	auto shaderCache = globals::shaderCache;
 
 	if (!shaderCache->IsEnabled())
 		return;
@@ -432,8 +426,7 @@ void LightLimitFix::AddParticleLightLuminance(RE::NiPoint3& targetPosition, int&
 
 void LightLimitFix::Prepass()
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto context = variableCache->context;
+	auto context = globals::d3d::context;
 
 	UpdateLights();
 
@@ -484,8 +477,7 @@ std::string ExtractTextureStem(std::string_view a_path)
 
 LightLimitFix::ParticleLightReference LightLimitFix::GetParticleLightConfigs(RE::BSRenderPass* a_pass)
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto particleLights = variableCache->particleLights;
+	auto particleLights = globals::features::llf::particleLights;
 
 	// see https://www.nexusmods.com/skyrimspecialedition/articles/1391
 	if (settings.EnableParticleLights) {
@@ -598,8 +590,7 @@ LightLimitFix::ParticleLightReference LightLimitFix::GetParticleLightConfigs(RE:
 
 bool LightLimitFix::CheckParticleLights(RE::BSRenderPass* a_pass, uint32_t)
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto shaderCache = variableCache->shaderCache;
+	auto shaderCache = globals::shaderCache;
 
 	if (!shaderCache->IsEnabled())
 		return true;
@@ -666,13 +657,13 @@ bool LightLimitFix::AddParticleLight(RE::BSRenderPass* a_pass, ParticleLightRefe
 
 void LightLimitFix::PostPostLoad()
 {
-	ParticleLights::GetSingleton()->GetConfigs();
+	globals::features::llf::particleLights->GetConfigs();
 	Hooks::Install();
 }
 
 void LightLimitFix::DataLoaded()
 {
-	auto iMagicLightMaxCount = RE::GameSettingCollection::GetSingleton()->GetSetting("iMagicLightMaxCount");
+	auto iMagicLightMaxCount = globals::game::gameSettingCollection->GetSetting("iMagicLightMaxCount");
 	iMagicLightMaxCount->data.i = MAXINT32;
 	logger::info("[LLF] Unlocked magic light limit");
 }
@@ -733,11 +724,10 @@ namespace RE
 
 void LightLimitFix::UpdateLights()
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto smState = variableCache->smState;
+	auto smState = globals::game::smState;
 
-	lightsNear = *variableCache->cameraNear;
-	lightsFar = *variableCache->cameraFar;
+	lightsNear = *globals::game::cameraNear;
+	lightsFar = *globals::game::cameraFar;
 
 	auto shadowSceneNode = smState->shadowSceneNode[0];
 
@@ -948,7 +938,7 @@ void LightLimitFix::UpdateLights()
 		}
 	}
 
-	auto context = variableCache->context;
+	auto context = globals::d3d::context;
 
 	{
 		auto projMatrixUnjittered = Util::GetCameraData(0).projMatrixUnjittered;
@@ -1028,13 +1018,13 @@ void LightLimitFix::UpdateLights()
 
 void LightLimitFix::Hooks::BSBatchRenderer_RenderPassImmediately::thunk(RE::BSRenderPass* Pass, uint32_t Technique, bool AlphaTest, uint32_t RenderFlags)
 {
-	if (VariableCache::GetSingleton()->lightLimitFix->CheckParticleLights(Pass, Technique))
+	if (globals::features::lightLimitFix->CheckParticleLights(Pass, Technique))
 		func(Pass, Technique, AlphaTest, RenderFlags);
 }
 
 void LightLimitFix::Hooks::BSLightingShader_SetupGeometry::thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
 {
-	auto singleton = VariableCache::GetSingleton()->lightLimitFix;
+	auto singleton = globals::features::lightLimitFix;
 	singleton->BSLightingShader_SetupGeometry_Before(Pass);
 	func(This, Pass, RenderFlags);
 	singleton->BSLightingShader_SetupGeometry_After(Pass);
@@ -1043,7 +1033,7 @@ void LightLimitFix::Hooks::BSLightingShader_SetupGeometry::thunk(RE::BSShader* T
 void LightLimitFix::Hooks::BSEffectShader_SetupGeometry::thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
 {
 	func(This, Pass, RenderFlags);
-	auto singleton = VariableCache::GetSingleton()->lightLimitFix;
+	auto singleton = globals::features::lightLimitFix;
 	singleton->BSLightingShader_SetupGeometry_Before(Pass);
 	singleton->BSLightingShader_SetupGeometry_After(Pass);
 };
@@ -1051,7 +1041,7 @@ void LightLimitFix::Hooks::BSEffectShader_SetupGeometry::thunk(RE::BSShader* Thi
 void LightLimitFix::Hooks::BSWaterShader_SetupGeometry::thunk(RE::BSShader* This, RE::BSRenderPass* Pass, uint32_t RenderFlags)
 {
 	func(This, Pass, RenderFlags);
-	auto singleton = VariableCache::GetSingleton()->lightLimitFix;
+	auto singleton = globals::features::lightLimitFix;
 	singleton->BSLightingShader_SetupGeometry_Before(Pass);
 	singleton->BSLightingShader_SetupGeometry_After(Pass);
 };
@@ -1059,18 +1049,18 @@ void LightLimitFix::Hooks::BSWaterShader_SetupGeometry::thunk(RE::BSShader* This
 float LightLimitFix::Hooks::AIProcess_CalculateLightValue_GetLuminance::thunk(RE::ShadowSceneNode* shadowSceneNode, RE::NiPoint3& targetPosition, int& numHits, float& sunLightLevel, float& lightLevel, RE::NiLight& refLight, int32_t shadowBitMask)
 {
 	auto ret = func(shadowSceneNode, targetPosition, numHits, sunLightLevel, lightLevel, refLight, shadowBitMask);
-	VariableCache::GetSingleton()->lightLimitFix->AddParticleLightLuminance(targetPosition, numHits, ret);
+	globals::features::lightLimitFix->AddParticleLightLuminance(targetPosition, numHits, ret);
 	return ret;
 }
 
 void LightLimitFix::Hooks::BSLightingShader_SetupGeometry_GeometrySetupConstantPointLights::thunk(RE::BSGraphics::PixelShader* PixelShader, RE::BSRenderPass* Pass, DirectX::XMMATRIX& Transform, uint32_t LightCount, uint32_t ShadowLightCount, float WorldScale, Space RenderSpace)
 {
-	VariableCache::GetSingleton()->lightLimitFix->BSLightingShader_SetupGeometry_GeometrySetupConstantPointLights(Pass, Transform, LightCount, ShadowLightCount, WorldScale, RenderSpace);
+	globals::features::lightLimitFix->BSLightingShader_SetupGeometry_GeometrySetupConstantPointLights(Pass, Transform, LightCount, ShadowLightCount, WorldScale, RenderSpace);
 	func(PixelShader, Pass, Transform, LightCount, ShadowLightCount, WorldScale, RenderSpace);
 }
 
 void LightLimitFix::Hooks::NiNode_Destroy::thunk(RE::NiNode* This)
 {
-	VariableCache::GetSingleton()->lightLimitFix->CleanupParticleLights(This);
+	globals::features::lightLimitFix->CleanupParticleLights(This);
 	func(This);
 }

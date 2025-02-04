@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-
 struct GlintParameters
 {
 	bool enabled = false;
