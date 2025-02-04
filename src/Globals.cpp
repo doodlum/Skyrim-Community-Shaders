@@ -117,7 +117,7 @@ namespace globals
 			currentPixelShader = GET_INSTANCE_MEMBER_PTR(currentPixelShader, shadowState);
 			currentVertexShader = GET_INSTANCE_MEMBER_PTR(currentVertexShader, shadowState);
 			stateUpdateFlags = GET_INSTANCE_MEMBER_PTR(stateUpdateFlags, shadowState);
-			
+
 			ui = RE::UI::GetSingleton();
 		}
 

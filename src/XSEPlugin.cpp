@@ -1,12 +1,12 @@
 #include "Deferred.h"
 #include "FrameAnnotations.h"
+#include "Globals.h"
 #include "Hooks.h"
 #include "Menu.h"
 #include "ShaderCache.h"
 #include "State.h"
 #include "TruePBR.h"
 #include "Upscaling.h"
-#include "Globals.h"
 
 #include "ENB/ENBSeriesAPI.h"
 
