@@ -97,7 +97,7 @@ namespace globals
 	Streamline* streamline = nullptr;
 	Upscaling* upscaling = nullptr;
 
-	void OnInit()
+	void ReInit()
 	{
 		{
 			using namespace game;
@@ -117,10 +117,13 @@ namespace globals
 			currentPixelShader = GET_INSTANCE_MEMBER_PTR(currentPixelShader, shadowState);
 			currentVertexShader = GET_INSTANCE_MEMBER_PTR(currentVertexShader, shadowState);
 			stateUpdateFlags = GET_INSTANCE_MEMBER_PTR(stateUpdateFlags, shadowState);
+			
+			ui = RE::UI::GetSingleton();
 		}
 
 		d3d::device = reinterpret_cast<ID3D11Device*>(game::renderer->GetRuntimeData().forwarder);
 		d3d::context = reinterpret_cast<ID3D11DeviceContext*>(game::renderer->GetRuntimeData().context);
+		d3d::swapchain = reinterpret_cast<IDXGISwapChain*>(game::renderer->GetRuntimeData().renderWindows->swapChain);
 
 		state = State::GetSingleton();
 		menu = Menu::GetSingleton();
@@ -155,7 +158,6 @@ namespace globals
 		tes = RE::TES::GetSingleton();
 		sky = RE::Sky::GetSingleton();
 		utilityShader = RE::BSUtilityShader::GetSingleton();
-		ui = RE::UI::GetSingleton();
 
 		bEnableLandFade = iniSettingCollection->GetSetting("bEnableLandFade:Display");
 

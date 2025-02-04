@@ -98,6 +98,6 @@ namespace globals
 	extern Streamline* streamline;
 	extern Upscaling* upscaling;
 
-	void OnInit();
+	void ReInit();
 	void OnDataLoaded();
 }

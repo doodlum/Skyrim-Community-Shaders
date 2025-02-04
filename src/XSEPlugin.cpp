@@ -6,6 +6,7 @@
 #include "State.h"
 #include "TruePBR.h"
 #include "Upscaling.h"
+#include "Globals.h"
 
 #include "ENB/ENBSeriesAPI.h"
 
@@ -160,6 +161,8 @@ bool Load()
 
 	auto messaging = SKSE::GetMessagingInterface();
 	messaging->RegisterListener("SKSE", MessageHandler);
+
+	globals::ReInit();
 
 	auto state = globals::state;
 	state->Load();

@@ -315,6 +315,7 @@ struct BSShaderRenderTargets_Create
 	static void thunk()
 	{
 		func();
+		globals::ReInit();
 		globals::state->Setup();
 	}
 	static inline REL::Relocation<decltype(thunk)> func;
@@ -369,7 +370,7 @@ namespace Hooks
 			func();
 
 			logger::info("Accessing render device information");
-			globals::OnInit();
+			globals::ReInit();
 
 			logger::info("Detouring virtual function tables");
 			stl::detour_vfunc<8, IDXGISwapChain_Present>(globals::d3d::swapchain);
