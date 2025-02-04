@@ -14,6 +14,7 @@ public:
 	{
 		form = a_weather;
 		weather = a_weather;
+		LoadWeatherValues();
 	}
 
 	struct Settings
@@ -36,7 +37,14 @@ public:
 		int windDirection;
 		int windDirectionRange;
 
-		float3 lightningColor;
+		float lightningColor[3];
+
+		bool inheritWindSettings;
+		bool inheritSunSettings;
+		bool inheritPrecipitationSettings;
+		bool inheritLightningSettings;
+		bool inheritVisualEffectSettings;
+		bool inheritTransDeltaSettings;
 	};
 
 	Settings settings;
@@ -48,5 +56,8 @@ public:
 	virtual void SaveSettings() override;
 
 	WeatherWidget* GetParent();
+	bool HasParent();
 	const int GetSetting(const std::string&);
+	void SetWeatherValues();
+	void LoadWeatherValues();
 };

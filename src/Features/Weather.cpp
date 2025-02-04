@@ -3,6 +3,25 @@
 #include "Deferred.h"
 #include "Util.h"
 
+int8_t LerpInt8_t(const int8_t a, const int8_t b, const double lerpValue)
+{
+	int lerpedValue = (int)std::lerp(a, b, lerpValue);
+	return (int8_t)std::clamp(lerpedValue, -128, 127);
+}
+
+uint8_t LerpUint8_t(const uint8_t a, const uint8_t b, const double lerpValue)
+{
+	int lerpedValue = (int)std::lerp(a, b, lerpValue);
+	return (uint8_t)std::clamp(lerpedValue, 0, 255);
+}
+
+void LerpColor(RE::TESWeather::Data::Color3& newColor, RE::TESWeather::Data::Color3& oldColor, const double changePct)
+{
+	newColor.red = LerpInt8_t(newColor.red, oldColor.red, changePct);
+	newColor.green = LerpInt8_t(newColor.green, oldColor.green, changePct);
+	newColor.blue = LerpInt8_t(newColor.blue, oldColor.blue, changePct);
+}
+
 void Weather::Bind()
 {
 	if (loaded) {
@@ -111,4 +130,28 @@ ID3D11ComputeShader* Weather::GetDiffuseIBLCS()
 	if (!diffuseIBLCS)
 		diffuseIBLCS = static_cast<ID3D11ComputeShader*>(Util::CompileShader(L"Data\\Shaders\\Weather\\DiffuseIBLCS.hlsl", {}, "cs_5_0"));
 	return diffuseIBLCS;
+}
+
+void Weather::LerpWeather(RE::TESWeather& newWeather, RE::TESWeather& oldWeather, const float currentWeatherPct)
+{
+	LerpColor(newWeather.data.lightningColor, oldWeather.data.lightningColor, currentWeatherPct);
+
+	newWeather.data.precipitationBeginFadeIn = LerpInt8_t(newWeather.data.precipitationBeginFadeIn, oldWeather.data.precipitationBeginFadeIn, currentWeatherPct);
+	newWeather.data.precipitationEndFadeOut = LerpInt8_t(newWeather.data.precipitationEndFadeOut, oldWeather.data.precipitationEndFadeOut, currentWeatherPct);
+
+	newWeather.data.sunDamage = LerpInt8_t(newWeather.data.sunDamage, oldWeather.data.sunDamage, currentWeatherPct);
+	newWeather.data.sunGlare = LerpInt8_t(newWeather.data.sunGlare, oldWeather.data.sunGlare, currentWeatherPct);
+
+	newWeather.data.thunderLightningBeginFadeIn = LerpInt8_t(newWeather.data.thunderLightningBeginFadeIn, oldWeather.data.thunderLightningBeginFadeIn, currentWeatherPct);
+	newWeather.data.thunderLightningEndFadeOut = LerpInt8_t(newWeather.data.thunderLightningEndFadeOut, oldWeather.data.thunderLightningEndFadeOut, currentWeatherPct);
+	newWeather.data.thunderLightningFrequency = LerpInt8_t(newWeather.data.thunderLightningFrequency, oldWeather.data.thunderLightningFrequency, currentWeatherPct);
+
+	newWeather.data.transDelta = LerpInt8_t(newWeather.data.transDelta, oldWeather.data.transDelta, currentWeatherPct);
+
+	newWeather.data.visualEffectBegin = LerpInt8_t(newWeather.data.visualEffectBegin, oldWeather.data.visualEffectBegin, currentWeatherPct);
+	newWeather.data.visualEffectEnd = LerpInt8_t(newWeather.data.visualEffectEnd, oldWeather.data.visualEffectEnd, currentWeatherPct);
+
+	newWeather.data.windDirection = LerpInt8_t(newWeather.data.windDirection, oldWeather.data.windDirection, currentWeatherPct);
+	newWeather.data.windDirectionRange = LerpInt8_t(newWeather.data.windDirectionRange, oldWeather.data.windDirectionRange, currentWeatherPct);
+	newWeather.data.windSpeed = LerpUint8_t(newWeather.data.windSpeed, oldWeather.data.windSpeed, currentWeatherPct);
 }

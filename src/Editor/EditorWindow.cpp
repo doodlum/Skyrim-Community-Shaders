@@ -38,25 +38,6 @@ inline void HelpMarker(const char* a_desc)
 	AddTooltip(a_desc, ImGuiHoveredFlags_DelayShort);
 }
 
-int LerpInt8_t(const int a, const int b, const double lerpValue)
-{
-	int lerpedValue = std::lerp(a, b, lerpValue);
-	return std::clamp(lerpedValue, -128, 127);
-}
-
-int LerpUint8_t(const int a, const int b, const double lerpValue)
-{
-	int lerpedValue = std::lerp(a, b, lerpValue);
-	return std::clamp(lerpedValue, 0, 255);
-}
-
-void LerpColor(float3& newColor, float3& oldColor, const double changePct)
-{
-	newColor.y = std::lerp(newColor.x, oldColor.x, changePct);
-	newColor.x = std::lerp(newColor.y, oldColor.y, changePct);
-	newColor.z = std::lerp(newColor.z, oldColor.z, changePct);
-}
-
 void EditorWindow::ShowObjectsWindow()
 {
 	ImGui::Begin("Object List");
@@ -319,28 +300,4 @@ void EditorWindow::SaveAll()
 		if (lightingTemplate->IsOpen())
 			lightingTemplate->Save();
 	}
-}
-
-void EditorWindow::LerpWeather(WeatherWidget& newWeather, WeatherWidget& oldWeather, const float currentWeatherPct)
-{
-	LerpColor(newWeather.settings.lightningColor, oldWeather.settings.lightningColor, currentWeatherPct);
-
-	newWeather.settings.precipitationBeginFadeIn = LerpInt8_t(newWeather.GetSetting("precipitationBeginFadeIn"), oldWeather.GetSetting("precipitationBeginFadeIn"), currentWeatherPct);
-	newWeather.settings.precipitationEndFadeOut = LerpInt8_t(newWeather.GetSetting("precipitationEndFadeOut"), oldWeather.GetSetting("precipitationEndFadeOut"), currentWeatherPct);
-
-	newWeather.settings.sunDamage = LerpInt8_t(newWeather.GetSetting("sunDamage"), oldWeather.GetSetting("sunDamage"), currentWeatherPct);
-	newWeather.settings.sunGlare = LerpInt8_t(newWeather.GetSetting("sunGlare"), oldWeather.GetSetting("sunGlare"), currentWeatherPct);
-
-	newWeather.settings.thunderLightningBeginFadeIn = LerpInt8_t(newWeather.GetSetting("thunderLightningBeginFadeIn"), oldWeather.GetSetting("thunderLightningBeginFadeIn"), currentWeatherPct);
-	newWeather.settings.thunderLightningEndFadeOut = LerpInt8_t(newWeather.GetSetting("thunderLightningEndFadeOut"), oldWeather.GetSetting("thunderLightningEndFadeOut"), currentWeatherPct);
-	newWeather.settings.thunderLightningFrequency = LerpInt8_t(newWeather.GetSetting("thunderLightningFrequency"), oldWeather.GetSetting("thunderLightningFrequency"), currentWeatherPct);
-
-	newWeather.settings.transDelta = LerpInt8_t(newWeather.GetSetting("transDelta"), oldWeather.GetSetting("transDelta"), currentWeatherPct);
-
-	newWeather.settings.visualEffectBegin = LerpInt8_t(newWeather.GetSetting("visualEffectBegin"), oldWeather.GetSetting("visualEffectBegin"), currentWeatherPct);
-	newWeather.settings.visualEffectEnd = LerpInt8_t(newWeather.GetSetting("visualEffectEnd"), oldWeather.GetSetting("visualEffectEnd"), currentWeatherPct);
-
-	newWeather.settings.windDirection = LerpInt8_t(newWeather.GetSetting("windDirection"), oldWeather.GetSetting("windDirection"), currentWeatherPct);
-	newWeather.settings.windDirectionRange = LerpInt8_t(newWeather.GetSetting("windDirectionRange"), oldWeather.GetSetting("windDirectionRange"), currentWeatherPct);
-	newWeather.settings.windSpeed = LerpUint8_t(newWeather.GetSetting("windSpeed"), oldWeather.GetSetting("windSpeed"), currentWeatherPct);
 }
