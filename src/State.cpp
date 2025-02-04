@@ -695,7 +695,7 @@ void State::UpdateSharedData(bool a_inWorld)
 			}
 		}
 
-		if (auto sky = globals::game::sky){
+		if (auto sky = globals::game::sky) {
 			data.InInterior = sky->mode.get() != RE::Sky::Mode::kFull;
 			data.HideSky = !data.InInterior && sky->flags.any(RE::Sky::Flags::kHideSky);
 		} else {
