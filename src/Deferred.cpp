@@ -219,22 +219,20 @@ void Deferred::CopyShadowData()
 
 void Deferred::ReflectionsPrepasses()
 {
-	auto& shaderCache = SIE::ShaderCache::Instance();
+	auto shaderCache = globals::shaderCache;
 
-	if (!shaderCache.IsEnabled())
+	if (!shaderCache->IsEnabled())
 		return;
 
-	State::GetSingleton()->UpdateSharedData(false);
-
-	auto variableCache = VariableCache::GetSingleton();
+	globals::state->UpdateSharedData(false);
 
 	ZoneScoped;
-	TracyD3D11Zone(variableCache->state->tracyCtx, "Early Prepass");
+	TracyD3D11Zone(globals::game::graphicsState->tracyCtx, "Early Prepass");
 
-	auto context = variableCache->context;
+	auto context = globals::d3d::context;
 	context->OMSetRenderTargets(0, nullptr, nullptr);  // Unbind all bound render targets
 
-	variableCache->stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);  // Run OMSetRenderTargets again
+	globals::game::stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);  // Run OMSetRenderTargets again
 
 	for (auto* feature : Feature::GetFeatureList()) {
 		if (feature->loaded) {
@@ -810,7 +808,7 @@ void Deferred::Hooks::BSShaderAccumulator_ShadowMapOrMask_BlendedDecals::thunk(R
 
 void Deferred::Hooks::BSCubeMapCamera_RenderCubemap::thunk(RE::NiAVObject* camera, int a2, bool a3, bool a4, bool a5)
 {
-	auto deferred = VariableCache::GetSingleton()->deferred;
+	auto deferred = globals::deferred;
 
 	deferred->inReflections = true;
 	deferred->ReflectionsPrepasses();

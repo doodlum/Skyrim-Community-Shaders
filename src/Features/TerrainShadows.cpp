@@ -263,7 +263,7 @@ void TerrainShadows::Precompute()
 	logger::info("Creating shadow texture...");
 	{
 		if (texShadowHeight) {
-			auto context = State::GetSingleton()->context;
+			auto context = globals::d3d::context;
 
 			std::array<ID3D11ShaderResourceView*, 1> srvs = { nullptr };
 			context->PSSetShaderResources(60, (uint)srvs.size(), srvs.data());
@@ -416,7 +416,7 @@ void TerrainShadows::UpdateShadow()
 void TerrainShadows::ReflectionsPrepass()
 {
 	if (texShadowHeight) {
-		auto context = State::GetSingleton()->context;
+		auto context = globals::d3d::context;
 
 		std::array<ID3D11ShaderResourceView*, 1> srvs = { texShadowHeight->srv.get() };
 		context->PSSetShaderResources(60, (uint)srvs.size(), srvs.data());

@@ -75,7 +75,7 @@ void CloudShadows::ReflectionsPrepass()
 			!RE::Sky::GetSingleton()->currentClimate)
 			return;
 
-		auto& context = State::GetSingleton()->context;
+		auto context = globals::d3d::context;
 
 		context->CopyResource(texCubemapCloudOccCopy->resource.get(), texCubemapCloudOcc->resource.get());
 
