@@ -74,6 +74,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	Menu::ThemeSettings,
 	GlobalScale,
+	FontPath,
+	FontSize,
 	UseSimplePalette,
 	Palette,
 	Style,
@@ -200,6 +202,40 @@ void Menu::Save(json& o_json)
 	o_json = settings;
 }
 
+void Menu::LoadFont(std::string& fontPath, float fontSize, bool refresh)
+{
+	static std::string lastFontPath = "";
+	static float lastFontSize = 0.0f;
+
+	if (fontPath == lastFontPath && fontSize == lastFontSize)
+		return;
+
+	auto& io = ImGui::GetIO();
+	io.Fonts->Clear();
+
+	ImFontConfig font_config;
+	font_config.GlyphExtraSpacing.x = -0.5;
+
+	ImVector<ImWchar> ranges;
+	ImFontGlyphRangesBuilder builder;
+	builder.AddRanges(io.Fonts->GetGlyphRangesDefault());
+	builder.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
+	builder.AddRanges(io.Fonts->GetGlyphRangesChineseFull());
+	builder.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+	builder.BuildRanges(&ranges);
+
+	io.Fonts->AddFontFromFileTTF(fontPath.c_str(), fontSize, &font_config, ranges.Data);
+	io.Fonts->Build();
+
+	if (refresh) {
+		ImGui_ImplDX11_InvalidateDeviceObjects();
+		ImGui_ImplDX11_CreateDeviceObjects();
+	}
+
+	lastFontPath = fontPath;
+	lastFontSize = fontSize;
+}
+
 #define IM_VK_KEYPAD_ENTER (VK_RETURN + 256)
 
 void Menu::Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceContext* context)
@@ -207,15 +243,13 @@ void Menu::Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceCon
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+
 	auto& imgui_io = ImGui::GetIO();
 
 	imgui_io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
 	imgui_io.BackendFlags = ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_RendererHasVtxOffset;
 
-	ImFontConfig font_config;
-	font_config.GlyphExtraSpacing.x = -0.5;
-
-	imgui_io.Fonts->AddFontFromFileTTF("Data\\Interface\\CommunityShaders\\Fonts\\Jost-Regular.ttf", 36, &font_config);
+	LoadFont(settings.Theme.FontPath, settings.Theme.FontSize, false);
 
 	DXGI_SWAP_CHAIN_DESC desc;
 	swapchain->GetDesc(&desc);
@@ -247,7 +281,7 @@ void Menu::DrawSettings()
 	ImGui::SetNextWindowPos(Util::GetNativeViewportSizeScaled(0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(Util::GetNativeViewportSizeScaled(0.8f), ImGuiCond_FirstUseEver);
 
-	auto title = std::format("Community Shaders {}", Util::GetFormattedVersion(Plugin::VERSION));
+	const std::string title = "$Community Shaders Version"_i18n(Util::GetFormattedVersion(Plugin::VERSION));
 
 	ImGui::Begin(title.c_str(), &IsEnabled, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	{
@@ -265,52 +299,41 @@ void Menu::DrawSettings()
 
 		if (ImGui::BeginTable("##LeButtons", 4, ImGuiTableFlags_SizingStretchSame)) {
 			ImGui::TableNextColumn();
-			if (ImGui::Button("Save Settings", { -1, 0 })) {
+			if (ImGui::Button("$Save Settings"_i18n_cs, { -1, 0 })) {
 				State::GetSingleton()->Save();
 			}
 
 			ImGui::TableNextColumn();
-			if (ImGui::Button("Load Settings", { -1, 0 })) {
+			if (ImGui::Button("$Load Settings"_i18n_cs, { -1, 0 })) {
 				State::GetSingleton()->Load();
 				ParticleLights::GetSingleton()->GetConfigs();
 			}
 
 			ImGui::TableNextColumn();
-			if (ImGui::Button("Clear Shader Cache", { -1, 0 })) {
+			if (ImGui::Button("$Clear Shader Cache"_i18n_cs, { -1, 0 })) {
 				shaderCache.Clear();
 				// any features should be added to shadercache's clear.
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text(
-					"The Shader Cache is the collection of compiled shaders which replace the vanilla shaders at runtime. "
-					"Clearing the shader cache will mean that shaders are recompiled only when the game re-encounters them. "
-					"This is only needed for hot-loading shaders for development purposes. ");
+				ImGui::Text("$Clear Shader Cache Description"_i18n_cs);
 			}
 
 			ImGui::TableNextColumn();
-			if (ImGui::Button("Clear Disk Cache", { -1, 0 })) {
+			if (ImGui::Button("$Clear Disk Cache"_i18n_cs, { -1, 0 })) {
 				shaderCache.DeleteDiskCache();
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text(
-					"The Disk Cache is a collection of compiled shaders on disk, which are automatically created when shaders are added to the Shader Cache. "
-					"If you do not have a Disk Cache, or it is outdated or invalid, you will see \"Compiling Shaders\" in the upper-left corner. "
-					"After this has completed you will no longer see this message apart from when loading from the Disk Cache. "
-					"Only delete the Disk Cache manually if you are encountering issues. ");
+				ImGui::Text("$Clear Disk Cache Description"_i18n_cs);
 			}
 
 			if (shaderCache.GetFailedTasks()) {
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
-				if (ImGui::Button("Toggle Error Message", { -1, 0 })) {
+				if (ImGui::Button("$Toggle Error Message"_i18n_cs, { -1, 0 })) {
 					shaderCache.ToggleErrorMessages();
 				}
 				if (auto _tt = Util::HoverTooltipWrapper()) {
-					ImGui::Text(
-						"Hide or show the shader failure message. "
-						"Your installation is broken and will likely see errors in game. "
-						"Please double check you have updated all features and that your load order is correct. "
-						"See CommunityShaders.log for details and check the Nexus Mods page or Discord server. ");
+					ImGui::Text("$Toggle Error Message Description"_i18n_cs);
 				}
 			}
 			ImGui::EndTable();
@@ -322,8 +345,8 @@ void Menu::DrawSettings()
 
 		float footer_height = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y * 3 + 3.0f;  // text + separator
 
-		ImGui::BeginChild("Menus Table", ImVec2(0, -footer_height));
-		if (ImGui::BeginTable("Menus Table", 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_Resizable)) {
+		ImGui::BeginChild("##MenusTable", ImVec2(0, -footer_height));
+		if (ImGui::BeginTable("##MenusTable", 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_Resizable)) {
 			ImGui::TableSetupColumn("##ListOfMenus", 0, 2);
 			ImGui::TableSetupColumn("##MenuConfig", 0, 8);
 
@@ -384,11 +407,11 @@ void Menu::DrawSettings()
 					// Show tooltip based on the state
 					if (isDisabled) {
 						if (auto _tt = Util::HoverTooltipWrapper()) {
-							ImGui::Text("Disabled at boot. Reenable, save settings, and restart.");
+							ImGui::Text("$Feature Disabled Description"_i18n_cs);
 						}
 					} else if (!isLoaded) {
 						if (auto _tt = Util::HoverTooltipWrapper()) {
-							ImGui::Text(hasFailedMessage ? feat->failedLoadedMessage.c_str() : "Feature pending restart.");
+							ImGui::Text(hasFailedMessage ? feat->failedLoadedMessage.c_str() : "$Feature Loading Description"_i18n_cs);
 						}
 					}
 
@@ -436,20 +459,15 @@ void Menu::DrawSettings()
 						}
 						ImGui::PushStyleColor(ImGuiCol_Text, textColor);
 
-						if (ImGui::Button(isDisabled ? "Enable at Boot" : "Disable at Boot", { -1, 0 })) {
+						if (ImGui::Button(isDisabled ? "$Enable at Boot"_i18n_cs : "$Disable at Boot"_i18n_cs, { -1, 0 })) {
 							bool newState = feat->ToggleAtBootSetting();
 							logger::info("{}: {} at boot.", featureName, newState ? "Enabled" : "Disabled");
 						}
 
 						if (auto _tt = Util::HoverTooltipWrapper()) {
-							ImGui::Text(
-								"Current State: %s\n"
-								"%s the feature settings at boot. "
-								"Restart will be required to reenable. "
-								"This is the same as deleting the ini file. "
-								"This should remove any performance impact for the feature.",
-								isDisabled ? "Disabled" : "Enabled",
-								isDisabled ? "Enable" : "Disable");
+							ImGui::Text("$Feature State Description{}{}"_i18n(
+								isDisabled ? "$Disabled" : "$Enabled", isDisabled ? "$Enable" : "$Disable")
+											.c_str());
 						}
 
 						ImGui::PopStyleColor();
@@ -457,13 +475,11 @@ void Menu::DrawSettings()
 						ImGui::TableNextColumn();
 
 						if (!isDisabled && isLoaded) {
-							if (ImGui::Button("Restore Defaults", { -1, 0 })) {
+							if (ImGui::Button("$Restore Defaults"_i18n_cs, { -1, 0 })) {
 								feat->RestoreDefaultSettings();
 							}
 							if (auto _tt = Util::HoverTooltipWrapper()) {
-								ImGui::Text(
-									"Restores the feature's settings back to their default values. "
-									"You will still need to Save Settings to make these changes permanent.");
+								ImGui::Text("$Restore Defaults Description"_i18n_cs);
 							}
 						}
 
@@ -490,19 +506,19 @@ void Menu::DrawSettings()
 			});
 
 			auto menuList = std::vector<MenuFuncInfo>{
-				BuiltInMenu{ "General", [&]() { DrawGeneralSettings(); } },
-				BuiltInMenu{ "Advanced", [&]() { DrawAdvancedSettings(); } },
-				BuiltInMenu{ "Display", [&]() { DrawDisplaySettings(); } }
+				BuiltInMenu{ "$General"_i18n_cs, [&]() { DrawGeneralSettings(); } },
+				BuiltInMenu{ "$Advanced"_i18n_cs, [&]() { DrawAdvancedSettings(); } },
+				BuiltInMenu{ "$Display"_i18n_cs, [&]() { DrawDisplaySettings(); } }
 			};
 
-			menuList.push_back("Core Features"s);
+			menuList.push_back(static_cast<std::string>("$Core Features"_i18n_cs));
 			std::ranges::copy(
 				sortedFeatureList | std::ranges::views::filter([](Feature* feat) {
 					return feat->IsCore() && feat->loaded;
 				}),
 				std::back_inserter(menuList));
 
-			menuList.push_back("Features"s);
+			menuList.push_back(static_cast<std::string>("$Features"_i18n_cs));
 			std::ranges::copy(
 				sortedFeatureList | std::ranges::views::filter([](Feature* feat) {
 					return !feat->IsCore() && feat->loaded;
@@ -513,7 +529,7 @@ void Menu::DrawSettings()
 				return !feat->loaded;
 			});
 			if (std::ranges::distance(unloadedFeatures) != 0) {
-				menuList.push_back("Unloaded Features"s);
+				menuList.push_back(static_cast<std::string>("$Unloaded Features"_i18n_cs));
 				std::ranges::copy(unloadedFeatures, std::back_inserter(menuList));
 			}
 
@@ -534,7 +550,7 @@ void Menu::DrawSettings()
 			if (selectedMenu < menuList.size()) {
 				std::visit(DrawMenuVisitor{}, menuList[selectedMenu]);
 			} else {
-				ImGui::TextDisabled("Please select an item on the left.");
+				ImGui::TextDisabled("$Menu Description"_i18n_cs);
 			}
 
 			ImGui::EndTable();
@@ -555,45 +571,45 @@ void Menu::DrawGeneralSettings()
 	auto& shaderCache = SIE::ShaderCache::Instance();
 	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
-	if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+	if (ImGui::CollapsingHeader("$General"_i18n_cs, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
 		bool useCustomShaders = shaderCache.IsEnabled();
 		if (ImGui::BeginTable("##GeneralToggles", 3, ImGuiTableFlags_SizingStretchSame)) {
 			ImGui::TableNextColumn();
-			if (ImGui::Checkbox("Enable Shaders", &useCustomShaders)) {
+			if (ImGui::Checkbox("$Enable Shaders"_i18n_cs, &useCustomShaders)) {
 				shaderCache.SetEnabled(useCustomShaders);
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text("Disabling this effectively disables all features.");
+				ImGui::Text("$Enable Shaders Description"_i18n_cs);
 			}
 
 			bool useDiskCache = shaderCache.IsDiskCache();
 			ImGui::TableNextColumn();
-			if (ImGui::Checkbox("Enable Disk Cache", &useDiskCache)) {
+			if (ImGui::Checkbox("$Enable Disk Cache"_i18n_cs, &useDiskCache)) {
 				shaderCache.SetDiskCache(useDiskCache);
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text("Disabling this stops shaders from being loaded from disk, as well as stops shaders from being saved to it.");
+				ImGui::Text("$Enable Disk Cache Description"_i18n_cs);
 			}
 
 			bool useAsync = shaderCache.IsAsync();
 			ImGui::TableNextColumn();
-			if (ImGui::Checkbox("Enable Async", &useAsync)) {
+			if (ImGui::Checkbox("$Enable Async"_i18n_cs, &useAsync)) {
 				shaderCache.SetAsync(useAsync);
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text("Skips a shader being replaced if it hasn't been compiled yet. Also makes compilation blazingly fast!");
+				ImGui::Text("$Enable Async Description"_i18n_cs);
 			}
 
 			ImGui::EndTable();
 		}
 	}
 
-	if (ImGui::CollapsingHeader("Keybindings", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+	if (ImGui::CollapsingHeader("$Keybindings"_i18n_cs, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
 		if (settingToggleKey) {
-			ImGui::Text("Press any key to set as toggle key...");
+			ImGui::Text("$Toggle Keybinding Description"_i18n_cs);
 		} else {
 			ImGui::AlignTextToFramePadding();
-			ImGui::Text("Toggle Key:");
+			ImGui::Text("$Toggle Keybinding"_i18n_cs);
 			ImGui::SameLine();
 			ImGui::AlignTextToFramePadding();
 			ImGui::TextColored(themeSettings.StatusPalette.CurrentHotkey, "%s", KeyIdToString(settings.ToggleKey));
@@ -605,10 +621,10 @@ void Menu::DrawGeneralSettings()
 			}
 		}
 		if (settingsEffectsToggle) {
-			ImGui::Text("Press any key to set as a toggle key for all effects...");
+			ImGui::Text("$Effect Toggle Keybinding Description"_i18n_cs);
 		} else {
 			ImGui::AlignTextToFramePadding();
-			ImGui::Text("Effect Toggle Key:");
+			ImGui::Text("$Effect Toggle Keybinding"_i18n_cs);
 			ImGui::SameLine();
 			ImGui::AlignTextToFramePadding();
 			ImGui::TextColored(themeSettings.StatusPalette.CurrentHotkey, "%s", KeyIdToString(settings.EffectToggleKey));
@@ -620,10 +636,10 @@ void Menu::DrawGeneralSettings()
 			}
 		}
 		if (settingSkipCompilationKey) {
-			ImGui::Text("Press any key to set as Skip Compilation Key...");
+			ImGui::Text("$Skip Compilation Keybinding Description"_i18n_cs);
 		} else {
 			ImGui::AlignTextToFramePadding();
-			ImGui::Text("Skip Compilation Key:");
+			ImGui::Text("$Skip Compilation Keybinding"_i18n_cs);
 			ImGui::SameLine();
 			ImGui::AlignTextToFramePadding();
 			ImGui::TextColored(themeSettings.StatusPalette.CurrentHotkey, "%s", KeyIdToString(settings.SkipCompilationKey));
@@ -636,91 +652,116 @@ void Menu::DrawGeneralSettings()
 		}
 	}
 
-	if (ImGui::CollapsingHeader("Theme", ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+	if (ImGui::CollapsingHeader("$Theme"_i18n_cs, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
 		auto& style = themeSettings.Style;
 		auto& colors = themeSettings.FullPalette;
 
 		if (ImGui::BeginTabBar("##tabs", ImGuiTabBarFlags_None)) {
-			if (ImGui::BeginTabItem("Sizes")) {
-				if (ImGui::SliderFloat("Global Scale", &themeSettings.GlobalScale, -1.f, 1.f, "%.2f")) {
+			if (ImGui::BeginTabItem("$Sizes"_i18n_cs)) {
+				if (ImGui::SliderFloat("$Global Scale"_i18n_cs, &themeSettings.GlobalScale, -1.f, 1.f, "%.2f")) {
 					float trueScale = exp2(themeSettings.GlobalScale);
 
 					auto& io = ImGui::GetIO();
 					io.FontGlobalScale = trueScale;
 				}
 
-				ImGui::SeparatorText("Main");
-				ImGui::SliderFloat2("Window Padding", (float*)&style.WindowPadding, 0.0f, 20.0f, "%.0f");
-				ImGui::SliderFloat2("Frame Padding", (float*)&style.FramePadding, 0.0f, 20.0f, "%.0f");
-				ImGui::SliderFloat2("Item Spacing", (float*)&style.ItemSpacing, 0.0f, 20.0f, "%.0f");
-				ImGui::SliderFloat2("Item Inner Spacing", (float*)&style.ItemInnerSpacing, 0.0f, 20.0f, "%.0f");
-				ImGui::SliderFloat("Indent Spacing", &style.IndentSpacing, 0.0f, 30.0f, "%.0f");
-				ImGui::SliderFloat("Scrollbar Size", &style.ScrollbarSize, 1.0f, 20.0f, "%.0f");
-				ImGui::SliderFloat("Grab Min Size", &style.GrabMinSize, 1.0f, 20.0f, "%.0f");
+				ImGui::SeparatorText("$Main"_i18n_cs);
+				ImGui::SliderFloat2("$Window Padding"_i18n_cs, (float*)&style.WindowPadding, 0.0f, 20.0f, "%.0f");
+				ImGui::SliderFloat2("$Frame Padding"_i18n_cs, (float*)&style.FramePadding, 0.0f, 20.0f, "%.0f");
+				ImGui::SliderFloat2("$Item Spacing"_i18n_cs, (float*)&style.ItemSpacing, 0.0f, 20.0f, "%.0f");
+				ImGui::SliderFloat2("$Item Inner Spacing"_i18n_cs, (float*)&style.ItemInnerSpacing, 0.0f, 20.0f, "%.0f");
+				ImGui::SliderFloat("$Indent Spacing"_i18n_cs, &style.IndentSpacing, 0.0f, 30.0f, "%.0f");
+				ImGui::SliderFloat("$Scrollbar Size"_i18n_cs, &style.ScrollbarSize, 1.0f, 20.0f, "%.0f");
+				ImGui::SliderFloat("$Grab Min Size"_i18n_cs, &style.GrabMinSize, 1.0f, 20.0f, "%.0f");
 
-				ImGui::SeparatorText("Borders");
-				ImGui::SliderFloat("Window Border Size", &style.WindowBorderSize, 0.0f, 5.0f, "%.0f");
-				ImGui::SliderFloat("Child Border Size", &style.ChildBorderSize, 0.0f, 5.0f, "%.0f");
-				ImGui::SliderFloat("Popup Border Size", &style.PopupBorderSize, 0.0f, 5.0f, "%.0f");
-				ImGui::SliderFloat("Frame Border Size", &style.FrameBorderSize, 0.0f, 5.0f, "%.0f");
-				ImGui::SliderFloat("Tab Border Size", &style.TabBorderSize, 0.0f, 5.0f, "%.0f");
-				ImGui::SliderFloat("Tab Bar Border Size", &style.TabBarBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SeparatorText("$Borders"_i18n_cs);
+				ImGui::SliderFloat("$Window Border Size"_i18n_cs, &style.WindowBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SliderFloat("$Child Border Size"_i18n_cs, &style.ChildBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SliderFloat("$Popup Border Size"_i18n_cs, &style.PopupBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SliderFloat("$Frame Border Size"_i18n_cs, &style.FrameBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SliderFloat("$Tab Border Size"_i18n_cs, &style.TabBorderSize, 0.0f, 5.0f, "%.0f");
+				ImGui::SliderFloat("$Tab Bar Border Size"_i18n_cs, &style.TabBarBorderSize, 0.0f, 5.0f, "%.0f");
 
-				ImGui::SeparatorText("Rounding");
-				ImGui::SliderFloat("Window Rounding", &style.WindowRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat("Child Rounding", &style.ChildRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat("Frame Rounding", &style.FrameRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat("Popup Rounding", &style.PopupRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat("Scrollbar Rounding", &style.ScrollbarRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat("Grab Rounding", &style.GrabRounding, 0.0f, 12.0f, "%.0f");
-				ImGui::SliderFloat("Tab Rounding", &style.TabRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SeparatorText("$Rounding"_i18n_cs);
+				ImGui::SliderFloat("$Window Rounding"_i18n_cs, &style.WindowRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Child Rounding"_i18n_cs, &style.ChildRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Frame Rounding"_i18n_cs, &style.FrameRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Popup Rounding"_i18n_cs, &style.PopupRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Scrollbar Rounding"_i18n_cs, &style.ScrollbarRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Grab Rounding"_i18n_cs, &style.GrabRounding, 0.0f, 12.0f, "%.0f");
+				ImGui::SliderFloat("$Tab Rounding"_i18n_cs, &style.TabRounding, 0.0f, 12.0f, "%.0f");
 
-				ImGui::SeparatorText("Tables");
-				ImGui::SliderFloat2("Cell Padding", (float*)&style.CellPadding, 0.0f, 20.0f, "%.0f");
-				ImGui::SliderAngle("Table Angled Headers Angle", &style.TableAngledHeadersAngle, -50.0f, +50.0f);
+				ImGui::SeparatorText("$Tables"_i18n_cs);
+				ImGui::SliderFloat2("$Cell Padding"_i18n_cs, (float*)&style.CellPadding, 0.0f, 20.0f, "%.0f");
+				ImGui::SliderAngle("$Table Angled Headers Angle"_i18n_cs, &style.TableAngledHeadersAngle, -50.0f, +50.0f);
 
-				ImGui::SeparatorText("Widgets");
-				ImGui::Combo("ColorButtonPosition", (int*)&style.ColorButtonPosition, "Left\0Right\0");
-				ImGui::SliderFloat2("Button Text Align", (float*)&style.ButtonTextAlign, 0.0f, 1.0f, "%.2f");
+				ImGui::SeparatorText("$Widgets"_i18n_cs);
+				ImGui::Combo("$Color Button Position"_i18n_cs, (int*)&style.ColorButtonPosition, "$Color Button Position Option"_i18n_cs);
+				ImGui::SliderFloat2("$Button Text Align"_i18n_cs, (float*)&style.ButtonTextAlign, 0.0f, 1.0f, "%.2f");
 				if (auto _tt = Util::HoverTooltipWrapper())
-					ImGui::Text("Alignment applies when a button is larger than its text content.");
-				ImGui::SliderFloat2("Selectable Text Align", (float*)&style.SelectableTextAlign, 0.0f, 1.0f, "%.2f");
+					ImGui::Text("$Button Text Align Description"_i18n_cs);
+				ImGui::SliderFloat2("$Selectable Text Align"_i18n_cs, (float*)&style.SelectableTextAlign, 0.0f, 1.0f, "%.2f");
 				if (auto _tt = Util::HoverTooltipWrapper())
-					ImGui::Text("Alignment applies when a selectable is larger than its text content.");
-				ImGui::SliderFloat("Separator Text Border Size", &style.SeparatorTextBorderSize, 0.0f, 10.0f, "%.0f");
-				ImGui::SliderFloat2("Separator Text Align", (float*)&style.SeparatorTextAlign, 0.0f, 1.0f, "%.2f");
-				ImGui::SliderFloat2("Separator Text Padding", (float*)&style.SeparatorTextPadding, 0.0f, 40.0f, "%.0f");
-				ImGui::SliderFloat("Log Slider Deadzone", &style.LogSliderDeadzone, 0.0f, 12.0f, "%.0f");
+					ImGui::Text("$Selectable Text Align Description"_i18n_cs);
+				ImGui::SliderFloat("$Separator Text Border Size"_i18n_cs, &style.SeparatorTextBorderSize, 0.0f, 10.0f, "%.0f");
+				ImGui::SliderFloat2("$Separator Text Align"_i18n_cs, (float*)&style.SeparatorTextAlign, 0.0f, 1.0f, "%.2f");
+				ImGui::SliderFloat2("$Separator Text Padding"_i18n_cs, (float*)&style.SeparatorTextPadding, 0.0f, 40.0f, "%.0f");
+				ImGui::SliderFloat("$Log Slider Deadzone"_i18n_cs, &style.LogSliderDeadzone, 0.0f, 12.0f, "%.0f");
 
-				ImGui::SeparatorText("Docking");
-				ImGui::SliderFloat("Docking Splitter Size", &style.DockingSeparatorSize, 0.0f, 12.0f, "%.0f");
+				ImGui::SeparatorText("$Docking"_i18n_cs);
+				ImGui::SliderFloat("$Docking Splitter Size"_i18n_cs, &style.DockingSeparatorSize, 0.0f, 12.0f, "%.0f");
 
 				ImGui::EndTabItem();
 			}
 
-			if (ImGui::BeginTabItem("Colors")) {
-				ImGui::SeparatorText("Status");
+			if (ImGui::BeginTabItem("$Font"_i18n_cs)) {
+				static bool fontPathValid = true;
 
-				ImGui::ColorEdit4("Disabled Text", (float*)&themeSettings.StatusPalette.Disable);
-				ImGui::ColorEdit4("Error Text", (float*)&themeSettings.StatusPalette.Error);
-				ImGui::ColorEdit4("Restart Needed Text", (float*)&themeSettings.StatusPalette.RestartNeeded);
-				ImGui::ColorEdit4("Current Hotkey Text", (float*)&themeSettings.StatusPalette.CurrentHotkey);
+				if (ImGui::InputText("$Font Path"_i18n_cs, &themeSettings.FontPath)) {
+					fontPathValid = std::filesystem::exists(themeSettings.FontPath) &&
+					                std::filesystem::is_regular_file(themeSettings.FontPath);
+				}
+				if (auto _tt = Util::HoverTooltipWrapper()) {
+					ImGui::SetTooltip("$Font Path Description"_i18n_cs);
+				}
 
-				ImGui::SeparatorText("Palette");
+				if (!fontPathValid) {
+					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "$Invalid Font Description"_i18n_cs);
+				}
 
-				if (ImGui::RadioButton("Simple Palette", themeSettings.UseSimplePalette))
+				ImGui::SliderFloat("$Font Size"_i18n_cs, &themeSettings.FontSize, 8.0f, 48.0f, "%.0f");
+
+				ImGui::BeginDisabled(!fontPathValid);
+				if (ImGui::Button("$Refresh Font"_i18n_cs))
+					fontReloadRequested = true;
+				ImGui::EndDisabled();
+
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("$Colors"_i18n_cs)) {
+				ImGui::SeparatorText("$Status"_i18n_cs);
+
+				ImGui::ColorEdit4("$Disabled Text"_i18n_cs, (float*)&themeSettings.StatusPalette.Disable);
+				ImGui::ColorEdit4("$Error Text"_i18n_cs, (float*)&themeSettings.StatusPalette.Error);
+				ImGui::ColorEdit4("$Restart Needed Text"_i18n_cs, (float*)&themeSettings.StatusPalette.RestartNeeded);
+				ImGui::ColorEdit4("$Current Hotkey Text"_i18n_cs, (float*)&themeSettings.StatusPalette.CurrentHotkey);
+
+				ImGui::SeparatorText("$Palette"_i18n_cs);
+
+				if (ImGui::RadioButton("$Simple Palette"_i18n_cs, themeSettings.UseSimplePalette))
 					themeSettings.UseSimplePalette = true;
 				ImGui::SameLine();
-				if (ImGui::RadioButton("Full Palette", !themeSettings.UseSimplePalette))
+				if (ImGui::RadioButton("$Full Palette"_i18n_cs, !themeSettings.UseSimplePalette))
 					themeSettings.UseSimplePalette = false;
 
 				if (themeSettings.UseSimplePalette) {
-					ImGui::ColorEdit4("Background", (float*)&themeSettings.Palette.Background);
-					ImGui::ColorEdit4("Text", (float*)&themeSettings.Palette.Text);
-					ImGui::ColorEdit4("Border", (float*)&themeSettings.Palette.Border);
+					ImGui::ColorEdit4("$Background"_i18n_cs, (float*)&themeSettings.Palette.Background);
+					ImGui::ColorEdit4("$Text"_i18n_cs, (float*)&themeSettings.Palette.Text);
+					ImGui::ColorEdit4("$Border"_i18n_cs, (float*)&themeSettings.Palette.Border);
 				} else {
 					static ImGuiTextFilter filter;
-					filter.Draw("Filter colors", ImGui::GetFontSize() * 16);
+					filter.Draw("$Filter colors"_i18n_cs, ImGui::GetFontSize() * 16);
 
 					for (int i = 0; i < ImGuiCol_COUNT; i++) {
 						const char* name = ImGui::GetStyleColorName(i);
@@ -741,13 +782,13 @@ void Menu::DrawGeneralSettings()
 void Menu::DrawAdvancedSettings()
 {
 	auto& shaderCache = SIE::ShaderCache::Instance();
-	if (ImGui::CollapsingHeader("Advanced", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+	if (ImGui::CollapsingHeader("$Advanced"_i18n_cs, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
 		bool useDump = shaderCache.IsDump();
-		if (ImGui::Checkbox("Dump Shaders", &useDump)) {
+		if (ImGui::Checkbox("$Dump Shaders"_i18n_cs, &useDump)) {
 			shaderCache.SetDump(useDump);
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
-			ImGui::Text("Dump shaders at startup. This should be used only when reversing shaders. Normal users don't need this.");
+			ImGui::Text("$Dump Shaders Description"_i18n_cs);
 		}
 		spdlog::level::level_enum logLevel = State::GetSingleton()->GetLogLevel();
 		const char* items[] = {
@@ -760,16 +801,16 @@ void Menu::DrawAdvancedSettings()
 			"off"
 		};
 		static int item_current = static_cast<int>(logLevel);
-		if (ImGui::Combo("Log Level", &item_current, items, IM_ARRAYSIZE(items))) {
+		if (ImGui::Combo("$Log Level"_i18n_cs, &item_current, items, IM_ARRAYSIZE(items))) {
 			ImGui::SameLine();
 			State::GetSingleton()->SetLogLevel(static_cast<spdlog::level::level_enum>(item_current));
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
-			ImGui::Text("Log level. Trace is most verbose. Default is info.");
+			ImGui::Text("$Log Level Description"_i18n_cs);
 		}
 
 		auto& shaderDefines = State::GetSingleton()->shaderDefinesString;
-		if (ImGui::InputText("Shader Defines", &shaderDefines)) {
+		if (ImGui::InputText("$Shader Defines"_i18n_cs, &shaderDefines)) {
 			State::GetSingleton()->SetDefines(shaderDefines);
 		}
 		if (ImGui::IsItemDeactivatedAfterEdit() || (ImGui::IsItemActive() &&
@@ -779,24 +820,19 @@ void Menu::DrawAdvancedSettings()
 			shaderCache.Clear();
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
-			ImGui::Text("Defines for Shader Compiler. Semicolon \";\" separated. Clear with space. Rebuild shaders after making change. Compute Shaders require a restart to recompile.");
+			ImGui::Text("$Shader Defines Description"_i18n_cs);
 		}
 		ImGui::Spacing();
-		ImGui::SliderInt("Compiler Threads", &shaderCache.compilationThreadCount, 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
+		ImGui::SliderInt("$Compiler Threads"_i18n_cs, &shaderCache.compilationThreadCount, 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
 		if (auto _tt = Util::HoverTooltipWrapper()) {
-			ImGui::Text(
-				"Number of threads to use to compile shaders. "
-				"The more threads the faster compilation will finish but may make the system unresponsive. ");
+			ImGui::Text("$Compiler Threads Description"_i18n_cs);
 		}
-		ImGui::SliderInt("Background Compiler Threads", &shaderCache.backgroundCompilationThreadCount, 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
+		ImGui::SliderInt("$Background Compiler Threads"_i18n_cs, &shaderCache.backgroundCompilationThreadCount, 1, static_cast<int32_t>(std::thread::hardware_concurrency()));
 		if (auto _tt = Util::HoverTooltipWrapper()) {
-			ImGui::Text(
-				"Number of threads to use to compile shaders while playing game. "
-				"This is activated if the startup compilation is skipped. "
-				"The more threads the faster compilation will finish but may make the system unresponsive. ");
+			ImGui::Text("$Background Compiler Threads Description"_i18n_cs);
 		}
 
-		if (ImGui::SliderInt("Test Interval", reinterpret_cast<int*>(&testInterval), 0, 10)) {
+		if (ImGui::SliderInt("$Test Interval"_i18n_cs, reinterpret_cast<int*>(&testInterval), 0, 10)) {
 			if (testInterval == 0) {
 				inTestMode = false;
 				logger::info("Disabling test mode.");
@@ -810,37 +846,27 @@ void Menu::DrawAdvancedSettings()
 			}
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
-			ImGui::Text(
-				"Sets number of seconds before toggling between default USER and TEST config. "
-				"0 disables. Non-zero will enable testing mode. "
-				"Enabling will save current settings as TEST config. "
-				"This has no impact if no settings are changed. ");
+			ImGui::Text("$Test Interval Description"_i18n_cs);
 		}
 		bool useFileWatcher = shaderCache.UseFileWatcher();
 		ImGui::TableNextColumn();
-		if (ImGui::Checkbox("Enable File Watcher", &useFileWatcher)) {
+		if (ImGui::Checkbox("$Enable File Watcher"_i18n_cs, &useFileWatcher)) {
 			shaderCache.SetFileWatcher(useFileWatcher);
 		}
 		if (auto _tt = Util::HoverTooltipWrapper()) {
-			ImGui::Text(
-				"Automatically recompile shaders on file change. "
-				"Intended for developing.");
+			ImGui::Text("$Enable File Watcher Description"_i18n_cs);
 		}
 
-		if (ImGui::Button("Dump Ini Settings", { -1, 0 })) {
+		if (ImGui::Button("$Dump Ini Settings"_i18n_cs, { -1, 0 })) {
 			Util::DumpSettingsOptions();
 		}
 		if (!shaderCache.blockedKey.empty()) {
-			auto blockingButtonString = std::format("Stop Blocking {} Shaders", shaderCache.blockedIDs.size());
+			const std::string blockingButtonString = "$Stop Blocking Shaders"_i18n(shaderCache.blockedIDs.size());
 			if (ImGui::Button(blockingButtonString.c_str(), { -1, 0 })) {
 				shaderCache.DisableShaderBlocking();
 			}
 			if (auto _tt = Util::HoverTooltipWrapper()) {
-				ImGui::Text(
-					"Stop blocking Community Shaders shader. "
-					"Blocking is helpful when debugging shader errors in game to determine which shader has issues. "
-					"Blocking is enabled if in developer mode and pressing PAGEUP and PAGEDOWN. "
-					"Specific shader will be printed to logfile. ");
+				ImGui::Text("$Stop Blocking Shaders Description"_i18n_cs);
 			}
 		}
 		if (ImGui::TreeNodeEx("Addresses")) {
@@ -852,14 +878,14 @@ void Menu::DrawAdvancedSettings()
 			ADDRESS_NODE(RendererShadowState)
 			ImGui::TreePop();
 		}
-		if (ImGui::TreeNodeEx("Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (ImGui::TreeNodeEx("$Statistics"_i18n_cs, ImGuiTreeNodeFlags_DefaultOpen)) {
 			ImGui::Text(std::format("Shader Compiler : {}", shaderCache.GetShaderStatsString()).c_str());
 			ImGui::TreePop();
 		}
 		ImGui::Checkbox("Frame Annotations", &State::GetSingleton()->frameAnnotations);
 	}
 
-	if (ImGui::CollapsingHeader("Replace Original Shaders", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+	if (ImGui::CollapsingHeader("$Replace Original Shaders"_i18n_cs, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
 		auto state = State::GetSingleton();
 		if (ImGui::BeginTable("##ReplaceToggles", 3, ImGuiTableFlags_SizingStretchSame)) {
 			for (int classIndex = 0; classIndex < RE::BSShader::Type::Total - 1; ++classIndex) {
@@ -876,24 +902,15 @@ void Menu::DrawAdvancedSettings()
 			if (state->IsDeveloperMode()) {
 				ImGui::Checkbox("Vertex", &state->enableVShaders);
 				if (auto _tt = Util::HoverTooltipWrapper()) {
-					ImGui::Text(
-						"Replace Vertex Shaders. "
-						"When false, will disable the custom Vertex Shaders for the types above. "
-						"For developers to test whether CS shaders match vanilla behavior. ");
+					ImGui::Text("$Vertex Shader Description"_i18n_cs);
 				}
 				ImGui::Checkbox("Pixel", &state->enablePShaders);
 				if (auto _tt = Util::HoverTooltipWrapper()) {
-					ImGui::Text(
-						"Replace Pixel Shaders. "
-						"When false, will disable the custom Pixel Shaders for the types above. "
-						"For developers to test whether CS shaders match vanilla behavior. ");
+					ImGui::Text("$Pixel Shader Description"_i18n_cs);
 				}
 				ImGui::Checkbox("Compute", &state->enableCShaders);
 				if (auto _tt = Util::HoverTooltipWrapper()) {
-					ImGui::Text(
-						"Replace Compute Shaders. "
-						"When false, will disable the custom Compute Shaders for the types above. "
-						"For developers to test whether CS shaders match vanilla behavior. ");
+					ImGui::Text("$Compute Shader Description"_i18n_cs);
 				}
 			}
 			ImGui::EndTable();
@@ -909,13 +926,10 @@ void Menu::DrawDisableAtBootSettings()
 	auto state = State::GetSingleton();
 	auto& disabledFeatures = state->GetDisabledFeatures();
 
-	if (ImGui::CollapsingHeader("Disable at Boot", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
-		ImGui::Text(
-			"Select features to disable at boot. "
-			"This is the same as deleting a feature.ini file. "
-			"Restart will be required to reenable.");
+	if (ImGui::CollapsingHeader("$Disable at Boot"_i18n_cs, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick)) {
+		ImGui::Text("$Disable at Boot Description"_i18n_cs);
 
-		if (ImGui::CollapsingHeader("Special Features")) {
+		if (ImGui::CollapsingHeader("$Special Features"_i18n_cs)) {
 			// Prepare a sorted list of special feature names
 			std::vector<std::string> specialFeatureNames;
 			for (const auto& [featureName, _] : state->specialFeatures) {
@@ -936,7 +950,7 @@ void Menu::DrawDisableAtBootSettings()
 			}
 		}
 
-		if (ImGui::CollapsingHeader("Features")) {
+		if (ImGui::CollapsingHeader("$Features"_i18n_cs)) {
 			// Prepare a sorted list of feature pointers
 			auto featureList = Feature::GetFeatureList();
 			std::sort(featureList.begin(), featureList.end(), [](Feature* a, Feature* b) {
@@ -983,23 +997,20 @@ void Menu::DrawDisplaySettings()
 				ImGui::CollapsingHeader(featureName.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen);
 				ImGui::PopStyleColor();
 				if (auto _tt = Util::HoverTooltipWrapper()) {
-					ImGui::Text(
-						"%s has been disabled at boot. "
-						"Reenable in the Advanced -> Disable at Boot Menu.",
-						featureName.c_str());
+					ImGui::Text("$Display Feature Description"_i18n(featureName.c_str()).c_str());
 				}
 			}
 		}
 	} else {
-		ImGui::Text("Display options disabled due to Skyrim Upscaler");
+		ImGui::Text("$Display Disabled Description"_i18n_cs);
 	}
 }
 
 void Menu::DrawFooter()
 {
-	ImGui::BulletText(std::format("Game Version: {} {}", magic_enum::enum_name(REL::Module::GetRuntime()), Util::GetFormattedVersion(REL::Module::get().version()).c_str()).c_str());
+	ImGui::BulletText("$Game Version"_i18n(magic_enum::enum_name(REL::Module::GetRuntime()), Util::GetFormattedVersion(REL::Module::get().version())).c_str());
 	ImGui::SameLine();
-	ImGui::BulletText(std::format("D3D12 Interop: {}", Streamline::GetSingleton()->featureDLSSG && !REL::Module::IsVR() ? "Active" : "Inactive").c_str());
+	ImGui::BulletText("$D3D12 Interop"_i18n(Streamline::GetSingleton()->featureDLSSG && !REL::Module::IsVR() ? "$Active"_i18n_cs : "$Inactive"_i18n_cs).c_str());
 	ImGui::SameLine();
 	ImGui::BulletText(std::format("GPU: {}", State::GetSingleton()->adapterDescription.c_str()).c_str());
 
@@ -1020,6 +1031,13 @@ void Menu::DrawFooter()
 void Menu::DrawOverlay()
 {
 	ProcessInputEventQueue();  //Synchronize Inputs to frame
+
+	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
+
+	if (fontReloadRequested) {
+		LoadFont(themeSettings.FontPath, themeSettings.FontSize, true);
+		fontReloadRequested = false;
+	}
 
 	auto& shaderCache = SIE::ShaderCache::Instance();
 	auto failed = shaderCache.GetFailedTasks();
@@ -1047,39 +1065,35 @@ void Menu::DrawOverlay()
 	totalShaders = shaderCache.GetTotalTasks();
 
 	auto state = State::GetSingleton();
-	auto& themeSettings = Menu::GetSingleton()->settings.Theme;
 
-	auto progressTitle = fmt::format("{}Compiling Shaders: {}",
-		shaderCache.backgroundCompilation ? "Background " : "",
-		shaderCache.GetShaderStatsString(!state->IsDeveloperMode()).c_str());
+	auto shaderStates = shaderCache.GetShaderStatsString(!state->IsDeveloperMode());
+	auto progressTitle = shaderCache.backgroundCompilation ? "$Background Compiling Shaders"_i18n(shaderStates) : "$Compiling Shaders"_i18n(shaderStates);
 	auto percent = (float)compiledShaders / (float)totalShaders;
 	auto progressOverlay = fmt::format("{}/{} ({:2.1f}%)", compiledShaders, totalShaders, 100 * percent);
 	if (shaderCache.IsCompiling()) {
 		ImGui::SetNextWindowPos(ImVec2(10, 10));
-		if (!ImGui::Begin("ShaderCompilationInfo", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
+		if (!ImGui::Begin("$Shader Compilation Info"_i18n_cs, nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
 			ImGui::End();
 			return;
 		}
 		ImGui::TextUnformatted(progressTitle.c_str());
 		ImGui::ProgressBar(percent, ImVec2(0.0f, 0.0f), progressOverlay.c_str());
 		if (!shaderCache.backgroundCompilation && shaderCache.menuLoaded) {
-			auto skipShadersText = fmt::format(
-				"Press {} to proceed without completing shader compilation. ",
-				KeyIdToString(settings.SkipCompilationKey));
+			auto skipShadersText = "$Skip Compilation"_i18n(KeyIdToString(settings.SkipCompilationKey));
 			ImGui::TextUnformatted(skipShadersText.c_str());
-			ImGui::TextUnformatted("WARNING: Uncompiled shaders will have visual errors or cause stuttering when loading.");
+			ImGui::TextUnformatted("$Skip Compilation Description"_i18n_cs);
 		}
 
 		ImGui::End();
 	} else if (failed) {
 		if (!hide) {
 			ImGui::SetNextWindowPos(ImVec2(10, 10));
-			if (!ImGui::Begin("ShaderCompilationInfo", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
+			if (!ImGui::Begin("$Shader Compilation Info"_i18n_cs, nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
 				ImGui::End();
 				return;
 			}
 
-			ImGui::TextColored(themeSettings.StatusPalette.Error, "ERROR: %d shaders failed to compile. Check installation and CommunityShaders.log", failed, totalShaders);
+			ImGui::TextColored(themeSettings.StatusPalette.Error, "$Skip Compilation Error Description"_i18n(totalShaders).c_str());
 			ImGui::End();
 		}
 	}

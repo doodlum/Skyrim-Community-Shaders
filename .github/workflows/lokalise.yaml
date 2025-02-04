@@ -1,0 +1,45 @@
+name: push to Lokalise
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ISO: .github/workflows/iso.json
+      TRANSLATION_FILES: package/Interface/Translations/
+      TRANSLATION_CACHE: locales/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: convert utf-16-le-bom txt to json
+        run: |
+          mkdir -p $TRANSLATION_CACHE
+          for file in "$TRANSLATION_FILES"/*.txt; do
+            if [[ -f "$file" ]]; then
+              language=$(basename "$file" | sed -E 's/CommunityShaders_(.*)\.txt/\1/')
+              iso_code=$(jq -r --arg lang "$language" '.lang_iso[$lang]' "$ISO")
+              if [[ -z "$iso_code" || "$iso_code" == "null" ]]; then
+                echo "Warning: Language '$language' not found. Skipping $file." >&2
+                continue
+              fi
+              iconv -f UTF-16LE -t UTF-8 "$file" \
+                | sed '1s/^\xEF\xBB\xBF//' \
+                | grep -vE '^(;|\s*$)' \
+                | jq -Rn '[ inputs | split("\t") | { (.[0]): .[1] } ] | add' \
+                > "$TRANSLATION_CACHE/$iso_code.json"
+            fi
+          done
+
+      - name: push files to Lokalise
+        uses: lokalise/lokalise-push-action@v3.0.0
+        with:
+          api_token: ${{ secrets.LOKALISE_API_TOKEN }}
+          project_id: ${{ vars.PROJECT_ID }}
+          file_format: json
+          flat_naming: true
+          translations_path: |
+            ${{ env.TRANSLATION_CACHE }}
+          base_lang: en

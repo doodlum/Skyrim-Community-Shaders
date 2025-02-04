@@ -127,6 +127,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* message)
 					shaderCache.WriteDiskCacheInfo();
 				}
 
+				SKSE::Translation::ParseTranslation("CommunityShaders");
+
 				if (!REL::Module::IsVR()) {
 					RE::GetINISetting("bEnableImprovedSnow:Display")->data.b = false;
 					RE::GetINISetting("bIBLFEnable:Display")->data.b = false;

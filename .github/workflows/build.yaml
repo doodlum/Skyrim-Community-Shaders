@@ -9,14 +9,73 @@ on:
 permissions:
   contents: write
 
+env:
+  TRANSLATION_FILES: package/Interface/Translations/
+
 jobs:
+  translate:
+    name: translate plugin
+    runs-on: ubuntu-latest
+    env:
+      ISO: .github/workflows/iso.json
+      TRANSLATION_CACHE: locales/
+      WHITELIST_FILES: CommunityShaders_english.txt
+    steps:
+        - uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+
+        - uses: actions/setup-node@v4
+          with:
+            node-version: 20
+
+        - name: pull files from Lokalise
+          env:
+            LOKALISE_TOKEN: ${{ secrets.LOKALISE_API_TOKEN }}
+            PROJECT_ID: ${{ vars.PROJECT_ID }}
+            FILE_FORMAT: json
+            GITHUB_REF_NAME: ${{ github.ref_name }}
+          run: |
+            node .github/workflows/lokalise_download.mjs
+
+        - name: convert json to utf-16-le-bom txt
+          run: |
+            for file in $TRANSLATION_CACHE/*.json; do
+              if [[ -f "$file" ]]; then
+                iso_code=$(basename "$file" .json)
+                language=$(jq -r --arg iso "$iso_code" '.iso_lang[$iso]' $ISO)
+                if [[ -z "$language" || "$language" == "null" ]]; then
+                  echo "Warning: ISO code '$iso_code' not found. Skipping $file." >&2
+                  continue
+                fi
+                output_file="$TRANSLATION_FILES/CommunityShaders_${language}.txt"
+                if [[ "$(basename "$output_file")" != "$WHITELIST_FILES" ]]; then
+                  printf "\xFF\xFE" > "$output_file"
+                  jq -r 'to_entries | .[] | "\(.key)\t\(.value)"' "$file" \
+                    | sed 's/$/\r/' | iconv -f UTF-8 -t UTF-16LE >> "$output_file"
+                fi
+              fi
+            done
+
+        - name: Upload translations
+          uses: actions/upload-artifact@v4
+          with:
+            name: translations
+            path: ${{ env.TRANSLATION_FILES }}
+
   compile:
     name: build plugin and addons
     runs-on: windows-latest
     steps:
-        - uses: actions/checkout@v3
+        - uses: actions/checkout@v4
           with:
             submodules: recursive
+
+        - name: Download translations
+          uses: actions/download-artifact@v4
+          with:
+            name: translations
+            path: ${{ env.TRANSLATION_FILES }}
 
         - uses: ilammy/msvc-dev-cmd@v1.10.0
 
