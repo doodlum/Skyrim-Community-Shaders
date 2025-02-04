@@ -770,7 +770,7 @@ void Deferred::Hooks::Main_RenderWorld_BlendedDecals::thunk(RE::BSShaderAccumula
 	if (shaderCache->IsEnabled() && deferred->inWorld) {
 		// Defer terrain rendering until after everything else
 		if (terrainBlending->loaded)
-			terrainBlending->RenderTerrain();
+			terrainBlending->RenderTerrainBlendingPasses();
 	}
 
 	// Deferred blended decals

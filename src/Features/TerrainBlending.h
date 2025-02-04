@@ -33,7 +33,6 @@ public:
 	bool renderDepth = false;
 	bool renderTerrainDepth = false;
 	bool renderAltTerrain = false;
-	bool renderTerrainWorld = false;
 
 	RE::NiPoint3 averageEyePosition;
 
@@ -45,14 +44,14 @@ public:
 		uint32_t a_renderFlags;
 	};
 
-	eastl::vector<RenderPass> renderPasses;
+	std::vector<RenderPass> renderPasses;
+	std::vector<RenderPass> terrainRenderPasses;
 
 	void TerrainShaderHacks();
 
 	void ResetDepth();
 	void ResetTerrainDepth();
 	void BlendPrepassDepths();
-	void ResetTerrainWorld();
 
 	Texture2D* blendedDepthTexture = nullptr;
 	Texture2D* blendedDepthTexture16 = nullptr;
@@ -68,7 +67,7 @@ public:
 
 	virtual void ClearShaderCache() override;
 
-	void RenderTerrain();
+	void RenderTerrainBlendingPasses();
 
 	struct Hooks
 	{
