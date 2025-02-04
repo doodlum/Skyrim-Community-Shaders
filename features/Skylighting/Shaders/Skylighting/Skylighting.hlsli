@@ -43,6 +43,10 @@ namespace Skylighting
 		if (SharedData::InInterior)
 			return scaledUnitSH;
 
+		// Fix objects which are too dark
+		normalWS.z = normalWS.z * 0.5 + 0.5;
+		normalWS = normalize(normalWS);
+
 		positionMS.xyz += normalWS * CELL_SIZE * 0.5;  // Receiver normal bias
 
 		if (SharedData::FrameCount) {  // Check TAA
