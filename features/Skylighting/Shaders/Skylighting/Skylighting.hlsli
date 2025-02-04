@@ -1,3 +1,6 @@
+#ifndef __SKYLIGHTING_DEPENDENCY_HLSL__
+#define __SKYLIGHTING_DEPENDENCY_HLSL__
+
 #include "Common/Math.hlsli"
 #include "Common/Random.hlsli"
 #include "Common/SharedData.hlsli"
@@ -39,6 +42,10 @@ namespace Skylighting
 
 		if (SharedData::InInterior)
 			return scaledUnitSH;
+
+		// Fix objects which are too dark
+		normalWS.z = normalWS.z * 0.5 + 0.5;
+		normalWS = normalize(normalWS);
 
 		positionMS.xyz += normalWS * CELL_SIZE * 0.5;  // Receiver normal bias
 
@@ -138,3 +145,5 @@ namespace Skylighting
 		return SphericalHarmonics::Scale(sum, rcp(wsum + 1e-10));
 	}
 }
+
+#endif

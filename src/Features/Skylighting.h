@@ -56,7 +56,7 @@ struct Skylighting : Feature
 	};
 	static_assert(sizeof(SkylightingCB) % 16 == 0);
 
-	SkylightingCB GetCommonBufferData();
+	SkylightingCB GetCommonBufferData(bool a_inWorld);
 
 	winrt::com_ptr<ID3D11SamplerState> comparisonSampler = nullptr;
 

@@ -65,8 +65,8 @@ namespace ShadowSampling
 				float r = rnd.z;
 				float4 sincos_phi;
 				sincos(phi, sincos_phi.y, sincos_phi.x);
-				float3 sampleOffset = viewDirection * (float(i) - float(sampleCount) * 0.5) * 64 * rcpSampleCount;
-				sampleOffset += float3(r * sin_theta * sincos_phi.x, r * sin_theta * sincos_phi.y, r * cos_theta) * 64;
+				float3 sampleOffset = viewDirection * (float(i) - float(sampleCount) * 0.5) * 32 * rcpSampleCount;
+				sampleOffset += float3(r * sin_theta * sincos_phi.x, r * sin_theta * sincos_phi.y, r * cos_theta) * 32;
 
 				uint cascadeIndex = sD.EndSplitDistances.x < GetShadowDepth(positionWS.xyz + viewDirection * (sampleOffset.x + sampleOffset.y), eyeIndex);  // Stochastic cascade sampling
 
@@ -144,18 +144,23 @@ namespace ShadowSampling
 
 	float GetWorldShadow(float3 positionWS, float3 offset, uint eyeIndex)
 	{
+		if (SharedData::InInterior || SharedData::HideSky)
+			return 1.0;
+
 		float worldShadow = 1.0;
 #if defined(TERRAIN_SHADOWS)
 		float terrainShadow = TerrainShadows::GetTerrainShadow(positionWS + offset, LinearSampler);
 		worldShadow = terrainShadow;
 		if (worldShadow == 0.0)
-			return 0.0;
+			return worldShadow;
 #endif
 
 #if defined(CLOUD_SHADOWS)
-		worldShadow *= CloudShadows::GetCloudShadowMult(positionWS, LinearSampler);
-		if (worldShadow == 0.0)
-			return 0.0;
+		if (!SharedData::InMapMenu) {
+			worldShadow *= CloudShadows::GetCloudShadowMult(positionWS, LinearSampler);
+			if (worldShadow == 0.0)
+				return worldShadow;
+		}
 #endif
 
 		return worldShadow;

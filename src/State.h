@@ -120,12 +120,13 @@ public:
 	enum class ExtraShaderDescriptors : uint32_t
 	{
 		InWorld = 1 << 0,
-		IsBeastRace = 1 << 1,
-		EffectShadows = 1 << 2,
-		IsDecal = 1 << 3
+		IsReflections = 1 << 1,
+		IsBeastRace = 1 << 2,
+		EffectShadows = 1 << 3,
+		IsDecal = 1 << 4
 	};
 
-	void UpdateSharedData();
+	void UpdateSharedData(bool a_inWorld);
 
 	struct alignas(16) PermutationCB
 	{
@@ -150,7 +151,8 @@ public:
 		uint FrameCountAlwaysActive;
 		uint InInterior;
 		uint InMapMenu;
-		float3 pad0;
+		uint HideSky;
+		float2 pad0;
 	};
 
 	ConstantBuffer* sharedDataCB = nullptr;

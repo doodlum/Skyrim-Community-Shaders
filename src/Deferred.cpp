@@ -217,6 +217,32 @@ void Deferred::CopyShadowData()
 	}
 }
 
+void Deferred::ReflectionsPrepasses()
+{
+	auto& shaderCache = SIE::ShaderCache::Instance();
+
+	if (!shaderCache.IsEnabled())
+		return;
+
+	State::GetSingleton()->UpdateSharedData(false);
+
+	auto variableCache = VariableCache::GetSingleton();
+
+	ZoneScoped;
+	TracyD3D11Zone(variableCache->state->tracyCtx, "Early Prepass");
+
+	auto context = variableCache->context;
+	context->OMSetRenderTargets(0, nullptr, nullptr);  // Unbind all bound render targets
+
+	variableCache->stateUpdateFlags->set(RE::BSGraphics::ShaderFlags::DIRTY_RENDERTARGET);  // Run OMSetRenderTargets again
+
+	for (auto* feature : Feature::GetFeatureList()) {
+		if (feature->loaded) {
+			feature->ReflectionsPrepass();
+		}
+	}
+}
+
 void Deferred::EarlyPrepasses()
 {
 	auto shaderCache = globals::shaderCache;
@@ -224,7 +250,7 @@ void Deferred::EarlyPrepasses()
 	if (!shaderCache->IsEnabled())
 		return;
 
-	globals::state->UpdateSharedData();
+	globals::state->UpdateSharedData(false);
 
 	ZoneScoped;
 	TracyD3D11Zone(globals::game::graphicsState->tracyCtx, "Early Prepass");
@@ -266,7 +292,7 @@ void Deferred::PrepassPasses()
 
 void Deferred::StartDeferred()
 {
-	globals::state->UpdateSharedData();
+	globals::state->UpdateSharedData(true);
 
 	auto shadowState = globals::game::shadowState;
 	GET_INSTANCE_MEMBER(renderTargets, shadowState)
@@ -731,7 +757,7 @@ void Deferred::Hooks::Main_RenderWorld_BlendedDecals::thunk(RE::BSShaderAccumula
 	if (shaderCache->IsEnabled() && deferred->inWorld) {
 		// Defer terrain rendering until after everything else
 		if (terrainBlending->loaded)
-			terrainBlending->RenderTerrain();
+			terrainBlending->RenderTerrainBlendingPasses();
 	}
 
 	// Deferred blended decals
@@ -781,3 +807,13 @@ void Deferred::Hooks::BSShaderAccumulator_ShadowMapOrMask_BlendedDecals::thunk(R
 	func(This, RenderFlags);
 	deferred->inDecals = false;
 };
+
+void Deferred::Hooks::BSCubeMapCamera_RenderCubemap::thunk(RE::NiAVObject* camera, int a2, bool a3, bool a4, bool a5)
+{
+	auto deferred = VariableCache::GetSingleton()->deferred;
+
+	deferred->inReflections = true;
+	deferred->ReflectionsPrepasses();
+	func(camera, a2, a3, a4, a5);
+	deferred->inReflections = false;
+}

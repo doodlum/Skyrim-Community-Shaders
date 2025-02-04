@@ -17,7 +17,11 @@ struct CloudShadows : Feature
 	void SkyShaderHacks();
 
 	Texture2D* texCubemapCloudOcc = nullptr;
+	Texture2D* texCubemapCloudOccCopy = nullptr;
+
 	ID3D11RenderTargetView* cubemapCloudOccRTVs[6] = { nullptr };
+	ID3D11RenderTargetView* cubemapCloudOccCopyRTVs[6] = { nullptr };
+
 	ID3D11BlendState* cloudShadowBlendState = nullptr;
 
 	virtual void SetupResources() override;
@@ -25,6 +29,7 @@ struct CloudShadows : Feature
 	void CheckResourcesSide(int side);
 	void ModifySky(RE::BSRenderPass* Pass);
 
+	virtual void ReflectionsPrepass() override;
 	virtual void EarlyPrepass() override;
 
 	virtual inline void PostPostLoad() override { Hooks::Install(); }

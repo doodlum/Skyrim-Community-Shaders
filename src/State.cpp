@@ -32,12 +32,17 @@ void State::Draw()
 
 		truePBR->SetShaderResouces(context);
 
-		if (auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator()) {
-			// Set an unused bit to indicate if we are rendering an object in the main rendering passes
-			if (accumulator->GetRuntimeData().activeShadowSceneNode == smState->shadowSceneNode[0]) {
-				currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
+		if (!deferred->inReflections) {
+			if (auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator()) {
+				// Set an unused bit to indicate if we are rendering an object in the main rendering passes
+				if (accumulator->GetRuntimeData().activeShadowSceneNode == smState->shadowSceneNode[0]) {
+					currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::InWorld;
+				}
 			}
 		}
+
+		if (deferred->inReflections)
+			currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::IsReflections;
 
 		if (deferred->inDecals)
 			currentExtraDescriptor |= (uint32_t)ExtraShaderDescriptors::IsDecal;
@@ -501,7 +506,7 @@ void State::SetupResources()
 	permutationCB = new ConstantBuffer(ConstantBufferDesc<PermutationCB>());
 	sharedDataCB = new ConstantBuffer(ConstantBufferDesc<SharedDataCB>());
 
-	auto [data, size] = GetFeatureBufferData();
+	auto [data, size] = GetFeatureBufferData(false);
 	featureDataCB = new ConstantBuffer(ConstantBufferDesc((uint32_t)size));
 	delete[] data;
 
@@ -648,7 +653,7 @@ void State::SetAdapterDescription(const std::wstring& description)
 	adapterDescription = converter.to_bytes(description);
 }
 
-void State::UpdateSharedData()
+void State::UpdateSharedData(bool a_inWorld)
 {
 	{
 		SharedDataCB data{};
@@ -681,17 +686,22 @@ void State::UpdateSharedData()
 		data.FrameCount = viewport->frameCount * (bTAA || globals::state->upscalerLoaded);
 		data.FrameCountAlwaysActive = viewport->frameCount;
 
-		for (int i = -2; i <= 2; i++) {
-			for (int k = -2; k <= 2; k++) {
-				int waterTile = (i + 2) + ((k + 2) * 5);
-				data.WaterData[waterTile] = Util::TryGetWaterData((float)i * 4096.0f, (float)k * 4096.0f);
+		if (a_inWorld) {
+			for (int i = -2; i <= 2; i++) {
+				for (int k = -2; k <= 2; k++) {
+					int waterTile = (i + 2) + ((k + 2) * 5);
+					data.WaterData[waterTile] = Util::TryGetWaterData((float)i * 4096.0f, (float)k * 4096.0f);
+				}
 			}
 		}
 
-		if (auto sky = globals::game::sky)
+		if (auto sky = globals::game::sky){
 			data.InInterior = sky->mode.get() != RE::Sky::Mode::kFull;
-		else
+			data.HideSky = !data.InInterior && sky->flags.any(RE::Sky::Flags::kHideSky);
+		} else {
 			data.InInterior = true;
+			data.HideSky = true;
+		}
 
 		if (auto ui = globals::game::ui)
 			data.InMapMenu = ui->IsMenuOpen(RE::MapMenu::MENU_NAME);
@@ -702,7 +712,7 @@ void State::UpdateSharedData()
 	}
 
 	{
-		auto [data, size] = GetFeatureBufferData();
+		auto [data, size] = GetFeatureBufferData(a_inWorld);
 
 		featureDataCB->Update(data, size);
 

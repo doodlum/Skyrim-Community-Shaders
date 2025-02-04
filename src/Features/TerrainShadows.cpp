@@ -262,6 +262,14 @@ void TerrainShadows::Precompute()
 
 	logger::info("Creating shadow texture...");
 	{
+		if (texShadowHeight) {
+			auto context = State::GetSingleton()->context;
+
+			std::array<ID3D11ShaderResourceView*, 1> srvs = { nullptr };
+			context->PSSetShaderResources(60, (uint)srvs.size(), srvs.data());
+			context->CSSetShaderResources(60, (uint)srvs.size(), srvs.data());
+		}
+
 		texShadowHeight.release();
 
 		D3D11_TEXTURE2D_DESC texDesc = {
@@ -305,6 +313,13 @@ void TerrainShadows::UpdateShadow()
 	constexpr uint logUpdateLength = std::bit_width(128u) - 1;  // integer log2, https://stackoverflow.com/questions/994593/how-to-do-an-integer-log2-in-c
 
 	auto context = globals::d3d::context;
+
+	if (texShadowHeight) {
+		std::array<ID3D11ShaderResourceView*, 1> srvs = { nullptr };
+		context->PSSetShaderResources(60, (uint)srvs.size(), srvs.data());
+		context->CSSetShaderResources(60, (uint)srvs.size(), srvs.data());
+	}
+
 	auto accumulator = RE::BSGraphics::BSShaderAccumulator::GetCurrentAccumulator();
 	auto sunLight = skyrim_cast<RE::NiDirectionalLight*>(accumulator->GetRuntimeData().activeShadowSceneNode->GetRuntimeData().sunLight->light.get());
 	if (!sunLight)
@@ -380,6 +395,7 @@ void TerrainShadows::UpdateShadow()
 	} old, newer;
 
 	/* ---- DISPATCH ---- */
+
 	newer.srvs[0] = texHeightMap->srv.get();
 	newer.uavs[0] = texShadowHeight->uav.get();
 	newer.buffer = shadowUpdateCB->CB();
@@ -395,6 +411,17 @@ void TerrainShadows::UpdateShadow()
 	context->CSSetShader(old.shader, nullptr, 0);
 	context->CSSetUnorderedAccessViews(0, ARRAYSIZE(old.uavs), old.uavs, nullptr);
 	context->CSSetConstantBuffers(0, 1, &old.buffer);
+}
+
+void TerrainShadows::ReflectionsPrepass()
+{
+	if (texShadowHeight) {
+		auto context = State::GetSingleton()->context;
+
+		std::array<ID3D11ShaderResourceView*, 1> srvs = { texShadowHeight->srv.get() };
+		context->PSSetShaderResources(60, (uint)srvs.size(), srvs.data());
+		context->CSSetShaderResources(60, (uint)srvs.size(), srvs.data());
+	}
 }
 
 void TerrainShadows::EarlyPrepass()

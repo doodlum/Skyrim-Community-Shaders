@@ -75,6 +75,8 @@ struct TerrainShadows : public Feature
 	void Precompute();
 	void UpdateShadow();
 
+	virtual void ReflectionsPrepass() override;
+
 	virtual void LoadSettings(json& o_json) override;
 	virtual void SaveSettings(json& o_json) override;
 

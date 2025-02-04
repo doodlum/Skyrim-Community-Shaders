@@ -67,6 +67,24 @@ void CloudShadows::ModifySky(RE::BSRenderPass* Pass)
 	}
 }
 
+void CloudShadows::ReflectionsPrepass()
+{
+	Util::FrameChecker frameChecker;
+	if (frameChecker.IsNewFrame()) {
+		if ((RE::Sky::GetSingleton()->mode.get() != RE::Sky::Mode::kFull) ||
+			!RE::Sky::GetSingleton()->currentClimate)
+			return;
+
+		auto& context = State::GetSingleton()->context;
+
+		context->CopyResource(texCubemapCloudOccCopy->resource.get(), texCubemapCloudOcc->resource.get());
+
+		ID3D11ShaderResourceView* srv = texCubemapCloudOccCopy->srv.get();
+		context->PSSetShaderResources(25, 1, &srv);
+		context->CSSetShaderResources(25, 1, &srv);
+	}
+}
+
 void CloudShadows::EarlyPrepass()
 {
 	if ((globals::game::sky->mode.get() != RE::Sky::Mode::kFull) ||
@@ -104,6 +122,15 @@ void CloudShadows::SetupResources()
 			reflections.cubeSideRTV[i]->GetDesc(&rtvDesc);
 			rtvDesc.Format = texDesc.Format;
 			DX::ThrowIfFailed(device->CreateRenderTargetView(texCubemapCloudOcc->resource.get(), &rtvDesc, cubemapCloudOccRTVs + i));
+		}
+
+		texCubemapCloudOccCopy = new Texture2D(texDesc);
+		texCubemapCloudOccCopy->CreateSRV(srvDesc);
+
+		for (int i = 0; i < 6; ++i) {
+			reflections.cubeSideRTV[i]->GetDesc(&rtvDesc);
+			rtvDesc.Format = texDesc.Format;
+			DX::ThrowIfFailed(device->CreateRenderTargetView(texCubemapCloudOccCopy->resource.get(), &rtvDesc, cubemapCloudOccCopyRTVs + i));
 		}
 	}
 	{

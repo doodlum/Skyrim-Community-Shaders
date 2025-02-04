@@ -528,7 +528,7 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 
 	float3 color = DLightColor.xyz;
 
-	if ((Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::EffectShadows) && !SharedData::InMapMenu && !SharedData::InInterior) {
+	if ((Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::EffectShadows)) {
 		float3 dirLightColor = SharedData::DirLightColor * 0.5;
 		float3 ambientColor = mul(SharedData::DirectionalAmbient, float4(0, 0, 1, 1));
 
@@ -549,7 +549,10 @@ float3 GetLightingColor(float3 msPosition, float3 worldPosition, float4 screenPo
 		color = Color::LinearToGamma(color);
 #		endif
 
-		color += dirLightColor * ShadowSampling::GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
+		if (!SharedData::InInterior)
+			color += dirLightColor * ShadowSampling::GetEffectShadow(worldPosition, normalize(worldPosition), screenPosition, eyeIndex);
+		else
+			color += dirLightColor;
 	} else {
 #		if defined(SKYLIGHTING)
 #			if defined(VR)

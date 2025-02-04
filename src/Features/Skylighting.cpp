@@ -172,10 +172,9 @@ void Skylighting::CompileComputeShaders()
 	}
 }
 
-Skylighting::SkylightingCB Skylighting::GetCommonBufferData()
+Skylighting::SkylightingCB Skylighting::GetCommonBufferData(bool a_inWorld)
 {
-	static Util::FrameChecker frameChecker;
-	if (frameChecker.IsNewFrame())
+	if (!a_inWorld)
 		return Skylighting::SkylightingCB{};
 
 	if (auto ui = globals::game::ui)

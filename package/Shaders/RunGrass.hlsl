@@ -233,7 +233,7 @@ VS_OUTPUT main(VS_INPUT input)
 
 	// Vertex normal needs to be transformed to world-space for lighting calculations.
 	vsout.VertexNormal.xyz = mul(world3x3, input.Normal.xyz * 2.0 - 1.0);
-	vsout.VertexNormal.w = saturate(sqrt(input.Color.w));
+	vsout.VertexNormal.w = input.Color.w;
 
 	return vsout;
 }
@@ -414,6 +414,10 @@ cbuffer AlphaTestRefCB : register(b11)
 #		include "WaterLighting/WaterCaustics.hlsli"
 #	endif
 
+#	define LinearSampler SampBaseSampler
+
+#	include "Common/ShadowSampling.hlsli"
+
 #	ifdef GRASS_LIGHTING
 #		if defined(TRUE_PBR)
 
@@ -547,18 +551,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			endif  // SCREEN_SPACE_SHADOWS
 		}
 
-#			if defined(TERRAIN_SHADOWS)
-		if (dirShadow > 0.0) {
-			float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, SampBaseSampler);
-			dirShadow *= terrainShadow;
-		}
-#			endif  // TERRAIN_SHADOWS
-
-#			if defined(CLOUD_SHADOWS)
-		if (dirShadow > 0.0) {
-			dirShadow *= CloudShadows::GetCloudShadowMult(input.WorldPosition.xyz, SampBaseSampler);
-		}
-#			endif  // CLOUD_SHADOWS
+		if (dirShadow != 0.0)
+			dirShadow *= ShadowSampling::GetWorldShadow(input.WorldPosition, FrameBuffer::CameraPosAdjust[eyeIndex], eyeIndex);
 
 #			if defined(WATER_LIGHTING)
 		if (dirShadow > 0.0) {
@@ -587,18 +581,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	dirLightColor *= dirLightColorMultiplier;
 	dirLightColor *= dirShadow;
 
-	float wrapAmount = saturate(input.VertexNormal.w);
-	float wrapMultiplier = rcp((1.0 + wrapAmount) * (1.0 + wrapAmount));
-
-	float dirDiffuse = (dirLightAngle + wrapAmount) * wrapMultiplier;
-	lightsDiffuseColor += dirLightColor * saturate(dirDiffuse) * dirDetailShadow;
+	lightsDiffuseColor += dirLightColor * saturate(dirLightAngle) * dirDetailShadow;
 
 	float3 albedo = max(0, baseColor.xyz * input.VertexColor.xyz);
 
-	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * input.VertexNormal.w;
+	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * saturate(input.VertexNormal.w * 10.0);
 
-	float dirLightBacklighting = 1.0 + saturate(dot(viewDirection, -SharedData::DirLightDirection.xyz));
-	float3 sss = dirLightColor * saturate(-dirLightAngle) * dirLightBacklighting;
+	float3 sss = dirLightColor * saturate(-dirLightAngle);
 
 	if (complex)
 		lightsSpecularColor += GrassLighting::GetLightSpecularInput(DirLightDirection, viewDirection, normal, dirLightColor, SharedData::grassLightingSettings.Glossiness);
@@ -651,11 +640,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #				else
 				lightColor *= lightShadow;
 
-				float lightDiffuse = (lightAngle + wrapAmount) * wrapMultiplier;
-				float3 lightDiffuseColor = lightColor * saturate(lightDiffuse);
-
-				float lightBacklighting = 1.0 + saturate(dot(viewDirection, -normalizedLightDirection.xyz));
-				sss += lightColor * saturate(-lightAngle) * lightBacklighting;
+				float3 lightDiffuseColor = lightColor * saturate(dirLightAngle);
+				sss += lightColor * saturate(-lightAngle);
 
 				lightsDiffuseColor += lightDiffuseColor;
 
@@ -778,18 +764,8 @@ PS_OUTPUT main(PS_INPUT input)
 		dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
 #			endif  // SCREEN_SPACE_SHADOWS
 
-#			if defined(TERRAIN_SHADOWS)
-		if (dirShadow > 0.0) {
-			float terrainShadow = TerrainShadows::GetTerrainShadow(input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz, SampBaseSampler);
-			dirShadow *= terrainShadow;
-		}
-#			endif  // TERRAIN_SHADOWS
-
-#			if defined(CLOUD_SHADOWS)
-		if (dirShadow > 0.0) {
-			dirShadow *= CloudShadows::GetCloudShadowMult(input.WorldPosition.xyz, SampBaseSampler);
-		}
-#			endif  // CLOUD_SHADOWS
+		if (dirShadow != 0.0)
+			dirShadow *= ShadowSampling::GetWorldShadow(input.WorldPosition, FrameBuffer::CameraPosAdjust[eyeIndex], eyeIndex);
 
 #			if defined(WATER_LIGHTING)
 		if (dirShadow > 0.0) {

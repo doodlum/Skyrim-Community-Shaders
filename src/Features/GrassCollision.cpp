@@ -42,7 +42,7 @@ static bool GetShapeBound(RE::NiAVObject* a_node, RE::NiPoint3& centerPos, float
 		centerPos = RE::NiPoint3(massTrans[0], massTrans[1], massTrans[2]) * RE::bhkWorld::GetWorldScaleInverse();
 
 		const RE::hkpShape* shape = hkpRigid->collidable.GetShape();
-		if (shape) {
+		if (shape && shape->type == RE::hkpShapeType::kCapsule) {
 			float upExtent = shape->GetMaximumProjection(RE::hkVector4{ 0.0f, 0.0f, 1.0f, 0.0f }) * RE::bhkWorld::GetWorldScaleInverse();
 			float downExtent = shape->GetMaximumProjection(RE::hkVector4{ 0.0f, 0.0f, -1.0f, 0.0f }) * RE::bhkWorld::GetWorldScaleInverse();
 			auto z_extent = (upExtent + downExtent) / 2.0f;
@@ -131,7 +131,8 @@ void GrassCollision::UpdateCollisions(PerFrame& perFrameData)
 			break;
 		if (auto root = actor->Get3D(false)) {
 			auto position = actor->GetPosition();
-			if (cameraPosition.GetDistance(position) > 1024)  // Check against distance
+			float distance = cameraPosition.GetDistance(position);
+			if (distance > 2048.0f)  // Cull against distance
 				continue;
 
 			activeActorCount++;
@@ -139,6 +140,8 @@ void GrassCollision::UpdateCollisions(PerFrame& perFrameData)
 				RE::NiPoint3 centerPos;
 				float radius;
 				if (GetShapeBound(a_object, centerPos, radius)) {
+					if (radius < distance * 0.01f)
+						return RE::BSVisit::BSVisitControl::kContinue;
 					radius *= 2.0f;
 					CollisionData data{};
 					RE::NiPoint3 eyePosition{};
