@@ -1,9 +1,7 @@
 #include "Skin.h"
 
-#include "Hooks.h"
 #include "ShaderCache.h"
 #include "State.h"
-#include "Util.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
     Skin::Settings,

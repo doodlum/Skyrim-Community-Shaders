@@ -1,12 +1,6 @@
 #pragma once
 
-#include "imgui.h"
-#include "imgui_impl_dx11.h"
-#include "imgui_impl_win32.h"
-#include <chrono>
 #include <dxgi1_4.h>
-#include <shared_mutex>
-#include <winrt/base.h>
 
 using namespace std::chrono;
 #define BUFFER_VIEWER_NODE(a_value, a_scale)                                                                 \
@@ -42,7 +36,7 @@ public:
 	void Load(json& o_json);
 	void Save(json& o_json);
 
-	void Init(IDXGISwapChain* swapchain, ID3D11Device* device, ID3D11DeviceContext* context);
+	void Init();
 	void DrawSettings();
 	void DrawOverlay();
 

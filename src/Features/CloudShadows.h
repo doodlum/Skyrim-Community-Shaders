@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Feature.h"
-
 struct CloudShadows : Feature
 {
 	static CloudShadows* GetSingleton()

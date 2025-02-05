@@ -30,12 +30,12 @@ std::pair<unsigned char*, size_t> _GetFeatureBufferData(Ts... feat_datas)
 std::pair<unsigned char*, size_t> GetFeatureBufferData(bool a_inWorld)
 {
 	return _GetFeatureBufferData(
-		GrassLighting::GetSingleton()->settings,
-		ExtendedMaterials::GetSingleton()->settings,
-		DynamicCubemaps::GetSingleton()->settings,
-		TerrainShadows::GetSingleton()->GetCommonBufferData(),
-		LightLimitFix::GetSingleton()->GetCommonBufferData(),
-		WetnessEffects::GetSingleton()->GetCommonBufferData(),
-		Skylighting::GetSingleton()->GetCommonBufferData(a_inWorld),
-		Skin::GetSingleton()->GetCommonBufferData());
+		globals::features::grassLighting->settings,
+		globals::features::extendedMaterials->settings,
+		globals::features::dynamicCubemaps->settings,
+		globals::features::terrainShadows->GetCommonBufferData(),
+		globals::features::lightLimitFix->GetCommonBufferData(),
+		globals::features::wetnessEffects->GetCommonBufferData(),
+		globals::features::skylighting->GetCommonBufferData(a_inWorld)),
+		globals::features::skin->GetCommonBufferData();
 }

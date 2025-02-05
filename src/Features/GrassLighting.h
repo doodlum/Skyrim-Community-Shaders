@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Feature.h"
-
 struct GrassLighting : Feature
 {
 	static GrassLighting* GetSingleton()

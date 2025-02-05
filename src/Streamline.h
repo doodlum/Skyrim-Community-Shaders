@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "State.h"
-
 #define NV_WINDOWS
 #include <sl.h>
 #include <sl_consts.h>
@@ -133,15 +130,7 @@ public:
 
 	struct Main_RenderWorld
 	{
-		static void thunk(bool a1)
-		{
-			auto state = State::GetSingleton();
-			if (!state->isVR || !state->upscalerLoaded) {
-				// With upscaler, VR hangs on this function, specifically at slSetConstants
-				GetSingleton()->UpdateConstants();
-			}
-			func(a1);
-		}
+		static void thunk(bool a1);
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 

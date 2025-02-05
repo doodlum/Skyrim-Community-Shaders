@@ -1,9 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "State.h"
-#include "Feature.h"
-
 struct Skin : Feature
 {
     static Skin* GetSingleton()

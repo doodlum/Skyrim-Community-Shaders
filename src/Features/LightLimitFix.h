@@ -1,12 +1,4 @@
 #pragma once
-#include <DirectXMath.h>
-#include <d3d11.h>
-#include <shared_mutex>
-
-#include "Buffer.h"
-#include "Feature.h"
-#include "ShaderCache.h"
-#include "Util.h"
 
 #include "Features/LightLimitFix/ParticleLights.h"
 

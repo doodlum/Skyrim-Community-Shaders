@@ -1,9 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Feature.h"
-#include "ShaderCache.h"
-
 struct TerrainBlending : Feature
 {
 public:

@@ -2,8 +2,6 @@
 
 #include <winrt/base.h>
 
-#include "Feature.h"
-
 struct WaterEffects : Feature
 {
 public:

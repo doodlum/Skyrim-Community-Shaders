@@ -1,7 +1,6 @@
 #include "VolumetricLighting.h"
+
 #include "ShaderCache.h"
-#include "State.h"
-#include "Util.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	VolumetricLighting::Settings,
@@ -10,7 +9,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 void VolumetricLighting::DrawSettings()
 {
 	if (ImGui::TreeNodeEx("Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-		if (State::GetSingleton()->isVR) {
+		if (globals::game::isVR) {
 			if (ImGui::Checkbox("Enable Volumetric Lighting in VR", reinterpret_cast<bool*>(&settings.EnabledVL))) {
 				if (auto _tt = Util::HoverTooltipWrapper()) {
 					ImGui::Text("Enable Volumetric Lighting in VR");
@@ -29,7 +28,7 @@ void VolumetricLighting::DrawSettings()
 void VolumetricLighting::LoadSettings(json& o_json)
 {
 	settings = o_json;
-	if (State::GetSingleton()->isVR) {
+	if (globals::game::isVR) {
 		Util::LoadGameSettings(VLSettings);
 	}
 }
@@ -37,7 +36,7 @@ void VolumetricLighting::LoadSettings(json& o_json)
 void VolumetricLighting::SaveSettings(json& o_json)
 {
 	o_json = settings;
-	if (State::GetSingleton()->isVR) {
+	if (globals::game::isVR) {
 		Util::SaveGameSettings(VLSettings);
 	}
 }
@@ -45,7 +44,7 @@ void VolumetricLighting::SaveSettings(json& o_json)
 void VolumetricLighting::RestoreDefaultSettings()
 {
 	settings = {};
-	if (State::GetSingleton()->isVR) {
+	if (globals::game::isVR) {
 		Util::ResetGameSettingsToDefaults(VLSettings);
 		Util::ResetGameSettingsToDefaults(hiddenVRSettings);
 	}
@@ -53,14 +52,14 @@ void VolumetricLighting::RestoreDefaultSettings()
 
 void VolumetricLighting::DataLoaded()
 {
-	auto& shaderCache = SIE::ShaderCache::Instance();
+	auto shaderCache = globals::shaderCache;
 	const static auto address = REL::Offset{ 0x1ec6b88 }.address();
 	bool& bDepthBufferCulling = *reinterpret_cast<bool*>(address);
 
-	if (REL::Module::IsVR() && bDepthBufferCulling && shaderCache.IsDiskCache()) {
+	if (REL::Module::IsVR() && bDepthBufferCulling && shaderCache->IsDiskCache()) {
 		// clear cache to fix bug caused by bDepthBufferCulling
 		logger::info("Force clearing cache due to bDepthBufferCulling");
-		shaderCache.Clear();
+		shaderCache->Clear();
 	}
 }
 

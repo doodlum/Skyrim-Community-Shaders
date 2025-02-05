@@ -4,7 +4,7 @@
 
 #include "ScreenSpaceGI.h"
 #include "ShaderCache.h"
-#include "VariableCache.h"
+#include "State.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	Skylighting::Settings,
@@ -30,7 +30,7 @@ void Skylighting::RestoreDefaultSettings()
 
 void Skylighting::ResetSkylighting()
 {
-	auto& context = State::GetSingleton()->context;
+	auto context = globals::d3d::context;
 	UINT clr[1] = { 0 };
 	context->ClearUnorderedAccessViewUint(texAccumFramesArray->uav.get(), clr);
 	queuedResetSkylighting = false;
@@ -62,8 +62,8 @@ void Skylighting::DrawSettings()
 
 void Skylighting::SetupResources()
 {
-	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
-	auto& device = State::GetSingleton()->device;
+	auto renderer = globals::game::renderer;
+	auto device = globals::d3d::device;
 
 	{
 		auto& precipitationOcclusion = renderer->GetDepthStencilData().depthStencils[RE::RENDER_TARGETS_DEPTHSTENCIL::kPRECIPITATION_OCCLUSION_MAP];
@@ -133,8 +133,7 @@ void Skylighting::SetupResources()
 	}
 
 	{
-		auto& context = State::GetSingleton()->context;
-		DirectX::CreateDDSTextureFromFile(device, context, L"Data\\Shaders\\Skylighting\\SpatiotemporalBlueNoise\\stbn_vec3_2Dx1D_128x128x64.dds", nullptr, stbn_vec3_2Dx1D_128x128x64.put());
+		DirectX::CreateDDSTextureFromFile(device, globals::d3d::context, L"Data\\Shaders\\Skylighting\\SpatiotemporalBlueNoise\\stbn_vec3_2Dx1D_128x128x64.dds", nullptr, stbn_vec3_2Dx1D_128x128x64.put());
 	}
 
 	CompileComputeShaders();
@@ -178,7 +177,7 @@ Skylighting::SkylightingCB Skylighting::GetCommonBufferData(bool a_inWorld)
 	if (!a_inWorld)
 		return Skylighting::SkylightingCB{};
 
-	if (auto ui = RE::UI::GetSingleton())
+	if (auto ui = globals::game::ui)
 		if (ui->IsMenuOpen(RE::MapMenu::MENU_NAME))
 			return Skylighting::SkylightingCB{};
 
@@ -200,7 +199,7 @@ Skylighting::SkylightingCB Skylighting::GetCommonBufferData(bool a_inWorld)
 
 	auto ambientDimmer = 1.0f;
 
-	auto ssgi = ScreenSpaceGI::GetSingleton();
+	auto ssgi = globals::features::screenSpaceGI;
 	if (ssgi->loaded)
 		if (ssgi->settings.Enabled && ssgi->settings.EnableGI && ssgi->settings.GIStrength > 0.0f)
 			ambientDimmer = settings.SSGIAmbientDimmer;
@@ -221,21 +220,21 @@ Skylighting::SkylightingCB Skylighting::GetCommonBufferData(bool a_inWorld)
 
 void Skylighting::Prepass()
 {
-	if (auto ui = RE::UI::GetSingleton())
+	if (auto ui = globals::game::ui)
 		if (ui->IsMenuOpen(RE::MapMenu::MENU_NAME))
 			return;
 
 	bool interior = true;
 
-	if (auto sky = RE::Sky::GetSingleton())
+	if (auto sky = globals::game::sky)
 		interior = sky->mode.get() != RE::Sky::Mode::kFull;
 
 	if (interior)
 		return;
 
-	TracyD3D11Zone(State::GetSingleton()->tracyCtx, "Skylighting - Update Probes");
+	TracyD3D11Zone(globals::state->tracyCtx, "Skylighting - Update Probes");
 
-	auto& context = State::GetSingleton()->context;
+	auto context = globals::d3d::context;
 
 	{
 		std::array<ID3D11ShaderResourceView*, 1> srvs = { texOcclusion->srv.get() };
@@ -363,8 +362,7 @@ RE::BSLightingShaderProperty::Data* Skylighting::BSLightingShaderProperty_GetPre
 	[[maybe_unused]] uint32_t renderMode,
 	[[maybe_unused]] RE::BSGraphics::BSShaderAccumulator* accumulator)
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto skylighting = variableCache->skylighting;
+	auto skylighting = globals::features::skylighting;
 
 	auto batch = accumulator->GetRuntimeData().batchRenderer;
 	batch->geometryGroups[14]->flags &= ~1;
@@ -438,7 +436,7 @@ RE::BSLightingShaderProperty::Data* Skylighting::BSLightingShaderProperty_GetPre
 			}
 
 			precipitationOcclusionMapRenderPassList->EmplacePass(
-				variableCache->utilityShader,
+				globals::game::utilityShader,
 				property,
 				geometry,
 				technique.underlying() + static_cast<uint32_t>(ShaderTechnique::UtilityGeneralStart));
@@ -449,8 +447,7 @@ RE::BSLightingShaderProperty::Data* Skylighting::BSLightingShaderProperty_GetPre
 
 void Skylighting::SetViewFrustum::thunk(RE::NiCamera* a_camera, RE::NiFrustum* a_frustum)
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto skylighting = variableCache->skylighting;
+	auto skylighting = globals::features::skylighting;
 
 	if (skylighting->inOcclusion) {
 		uint corner = skylighting->frameCount % 4;
@@ -468,11 +465,10 @@ void Skylighting::SetViewFrustum::thunk(RE::NiCamera* a_camera, RE::NiFrustum* a
 
 void Skylighting::RenderOcclusion()
 {
-	auto variableCache = VariableCache::GetSingleton();
-	auto shaderCache = variableCache->shaderCache;
-	auto state = variableCache->state;
-	auto renderer = variableCache->renderer;
-	auto sky = variableCache->sky;
+	auto shaderCache = globals::shaderCache;
+	auto state = globals::state;
+	auto renderer = globals::game::renderer;
+	auto sky = globals::game::sky;
 
 	if (!shaderCache->IsEnabled()) {
 		state->BeginPerfEvent("Precipitation Mask");
