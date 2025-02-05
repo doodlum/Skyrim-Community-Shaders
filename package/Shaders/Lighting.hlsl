@@ -2557,9 +2557,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	specularColor *= complexSpecular;
 #	endif  // defined (EMAT) && defined(ENVMAP)
 
-#		if !defined(DEFERRED)
+#	if !defined(DEFERRED)
 	color.xyz += specularColor;
-#		endif
+#	endif
 	color.xyz = Color::GammaToLinear(color.xyz);
 
 #	if defined(WETNESS_EFFECTS) && !defined(TRUE_PBR)

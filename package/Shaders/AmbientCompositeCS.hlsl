@@ -55,7 +55,6 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 	float3 albedo = AlbedoTexture[dispatchID.xy];
 	float3 masks2 = Masks2Texture[dispatchID.xy];
 
-
 	float3 normalWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], float4(normalVS, 0)).xyz);
 
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normalWS, 1.0));

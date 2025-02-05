@@ -54,7 +54,8 @@ namespace Color
 		return pow(abs(color), 1.0 / 2.2);
 	}
 
-	float3 Diffuse(float3 color){
+	float3 Diffuse(float3 color)
+	{
 #if defined(TRUE_PBR)
 		return pow(abs(color), AlbedoDiffusePower);
 #else
@@ -62,7 +63,8 @@ namespace Color
 #endif
 	}
 
-	float3 Light(float3 color){
+	float3 Light(float3 color)
+	{
 #if defined(TRUE_PBR)
 		return color * Math::PI;
 #else
