@@ -55,17 +55,16 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 	float3 albedo = AlbedoTexture[dispatchID.xy];
 	float3 masks2 = Masks2Texture[dispatchID.xy];
 
-	float pbrWeight = masks2.z;
 
 	float3 normalWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], float4(normalVS, 0)).xyz);
 
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normalWS, 1.0));
 
-	float3 linAlbedo = Color::GammaToLinear(albedo) / Color::AlbedoPreMult;
-	float3 linDirectionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
+	float3 linAlbedo = Color::GammaToLinear(albedo);
+	float3 linDirectionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
 	float3 linDiffuseColor = Color::GammaToLinear(diffuseColor);
 
-	float3 linAmbient = lerp(Color::GammaToLinear(albedo * directionalAmbientColor), linAlbedo * linDirectionalAmbientColor, pbrWeight);
+	float3 linAmbient = Color::GammaToLinear(albedo * directionalAmbientColor);
 
 	float visibility = 1.0;
 #if defined(SKYLIGHTING)
@@ -120,9 +119,9 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 
 	linAmbient *= visibility;
 	diffuseColor = Color::LinearToGamma(linDiffuseColor);
-	directionalAmbientColor = Color::LinearToGamma(linDirectionalAmbientColor * visibility * Color::LightPreMult);
+	directionalAmbientColor = Color::LinearToGamma(linDirectionalAmbientColor * visibility);
 
-	diffuseColor = lerp(diffuseColor + directionalAmbientColor * albedo, Color::LinearToGamma(linDiffuseColor + linAmbient), pbrWeight);
+	diffuseColor = diffuseColor + directionalAmbientColor * albedo;
 
 	MainRW[dispatchID.xy] = float4(diffuseColor, 1);
 };
