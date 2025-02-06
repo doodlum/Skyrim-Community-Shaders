@@ -1886,7 +1886,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 rippleNormal = normalize(lerp(float3(0, 0, 1), raindropInfo.xyz, lerp(1.0, flatnessAmount, 0.8)));
 	wetnessNormal = WetnessEffects::ReorientNormal(rippleNormal, wetnessNormal);
 
-	waterRoughnessSpecular = 1.0 - wetnessGlossinessSpecular;
+	waterRoughnessSpecular = 1.0 - wetnessGlossinessSpecular * 0.9;
 #	endif
 
 	float3 dirLightColor = Color::Light(DirLightColor.xyz);
@@ -2039,7 +2039,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #		if defined(WETNESS_EFFECTS)
 	if (waterRoughnessSpecular < 1.0)
-		wetnessSpecular += WetnessEffects::GetWetnessSpecular(wetnessNormal, normalizedDirLightDirectionWS, worldSpaceViewDirection, Color::GammaToLinear(dirLightColor * dirDetailShadow), waterRoughnessSpecular);
+		wetnessSpecular += WetnessEffects::GetWetnessSpecular(wetnessNormal, normalizedDirLightDirectionWS, worldSpaceViewDirection, dirLightColor * dirDetailShadow, waterRoughnessSpecular);
 #		endif
 #	endif
 
@@ -2254,7 +2254,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #			if defined(WETNESS_EFFECTS)
 		if (waterRoughnessSpecular < 1.0)
-			wetnessSpecular += WetnessEffects::GetWetnessSpecular(wetnessNormal, normalizedLightDirection, worldSpaceViewDirection, Color::GammaToLinear(lightColor), waterRoughnessSpecular);
+			wetnessSpecular += WetnessEffects::GetWetnessSpecular(wetnessNormal, normalizedLightDirection, worldSpaceViewDirection, lightColor, waterRoughnessSpecular);
 #			endif
 	}
 #		endif
@@ -2300,13 +2300,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(worldSpaceNormal.xy, worldSpaceNormal.z * 0.5 + 0.5))) / Math::PI;
 	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition.xyz));
 	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
-#		if !defined(TRUE_PBR)
 	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
-#		endif
 	directionalAmbientColor *= skylightingDiffuse;
-#		if !defined(TRUE_PBR)
 	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
-#		endif
 #	endif
 
 #	if defined(TRUE_PBR) && defined(LOD_LAND_BLEND) && !defined(DEFERRED)
@@ -2361,7 +2357,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				float4 envColorBase = TexEnvSampler.SampleLevel(SampEnvSampler, float3(1.0, 0.0, 0.0), 15);
 
 				if (envColorBase.a < 1.0) {
-					F0 = (Color::GammaToLinear(envColorBase.rgb) + Color::GammaToLinear(baseColor.rgb));
+					F0 = envColorBase.rgb + baseColor.rgb;
 					envRoughness = envColorBase.a;
 				} else {
 					F0 = 1.0;
@@ -2370,7 +2366,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #			if defined(CREATOR)
 				if (SharedData::cubemapCreatorSettings.Enabled) {
-					F0 = (Color::GammaToLinear(SharedData::cubemapCreatorSettings.CubemapColor.rgb) + Color::GammaToLinear(baseColor.xyz));
+					F0 = SharedData::cubemapCreatorSettings.CubemapColor.rgb + baseColor.xyz;
 					envRoughness = SharedData::cubemapCreatorSettings.CubemapColor.a;
 				}
 #			endif
@@ -2378,7 +2374,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			if defined(EMAT)
 				float complexMaterialRoughness = 1.0 - complexMaterialColor.y;
 				envRoughness = lerp(envRoughness, complexMaterialRoughness * complexMaterialRoughness, complexMaterial);
-				F0 = lerp(F0, Color::GammaToLinear(complexSpecular), complexMaterial);
+				F0 = lerp(F0, complexSpecular, complexMaterial);
 #			endif
 
 				if (any(F0 > 0.0))
@@ -2532,7 +2528,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			else
 		diffuseColor = 1.0;
 #			endif
-		specularColor = Color::GammaToLinear(specularColor);
 	}
 #		endif
 
@@ -2547,30 +2542,23 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		else
 	specularColor += envColor * diffuseColor;
 #		endif
-#		if defined(DYNAMIC_CUBEMAPS)
-	if (dynamicCubemap)
-		specularColor = Color::LinearToGamma(specularColor);
-#		endif
 #	endif
 
 #	if defined(EMAT_ENVMAP)
 	specularColor *= complexSpecular;
 #	endif  // defined (EMAT) && defined(ENVMAP)
 
-#	if !defined(DEFERRED)
-	color.xyz += specularColor;
-#	endif
-	color.xyz = Color::GammaToLinear(color.xyz);
-
 #	if defined(WETNESS_EFFECTS) && !defined(TRUE_PBR)
-	color.xyz += wetnessSpecular * wetnessGlossinessSpecular;
+	specularColor += wetnessSpecular * wetnessGlossinessSpecular;
 #	endif
 
 #	if defined(TRUE_PBR) && !defined(DEFERRED)
-	color.xyz += specularColorPBR;
+	specularColor += specularColorPBR;
 #	endif
 
-	color.xyz = Color::LinearToGamma(color.xyz);
+#	if !defined(DEFERRED)
+	color.xyz += specularColor;
+#	endif
 
 #	if defined(LOD_LAND_BLEND) && defined(TRUE_PBR)
 	{
@@ -2753,6 +2741,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		else
 	psout.Reflectance = float4(0.0.xxx, psout.Diffuse.w);
 	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), outGlossiness, psout.Diffuse.w);
+#		endif
+
+#		if defined(TERRAIN_BLENDING)
+	psout.NormalGlossiness.w = 1;
 #		endif
 
 	psout.Parameters.w = psout.Diffuse.w;
