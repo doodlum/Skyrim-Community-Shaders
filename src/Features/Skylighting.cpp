@@ -452,7 +452,7 @@ void Skylighting::SetViewFrustum::thunk(RE::NiCamera* a_camera, RE::NiFrustum* a
 	if (skylighting->inOcclusion) {
 		uint corner = skylighting->frameCount % 4;
 
-		float frustumSize = a_frustum->fTop * 0.5f;
+		float frustumSize = a_frustum->fTop;
 
 		a_frustum->fBottom = (corner == 0 || corner == 1) ? -frustumSize : 0.0f;
 		a_frustum->fLeft = (corner == 0 || corner == 2) ? -frustumSize : 0.0f;
