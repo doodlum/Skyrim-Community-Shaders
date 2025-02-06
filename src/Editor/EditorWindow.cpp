@@ -194,7 +194,7 @@ void EditorWindow::RenderUI()
 	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 	auto& framebuffer = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kFRAMEBUFFER];
 	auto& context = State::GetSingleton()->context;
-	auto sky = RE::Sky::GetSingleton();
+	
 	context->ClearRenderTargetView(framebuffer.RTV, (float*)&ImGui::GetStyle().Colors[ImGuiCol_WindowBg]);
 
 	if (ImGui::BeginMainMenuBar()) {
@@ -229,8 +229,6 @@ void EditorWindow::RenderUI()
 	ShowViewportWindow();
 
 	ShowWidgetWindow();
-
-	ShowPreviewWindow();
 }
 
 void EditorWindow::SetupResources()
@@ -259,9 +257,6 @@ void EditorWindow::SetupResources()
 		widget->Load();
 		lightingTemplateWidgets.push_back(widget);
 	}
-
-	auto sky = RE::Sky::GetSingleton();
-	originalWeather = sky->currentWeather;
 }
 
 void EditorWindow::Draw()
