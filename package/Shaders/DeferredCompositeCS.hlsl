@@ -113,7 +113,7 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 		float3 finalIrradiance = 0;
 
 #	if defined(INTERIOR)
-		float3 specularIrradiance = EnvTexture.SampleLevel(LinearSampler, R, level);
+		float3 specularIrradiance = Color::GammaToLinear(EnvTexture.SampleLevel(LinearSampler, R, level));
 
 		finalIrradiance += specularIrradiance;
 #	elif defined(SKYLIGHTING)
@@ -137,10 +137,10 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 
 		if (skylightingSpecular > 0.0)
 			specularIrradianceReflections = Color::GammaToLinear(EnvReflectionsTexture.SampleLevel(LinearSampler, R, level));
-
-		finalIrradiance = finalIrradiance * skylightingSpecular + Color::LinearToGamma(lerp(specularIrradiance, specularIrradianceReflections, skylightingSpecular));
+		
+		finalIrradiance = lerp(specularIrradiance, specularIrradianceReflections, skylightingSpecular);
 #	else
-		float3 specularIrradianceReflections = EnvReflectionsTexture.SampleLevel(LinearSampler, R, level);
+		float3 specularIrradianceReflections = Color::GammaToLinear(EnvReflectionsTexture.SampleLevel(LinearSampler, R, level));
 
 		finalIrradiance += specularIrradianceReflections;
 #	endif
@@ -167,10 +167,10 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 		ssgiIlSpecular = ssgiMixed.rgb;
 #		endif
 
-		finalIrradiance = finalIrradiance * ssgiAo + Color::LinearToGamma(ssgiIlSpecular);
+		finalIrradiance = finalIrradiance * ssgiAo + ssgiIlSpecular;
 #	endif
 
-		color += reflectance * finalIrradiance;
+		color += reflectance * Color::LinearToGamma(finalIrradiance);
 	}
 
 #endif
