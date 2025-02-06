@@ -109,6 +109,12 @@ struct Skylighting : Feature
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
+	struct SetViewFrustumVR
+	{
+		static void thunk(RE::NiCamera* a_camera, RE::NiFrustum* a_frustum, uint a_eyeIndex);
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
 	// Event handler
 	class MenuOpenCloseEventHandler : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
 	{
