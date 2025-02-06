@@ -37,7 +37,6 @@ void Weather::DrawSettings()
 	std::string faceStr[6]{ "X+", "X-", "Y+", "Y-", "Z+", "Z-" };
 
 	for (UINT face = 0; face < 6; ++face) {
-
 		std::string rText = std::format("R {}", dalcColors[face].red);
 		std::string gText = std::format("G {}", dalcColors[face].green);
 		std::string bText = std::format("B {}", dalcColors[face].blue);
