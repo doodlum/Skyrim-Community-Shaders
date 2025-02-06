@@ -680,9 +680,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	skylighting = lerp(1.0, skylighting, Skylighting::getFadeOutFactor(input.WorldPosition));
 	skylighting = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylighting);
 
-	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
+	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
 	directionalAmbientColor *= skylighting;
-	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor * Color::LightPreMult);
+	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
 #					endif  // SKYLIGHTING
 
 	diffuseColor += directionalAmbientColor;
@@ -713,7 +713,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 normalVS = normalize(FrameBuffer::WorldToView(normal, false, eyeIndex));
 #			if defined(TRUE_PBR)
-	psout.Albedo = float4(Color::LinearToGamma(indirectDiffuseLobeWeight * Color::AlbedoPreMult), 1);
+	psout.Albedo = float4(Color::LinearToGamma(indirectDiffuseLobeWeight), 1);
 	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(normalVS), 1 - pbrSurfaceProperties.Roughness, 1);
 	psout.Reflectance = float4(indirectSpecularLobeWeight, 1);
 	psout.Parameters = float4(0, 0, 1, 1);
@@ -837,9 +837,9 @@ PS_OUTPUT main(PS_INPUT input)
 	skylighting = lerp(1.0, skylighting, Skylighting::getFadeOutFactor(input.WorldPosition));
 	skylighting = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylighting);
 
-	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
+	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
 	directionalAmbientColor *= skylighting;
-	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor * Color::LightPreMult);
+	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
 #				endif  // SKYLIGHTING
 
 	diffuseColor += directionalAmbientColor;

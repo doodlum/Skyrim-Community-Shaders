@@ -1307,10 +1307,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(TRUE_PBR) && defined(LANDSCAPE)
 		[branch] if ((PBRFlags & PBR::TerrainFlags::LandTile0PBR) == 0)
 		{
-			rawBaseColor.rgb = Color::GammaToLinear(rawBaseColor.rgb) / Color::AlbedoPreMult;
+			// relevant for linear only
 		}
 #	endif
-		baseColor = rawBaseColor;
+		baseColor = float4(Color::Diffuse(rawBaseColor.rgb), rawBaseColor.a);
 
 		float landSnowMask1 = GetLandSnowMaskValue(baseColor.w);
 		float4 normalColor = TexNormalSampler.Sample(SampNormalSampler, uv);
@@ -1406,6 +1406,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	if (input.LandBlendWeights1.y > 0.0) {
 		float4 landColor2 = TexLandColor2Sampler.Sample(SampLandColor2Sampler, uv);
+		landColor2.rgb = Color::Diffuse(landColor2.rgb);
 		float landSnowMask2 = GetLandSnowMaskValue(landColor2.w);
 		float4 landNormal2 = TexLandNormal2Sampler.Sample(SampLandNormal2Sampler, uv);
 		landNormal2.xyz = GetLandNormal(landSnowMask2, landNormal2.xyz, uv, SampLandNormal2Sampler, TexLandNormal2Sampler);
@@ -1425,7 +1426,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		}
 		else
 		{
-			landColor2.rgb = Color::GammaToLinear(landColor2.rgb) / Color::AlbedoPreMult;
 			rawRMAOS += input.LandBlendWeights1.y * float4(1 - landNormal2.w, 0, 1, 0.04);
 		}
 #		endif
@@ -1434,6 +1434,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	if (input.LandBlendWeights1.z > 0.0) {
 		float4 landColor3 = TexLandColor3Sampler.Sample(SampLandColor3Sampler, uv);
+		landColor3.rgb = Color::Diffuse(landColor3.rgb);
 		float landSnowMask3 = GetLandSnowMaskValue(landColor3.w);
 		float4 landNormal3 = TexLandNormal3Sampler.Sample(SampLandNormal3Sampler, uv);
 		landNormal3.xyz = GetLandNormal(landSnowMask3, landNormal3.xyz, uv, SampLandNormal3Sampler, TexLandNormal3Sampler);
@@ -1453,7 +1454,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		}
 		else
 		{
-			landColor3.rgb = Color::GammaToLinear(landColor3.rgb) / Color::AlbedoPreMult;
 			rawRMAOS += input.LandBlendWeights1.z * float4(1 - landNormal3.w, 0, 1, 0.04);
 		}
 #		endif
@@ -1462,6 +1462,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	if (input.LandBlendWeights1.w > 0.0) {
 		float4 landColor4 = TexLandColor4Sampler.Sample(SampLandColor4Sampler, uv);
+		landColor4.rgb = Color::Diffuse(landColor4.rgb);
 		float landSnowMask4 = GetLandSnowMaskValue(landColor4.w);
 		float4 landNormal4 = TexLandNormal4Sampler.Sample(SampLandNormal4Sampler, uv);
 		landNormal4.xyz = GetLandNormal(landSnowMask4, landNormal4.xyz, uv, SampLandNormal4Sampler, TexLandNormal4Sampler);
@@ -1481,7 +1482,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		}
 		else
 		{
-			landColor4.rgb = Color::GammaToLinear(landColor4.rgb) / Color::AlbedoPreMult;
 			rawRMAOS += input.LandBlendWeights1.w * float4(1 - landNormal4.w, 0, 1, 0.04);
 		}
 #		endif
@@ -1490,6 +1490,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	if (input.LandBlendWeights2.x > 0.0) {
 		float4 landColor5 = TexLandColor5Sampler.Sample(SampLandColor5Sampler, uv);
+		landColor5.rgb = Color::Diffuse(landColor5.rgb);
 		float landSnowMask5 = GetLandSnowMaskValue(landColor5.w);
 		float4 landNormal5 = TexLandNormal5Sampler.Sample(SampLandNormal5Sampler, uv);
 		landNormal5.xyz = GetLandNormal(landSnowMask5, landNormal5.xyz, uv, SampLandNormal5Sampler, TexLandNormal5Sampler);
@@ -1509,7 +1510,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		}
 		else
 		{
-			landColor5.rgb = Color::GammaToLinear(landColor5.rgb) / Color::AlbedoPreMult;
 			rawRMAOS += input.LandBlendWeights2.x * float4(1 - landNormal5.w, 0, 1, 0.04);
 		}
 #		endif
@@ -1518,6 +1518,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	if (input.LandBlendWeights2.y > 0.0) {
 		float4 landColor6 = TexLandColor6Sampler.Sample(SampLandColor6Sampler, uv);
+		landColor6.rgb = Color::Diffuse(landColor6.rgb);
 		float landSnowMask6 = GetLandSnowMaskValue(landColor6.w);
 		float4 landNormal6 = TexLandNormal6Sampler.Sample(SampLandNormal6Sampler, uv);
 		landNormal6.xyz = GetLandNormal(landSnowMask6, landNormal6.xyz, uv, SampLandNormal6Sampler, TexLandNormal6Sampler);
@@ -1537,7 +1538,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		}
 		else
 		{
-			landColor6.rgb = Color::GammaToLinear(landColor6.rgb) / Color::AlbedoPreMult;
 			rawRMAOS += input.LandBlendWeights2.y * float4(1 - landNormal6.w, 0, 1, 0.04);
 		}
 #		endif
@@ -1921,10 +1921,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 rippleNormal = normalize(lerp(float3(0, 0, 1), raindropInfo.xyz, lerp(1.0, flatnessAmount, 0.8)));
 	wetnessNormal = WetnessEffects::ReorientNormal(rippleNormal, wetnessNormal);
 
-	waterRoughnessSpecular = 1.0 - wetnessGlossinessSpecular;
+	waterRoughnessSpecular = 1.0 - wetnessGlossinessSpecular * 0.9;
 #	endif
 
-	float3 dirLightColor = DirLightColor.xyz;
+	float3 dirLightColor = Color::Light(DirLightColor.xyz);
 	float3 dirLightColorMultiplier = 1;
 
 #	if defined(WATER_EFFECTS)
@@ -2104,7 +2104,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #		if defined(WETNESS_EFFECTS)
 	if (waterRoughnessSpecular < 1.0)
-		wetnessSpecular += WetnessEffects::GetWetnessSpecular(wetnessNormal, normalizedDirLightDirectionWS, worldSpaceViewDirection, Color::GammaToLinear(dirLightColor * dirDetailShadow) / Color::LightPreMult, waterRoughnessSpecular);
+		wetnessSpecular += WetnessEffects::GetWetnessSpecular(wetnessNormal, normalizedDirLightDirectionWS, worldSpaceViewDirection, dirLightColor * dirDetailShadow, waterRoughnessSpecular);
 #		endif
 #	endif
 
@@ -2119,7 +2119,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			continue;
 
 		float intensityMultiplier = 1 - intensityFactor * intensityFactor;
-		float3 lightColor = PointLightColor[lightIndex].xyz * intensityMultiplier;
+		float3 lightColor = Color::Light(PointLightColor[lightIndex].xyz) * intensityMultiplier;
 		float lightShadow = 1.f;
 		if (Permutation::PixelShaderDescriptor & Permutation::LightingFlags::DefShadow) {
 			if (lightIndex < numShadowLights) {
@@ -2237,7 +2237,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			continue;
 
 		float intensityMultiplier = 1 - intensityFactor * intensityFactor;
-		float3 lightColor = light.color.xyz * intensityMultiplier;
+		float3 lightColor = Color::Light(light.color.xyz) * intensityMultiplier;
 		float lightShadow = 1.0;
 
 		float shadowComponent = 1.0;
@@ -2365,7 +2365,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #			if defined(WETNESS_EFFECTS)
 		if (waterRoughnessSpecular < 1.0)
-			wetnessSpecular += WetnessEffects::GetWetnessSpecular(wetnessNormal, normalizedLightDirection, worldSpaceViewDirection, Color::GammaToLinear(lightColor) / Color::LightPreMult, waterRoughnessSpecular);
+			wetnessSpecular += WetnessEffects::GetWetnessSpecular(wetnessNormal, normalizedLightDirection, worldSpaceViewDirection, lightColor, waterRoughnessSpecular);
 #			endif
 	}
 #		endif
@@ -2378,13 +2378,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (Permutation::PixelShaderDescriptor & Permutation::LightingFlags::CharacterLight) {
 		float charLightMul = saturate(dot(worldSpaceViewDirection, worldSpaceNormal.xyz)) * CharacterLightParams.x + CharacterLightParams.y * saturate(dot(float2(0.164398998, -0.986393988), worldSpaceNormal.yz));
 		float charLightColor = min(CharacterLightParams.w, max(0, CharacterLightParams.z * TexCharacterLightProjNoiseSampler.Sample(SampCharacterLightProjNoiseSampler, baseShadowUV).x));
-#		if defined(TRUE_PBR)
-		charLightColor = Color::GammaToLinear(charLightColor).x / Color::LightPreMult;
-#		elif defined(SKIN) && defined(PBR_SKIN)
-		if (SharedData::skinData.skinParams.w > 0) {
-			charLightColor = Color::GammaToLinear(charLightColor).x / Color::LightPreMult;
-		}
-#		endif
 		diffuseColor += (charLightMul * charLightColor).xxx;
 	}
 #	endif
@@ -2411,13 +2404,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif
 
 	float3 directionalAmbientColor = mul(DirectionalAmbient, modelNormal);
-#	if defined(TRUE_PBR)
-	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
-#	elif defined(SKIN) && defined(PBR_SKIN)
-	if (SharedData::skinData.skinParams.w > 0) {
-		directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
-	}
-#	endif
 
 	float3 reflectionDiffuseColor = diffuseColor + directionalAmbientColor;
 
@@ -2425,21 +2411,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(worldSpaceNormal.xy, worldSpaceNormal.z * 0.5 + 0.5))) / Math::PI;
 	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition.xyz));
 	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
-#		if !defined(TRUE_PBR) && !(defined(SKIN) && defined(PBR_SKIN))
-	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
-#		elif defined(SKIN) && defined(PBR_SKIN)
-	if (SharedData::skinData.skinParams.w == 0) {
-		directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor) / Color::LightPreMult;
-	}
-#		endif
+	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
 	directionalAmbientColor *= skylightingDiffuse;
-#		if !defined(TRUE_PBR) && !(defined(SKIN) && defined(PBR_SKIN))
-	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor * Color::LightPreMult);
-#		elif defined(SKIN) && defined(PBR_SKIN)
-	if (SharedData::skinData.skinParams.w == 0) {
-		directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor * Color::LightPreMult);
-	}
-#		endif
+	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
 #	endif
 
 #	if defined(TRUE_PBR) && defined(LOD_LAND_BLEND) && !defined(DEFERRED)
@@ -2500,7 +2474,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				float4 envColorBase = TexEnvSampler.SampleLevel(SampEnvSampler, float3(1.0, 0.0, 0.0), 15);
 
 				if (envColorBase.a < 1.0) {
-					F0 = (Color::GammaToLinear(envColorBase.rgb) + Color::GammaToLinear(baseColor.rgb));
+					F0 = envColorBase.rgb + baseColor.rgb;
 					envRoughness = envColorBase.a;
 				} else {
 					F0 = 1.0;
@@ -2509,7 +2483,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #			if defined(CREATOR)
 				if (SharedData::cubemapCreatorSettings.Enabled) {
-					F0 = (Color::GammaToLinear(SharedData::cubemapCreatorSettings.CubemapColor.rgb) + Color::GammaToLinear(baseColor.xyz));
+					F0 = SharedData::cubemapCreatorSettings.CubemapColor.rgb + baseColor.xyz;
 					envRoughness = SharedData::cubemapCreatorSettings.CubemapColor.a;
 				}
 #			endif
@@ -2517,7 +2491,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			if defined(EMAT)
 				float complexMaterialRoughness = 1.0 - complexMaterialColor.y;
 				envRoughness = lerp(envRoughness, complexMaterialRoughness * complexMaterialRoughness, complexMaterial);
-				F0 = lerp(F0, Color::GammaToLinear(complexSpecular), complexMaterial);
+				F0 = lerp(F0, complexSpecular, complexMaterial);
 #			endif
 
 				if (any(F0 > 0.0))
@@ -2710,7 +2684,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			else
 		diffuseColor = 1.0;
 #			endif
-		specularColor = Color::GammaToLinear(specularColor);
 	}
 #		endif
 
@@ -2725,35 +2698,24 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		else
 	specularColor += envColor * diffuseColor;
 #		endif
-#		if defined(DYNAMIC_CUBEMAPS)
-	if (dynamicCubemap)
-		specularColor = Color::LinearToGamma(specularColor);
-#		endif
 #	endif
 
 #	if defined(EMAT_ENVMAP)
 	specularColor *= complexSpecular;
 #	endif  // defined (EMAT) && defined(ENVMAP)
 
-#	if !defined(TRUE_PBR) && !(defined(SKIN) && defined(PBR_SKIN))
-#		if !defined(DEFERRED)
-	color.xyz += specularColor;
-#		endif
-	color.xyz = Color::GammaToLinear(color.xyz);
-#	endif
-
 #	if defined(WETNESS_EFFECTS) && !defined(TRUE_PBR) && !(defined(SKIN) && defined(PBR_SKIN))
-	color.xyz += wetnessSpecular * wetnessGlossinessSpecular;
+	specularColor += wetnessSpecular * wetnessGlossinessSpecular;
 #	endif
 
 #	if defined(TRUE_PBR) && !defined(DEFERRED)
-	color.xyz += specularColorPBR;
+	specularColor += specularColorPBR;
 #	endif
 
 #	if defined(SKIN) && defined(PBR_SKIN)
 	if (SharedData::skinData.skinParams.w > 0) {
 #		if !defined(DEFERRED)
-		color.xyz += specularColorPBR;
+		specularColor += specularColorPBR;
 #		endif
 	}
 	else {
@@ -2764,7 +2726,23 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 #	endif
 
-	color.xyz = Color::LinearToGamma(color.xyz);
+#	if defined(SKIN) && defined(PBR_SKIN)
+	if (SharedData::skinData.skinParams.w > 0) {
+#		if !defined(DEFERRED)
+		specularColor += specularColorPBR;
+#		endif
+	}
+	else {
+#		if defined(DEFERRED)
+		specularColor += specularColor;
+#		endif
+		specularColor = Color::GammaToLinear(color.xyz);
+	}
+#	endif
+
+#	if !defined(DEFERRED)
+	color.xyz += specularColor;
+#	endif
 
 #	if defined(LOD_LAND_BLEND) && defined(TRUE_PBR)
 	{
@@ -2775,7 +2753,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #		if defined(DEFERRED)
 		specularColorPBR = lerp(specularColorPBR, 0, lodLandBlendFactor);
-		indirectDiffuseLobeWeight = lerp(indirectDiffuseLobeWeight, Color::GammaToLinear(input.Color.xyz * lodLandColor * lodLandFadeFactor) / Color::AlbedoPreMult, lodLandBlendFactor);
+		indirectDiffuseLobeWeight = lerp(indirectDiffuseLobeWeight, input.Color.xyz * lodLandColor * lodLandFadeFactor, lodLandBlendFactor);
 		indirectSpecularLobeWeight = lerp(indirectSpecularLobeWeight, 0, lodLandBlendFactor);
 		pbrGlossiness = lerp(pbrGlossiness, 0, lodLandBlendFactor);
 #		endif
@@ -2920,20 +2898,20 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 outputSpecular = specularColor.xyz;
 #		if defined(TRUE_PBR)
-	outputSpecular = Color::LinearToGamma(specularColorPBR.xyz);
+	outputSpecular = specularColorPBR.xyz;
 #		elif defined(SKIN) && defined(PBR_SKIN)
 	if (SharedData::skinData.skinParams.w > 0) {
-		outputSpecular = Color::LinearToGamma(specularColorPBR.xyz);
+		outputSpecular = specularColorPBR.xyz;
 	}
 #		endif
 	psout.Specular = float4(outputSpecular, psout.Diffuse.w);
 
 	float3 outputAlbedo = baseColor.xyz * vertexColor;
 #		if defined(TRUE_PBR)
-	outputAlbedo = Color::LinearToGamma(indirectDiffuseLobeWeight * Color::AlbedoPreMult);
+	outputAlbedo = indirectDiffuseLobeWeight;
 #		elif defined(SKIN) && defined(PBR_SKIN)
 	if (SharedData::skinData.skinParams.w > 0) {
-		outputAlbedo = Color::LinearToGamma(indirectDiffuseLobeWeight * Color::AlbedoPreMult);
+		outputAlbedo = indirectDiffuseLobeWeight;
 	}
 #		endif
 	psout.Albedo = float4(outputAlbedo, psout.Diffuse.w);
@@ -2976,6 +2954,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		else
 	psout.Reflectance = float4(0.0.xxx, psout.Diffuse.w);
 	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), outGlossiness, psout.Diffuse.w);
+#		endif
+
+#		if defined(TERRAIN_BLENDING)
+	psout.NormalGlossiness.w = 1;
 #		endif
 
 	psout.Parameters.w = psout.Diffuse.w;

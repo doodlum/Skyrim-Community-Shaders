@@ -64,12 +64,11 @@ namespace DynamicCubemaps
 
 #		if defined(SKYLIGHTING)
 		if (SharedData::InInterior) {
-			float3 specularIrradiance = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level).xyz;
-			specularIrradiance = Color::GammaToLinear(specularIrradiance);
+			float3 specularIrradiance = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level);
 
 			finalIrradiance += specularIrradiance;
 
-			return horizon * (1 + F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1)) * finalIrradiance;
+			return horizon * (F0 * specularBRDF.x + specularBRDF.y) * finalIrradiance;
 		}
 
 		sh2 specularLobe = SphericalHarmonics::FauxSpecularLobe(N, -V, roughness);
@@ -79,22 +78,17 @@ namespace DynamicCubemaps
 
 		float3 specularIrradiance = 1;
 
-		if (skylightingSpecular < 1.0) {
-			specularIrradiance = EnvTexture.SampleLevel(SampColorSampler, R, level).xyz;
-			specularIrradiance = Color::GammaToLinear(specularIrradiance);
-		}
+		if (skylightingSpecular < 1.0)
+			specularIrradiance = Color::GammaToLinear(EnvTexture.SampleLevel(SampColorSampler, R, level));
 
 		float3 specularIrradianceReflections = 1.0;
 
-		if (skylightingSpecular > 0.0) {
-			specularIrradianceReflections = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level).xyz;
-			specularIrradianceReflections = Color::GammaToLinear(specularIrradianceReflections);
-		}
+		if (skylightingSpecular > 0.0)
+			specularIrradianceReflections = Color::GammaToLinear(EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level));
 
-		finalIrradiance = finalIrradiance * skylightingSpecular + lerp(specularIrradiance, specularIrradianceReflections, skylightingSpecular);
+		finalIrradiance = Color::LinearToGamma(lerp(specularIrradiance, specularIrradianceReflections, skylightingSpecular));
 #		else
-		float3 specularIrradiance = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level).xyz;
-		specularIrradiance = Color::GammaToLinear(specularIrradiance);
+		float3 specularIrradiance = EnvReflectionsTexture.SampleLevel(SampColorSampler, R, level);
 
 		finalIrradiance += specularIrradiance;
 #		endif
