@@ -137,7 +137,7 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 
 		if (skylightingSpecular > 0.0)
 			specularIrradianceReflections = EnvReflectionsTexture.SampleLevel(LinearSampler, R, level);
-		
+
 		finalIrradiance = finalIrradiance * skylightingSpecular + lerp(specularIrradiance, specularIrradianceReflections, skylightingSpecular);
 #	else
 		float3 specularIrradianceReflections = EnvReflectionsTexture.SampleLevel(LinearSampler, R, level);
