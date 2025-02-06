@@ -1394,7 +1394,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if defined(SKIN) && defined(PBR_SKIN)
 	if (SharedData::skinData.skinParams.w > 0.0f) {
-		baseColor.xyz = Color::GammaToLinear(baseColor.xyz) / Color::AlbedoPreMult;
+		baseColor.xyz = Color::GammaToLinear(baseColor.xyz) / Color::AlbedoDiffusePower;
 		}
 #	endif  // PBR_SKIN
 
@@ -2066,7 +2066,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #		if defined(WETNESS_EFFECTS)
 		if (waterRoughnessSpecular < 1.0)
-			wetnessSpecular += WetnessEffects::GetWetnessSpecular(wetnessNormal, normalizedDirLightDirectionWS, worldSpaceViewDirection, Color::GammaToLinear(dirLightColor * dirDetailShadow) / Color::LightPreMult, waterRoughnessSpecular);
+			wetnessSpecular += WetnessEffects::GetWetnessSpecular(wetnessNormal, normalizedDirLightDirectionWS, worldSpaceViewDirection, dirLightColor * dirDetailShadow, waterRoughnessSpecular);
 #		endif
 	}
 #	else
