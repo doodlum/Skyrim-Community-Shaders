@@ -1394,7 +1394,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if defined(SKIN) && defined(PBR_SKIN)
 	if (SharedData::skinData.skinParams.w > 0.0f) {
-		baseColor.xyz = Color::GammaToLinear(baseColor.xyz) / Color::AlbedoDiffusePower;
+		baseColor.xyz = baseColor.xyz * Math::PI;
 		}
 #	endif  // PBR_SKIN
 
