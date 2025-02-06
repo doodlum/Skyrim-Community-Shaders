@@ -32,7 +32,7 @@ void Widget::Save()
 	logger::info("Saving settings file: {}", file);
 
 	try {
-		settingsFile << j.dump(1);
+		settingsFile << js.dump(1);
 
 		settingsFile.close();
 	} catch (const nlohmann::json::parse_error& e) {
@@ -58,7 +58,7 @@ void Widget::Load()
 	}
 
 	try {
-		j << settingsFile;
+		js << settingsFile;
 		settingsFile.close();
 	} catch (const nlohmann::json::parse_error& e) {
 		logger::warn("Error parsing settings for file ({}) : {}\n", filePath, e.what());

@@ -1,6 +1,7 @@
 #include "EditorWindow.h"
 
 #include "State.h"
+#include "features/Weather.h"
 
 bool ContainsStringIgnoreCase(const std::string_view a_string, const std::string_view a_substring)
 {
@@ -188,17 +189,145 @@ void EditorWindow::ShowWidgetWindow()
 	}
 }
 
+void EditorWindow::ShowPreviewWindow()
+{
+	auto sky = RE::Sky::GetSingleton();
+	ImGui::Begin("Preview Weathers");
+
+	if (ImGui::BeginCombo("New Weather", weatherName1.c_str())) {
+		for (int i = 0; i < weatherWidgets.size(); i++) {
+			auto& widget = weatherWidgets[i];
+
+			if (preview != nullptr && widget->GetEditorID() == preview->GetEditorID()) {
+				widget->SetOpen(false);
+			}
+
+			// Option for each widget
+			if (ImGui::Selectable(widget->GetEditorID().c_str())) {
+				preview = (WeatherWidget*)widget;
+
+				weatherName1 = widget->GetEditorID();
+				widget->SetOpen();
+				lerpValue = 0;
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	if (ImGui::BeginCombo("Old Weather", weatherName2.c_str())) {
+		for (int i = 0; i < weatherWidgets.size(); i++) {
+			auto& widget = weatherWidgets[i];
+
+			if (previewWeather2 != nullptr && widget->GetEditorID() == previewWeather2->GetEditorID()) {
+				widget->SetOpen(false);
+			}
+
+			// Option for each widget
+			if (ImGui::Selectable(widget->GetEditorID().c_str())) {
+				previewWeather2 = (WeatherWidget*)widget;
+				weatherName2 = widget->GetEditorID();
+				widget->SetOpen();
+				lerpValue = 0;
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	if (preview != nullptr && previewWeather2 != nullptr) {
+		TESWeather* previewWeather = preview->weather;
+		ImGui::SliderFloat("Lerp weathers", &lerpValue, 0.0f, 1.0f);
+		ImGui::Text(std::format("Settings sun glare = {}", preview->settings.sunGlare).c_str());
+		ImGui::Text(std::format("Sun Glare = {}", previewWeather->data.sunGlare).c_str());
+		ImGui::Text(std::format("Sun Damage = {}", previewWeather->data.sunDamage).c_str());
+		Weather::GetSingleton()->LerpWeather(previewWeather2->weather, previewWeather, lerpValue);
+
+		ImGui::Text(std::format("Trans Delta = {}", previewWeather->data.transDelta).c_str());
+
+		ImGui::Text(std::format("Settings sun glare = {}", preview->settings.sunGlare).c_str());
+		ImGui::Text(std::format("Sun Glare = {}", previewWeather->data.sunGlare).c_str());
+		ImGui::Text(std::format("Sun Damage = {}", previewWeather->data.sunDamage).c_str());
+
+		ImGui::Text(std::format("Precipitation Begin Fade In = {}", previewWeather->data.precipitationBeginFadeIn).c_str());
+		ImGui::Text(std::format("Precipitation End Fade Out = {}", previewWeather->data.precipitationEndFadeOut).c_str());
+
+		ImGui::Text(std::format("Thunder Lightning Begin Fade In = {}", previewWeather->data.thunderLightningBeginFadeIn).c_str());
+		ImGui::Text(std::format("Thunder Lightning End Fade Out = {}", previewWeather->data.thunderLightningEndFadeOut).c_str());
+		ImGui::Text(std::format("Thunder Lightning Frequency = {}", previewWeather->data.thunderLightningFrequency).c_str());
+
+		ImGui::Text(std::format("Visual Effect Begin = {}", previewWeather->data.visualEffectBegin).c_str());
+		ImGui::Text(std::format("Visual Effect End = {}", previewWeather->data.visualEffectEnd).c_str());
+
+		ImGui::Text(std::format("Wind Speed = {}", previewWeather->data.windSpeed).c_str());
+		ImGui::Text(std::format("Wind Direction = {}", previewWeather->data.windDirection).c_str());
+		ImGui::Text(std::format("Wind Direction Range = {}", previewWeather->data.windDirectionRange).c_str());
+
+		std::string lightningColorStr = std::format("[{}, {}, {}]",
+			previewWeather->data.lightningColor.red,
+			previewWeather->data.lightningColor.green,
+			previewWeather->data.lightningColor.blue);
+		ImGui::Text(std::format("Lightning Color = {}", lightningColorStr).c_str());
+
+		for (int i = 0; i < ColorTimes::kTotal; i++) {
+			ImGui::Text(ColorTimeLabel(i).c_str());
+			DisplayDALC("X", &previewWeather->directionalAmbientLightingColors[i].directional.x);
+			DisplayDALC("Y", &previewWeather->directionalAmbientLightingColors[i].directional.y);
+			DisplayDALC("Z", &previewWeather->directionalAmbientLightingColors[i].directional.z);
+		}
+
+		for (int i = 0; i < TESWeather::kTotalLayers; i++) {
+			for (int j = 0; j < ColorTimes::kTotal; j++) {
+				std::string cloudData = std::format("{} = [{}, {}, {}]",
+					ColorTimeLabel(j),
+					previewWeather->cloudColorData[i][j].red,
+					previewWeather->cloudColorData[i][j].green,
+					previewWeather->cloudColorData[i][j].blue);
+				ImGui::Text(std::format("Layer {} \n Cloud Color = {}", i, cloudData).c_str());
+			}
+		}
+
+		ImGui::Text(std::format("Fog Day Near = {}", previewWeather->fogData.dayNear).c_str());
+		ImGui::Text(std::format("Fog Day Far = {}", previewWeather->fogData.dayFar).c_str());
+		ImGui::Text(std::format("Fog Day Max = {}", previewWeather->fogData.dayMax).c_str());
+		ImGui::Text(std::format("Fog Day Power = {}", previewWeather->fogData.dayPower).c_str());
+
+		ImGui::Text(std::format("Fog Night Near = {}", previewWeather->fogData.nightNear).c_str());
+		ImGui::Text(std::format("Fog Night Far = {}", previewWeather->fogData.nightFar).c_str());
+		ImGui::Text(std::format("Fog Night Max = {}", previewWeather->fogData.nightMax).c_str());
+		ImGui::Text(std::format("Fog Night Power = {}", previewWeather->fogData.nightPower).c_str());
+
+		sky->lastWeather = previewWeather2->weather;
+		sky->currentWeather = previewWeather;
+		sky->currentWeatherPct = lerpValue;
+	}
+
+	ImGui::End();
+}
+
+void EditorWindow::DisplayDALC(std::string label, RE::BGSDirectionalAmbientLightingColors::Directional::MaxMin<RE::Color>* dalc)
+{
+	std::string dalcStr = std::format("\tMax = [{}, {}, {}]\n\tMin = [{}, {}, {}]",
+		dalc->max.red,
+		dalc->max.green,
+		dalc->max.blue,
+		dalc->min.red,
+		dalc->min.green,
+		dalc->min.blue);
+	ImGui::Text(std::format("DALC {} \n {}", label, dalcStr).c_str());
+}
+
 void EditorWindow::RenderUI()
 {
 	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 	auto& framebuffer = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kFRAMEBUFFER];
 	auto& context = State::GetSingleton()->context;
-
+	auto sky = RE::Sky::GetSingleton();
 	context->ClearRenderTargetView(framebuffer.RTV, (float*)&ImGui::GetStyle().Colors[ImGuiCol_WindowBg]);
 
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("Close")) {
 			open = false;
+			sky->SetWeather(originalWeather, true, true);
+			sky->currentWeatherPct = 100;
 		}
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Save all"))
@@ -228,6 +357,8 @@ void EditorWindow::RenderUI()
 	ShowViewportWindow();
 
 	ShowWidgetWindow();
+
+	ShowPreviewWindow();
 }
 
 void EditorWindow::SetupResources()
@@ -256,6 +387,9 @@ void EditorWindow::SetupResources()
 		widget->Load();
 		lightingTemplateWidgets.push_back(widget);
 	}
+
+	auto sky = RE::Sky::GetSingleton();
+	originalWeather = sky->currentWeather;
 }
 
 void EditorWindow::Draw()

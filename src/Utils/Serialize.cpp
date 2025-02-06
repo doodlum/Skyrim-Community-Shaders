@@ -74,4 +74,31 @@ namespace nlohmann
 			result[2] = section[2];
 		}
 	}
+
+	void to_json(json& j, const RE::TESWeather::FogData& result)
+	{
+		j = {
+			result.dayNear,
+			result.dayFar,
+			result.nightNear,
+			result.nightFar,
+			result.dayPower,
+			result.nightPower,
+			result.dayMax,
+			result.nightMax
+		};
+	}
+
+	void from_json(const json& j, RE::TESWeather::FogData& result)
+	{
+		std::array<float, 8> temp = j;
+		result = { j[0],
+			j[1],
+			j[2],
+			j[3],
+			j[4],
+			j[5],
+			j[6],
+			j[7] };
+	}
 }

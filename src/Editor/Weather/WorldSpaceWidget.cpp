@@ -17,12 +17,12 @@ void WorldSpaceWidget::DrawWidget()
 
 void WorldSpaceWidget::LoadSettings()
 {
-	if (!j.empty()) {
-		settings = j;
+	if (!js.empty()) {
+		settings = js;
 	}
 }
 
 void WorldSpaceWidget::SaveSettings()
 {
-	j = settings;
+	js = settings;
 }

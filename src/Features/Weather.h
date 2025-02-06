@@ -27,5 +27,5 @@ public:
 	virtual void ClearShaderCache() override;
 
 	ID3D11ComputeShader* GetDiffuseIBLCS();
-	void LerpWeather(RE::TESWeather&, RE::TESWeather&, float);
+	void LerpWeather(RE::TESWeather*, RE::TESWeather*, float);
 };
