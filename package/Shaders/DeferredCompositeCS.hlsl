@@ -88,11 +88,9 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 		MotionVectorsRW[dispatchID.xy] = MotionBlur::GetSSMotionVector(positionWS, positionWS, eyeIndex);  // Apply sky motion vectors
 	}
 
-	float pbrWeight = masks2.z;
-
 	float glossiness = normalGlossiness.z;
 
-	float3 color = lerp(diffuseColor + specularColor, Color::LinearToGamma(Color::GammaToLinear(diffuseColor) + Color::GammaToLinear(specularColor)), pbrWeight);
+	float3 color = diffuseColor + specularColor;
 
 #if defined(DYNAMIC_CUBEMAPS)
 
