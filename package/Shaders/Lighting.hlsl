@@ -2533,9 +2533,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 
 	bool gammaEnvMap = true;
-#	if defined(DYNAMIC_CUBEMAPS)
+#		if defined(DYNAMIC_CUBEMAPS)
 	gammaEnvMap = !dynamicCubemap;
-#	endif
+#		endif
 
 	if (gammaEnvMap)
 		specularColor = Color::LinearToGamma(specularColor);
@@ -2747,9 +2747,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	psout.NormalGlossiness.w = 1;
 #		endif
 
-#	if defined(SNOW)
+#		if defined(SNOW)
 	psout.Parameters.w = psout.Diffuse.w;
-#	endif
+#		endif
 
 #		if (defined(ENVMAP) || defined(MULTI_LAYER_PARALLAX) || defined(EYE))
 #			if defined(DYNAMIC_CUBEMAPS)

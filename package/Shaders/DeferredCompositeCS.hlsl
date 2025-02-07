@@ -172,7 +172,7 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 	}
 
 #endif
-	
+
 	color = Color::LinearToGamma(color);
 
 #if defined(DEBUG)
