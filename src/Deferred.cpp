@@ -300,17 +300,18 @@ void Deferred::StartDeferred()
 		forwardRenderTargets[i] = renderTargets[i];
 	}
 
-	RE::RENDER_TARGET targets[7]{
+	RE::RENDER_TARGET targets[8]{
 		RE::RENDER_TARGET::kMAIN,
 		RE::RENDER_TARGET::kMOTION_VECTOR,
 		NORMALROUGHNESS,
 		ALBEDO,
 		SPECULAR,
 		REFLECTANCE,
-		MASKS
+		MASKS,
+		RE::RENDER_TARGET::kNONE
 	};
 
-	for (uint i = 2; i < 7; i++) {
+	for (uint i = 2; i < 8; i++) {
 		renderTargets[i] = targets[i];                                             // We must use unused targets to be indexable
 		setRenderTargetMode[i] = RE::BSGraphics::SetRenderTargetMode::SRTM_CLEAR;  // Dirty from last frame, this calls ClearRenderTargetView once
 	}
