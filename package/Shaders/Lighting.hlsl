@@ -2505,7 +2505,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 #	endif  // MULTI_LAYER_PARALLAX
 
-
 #	if defined(SPECULAR)
 #		if defined(EMAT_ENVMAP)
 	specularColor = (specularColor * glossiness * MaterialData.yyy) * lerp(SpecularColor.xyz, complexSpecular, complexMaterial);
