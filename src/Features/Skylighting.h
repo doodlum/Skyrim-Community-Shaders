@@ -35,7 +35,7 @@ struct Skylighting : Feature
 	{
 		float MaxZenith = 3.1415926f / 4.f;  // 45 deg
 		float MinDiffuseVisibility = 0.1f;
-		float MinSpecularVisibility = 0.01f;
+		float MinSpecularVisibility = 0.1f;
 		float SSGIAmbientDimmer = 1.0f;
 	} settings;
 
