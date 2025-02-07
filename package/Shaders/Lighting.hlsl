@@ -2503,6 +2503,15 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 #	endif  // MULTI_LAYER_PARALLAX
 
+	bool gammaEnvMap = true;
+	
+#		if defined(EMAT_ENVMAP) && defined(DYNAMIC_CUBEMAPS)
+	gammaEnvMap = !dynamicCubemap;
+#		endif
+
+	if (gammaEnvMap)
+		specularColor = Color::LinearToGamma(specularColor);
+
 #	if defined(SPECULAR)
 #		if defined(EMAT_ENVMAP)
 	specularColor = (specularColor * glossiness * MaterialData.yyy) * lerp(SpecularColor.xyz, complexSpecular, complexMaterial);
@@ -2531,13 +2540,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 #		endif
 
-	bool gammaEnvMap = true;
-#		if defined(DYNAMIC_CUBEMAPS)
-	gammaEnvMap = !dynamicCubemap;
-#		endif
-
-	if (gammaEnvMap)
-		specularColor = Color::LinearToGamma(specularColor);
 
 #		if defined(EMAT_ENVMAP)
 #			if defined(DYNAMIC_CUBEMAPS)
