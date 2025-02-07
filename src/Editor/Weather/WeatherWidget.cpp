@@ -137,6 +137,11 @@ void WeatherWidget::DrawWidget()
 
 		DrawSeparator();
 
+		DrawFogSettings();
+
+		DrawSeparator();
+
+
 		ImGui::Checkbox("Inherit From Parent##transDelta", &settings.inheritTransDeltaSettings);
 		ImGui::SameLine();
 		ImGui::Spacing();
@@ -472,14 +477,14 @@ void WeatherWidget::DrawFogSettings()
 			settings.fog = GetParent()->settings.fog;
 		} else {
 			settings.inheritFogSettings = false;
-			ImGui::SliderFloat("Day Near", &settings.fog.dayNear, -128, 255);
-			ImGui::SliderFloat("Day Far", &settings.fog.dayNear, -128, 255);
-			ImGui::SliderFloat("Night Near", &settings.fog.dayNear, -128, 255);
-			ImGui::SliderFloat("Night far", &settings.fog.dayNear, -128, 255);
-			ImGui::SliderFloat("Day Power", &settings.fog.dayNear, -128, 255);
-			ImGui::SliderFloat("Night Power", &settings.fog.dayNear, -128, 255);
-			ImGui::SliderFloat("Day Max", &settings.fog.dayNear, -128, 255);
-			ImGui::SliderFloat("Night Max", &settings.fog.dayNear, -128, 255);
+			ImGui::SliderFloat("Day Near", &settings.fog.dayNear, 0, 500000);
+			ImGui::SliderFloat("Day Far", &settings.fog.dayFar, 0, 500000);
+			ImGui::SliderFloat("Night Near", &settings.fog.nightNear, 0, 500000);
+			ImGui::SliderFloat("Night far", &settings.fog.nightFar, 0, 500000);
+			ImGui::SliderFloat("Day Power", &settings.fog.dayPower, 0, 500000);
+			ImGui::SliderFloat("Night Power", &settings.fog.nightPower, 0, 500000);
+			ImGui::SliderFloat("Day Max", &settings.fog.dayMax, 0, 500000);
+			ImGui::SliderFloat("Night Max", &settings.fog.nightMax, 0, 500000);
 		}
 	}
 }

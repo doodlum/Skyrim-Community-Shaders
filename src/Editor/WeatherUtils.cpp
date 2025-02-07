@@ -9,11 +9,11 @@ float Uint8ToFloat(const uint8_t& value){
 }
 
 int8_t FloatToInt8(const float& value){
-	return (int8_t)std::clamp((int)value * 127, -128, 127);
+	return (int8_t)std::lerp(-128, 127, value);
 }
 
 uint8_t FloatToUint8(const float& value){
-	return (uint8_t)std::clamp((int)value * 255, 0, 255);
+	return (uint8_t)std::lerp(0, 255, value);
 }
 
 void Float3ToColor(const float3& f3, RE::Color& color)

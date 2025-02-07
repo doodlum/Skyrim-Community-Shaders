@@ -54,7 +54,7 @@ public:
 
 		int windSpeed;  // underlying type uint8_t
 
-		// underlying type int8_t
+		//// underlying type int8_t
 		int transDelta;
 		int sunGlare;
 		int sunDamage;

@@ -15,21 +15,21 @@ uint8_t LerpUint8_t(const uint8_t oldValue, const uint8_t newVal, const float le
 	return (uint8_t)std::clamp(lerpedValue, 0, 255);
 }
 
-void LerpColor(RE::TESWeather::Data::Color3 oldColor, RE::TESWeather::Data::Color3& newColor, const float changePct)
+void LerpColor(const RE::TESWeather::Data::Color3& oldColor, RE::TESWeather::Data::Color3& newColor, const float changePct)
 {
-	newColor.red = LerpInt8_t(oldColor.red, newColor.red, changePct);
-	newColor.green = LerpInt8_t(oldColor.green, newColor.green, changePct);
+	newColor.red = (int8_t)std::lerp(-128, 127, changePct);//LerpInt8_t(oldColor.red, newColor.red, changePct)
+	newColor.green = (int8_t)std::lerp(oldColor.green, newColor.green, changePct);
 	newColor.blue = LerpInt8_t(oldColor.blue, newColor.blue, changePct);
 }
 
-void LerpColor(RE::Color oldColor, RE::Color& newColor, const float changePct)
+void LerpColor(const RE::Color& oldColor, RE::Color& newColor, const float changePct)
 {
 	newColor.red = LerpUint8_t(oldColor.red, newColor.red, changePct);
 	newColor.green = LerpUint8_t(oldColor.green, newColor.green, changePct);
 	newColor.blue = LerpUint8_t(oldColor.blue, newColor.blue, changePct);
 }
 
-void LerpDirectional(RE::BGSDirectionalAmbientLightingColors::Directional oldColor, RE::BGSDirectionalAmbientLightingColors::Directional& newColor, const float changePct)
+void LerpDirectional(RE::BGSDirectionalAmbientLightingColors::Directional& oldColor, RE::BGSDirectionalAmbientLightingColors::Directional& newColor, const float changePct)
 {
 	LerpColor(oldColor.x.max, newColor.x.max, changePct);
 	LerpColor(oldColor.x.min, newColor.x.min, changePct);

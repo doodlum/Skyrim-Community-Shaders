@@ -194,7 +194,7 @@ void EditorWindow::RenderUI()
 	auto renderer = RE::BSGraphics::Renderer::GetSingleton();
 	auto& framebuffer = renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kFRAMEBUFFER];
 	auto& context = State::GetSingleton()->context;
-	
+
 	context->ClearRenderTargetView(framebuffer.RTV, (float*)&ImGui::GetStyle().Colors[ImGuiCol_WindowBg]);
 
 	if (ImGui::BeginMainMenuBar()) {
