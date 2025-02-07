@@ -1374,7 +1374,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(EMAT_ENVMAP)
 	complexMaterial = complexMaterial && complexMaterialColor.y > (4.0 / 255.0) && (complexMaterialColor.y < (1.0 - (4.0 / 255.0)));
 	shininess = lerp(shininess, shininess * complexMaterialColor.y, complexMaterial);
-	float3 complexSpecular = lerp(1.0, lerp(1.0, baseColor.xyz, complexMaterialColor.z), complexMaterial);
+	float3 complexSpecular = lerp(1.0, lerp(1.0, Color::GammaToLinear(baseColor.xyz), complexMaterialColor.z), complexMaterial);
 	baseColor.xyz = lerp(baseColor.xyz, lerp(baseColor.xyz, 0.0, complexMaterialColor.z), complexMaterial);
 #	endif  // defined (EMAT) && defined(ENVMAP)
 
@@ -2357,7 +2357,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				float4 envColorBase = TexEnvSampler.SampleLevel(SampEnvSampler, float3(1.0, 0.0, 0.0), 15);
 
 				if (envColorBase.a < 1.0) {
-					F0 = envColorBase.rgb;
+					F0 = Color::GammaToLinear(envColorBase.rgb);
 					envRoughness = envColorBase.a;
 				} else {
 					F0 = 1.0;
@@ -2373,9 +2373,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #			if defined(EMAT)
 				float complexMaterialRoughness = 1.0 - complexMaterialColor.y;
-				envRoughness = lerp(envRoughness, pow(complexMaterialRoughness, 1.5), complexMaterial);
+				envRoughness = lerp(envRoughness, complexMaterialRoughness * complexMaterialRoughness, complexMaterial);
 				F0 = lerp(F0, complexSpecular, complexMaterial);
-				F0 = Color::GammaToLinear(F0);
 #			endif
 
 				if (any(F0 > 0.0))
