@@ -101,8 +101,6 @@ void Deferred::SetupResources()
 		SetupRenderTarget(NORMALROUGHNESS, texDesc, srvDesc, rtvDesc, uavDesc, DXGI_FORMAT_R10G10B10A2_UNORM, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
 		// Masks
 		SetupRenderTarget(MASKS, texDesc, srvDesc, rtvDesc, uavDesc, DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
-		// Additional Masks
-		SetupRenderTarget(MASKS2, texDesc, srvDesc, rtvDesc, uavDesc, DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
 	}
 
 	{
@@ -302,18 +300,17 @@ void Deferred::StartDeferred()
 		forwardRenderTargets[i] = renderTargets[i];
 	}
 
-	RE::RENDER_TARGET targets[8]{
+	RE::RENDER_TARGET targets[7]{
 		RE::RENDER_TARGET::kMAIN,
 		RE::RENDER_TARGET::kMOTION_VECTOR,
 		NORMALROUGHNESS,
 		ALBEDO,
 		SPECULAR,
 		REFLECTANCE,
-		MASKS,
-		MASKS2
+		MASKS
 	};
 
-	for (uint i = 2; i < 8; i++) {
+	for (uint i = 2; i < 7; i++) {
 		renderTargets[i] = targets[i];                                             // We must use unused targets to be indexable
 		setRenderTargetMode[i] = RE::BSGraphics::SetRenderTargetMode::SRTM_CLEAR;  // Dirty from last frame, this calls ClearRenderTargetView once
 	}
@@ -376,7 +373,6 @@ void Deferred::DeferredPasses()
 	auto albedo = renderer->GetRuntimeData().renderTargets[ALBEDO];
 	auto normalRoughness = renderer->GetRuntimeData().renderTargets[NORMALROUGHNESS];
 	auto masks = renderer->GetRuntimeData().renderTargets[MASKS];
-	auto masks2 = renderer->GetRuntimeData().renderTargets[MASKS2];
 
 	auto main = renderer->GetRuntimeData().renderTargets[forwardRenderTargets[0]];
 	auto normals = renderer->GetRuntimeData().renderTargets[forwardRenderTargets[2]];
@@ -404,13 +400,12 @@ void Deferred::DeferredPasses()
 		{
 			TracyD3D11Zone(globals::state->tracyCtx, "Ambient Composite");
 
-			ID3D11ShaderResourceView* srvs[9]{
+			ID3D11ShaderResourceView* srvs[8]{
 				albedo.SRV,
 				normalRoughness.SRV,
 				skylighting->loaded || REL::Module::IsVR() ? depth.depthSRV : nullptr,
 				skylighting->loaded ? skylighting->texProbeArray->srv.get() : nullptr,
 				skylighting->loaded ? skylighting->stbn_vec3_2Dx1D_128x128x64.get() : nullptr,
-				masks2.SRV,
 				ssgi_ao,
 				ssgi_y,
 				ssgi_cocg,
@@ -429,7 +424,7 @@ void Deferred::DeferredPasses()
 
 		// Clear
 		{
-			ID3D11ShaderResourceView* views[6]{ nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+			ID3D11ShaderResourceView* views[8]{ nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 			context->CSSetShaderResources(0, ARRAYSIZE(views), views);
 
 			ID3D11UnorderedAccessView* uavs[2]{ nullptr, nullptr };
@@ -453,12 +448,11 @@ void Deferred::DeferredPasses()
 	{
 		TracyD3D11Zone(globals::state->tracyCtx, "Deferred Composite");
 
-		ID3D11ShaderResourceView* srvs[15]{
+		ID3D11ShaderResourceView* srvs[14]{
 			specular.SRV,
 			albedo.SRV,
 			normalRoughness.SRV,
 			masks.SRV,
-			masks2.SRV,
 			dynamicCubemaps->loaded || REL::Module::IsVR() ? (terrainBlending->loaded ? terrainBlending->blendedDepthTexture16->srv.get() : depth.depthSRV) : nullptr,
 			dynamicCubemaps->loaded ? reflectance.SRV : nullptr,
 			dynamicCubemaps->loaded ? dynamicCubemaps->envTexture->srv.get() : nullptr,
@@ -487,7 +481,7 @@ void Deferred::DeferredPasses()
 
 	// Clear
 	{
-		ID3D11ShaderResourceView* views[10]{ nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+		ID3D11ShaderResourceView* views[14]{ nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 		context->CSSetShaderResources(0, ARRAYSIZE(views), views);
 
 		ID3D11UnorderedAccessView* uavs[3]{ nullptr, nullptr, nullptr };
