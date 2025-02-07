@@ -2456,13 +2456,15 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	color.xyz += indirectDiffuseLobeWeight * directionalAmbientColor;
 #		endif
 
-#		if !defined(DYNAMIC_CUBEMAPS)
-	specularColorPBR += indirectSpecularLobeWeight * directionalAmbientColor;
-#		endif
-
 #		if !defined(DEFERRED)
 #			if defined(DYNAMIC_CUBEMAPS)
-	specularColorPBR += indirectSpecularLobeWeight * DynamicCubemaps::GetDynamicCubemapSpecularIrradiance(screenUV, worldSpaceNormal, worldSpaceVertexNormal, worldSpaceViewDirection, pbrSurfaceProperties.Roughness, viewPosition.z);
+#				if defined(SKYLIGHTING)
+	specularColorPBR += indirectSpecularLobeWeight * DynamicCubemaps::GetDynamicCubemapSpecularIrradiance(screenUV, worldSpaceNormal, worldSpaceVertexNormal, worldSpaceViewDirection, pbrSurfaceProperties.Roughness, skylightingSH);
+#				else
+	specularColorPBR += indirectSpecularLobeWeight * DynamicCubemaps::GetDynamicCubemapSpecularIrradiance(screenUV, worldSpaceNormal, worldSpaceVertexNormal, worldSpaceViewDirection, pbrSurfaceProperties.Roughness);
+#				endif
+#			else
+	specularColorPBR += indirectSpecularLobeWeight * directionalAmbientColor;
 #			endif
 #		else
 	indirectDiffuseLobeWeight *= vertexColor;
@@ -2503,14 +2505,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 #	endif  // MULTI_LAYER_PARALLAX
 
-	bool gammaEnvMap = true;
-	
-#		if defined(EMAT_ENVMAP) && defined(DYNAMIC_CUBEMAPS)
-	gammaEnvMap = !dynamicCubemap;
-#		endif
-
-	if (gammaEnvMap)
-		specularColor = Color::LinearToGamma(specularColor);
 
 #	if defined(SPECULAR)
 #		if defined(EMAT_ENVMAP)
@@ -2540,7 +2534,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 #		endif
 
-
 #		if defined(EMAT_ENVMAP)
 #			if defined(DYNAMIC_CUBEMAPS)
 	envColor *= lerp(complexSpecular, 1.0, dynamicCubemap);
@@ -2552,24 +2545,18 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		else
 	specularColor += envColor * diffuseColor;
 #		endif
-	if (gammaEnvMap)
-		specularColor = Color::GammaToLinear(specularColor);
 #	endif
 
 #	if defined(EMAT_ENVMAP)
 	specularColor *= complexSpecular;
 #	endif  // defined (EMAT) && defined(ENVMAP)
 
+#	if !defined(TRUE_PBR)
+	specularColor = Color::GammaToLinear(specularColor);
+#	endif
+
 #	if defined(WETNESS_EFFECTS) && !defined(TRUE_PBR)
 	specularColor += wetnessSpecular * wetnessGlossinessSpecular;
-#	endif
-
-#	if defined(TRUE_PBR)
-	specularColor += specularColorPBR;
-#	endif
-
-#	if !defined(DEFERRED)
-	color.xyz = Color::LinearToGamma(Color::GammaToLinear(color.xyz) + specularColor);
 #	endif
 
 #	if defined(LOD_LAND_BLEND) && defined(TRUE_PBR)
@@ -2588,7 +2575,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 #	endif  // defined(LOD_LAND_BLEND) && defined(TRUE_PBR)
 
+#	if defined(TRUE_PBR)
+	specularColor += specularColorPBR;
+#	endif
+
 #	if !defined(DEFERRED)
+	color.xyz = Color::LinearToGamma(Color::GammaToLinear(color.xyz) + specularColor);
 	if (FrameBuffer::FrameParams.y && FrameBuffer::FrameParams.z)
 		color.xyz = lerp(color.xyz, input.FogParam.xyz, input.FogParam.w);
 #	endif
