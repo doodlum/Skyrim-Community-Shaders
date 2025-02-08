@@ -2526,7 +2526,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		if defined(DYNAMIC_CUBEMAPS)
 	if (!dynamicCubemap)
 #		endif
-	specularColor += envColor * diffuseColor;
+		specularColor += envColor * diffuseColor;
 #	endif
 
 #	if defined(EMAT_ENVMAP)
