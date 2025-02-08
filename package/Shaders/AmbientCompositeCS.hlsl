@@ -106,6 +106,8 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 	visibility *= ssgiAo;
 #	if defined(INTERIOR)
 	linDiffuseColor *= ssgiAo;
+#	else
+	linDiffuseColor *= lerp(ssgiAo, 1.0, 0.5);
 #	endif
 
 	float clampedLinAlbedo = min(linAlbedo, 0.5);
