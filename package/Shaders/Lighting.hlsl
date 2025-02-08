@@ -1374,7 +1374,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(EMAT_ENVMAP)
 	complexMaterial = complexMaterial && complexMaterialColor.y > (4.0 / 255.0) && (complexMaterialColor.y < (1.0 - (4.0 / 255.0)));
 	shininess = lerp(shininess, shininess * complexMaterialColor.y, complexMaterial);
-	float3 complexSpecular = lerp(1.0, lerp(1.0, Color::GammaToLinear(baseColor.xyz), complexMaterialColor.z), complexMaterial);
+	float3 complexSpecular = lerp(1.0, lerp(1.0, baseColor.xyz, complexMaterialColor.z), complexMaterial);
 	baseColor.xyz = lerp(baseColor.xyz, lerp(baseColor.xyz, 0.0, complexMaterialColor.z), complexMaterial);
 #	endif  // defined (EMAT) && defined(ENVMAP)
 
@@ -2373,8 +2373,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #			if defined(EMAT)
 				float complexMaterialRoughness = 1.0 - complexMaterialColor.y;
-				envRoughness = lerp(envRoughness, complexMaterialRoughness * complexMaterialRoughness, complexMaterial);
-				F0 = lerp(F0, complexSpecular, complexMaterial);
+				envRoughness = lerp(envRoughness, pow(complexMaterialRoughness, 1.5), complexMaterial);
+				F0 = lerp(F0, Color::GammaToLinear(complexSpecular), complexMaterial);
 #			endif
 
 				if (any(F0 > 0.0))
@@ -2505,7 +2505,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 #	endif  // MULTI_LAYER_PARALLAX
 
-
 #	if defined(SPECULAR)
 #		if defined(EMAT_ENVMAP)
 	specularColor = (specularColor * glossiness * MaterialData.yyy) * lerp(SpecularColor.xyz, complexSpecular, complexMaterial);
@@ -2525,26 +2524,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if (defined(ENVMAP) || defined(MULTI_LAYER_PARALLAX) || defined(EYE))
 #		if defined(DYNAMIC_CUBEMAPS)
-	if (dynamicCubemap) {
-#			if defined(DEFERRED)
-		diffuseColor = 0.0;
-#			else
-		diffuseColor = 1.0;
-#			endif
-	}
+	if (!dynamicCubemap)
 #		endif
-
-#		if defined(EMAT_ENVMAP)
-#			if defined(DYNAMIC_CUBEMAPS)
-	envColor *= lerp(complexSpecular, 1.0, dynamicCubemap);
 	specularColor += envColor * diffuseColor;
-#			else
-	envColor *= complexSpecular;
-	specularColor += envColor * diffuseColor;
-#			endif
-#		else
-	specularColor += envColor * diffuseColor;
-#		endif
 #	endif
 
 #	if defined(EMAT_ENVMAP)
@@ -2553,6 +2535,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if !defined(TRUE_PBR)
 	specularColor = Color::GammaToLinear(specularColor);
+#	endif
+
+#	if !defined(DEFERRED) && defined(DYNAMIC_CUBEMAPS) && (defined(ENVMAP) || defined(MULTI_LAYER_PARALLAX) || defined(EYE))
+	if (dynamicCubemap)
+		specularColor += envColor;
 #	endif
 
 #	if defined(WETNESS_EFFECTS) && !defined(TRUE_PBR)

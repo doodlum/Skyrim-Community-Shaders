@@ -87,7 +87,7 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 
 	float glossiness = normalGlossiness.z;
 
-	float3 color = Color::GammaToLinear(diffuseColor) + Color::GammaToLinear(specularColor);
+	float3 color = Color::GammaToLinear(diffuseColor) + specularColor;
 
 #if defined(DYNAMIC_CUBEMAPS)
 
