@@ -693,6 +693,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	specularColor += lightsSpecularColor;
 	specularColor *= specColor.w * SharedData::grassLightingSettings.SpecularStrength;
+	specularColor = Color::GammaToLinear(specularColor);
 #			endif
 
 #			if defined(LIGHT_LIMIT_FIX) && defined(LLFDEBUG)
