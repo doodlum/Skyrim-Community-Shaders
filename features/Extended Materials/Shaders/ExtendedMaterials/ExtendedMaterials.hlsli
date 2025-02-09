@@ -195,7 +195,7 @@ namespace ExtendedMaterials
 #if defined(LANDSCAPE)
 	float2 GetParallaxCoords(PS_INPUT input, float distance, float2 coords, float mipLevels[6], float3 viewDir, float3x3 tbn, float noise, DisplacementParams params[6], out float pixelOffset, out float weights[6])
 #else
-	float2 GetParallaxCoords(float distance, float2 coords, float mipLevel, float3 viewDir, float3x3 tbn, float noise, Texture2D<float4> tex, SamplerState texSampler, uint channel, DisplacementParams params, bool infinite, out float pixelOffset)
+	float2 GetParallaxCoords(float distance, float2 coords, float mipLevel, float3 viewDir, float3x3 tbn, float noise, Texture2D<float4> tex, SamplerState texSampler, uint channel, DisplacementParams params, out float pixelOffset)
 #endif
 	{
 		float3 viewDirTS = normalize(mul(tbn, viewDir));
@@ -229,11 +229,17 @@ namespace ExtendedMaterials
 		float minHeight = maxHeight * 0.5;
 
 #if defined(LANDSCAPE)
-		if (nearBlendToFar < 1.0) {
+		if (nearBlendToFar < 1.0) 
+		{
 			uint numSteps = uint((max(4, scale * 8) * (1.0 - nearBlendToFar)) + 0.5);
 			numSteps = clamp((numSteps + 3) & ~0x03, 4, max(8, scale * 8));
 #else
-		if (infinite || nearBlendToFar < 1.0) {
+#	if defined(TRUE_PBR)
+		if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0 || nearBlendToFar < 1.0)
+#	else
+		if (nearBlendToFar < 1.0)
+#	endif
+		{
 			float maxSteps = SharedData::InInterior ? 8 : 16;
 			uint numSteps = uint((maxSteps * (1.0 - nearBlendToFar)) + 0.5);
 			numSteps = clamp((numSteps + 3) & ~0x03, 4, max(6, scale * maxSteps));
@@ -343,11 +349,11 @@ namespace ExtendedMaterials
 				parallaxAmount = (pt1.x * delta2 - pt2.x * delta1) / denominator;
 			}
 
-#if !defined(LANDSCAPE)
-			if (infinite)
+#	if defined(TRUE_PBR)
+		if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 				nearBlendToFar = 0;
 			else
-#endif
+#	endif
 				nearBlendToFar *= nearBlendToFar;
 			float offset = (1.0 - parallaxAmount) * -maxHeight + minHeight;
 			pixelOffset = lerp(parallaxAmount * scale, 0, nearBlendToFar);
