@@ -84,7 +84,7 @@ namespace PBR
 		surfaceProperties.Roughness = 1;
 		surfaceProperties.Metallic = 0;
 		surfaceProperties.AO = 1;
-		surfaceProperties.F0 = 0.04;
+		surfaceProperties.F0 = 0;
 
 		surfaceProperties.SubsurfaceColor = 0;
 		surfaceProperties.Thickness = 0;
@@ -92,7 +92,7 @@ namespace PBR
 		surfaceProperties.CoatColor = 0;
 		surfaceProperties.CoatStrength = 0;
 		surfaceProperties.CoatRoughness = 0;
-		surfaceProperties.CoatF0 = 0.04;
+		surfaceProperties.CoatF0 = 0;
 
 		surfaceProperties.FuzzColor = 0;
 		surfaceProperties.FuzzWeight = 0;
