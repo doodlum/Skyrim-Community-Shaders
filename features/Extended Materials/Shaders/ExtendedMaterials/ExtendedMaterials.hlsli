@@ -229,8 +229,7 @@ namespace ExtendedMaterials
 		float minHeight = maxHeight * 0.5;
 
 #if defined(LANDSCAPE)
-		if (nearBlendToFar < 1.0) 
-		{
+		if (nearBlendToFar < 1.0) {
 			uint numSteps = uint((max(4, scale * 8) * (1.0 - nearBlendToFar)) + 0.5);
 			numSteps = clamp((numSteps + 3) & ~0x03, 4, max(8, scale * 8));
 #else
@@ -349,11 +348,11 @@ namespace ExtendedMaterials
 				parallaxAmount = (pt1.x * delta2 - pt2.x * delta1) / denominator;
 			}
 
-#	if defined(TRUE_PBR)
-		if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
+#if defined(TRUE_PBR)
+			if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 				nearBlendToFar = 0;
 			else
-#	endif
+#endif
 				nearBlendToFar *= nearBlendToFar;
 			float offset = (1.0 - parallaxAmount) * -maxHeight + minHeight;
 			pixelOffset = lerp(parallaxAmount * scale, 0, nearBlendToFar);
