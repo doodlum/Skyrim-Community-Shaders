@@ -73,7 +73,7 @@ namespace Skin{
 
         float3 F;
 
-        specular += GetDualSpecularGGX(averageRoughness, skin.RoughnessPrimary, skin.RoughnessSecondary, skin.SecondarySpecIntensity, skin.F0, NdotL, NdotV, NdotH, VdotH, F);
+        specular += GetDualSpecularGGX(averageRoughness, skin.RoughnessPrimary, skin.RoughnessSecondary, skin.SecondarySpecIntensity, skin.F0, NdotL, NdotV, NdotH, VdotH, F) * light.LinearLightColor * NdotL;
 
         float2 specularBRDF = PBR::GetEnvBRDFApproxLazarov(averageRoughness, NdotV);
         specular *= 1 + skin.F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1);

@@ -2420,12 +2420,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	diffuseColor += directionalAmbientColor;
 #	endif
 
-#	if !(defined(DEFERRED) && defined(SSGI)) && defined(SKIN) && defined(PBR_SKIN)
-	if (SharedData::skinData.skinParams.w == 0) {
-		diffuseColor += directionalAmbientColor;
-	}
-#	endif
-
 #	if defined(ENVMAP) || defined(MULTI_LAYER_PARALLAX) || defined(EYE)
 	float envMask = EnvmapData.x * MaterialData.x;
 
@@ -2719,20 +2713,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		color.xyz += specularColor;
 #		endif
 		color.xyz = Color::GammaToLinear(color.xyz);
-	}
-#	endif
-
-#	if defined(SKIN) && defined(PBR_SKIN)
-	if (SharedData::skinData.skinParams.w > 0) {
-#		if !defined(DEFERRED)
-		specularColor += specularColorPBR;
-#		endif
-	}
-	else {
-#		if defined(DEFERRED)
-		specularColor += specularColor;
-#		endif
-		specularColor = Color::GammaToLinear(color.xyz);
 	}
 #	endif
 
