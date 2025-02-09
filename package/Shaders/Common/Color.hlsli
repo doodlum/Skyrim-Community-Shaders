@@ -42,16 +42,16 @@ namespace Color
 	}
 
 	// Attempt to match vanilla materials tha are a darker than PBR
-	const static float PBRLightingScale = 0.5;
+	const static float PBRLightingScale = 0.666;
 
 	float3 GammaToLinear(float3 color)
 	{
-		return pow(color, 2.2);
+		return color * color;
 	}
 
 	float3 LinearToGamma(float3 color)
 	{
-		return pow(color, 1.0 / 2.2);
+		return sqrt(color);
 	}
 
 	float3 Diffuse(float3 color)
