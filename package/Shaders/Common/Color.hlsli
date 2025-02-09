@@ -41,23 +41,23 @@ namespace Color
 			tmp - color.y);
 	}
 
-	// attempt to match vanilla diffuse that's a bit darker than normal srgb textures
-	const static float AlbedoDiffusePower = 1 / 1.7;
+	// Attempt to match vanilla materials tha are a darker than PBR
+	const static float PBRLightingScale = 0.5;
 
 	float3 GammaToLinear(float3 color)
 	{
-		return color * color;
+		return pow(color, 2.2);
 	}
 
 	float3 LinearToGamma(float3 color)
 	{
-		return sqrt(color);
+		return pow(color, 1.0 / 2.2);
 	}
 
 	float3 Diffuse(float3 color)
 	{
 #if defined(TRUE_PBR)
-		return pow(abs(color), AlbedoDiffusePower);
+		return pow(abs(color), 1.0 / 2.2);
 #else
 		return color;
 #endif
@@ -66,7 +66,7 @@ namespace Color
 	float3 Light(float3 color)
 	{
 #if defined(TRUE_PBR)
-		return color * Math::PI;
+		return color * Math::PI; // Compensate for traditional Lambertian diffuse
 #else
 		return color;
 #endif
