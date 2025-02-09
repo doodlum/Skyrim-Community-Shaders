@@ -2526,7 +2526,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		if defined(DYNAMIC_CUBEMAPS)
 	if (!dynamicCubemap)
 #		endif
-	specularColor += envColor * diffuseColor;
+		specularColor += envColor * diffuseColor;
 #	endif
 
 #	if defined(EMAT_ENVMAP)
@@ -2542,10 +2542,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	specularColor += wetnessSpecular * wetnessGlossinessSpecular;
 #	endif
 
-
 #	if defined(LOD_LAND_BLEND) && defined(TRUE_PBR)
 	{
-
 		pbrWeight = 1 - lodLandBlendFactor;
 
 		float3 litLodLandColor = vertexColor * lodLandColor.xyz * lodLandFadeFactor * lodLandDiffuseColor;
@@ -2565,7 +2563,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif
 
 	specularColor = Color::GammaToLinear(specularColor);
-	specularColor = min(specularColor, 10); // Fix fireflies
+	specularColor = min(specularColor, 10);  // Fix fireflies
 
 #	if !defined(DEFERRED)
 	color.xyz = Color::LinearToGamma(Color::GammaToLinear(color.xyz) + specularColor);
