@@ -1384,8 +1384,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	baseColor.xyz = lerp(baseColor.xyz, lerp(baseColor.xyz, 0.0, complexMaterialColor.z), complexMaterial);
 #	endif  // defined (EMAT) && defined(ENVMAP)
 
-	float4 preBaseColor = baseColor;
-
 #	if defined(FACEGEN)
 	baseColor.xyz = GetFacegenBaseColor(baseColor.xyz, uv);
 #	elif defined(FACEGEN_RGB_TINT)
@@ -2041,8 +2039,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	elif defined(SKIN) && defined(PBR_SKIN)
 	if (SharedData::skinData.skinParams.w > 0) {
 		PBR::LightProperties lightProperties = PBR::InitLightProperties(dirLightColor, dirLightColorMultiplier * dirDetailShadow, parallaxShadow);
-		float3 dirDiffuseColor, dirSpecularColor, dirSpecularColorSecond;
-		// PBR::GetDirectLightInput(dirDiffuseColor, coatDirDiffuseColor, dirTransmissionColor, dirSpecularColor, modelNormal.xyz, coatModelNormal, refractedViewDirection, viewDirection, refractedDirLightDirection, DirLightDirection, lightProperties, pbrSurfaceProperties, tbnTr, uvOriginal);
+		float3 dirDiffuseColor, dirSpecularColor;
 		Skin::SkinDirectLightInput(dirDiffuseColor, dirSpecularColor, lightProperties, skinSurfaceProperties, modelNormal.xyz, viewDirection, DirLightDirection);
 		lightsDiffuseColor += dirDiffuseColor;
 		specularColorPBR += dirSpecularColor * !SharedData::InInterior;
@@ -2146,15 +2143,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		}
 #			elif defined(SKIN) && defined(PBR_SKIN)
 		if (SharedData::skinData.skinParams.w > 0) {
-			float3 pointDiffuseColor, pointSpecularColor, pointSpecularColorSecond;
+			float3 pointDiffuseColor, pointSpecularColor;
 			PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor, lightShadow, 1);
-			// PBR::GetDirectLightInput(pointDiffuseColor, coatPointDiffuseColor, pointTransmissionColor, pointSpecularColor, modelNormal.xyz, coatModelNormal, refractedViewDirection, viewDirection, normalizedLightDirection, lightDirection, lightProperties, pbrSurfaceProperties, tbnTr, uvOriginal);
 			Skin::SkinDirectLightInput(pointDiffuseColor, pointSpecularColor, lightProperties, skinSurfaceProperties, modelNormal.xyz, viewDirection, normalizedLightDirection);
 			lightsDiffuseColor += pointDiffuseColor;
 			specularColorPBR += pointSpecularColor;
 		}
 		else {
-			lightShadow *= 1 - saturate(dot(worldSpaceNormal.xyz, normalizedLightDirection.xyz));
+			lightColor *= lightShadow;
 			float lightAngle = dot(worldSpaceNormal.xyz, normalizedLightDirection.xyz);
 			float3 lightDiffuseColor = lightColor * saturate(lightAngle.xxx);
 
@@ -2310,8 +2306,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			elif defined(SKIN) && defined(PBR_SKIN)
 		if (SharedData::skinData.skinParams.w > 0) {
 			PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor, lightShadow * contactShadow, parallaxShadow);
-			float3 pointDiffuseColor, pointSpecularColor, pointSpecularColorSecond;
-			// PBR::GetDirectLightInput(pointDiffuseColor, coatPointDiffuseColor, pointTransmissionColor, pointSpecularColor, worldSpaceNormal.xyz, coatWorldNormal, refractedViewDirectionWS, worldSpaceViewDirection, normalizedLightDirection, lightDirection, lightProperties, pbrSurfaceProperties, tbnTr, uvOriginal);
+			float3 pointDiffuseColor, pointSpecularColor;
 			Skin::SkinDirectLightInput(pointDiffuseColor, pointSpecularColor, lightProperties, skinSurfaceProperties, worldSpaceNormal.xyz, worldSpaceViewDirection, normalizedLightDirection);
 			lightsDiffuseColor += pointDiffuseColor;
 			specularColorPBR += pointSpecularColor;
@@ -2587,7 +2582,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		float3 directLightsDiffuseInput = diffuseColor * baseColor.xyz;
 		color.xyz += directLightsDiffuseInput;
 
-		// PBR::GetIndirectLobeWeights(indirectDiffuseLobeWeight, indirectSpecularLobeWeight, worldSpaceNormal.xyz, worldSpaceViewDirection, worldSpaceVertexNormal, baseColor.xyz, pbrSurfaceProperties);
 		Skin::SkinIndirectLobeWeights(indirectDiffuseLobeWeight, indirectSpecularLobeWeight, skinSurfaceProperties, worldSpaceNormal.xyz, worldSpaceViewDirection, worldSpaceVertexNormal);
 
 #		if defined(WETNESS_EFFECTS)
@@ -2712,7 +2706,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		if defined(DEFERRED)
 		color.xyz += specularColor;
 #		endif
-		color.xyz = Color::GammaToLinear(color.xyz);
 	}
 #	endif
 
