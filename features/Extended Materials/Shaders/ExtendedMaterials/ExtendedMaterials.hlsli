@@ -344,7 +344,7 @@ namespace ExtendedMaterials
 			}
 
 #if !defined(LANDSCAPE)
-			if(infinite)
+			if (infinite)
 				nearBlendToFar = 0;
 			else
 #endif
