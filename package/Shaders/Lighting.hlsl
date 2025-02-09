@@ -1394,7 +1394,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if defined(SKIN) && defined(PBR_SKIN)
 	if (SharedData::skinData.skinParams.w > 0.0f) {
-		baseColor.xyz = baseColor.xyz * Math::PI;
+		baseColor.xyz = baseColor.xyz * SharedData::skinData.skinParams2.www;
 		}
 #	endif  // PBR_SKIN
 
@@ -1801,8 +1801,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	skinSurfaceProperties.RoughnessSecondary = SharedData::skinData.skinParams.y;
 	skinSurfaceProperties.SecondarySpecIntensity = SharedData::skinData.skinParams2.x;
 	skinSurfaceProperties.Thickness = SharedData::skinData.skinParams2.y;
-	skinSurfaceProperties.F0Primary = SharedData::skinData.skinParams2.zzz;
-	skinSurfaceProperties.F0Secondary = SharedData::skinData.skinParams2.www;
+	skinSurfaceProperties.F0 = SharedData::skinData.skinParams2.zzz;
 
 	float3 specularColorPBR = 0;
 
@@ -2044,10 +2043,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		PBR::LightProperties lightProperties = PBR::InitLightProperties(dirLightColor, dirLightColorMultiplier * dirDetailShadow, parallaxShadow);
 		float3 dirDiffuseColor, dirSpecularColor, dirSpecularColorSecond;
 		// PBR::GetDirectLightInput(dirDiffuseColor, coatDirDiffuseColor, dirTransmissionColor, dirSpecularColor, modelNormal.xyz, coatModelNormal, refractedViewDirection, viewDirection, refractedDirLightDirection, DirLightDirection, lightProperties, pbrSurfaceProperties, tbnTr, uvOriginal);
-		Skin::SkinDirectLightInput(dirDiffuseColor, dirSpecularColor, dirSpecularColorSecond, lightProperties, skinSurfaceProperties, modelNormal.xyz, viewDirection, DirLightDirection);
+		Skin::SkinDirectLightInput(dirDiffuseColor, dirSpecularColor, lightProperties, skinSurfaceProperties, modelNormal.xyz, viewDirection, DirLightDirection);
 		lightsDiffuseColor += dirDiffuseColor;
 		specularColorPBR += dirSpecularColor * !SharedData::InInterior;
-		specularColorPBR += dirSpecularColorSecond * !SharedData::InInterior;
 #		if defined(WETNESS_EFFECTS)
 		if (waterRoughnessSpecular < 1.0)
 			specularColorPBR += PBR::GetWetnessDirectLightSpecularInput(wetnessNormal, worldSpaceViewDirection, normalizedDirLightDirectionWS, lightProperties.LinearCoatLightColor, waterRoughnessSpecular) * wetnessGlossinessSpecular;
@@ -2151,10 +2149,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			float3 pointDiffuseColor, pointSpecularColor, pointSpecularColorSecond;
 			PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor, lightShadow, 1);
 			// PBR::GetDirectLightInput(pointDiffuseColor, coatPointDiffuseColor, pointTransmissionColor, pointSpecularColor, modelNormal.xyz, coatModelNormal, refractedViewDirection, viewDirection, normalizedLightDirection, lightDirection, lightProperties, pbrSurfaceProperties, tbnTr, uvOriginal);
-			Skin::SkinDirectLightInput(pointDiffuseColor, pointSpecularColor, pointSpecularColorSecond, lightProperties, skinSurfaceProperties, modelNormal.xyz, viewDirection, normalizedLightDirection);
+			Skin::SkinDirectLightInput(pointDiffuseColor, pointSpecularColor, lightProperties, skinSurfaceProperties, modelNormal.xyz, viewDirection, normalizedLightDirection);
 			lightsDiffuseColor += pointDiffuseColor;
 			specularColorPBR += pointSpecularColor;
-			specularColorPBR += pointSpecularColorSecond;
 		}
 		else {
 			lightShadow *= 1 - saturate(dot(worldSpaceNormal.xyz, normalizedLightDirection.xyz));
@@ -2315,10 +2312,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor, lightShadow * contactShadow, parallaxShadow);
 			float3 pointDiffuseColor, pointSpecularColor, pointSpecularColorSecond;
 			// PBR::GetDirectLightInput(pointDiffuseColor, coatPointDiffuseColor, pointTransmissionColor, pointSpecularColor, worldSpaceNormal.xyz, coatWorldNormal, refractedViewDirectionWS, worldSpaceViewDirection, normalizedLightDirection, lightDirection, lightProperties, pbrSurfaceProperties, tbnTr, uvOriginal);
-			Skin::SkinDirectLightInput(pointDiffuseColor, pointSpecularColor, pointSpecularColorSecond, lightProperties, skinSurfaceProperties, worldSpaceNormal.xyz, worldSpaceViewDirection, normalizedLightDirection);
+			Skin::SkinDirectLightInput(pointDiffuseColor, pointSpecularColor, lightProperties, skinSurfaceProperties, worldSpaceNormal.xyz, worldSpaceViewDirection, normalizedLightDirection);
 			lightsDiffuseColor += pointDiffuseColor;
 			specularColorPBR += pointSpecularColor;
-			specularColorPBR += pointSpecularColorSecond;
 #				if defined(WETNESS_EFFECTS)
 			if (waterRoughnessSpecular < 1.0)
 				specularColorPBR += PBR::GetWetnessDirectLightSpecularInput(wetnessNormal, worldSpaceViewDirection, normalizedLightDirection, lightProperties.LinearCoatLightColor, waterRoughnessSpecular) * wetnessGlossinessSpecular;

@@ -11,8 +11,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
     SkinSpecularTexMultiplier,
     SecondarySpecularStrength,
     Thickness,
-    F01,
-    F02
+    F0,
+    SkinColorMultiplier
 )
 
 void Skin::DrawSettings()
@@ -49,14 +49,14 @@ void Skin::DrawSettings()
         ImGui::Text("Optical thickness for energy compensation");
     }
 
-    ImGui::SliderFloat("Primary Fresnel F0", &settings.F01, 0.0f, 0.1f);
+    ImGui::SliderFloat("Fresnel F0", &settings.F0, 0.0f, 0.1f);
     if (auto _tt = Util::HoverTooltipWrapper()) {
-        ImGui::Text("Fresnel reflectance for stratum corneum layer");
+        ImGui::Text("Fresnel reflectance");
     }
 
-    ImGui::SliderFloat("Secondary Fresnel F0", &settings.F02, 0.0f, 0.1f);
+    ImGui::SliderFloat("Skin Color Multiplier", &settings.SkinColorMultiplier, 0.0f, 5.0f);
     if (auto _tt = Util::HoverTooltipWrapper()) {
-        ImGui::Text("Fresnel reflectance for epidermal cell layer");
+        ImGui::Text("Multiplier for skin color");
     }
 }
 
@@ -64,7 +64,7 @@ Skin::SkinData Skin::GetCommonBufferData()
 {
     SkinData data{};
     data.skinParams = float4(settings.SkinMainRoughness, settings.SkinSecondRoughness, settings.SkinSpecularTexMultiplier, float(settings.EnableSkin));
-    data.skinParams2 = float4(settings.SecondarySpecularStrength, settings.Thickness, settings.F01, settings.F02);
+    data.skinParams2 = float4(settings.SecondarySpecularStrength, settings.Thickness, settings.F0, settings.SkinColorMultiplier);
     return data;
 }
 

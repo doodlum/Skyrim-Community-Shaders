@@ -6,8 +6,7 @@ namespace Skin{
     {
         float RoughnessPrimary;
         float RoughnessSecondary;
-        float3 F0Primary;
-        float3 F0Secondary;
+        float3 F0;
         float SecondarySpecIntensity;
         float CurvatureScale;
         float3 Albedo;
@@ -19,8 +18,7 @@ namespace Skin{
         SkinSurfaceProperties skin;
         skin.RoughnessPrimary = 0.55;
         skin.RoughnessSecondary = 0.35;
-        skin.F0Primary = float3(0.0277, 0.0277, 0.0277);
-        skin.F0Secondary = float3(0.04, 0.04, 0.04);
+        skin.F0 = float3(0.0277, 0.0277, 0.0277);
         skin.SecondarySpecIntensity = 0.15;
         skin.CurvatureScale = 1.0;
         skin.Albedo = float3(0.8, 0.6, 0.5);
@@ -44,59 +42,24 @@ namespace Skin{
         return fdv * fdl;
     }
 
-    float SmithG1_GGX(float NdotV, float alpha)
-    {
-        const float k = alpha * 0.5;
-        const float numerator = NdotV;
-        const float denominator = NdotV * (1.0 - k) + k;
-        return numerator / (denominator + 1e-5);
-    }
+    float3 GetDualSpecularGGX(float AverageRoughness ,float Lobe0Roughness, float Lobe1Roughness, float LobeMix, float3 SpecularColor, float NdotL, float NdotV, float NdotH, float VdotH, out float3 F) {
 
-    float SmithG_GGX(float NdotL, float NdotV, float alpha)
-    {
-        return SmithG1_GGX(NdotL, alpha) * SmithG1_GGX(NdotV, alpha);
-    }
+        float D = lerp(PBR::GetNormalDistributionFunctionGGX(Lobe0Roughness, NdotH), PBR::GetNormalDistributionFunctionGGX(Lobe1Roughness, NdotH), LobeMix);
+        float G = PBR::GetVisibilityFunctionSmithJointApprox(AverageRoughness ,NdotV, NdotL);
+        F = PBR::GetFresnelFactorSchlick(SpecularColor, VdotH);
 
-    float SimplifiedBeckmannNDF(float NdotH, float roughness)
-    {
-        float alpha = roughness * roughness;
-        alpha = clamp(alpha * 1.5 - 0.2, 0.08, 0.95);
-        
-        float cosTheta = NdotH;
-        float tan2Theta = (1.0 - cosTheta * cosTheta) / (cosTheta * cosTheta);
-        float root = tan2Theta / (alpha * alpha);
-        
-        float approxExp = 1.0 / (1.0 + root + 0.6 * root * root);
-        return approxExp / (Math::PI * alpha * alpha * cosTheta * cosTheta * cosTheta);
-    }
-
-    float3 GetBeckmannSpecular(
-        float roughness,
-        float3 F0,
-        float NdotL,
-        float NdotV,
-        float NdotH,
-        float VdotH,
-        out float3 F)
-    {
-        float D = SimplifiedBeckmannNDF(NdotH, roughness);
-        F = F0 + (1.0 - F0) * pow(1.0 - VdotH, 4.0);
-        const float G = SmithG_GGX(NdotL, NdotV, roughness * roughness);
-        
-        return max((D * G * F) / (4.0 * NdotL * NdotV + 1e-5), 1e-5);
+        return D * G * F;
     }
 
     void SkinDirectLightInput(
         out float3 diffuse,
-        out float3 specularPrimary,
-        out float3 specularSecondary,
+        out float3 specular,
         PBR::LightProperties light,
         SkinSurfaceProperties skin,
         float3 N, float3 V, float3 L)
     {
         diffuse = 0;
-        specularPrimary = 0;
-        specularSecondary = 0;
+        specular = 0;
 
         const float3 H = normalize(V + L);
         const float NdotL = clamp(dot(N, L), 1e-5, 1.0);
@@ -104,41 +67,16 @@ namespace Skin{
         const float NdotH = saturate(dot(N, H));
         const float VdotH = saturate(dot(V, H));
 
-        diffuse += light.LinearLightColor * NdotL * DisneyDiffuse(NdotV, NdotL, VdotH, skin.RoughnessPrimary) / Math::PI;
+        float averageRoughness = lerp(skin.RoughnessPrimary, skin.RoughnessSecondary, skin.SecondarySpecIntensity);
 
-        float3 F_primary;
-        specularPrimary = PBR::GetSpecularDirectLightMultiplierMicrofacet(
-            skin.RoughnessPrimary, 
-            skin.F0Primary,
-            NdotL, NdotV, NdotH, VdotH,
-            F_primary) * light.LinearLightColor * NdotL;
+        diffuse += light.LinearLightColor * NdotL * DisneyDiffuse(NdotV, NdotL, VdotH, averageRoughness) / Math::PI;
 
-        float2 specularBRDF = PBR::GetEnvBRDFApproxLazarov(skin.RoughnessPrimary, NdotV);
-        specularPrimary *= 1 + skin.F0Primary * (1 / (specularBRDF.x + specularBRDF.y) - 1);
+        float3 F;
 
-        float3 F_secondary;
-        float3 specSecondary = PBR::GetSpecularDirectLightMultiplierMicrofacet(
-            skin.RoughnessSecondary, 
-            skin.F0Secondary,
-            NdotL, NdotV, NdotH, VdotH,
-            F_secondary) * light.LinearLightColor * NdotL;
+        specular += GetDualSpecularGGX(averageRoughness, skin.RoughnessPrimary, skin.RoughnessSecondary, skin.SecondarySpecIntensity, skin.F0, NdotL, NdotV, NdotH, VdotH, F);
 
-        float2 specSecondaryBRDF = PBR::GetEnvBRDFApproxLazarov(skin.RoughnessSecondary, NdotV);
-        specSecondary *= 1 + skin.F0Secondary * (1 / (specSecondaryBRDF.x + specSecondaryBRDF.y) - 1);
-
-        specularPrimary *= 1 - skin.SecondarySpecIntensity;
-        specularSecondary = specSecondary * skin.SecondarySpecIntensity;
-    }
-
-    float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
-    {
-        return F0 + (max(float3(1.0 - roughness, 1.0 - roughness, 1.0 - roughness), F0) - F0) * 
-            pow(1.0 - cosTheta, 5.0);
-    }
-
-    float3 SchlickFresnelAverage(float3 F0, float dielectricF0)
-    {
-        return F0 + (1.0 - F0) * 0.047619; // 1/21 ≈ 0.047619
+        float2 specularBRDF = PBR::GetEnvBRDFApproxLazarov(averageRoughness, NdotV);
+        specular *= 1 + skin.F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1);
     }
 
     void SkinIndirectLobeWeights(
@@ -149,22 +87,17 @@ namespace Skin{
     {
         const float NdotV = saturate(dot(N, V));
         
-        const float2 brdfPrimary = PBR::GetEnvBRDFApproxLazarov(skin.RoughnessPrimary, NdotV);
-        const float3 specPrimary = skin.F0Primary * brdfPrimary.x + brdfPrimary.y;
-        
-        const float2 brdfSecondary = PBR::GetEnvBRDFApproxLazarov(skin.RoughnessSecondary, NdotV);
-        const float3 specSecondary = skin.F0Secondary * brdfSecondary.x + brdfSecondary.y;
-        
-        specularWeight = specPrimary + specSecondary * skin.SecondarySpecIntensity;
-        specularWeight *= 1.0 + skin.Thickness * 0.2;
+        float averageRoughness = lerp(skin.RoughnessPrimary, skin.RoughnessSecondary, skin.SecondarySpecIntensity);
 
-        diffuseWeight = skin.Albedo * (1.0 - FresnelSchlickRoughness(NdotV, 0.04, skin.RoughnessPrimary)) / Math::PI;
+        float2 specularBRDF = PBR::GetEnvBRDFApproxLazarov(averageRoughness, NdotV);
+        specularWeight = skin.F0 * specularBRDF.x + specularBRDF.y;
+
+        diffuseWeight = skin.Albedo * (1.0 - specularWeight);
         
         const float curvature = CalculateCurvature(N);
         specularWeight *= 1.0 - saturate(curvature * skin.CurvatureScale);
 
-        specularWeight *= 1 + skin.F0Primary * (1 / (brdfPrimary.x + brdfPrimary.y) - 1) + skin.F0Secondary * (1 / (brdfSecondary.x + brdfSecondary.y) - 1);
-
+        specularWeight *= 1 + skin.F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1);
         float3 R = reflect(-V, N);
         float horizon = min(1.0 + dot(R, VN), 1.0);
         horizon *= horizon;
