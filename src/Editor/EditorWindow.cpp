@@ -1,6 +1,7 @@
 #include "EditorWindow.h"
 
 #include "State.h"
+#include "features/Weather.h"
 
 bool ContainsStringIgnoreCase(const std::string_view a_string, const std::string_view a_substring)
 {

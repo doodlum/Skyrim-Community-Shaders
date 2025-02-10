@@ -2,6 +2,7 @@
 
 #include "Buffer.h"
 
+#include "WeatherUtils.h"
 #include "Weather/LightingTemplateWidget.h"
 #include "Weather/WeatherWidget.h"
 #include "Weather/WorldSpaceWidget.h"
