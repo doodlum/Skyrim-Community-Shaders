@@ -313,7 +313,7 @@ void ScreenSpaceGI::LoadSettings(json& o_json)
 
 	if (auto iniSettingCollection = globals::game::iniPrefSettingCollection) {
 		if (auto setting = iniSettingCollection->GetSetting("bSAOEnable:Display")) {
-			setting->data.b = false;
+			setting->data.b = true;
 		}
 	}
 

@@ -46,14 +46,14 @@ struct ScreenSpaceGI : Feature
 		bool EnableGI = true;
 		bool EnableExperimentalSpecularGI = false;
 		// performance/quality
-		uint NumSlices = 5;
-		uint NumSteps = 8;
-		int ResolutionMode = 1;  // 0-full, 1-half, 2-quarter
+		uint NumSlices = 10;
+		uint NumSteps = 12;
+		int ResolutionMode = 2;  // 0-full, 1-half, 2-quarter
 		// visual
 		float MinScreenRadius = 0.01f;
-		float AORadius = 100.f;
-		float GIRadius = 400.f;
-		float Thickness = 75.f;
+		float AORadius = 256.f;
+		float GIRadius = 256.f;
+		float Thickness = 64.f;
 		float2 DepthFadeRange = { 4e4, 5e4 };
 		// gi
 		float GISaturation = .9f;
