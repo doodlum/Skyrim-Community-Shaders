@@ -1,5 +1,6 @@
 #include "Common/PBR.hlsli"
 #include "Common/Math.hlsli"
+#include "Common/Color.hlsli"
 
 namespace Skin{
     struct SkinSurfaceProperties
@@ -61,6 +62,8 @@ namespace Skin{
         diffuse = 0;
         specular = 0;
 
+        light.LightColor *= Math::PI;
+
         const float3 H = normalize(V + L);
         const float NdotL = clamp(dot(N, L), 1e-5, 1.0);
         const float NdotV = saturate(abs(dot(N, V)) + 1e-5);
@@ -69,11 +72,11 @@ namespace Skin{
 
         float averageRoughness = lerp(skin.RoughnessPrimary, skin.RoughnessSecondary, skin.SecondarySpecIntensity);
 
-        diffuse += light.LinearLightColor * NdotL * DisneyDiffuse(NdotV, NdotL, VdotH, averageRoughness) / Math::PI;
+        diffuse += light.LightColor * NdotL * DisneyDiffuse(NdotV, NdotL, VdotH, averageRoughness) / Math::PI;
 
         float3 F;
 
-        specular += GetDualSpecularGGX(averageRoughness, skin.RoughnessPrimary, skin.RoughnessSecondary, skin.SecondarySpecIntensity, skin.F0, NdotL, NdotV, NdotH, VdotH, F) * light.LinearLightColor * NdotL;
+        specular += GetDualSpecularGGX(averageRoughness, skin.RoughnessPrimary, skin.RoughnessSecondary, skin.SecondarySpecIntensity, skin.F0, NdotL, NdotV, NdotH, VdotH, F) * light.LightColor * NdotL;
 
         float2 specularBRDF = PBR::GetEnvBRDFApproxLazarov(averageRoughness, NdotV);
         specular *= 1 + skin.F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1);
@@ -92,7 +95,7 @@ namespace Skin{
         float2 specularBRDF = PBR::GetEnvBRDFApproxLazarov(averageRoughness, NdotV);
         specularWeight = skin.F0 * specularBRDF.x + specularBRDF.y;
 
-        diffuseWeight = skin.Albedo * (1.0 - specularWeight);
+        diffuseWeight = skin.Albedo * (1.0 - specularWeight) * Color::PBRLightingScale;
         
         const float curvature = CalculateCurvature(N);
         specularWeight *= 1.0 - saturate(curvature * skin.CurvatureScale);

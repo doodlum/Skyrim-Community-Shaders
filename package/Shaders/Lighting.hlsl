@@ -2046,7 +2046,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		specularColorPBR += dirSpecularColor * !SharedData::InInterior;
 #		if defined(WETNESS_EFFECTS)
 		if (waterRoughnessSpecular < 1.0)
-			specularColorPBR += PBR::GetWetnessDirectLightSpecularInput(wetnessNormal, worldSpaceViewDirection, normalizedDirLightDirectionWS, lightProperties.LinearCoatLightColor, waterRoughnessSpecular) * wetnessGlossinessSpecular;
+			specularColorPBR += PBR::GetWetnessDirectLightSpecularInput(wetnessNormal, worldSpaceViewDirection, normalizedDirLightDirectionWS, lightProperties.CoatLightColor, waterRoughnessSpecular) * wetnessGlossinessSpecular;
 #		endif
 	}
 	else {
@@ -2305,7 +2305,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			specularColorPBR += pointSpecularColor;
 #				if defined(WETNESS_EFFECTS)
 			if (waterRoughnessSpecular < 1.0)
-				specularColorPBR += PBR::GetWetnessDirectLightSpecularInput(wetnessNormal, worldSpaceViewDirection, normalizedLightDirection, lightProperties.LinearCoatLightColor, waterRoughnessSpecular) * wetnessGlossinessSpecular;
+				specularColorPBR += PBR::GetWetnessDirectLightSpecularInput(wetnessNormal, worldSpaceViewDirection, normalizedLightDirection, lightProperties.CoatLightColor, waterRoughnessSpecular) * wetnessGlossinessSpecular;
 #				endif
 		}
 		else {
@@ -2644,6 +2644,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		else
 	specularColor = (specularColor * glossiness * MaterialData.yyy) * SpecularColor.xyz;
 #		endif
+#	elif defined(SPECULAR) && defined(SKIN) && defined(PBR_SKIN)
+	if (SharedData::skinData.skinParams.w < 1e-5) {
+		specularColor = (specularColor * glossiness * MaterialData.yyy) * SpecularColor.xyz;
+	}
 #	elif defined(SPARKLE)
 	specularColor *= glossiness;
 #	endif  // SPECULAR
@@ -2671,7 +2675,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	endif
 
 #	if defined(SKIN) && defined(PBR_SKIN)
-	if (SharedData::skinData.skinParams.w == 0) {
+	if (SharedData::skinData.skinParams.w < 1e-5) {
 		specularColor = Color::GammaToLinear(specularColor);
 	}
 #	endif
