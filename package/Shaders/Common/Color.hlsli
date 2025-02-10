@@ -66,7 +66,7 @@ namespace Color
 	float3 Light(float3 color)
 	{
 #if defined(TRUE_PBR)
-		return color * Math::PI; // Compensate for traditional Lambertian diffuse
+		return color * Math::PI;  // Compensate for traditional Lambertian diffuse
 #else
 		return color;
 #endif
