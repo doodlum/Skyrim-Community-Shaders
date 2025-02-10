@@ -27,10 +27,10 @@ struct Skin : Feature
     struct Settings
     {
         bool EnableSkin = true;
-		float SkinMainRoughness = 0.6f;
-		float SkinSecondRoughness = 0.4f;
-		float SkinSpecularTexMultiplier = 1.7f;
-        float SecondarySpecularStrength = 0.25f;
+		float SkinMainRoughness = 0.7f;
+		float SkinSecondRoughness = 0.35f;
+		float SkinSpecularTexMultiplier = 1.0f;
+        float SecondarySpecularStrength = 0.15f;
         float Thickness = 0.15f;
         float F0 = 0.028f;
         float SkinColorMultiplier = 1.0f;
