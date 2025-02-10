@@ -108,6 +108,7 @@ void State::Reset()
 	lastVertexDescriptor = 0;
 	initialized = false;
 	forceUpdatePermutationBuffer = true;
+	frameCount++;
 }
 
 void State::Setup()
@@ -678,13 +679,11 @@ void State::UpdateSharedData(bool a_inWorld)
 		data.BufferDim = { screenSize.x, screenSize.y, 1.0f / screenSize.x, 1.0f / screenSize.y };
 		data.Timer = timer;
 
-		auto viewport = globals::game::graphicsState;
-
 		auto bTAA = !globals::game::isVR ? imageSpaceManager->GetRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled :
 		                                   imageSpaceManager->GetVRRuntimeData().BSImagespaceShaderISTemporalAA->taaEnabled;
 
-		data.FrameCount = viewport->frameCount * (bTAA || globals::state->upscalerLoaded);
-		data.FrameCountAlwaysActive = viewport->frameCount;
+		data.FrameCount = frameCount * (bTAA || globals::state->upscalerLoaded);
+		data.FrameCountAlwaysActive = frameCount;
 
 		if (a_inWorld) {
 			for (int i = -2; i <= 2; i++) {
