@@ -42,7 +42,6 @@ Texture2D<float4> SsgiSpecularTexture : register(t13);
 void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 {
 	ao = 1 - SsgiAoTexture[pixCoord];
-	ao = pow(ao, 0.25);
 
 	float4 ssgiIlYSh = SsgiYTexture[pixCoord];
 	float ssgiIlY = SphericalHarmonics::FuncProductIntegral(ssgiIlYSh, lobe);
@@ -165,7 +164,9 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 		ssgiIlSpecular = ssgiMixed.rgb;
 #		endif
 
-		finalIrradiance = finalIrradiance * ssgiAo + ssgiIlSpecular;
+		finalIrradiance = (finalIrradiance * min(ssgiAo, glossiness)) + (Color::RGBToLuminance(finalIrradiance) * ssgiIlSpecular * 10);
+#	else
+		finalIrradiance *= glossiness;
 #	endif
 
 		color += reflectance * finalIrradiance;
