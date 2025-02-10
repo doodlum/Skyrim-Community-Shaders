@@ -84,7 +84,7 @@ void ScreenSpaceGI::DrawSettings()
 			ImGui::Text("1 Slice, 6 Steps, no blur, no GI\n");
 
 		ImGui::TableNextColumn();
-		if (ImGui::Button("Low", { -1, 0 })) {
+		if (ImGui::Button("Standard", { -1, 0 })) {
 			settings.NumSlices = 10;
 			settings.NumSteps = 12;
 			settings.ResolutionMode = 2;
@@ -96,7 +96,7 @@ void ScreenSpaceGI::DrawSettings()
 			ImGui::Text("Quarter res and blurry.");
 
 		ImGui::TableNextColumn();
-		if (ImGui::Button("Medium", { -1, 0 })) {
+		if (ImGui::Button("High", { -1, 0 })) {
 			settings.NumSlices = 5;
 			settings.NumSteps = 8;
 			settings.ResolutionMode = 1;
@@ -108,7 +108,7 @@ void ScreenSpaceGI::DrawSettings()
 			ImGui::Text("Half res and somewhat stable.");
 
 		ImGui::TableNextColumn();
-		if (ImGui::Button("High", { -1, 0 })) {
+		if (ImGui::Button("Extreme", { -1, 0 })) {
 			settings.NumSlices = 4;
 			settings.NumSteps = 8;
 			settings.ResolutionMode = 0;
@@ -120,7 +120,7 @@ void ScreenSpaceGI::DrawSettings()
 			ImGui::Text("Full res and clean.");
 
 		ImGui::TableNextColumn();
-		if (ImGui::Button("Ultra", { -1, 0 })) {
+		if (ImGui::Button("Reference", { -1, 0 })) {
 			settings.NumSlices = 8;
 			settings.NumSteps = 10;
 			settings.ResolutionMode = 0;
