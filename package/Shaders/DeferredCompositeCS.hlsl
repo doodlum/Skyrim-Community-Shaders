@@ -164,9 +164,9 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 		ssgiIlSpecular = ssgiMixed.rgb;
 #		endif
 
-		finalIrradiance = (finalIrradiance * ssgiAo * smoothstep(-(1.0 / 7.0), 1.0 - (1.0 / 7.0), glossiness)) + (Color::RGBToLuminance(finalIrradiance) * ssgiIlSpecular * 10);
+		finalIrradiance = (finalIrradiance * ssgiAo * smoothstep(0.0, 1.0 - (1.0 / 7.0), glossiness)) + (Color::RGBToLuminance(finalIrradiance) * ssgiIlSpecular * 10);
 #	else
-		finalIrradiance *= smoothstep(-(1.0 / 7.0), 1.0 - (1.0 / 7.0), glossiness);
+		finalIrradiance *= smoothstep(0.0, 1.0 - (1.0 / 7.0), glossiness);
 #	endif
 
 		color += reflectance * finalIrradiance;
