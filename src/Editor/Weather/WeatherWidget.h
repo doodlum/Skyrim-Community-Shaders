@@ -42,10 +42,10 @@ public:
 
 	struct Cloud
 	{
-		int8_t cloudLayerSpeedY;             
-		int8_t cloudLayerSpeedX;             
-		float3 color[ColorTimes::kTotal];  
-		float cloudAlpha[ColorTimes::kTotal];     
+		int8_t cloudLayerSpeedY;
+		int8_t cloudLayerSpeedX;
+		float3 color[ColorTimes::kTotal];
+		float cloudAlpha[ColorTimes::kTotal];
 	};
 
 	struct Settings

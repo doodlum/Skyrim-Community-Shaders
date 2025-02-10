@@ -1,18 +1,22 @@
 #include "WeatherUtils.h"
 
-float Int8ToFloat(const int8_t& value){
+float Int8ToFloat(const int8_t& value)
+{
 	return ((float)(value + 128) / 255.0f);
 }
 
-float Uint8ToFloat(const uint8_t& value){
+float Uint8ToFloat(const uint8_t& value)
+{
 	return ((float)(value) / 255.0f);
 }
 
-int8_t FloatToInt8(const float& value){
+int8_t FloatToInt8(const float& value)
+{
 	return (int8_t)std::lerp(-128, 127, value);
 }
 
-uint8_t FloatToUint8(const float& value){
+uint8_t FloatToUint8(const float& value)
+{
 	return (uint8_t)std::lerp(0, 255, value);
 }
 

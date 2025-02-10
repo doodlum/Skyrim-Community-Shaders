@@ -141,7 +141,6 @@ void WeatherWidget::DrawWidget()
 
 		DrawSeparator();
 
-
 		ImGui::Checkbox("Inherit From Parent##transDelta", &settings.inheritTransDeltaSettings);
 		ImGui::SameLine();
 		ImGui::Spacing();
