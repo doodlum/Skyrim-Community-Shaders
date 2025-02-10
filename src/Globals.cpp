@@ -24,6 +24,7 @@
 #include "Features/VolumetricLighting.h"
 #include "Features/WaterEffects.h"
 #include "Features/WetnessEffects.h"
+#include "Features/Skin.h"
 
 #include "Features/LightLimitFix/ParticleLights.h"
 
@@ -55,6 +56,7 @@ namespace globals
 		VolumetricLighting* volumetricLighting = nullptr;
 		WaterEffects* waterEffects = nullptr;
 		WetnessEffects* wetnessEffects = nullptr;
+		Skin* skin = nullptr;
 
 		namespace llf
 		{
@@ -148,6 +150,7 @@ namespace globals
 		features::volumetricLighting = VolumetricLighting::GetSingleton();
 		features::waterEffects = WaterEffects::GetSingleton();
 		features::wetnessEffects = WetnessEffects::GetSingleton();
+		features::skin = Skin::GetSingleton();
 
 		features::llf::particleLights = ParticleLights::GetSingleton();
 	}

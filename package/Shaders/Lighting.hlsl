@@ -13,6 +13,9 @@
 
 #if defined(FACEGEN) || defined(FACEGEN_RGB_TINT)
 #	define SKIN
+#	if defined(PBR_SKIN)
+#		define DYNAMIC_CUBEMAPS
+#	endif
 #endif
 
 #if defined(SKINNED) || defined(ENVMAP) || defined(EYE) || defined(MULTI_LAYER_PARALLAX)
@@ -68,7 +71,7 @@ struct VS_OUTPUT
 	precise
 #endif  // ENVMAP
 		float3 InputPosition : TEXCOORD4;
-#if defined(SKINNED) || !defined(MODELSPACENORMALS)
+#if defined(SKINNED) || !defined(MODELSPACENORMALS) || (defined(SKIN) && defined(MODELSPACENORMALS) && defined(PBR_SKIN))
 	float3 TBN0 : TEXCOORD1;
 	float3 TBN1 : TEXCOORD2;
 	float3 TBN2 : TEXCOORD3;
@@ -1001,6 +1004,11 @@ float GetSnowParameterY(float texProjTmp, float alpha)
 #		include "Skylighting/Skylighting.hlsli"
 #	endif
 
+#	if defined(PBR_SKIN)
+#		include "Common/PBR.hlsli"
+#		include "Skin/Skin.hlsli"
+#	endif
+
 #	define LinearSampler SampColorSampler
 
 #	include "Common/ShadowSampling.hlsli"
@@ -1383,6 +1391,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	elif defined(FACEGEN_RGB_TINT)
 	baseColor.xyz = GetFacegenRGBTintBaseColor(baseColor.xyz, uv);
 #	endif  // FACEGEN
+
+#	if defined(SKIN) && defined(PBR_SKIN)
+	if (SharedData::skinData.skinParams.w > 0.0f) {
+		baseColor.xyz = baseColor.xyz * SharedData::skinData.skinParams2.www;
+		}
+#	endif  // PBR_SKIN
 
 #	if defined(LANDSCAPE)
 
@@ -1777,6 +1791,23 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float pbrGlossiness = 1 - pbrSurfaceProperties.Roughness;
 #	endif  // TRUE_PBR
 
+#	if defined(SKIN) && defined(PBR_SKIN)
+	Skin::SkinSurfaceProperties skinSurfaceProperties = Skin::InitSkinSurfaceProperties();
+
+	skinSurfaceProperties.Albedo = baseColor.xyz;
+
+	skinSurfaceProperties.RoughnessPrimary = saturate(SharedData::skinData.skinParams.x - SharedData::skinData.skinParams.z * glossiness);
+	skinSurfaceProperties.RoughnessSecondary = SharedData::skinData.skinParams.y;
+	skinSurfaceProperties.SecondarySpecIntensity = SharedData::skinData.skinParams2.x;
+	skinSurfaceProperties.Thickness = SharedData::skinData.skinParams2.y;
+	skinSurfaceProperties.F0 = SharedData::skinData.skinParams2.zzz;
+
+	float3 specularColorPBR = 0;
+
+	float pbrWeight = 1;
+	float pbrGlossiness = 1 - skinSurfaceProperties.RoughnessPrimary;
+#	endif  // PBR_SKIN
+
 	float porosity = 1.0;
 
 #	if defined(SKYLIGHTING)
@@ -2006,6 +2037,34 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			specularColorPBR += PBR::GetWetnessDirectLightSpecularInput(wetnessNormal, worldSpaceViewDirection, normalizedDirLightDirectionWS, lightProperties.CoatLightColor, waterRoughnessSpecular) * wetnessGlossinessSpecular;
 #		endif
 	}
+#	elif defined(SKIN) && defined(PBR_SKIN)
+	if (SharedData::skinData.skinParams.w > 0) {
+		PBR::LightProperties lightProperties = PBR::InitLightProperties(dirLightColor, dirLightColorMultiplier * dirDetailShadow, parallaxShadow);
+		float3 dirDiffuseColor, dirSpecularColor;
+		Skin::SkinDirectLightInput(dirDiffuseColor, dirSpecularColor, lightProperties, skinSurfaceProperties, modelNormal.xyz, viewDirection, DirLightDirection);
+		lightsDiffuseColor += dirDiffuseColor;
+		specularColorPBR += dirSpecularColor * !SharedData::InInterior;
+#		if defined(WETNESS_EFFECTS)
+		if (waterRoughnessSpecular < 1.0)
+			specularColorPBR += PBR::GetWetnessDirectLightSpecularInput(wetnessNormal, worldSpaceViewDirection, normalizedDirLightDirectionWS, lightProperties.LinearCoatLightColor, waterRoughnessSpecular) * wetnessGlossinessSpecular;
+#		endif
+	}
+	else {
+		dirDetailShadow *= parallaxShadow;
+		dirLightColor *= dirLightColorMultiplier;
+		float3 dirDiffuseColor = dirLightColor * saturate(dirLightAngle) * dirDetailShadow;
+
+#		if defined(SPECULAR) || defined(SPARKLE)
+		lightsSpecularColor = GetLightSpecularInput(input, DirLightDirection, viewDirection, modelNormal.xyz, dirLightColor.xyz * dirDetailShadow, shininess, uv);
+#		endif
+
+		lightsDiffuseColor += dirDiffuseColor;
+
+#		if defined(WETNESS_EFFECTS)
+		if (waterRoughnessSpecular < 1.0)
+			wetnessSpecular += WetnessEffects::GetWetnessSpecular(wetnessNormal, normalizedDirLightDirectionWS, worldSpaceViewDirection, dirLightColor * dirDetailShadow, waterRoughnessSpecular);
+#		endif
+	}
 #	else
 	dirDetailShadow *= parallaxShadow;
 	dirLightColor *= dirLightColorMultiplier;
@@ -2078,6 +2137,25 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			coatLightsDiffuseColor += coatPointDiffuseColor;
 			transmissionColor += pointTransmissionColor;
 			specularColorPBR += pointSpecularColor;
+		}
+#			elif defined(SKIN) && defined(PBR_SKIN)
+		if (SharedData::skinData.skinParams.w > 0) {
+			float3 pointDiffuseColor, pointSpecularColor;
+			PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor, lightShadow, 1);
+			Skin::SkinDirectLightInput(pointDiffuseColor, pointSpecularColor, lightProperties, skinSurfaceProperties, modelNormal.xyz, viewDirection, normalizedLightDirection);
+			lightsDiffuseColor += pointDiffuseColor;
+			specularColorPBR += pointSpecularColor;
+		}
+		else {
+			lightColor *= lightShadow;
+			float lightAngle = dot(worldSpaceNormal.xyz, normalizedLightDirection.xyz);
+			float3 lightDiffuseColor = lightColor * saturate(lightAngle.xxx);
+
+#				if defined(SPECULAR) || (defined(SPARKLE) && !defined(SNOW))
+			lightsSpecularColor += GetLightSpecularInput(input, normalizedLightDirection, viewDirection, modelNormal.xyz, lightColor, shininess, uv);
+#				endif  // defined (SPECULAR) || (defined (SPARKLE) && !defined(SNOW))
+
+			lightsDiffuseColor += lightDiffuseColor;
 		}
 #			else
 		lightColor *= lightShadow;
@@ -2218,6 +2296,29 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				specularColorPBR += PBR::GetWetnessDirectLightSpecularInput(wetnessNormal, worldSpaceViewDirection, normalizedLightDirection, lightProperties.CoatLightColor, waterRoughnessSpecular) * wetnessGlossinessSpecular;
 #				endif
 		}
+#			elif defined(SKIN) && defined(PBR_SKIN)
+		if (SharedData::skinData.skinParams.w > 0) {
+			PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor, lightShadow * contactShadow, parallaxShadow);
+			float3 pointDiffuseColor, pointSpecularColor;
+			Skin::SkinDirectLightInput(pointDiffuseColor, pointSpecularColor, lightProperties, skinSurfaceProperties, worldSpaceNormal.xyz, worldSpaceViewDirection, normalizedLightDirection);
+			lightsDiffuseColor += pointDiffuseColor;
+			specularColorPBR += pointSpecularColor;
+#				if defined(WETNESS_EFFECTS)
+			if (waterRoughnessSpecular < 1.0)
+				specularColorPBR += PBR::GetWetnessDirectLightSpecularInput(wetnessNormal, worldSpaceViewDirection, normalizedLightDirection, lightProperties.LinearCoatLightColor, waterRoughnessSpecular) * wetnessGlossinessSpecular;
+#				endif
+		}
+		else {
+			lightColor *= lightShadow;
+
+			float3 lightDiffuseColor = lightColor * contactShadow * parallaxShadow * saturate(lightAngle.xxx);
+
+#				if defined(SPECULAR) || (defined(SPARKLE) && !defined(SNOW))
+			lightsSpecularColor += GetLightSpecularInput(input, normalizedLightDirection, worldSpaceViewDirection, worldSpaceNormal.xyz, lightColor, shininess, uv);
+#				endif
+
+			lightsDiffuseColor += lightDiffuseColor;
+		}
 #			else
 		lightColor *= lightShadow;
 
@@ -2299,7 +2400,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	lodLandDiffuseColor += directionalAmbientColor;
 #	endif
 
-#	if !(defined(DEFERRED) && defined(SSGI)) && !defined(TRUE_PBR)
+#	if !(defined(DEFERRED) && defined(SSGI)) && !defined(TRUE_PBR) && !(defined(SKIN) && defined(PBR_SKIN))
 	diffuseColor += directionalAmbientColor;
 #	endif
 
@@ -2476,6 +2577,38 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		color.xyz += emitColor.xyz;
 	}
 	color.xyz += transmissionColor;
+#	elif defined(SKIN) && defined(PBR_SKIN)
+	float3 indirectDiffuseLobeWeight, indirectSpecularLobeWeight;
+	if (SharedData::skinData.skinParams.w > 0) {
+		float3 directLightsDiffuseInput = diffuseColor * baseColor.xyz;
+		color.xyz += directLightsDiffuseInput;
+
+		Skin::SkinIndirectLobeWeights(indirectDiffuseLobeWeight, indirectSpecularLobeWeight, skinSurfaceProperties, worldSpaceNormal.xyz, worldSpaceViewDirection, worldSpaceVertexNormal);
+
+#		if defined(WETNESS_EFFECTS)
+		if (waterRoughnessSpecular < 1.0)
+			indirectSpecularLobeWeight += PBR::GetWetnessIndirectSpecularLobeWeight(wetnessNormal, worldSpaceViewDirection, worldSpaceVertexNormal, waterRoughnessSpecular) * wetnessGlossinessSpecular;
+#		endif
+
+#		if !(defined(DEFERRED) && defined(SSGI))
+		color.xyz += indirectDiffuseLobeWeight * directionalAmbientColor;
+#		endif
+
+#		if !defined(DYNAMIC_CUBEMAPS)
+		specularColorPBR += indirectSpecularLobeWeight * directionalAmbientColor;
+#		endif
+
+#		if !defined(DEFERRED)
+#			if defined(DYNAMIC_CUBEMAPS)
+		specularColorPBR += indirectSpecularLobeWeight * DynamicCubemaps::GetDynamicCubemapSpecularIrradiance(screenUV, worldSpaceNormal, worldSpaceVertexNormal, worldSpaceViewDirection, skinSurfaceProperties.RoughnessPrimary, viewPosition.z);
+#			endif
+#		else
+		indirectDiffuseLobeWeight *= vertexColor;
+#		endif
+	}
+	else {
+		color.xyz += diffuseColor * baseColor.xyz;
+	}
 #	else
 	color.xyz += diffuseColor * baseColor.xyz;
 #	endif
@@ -2505,7 +2638,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 #	endif  // MULTI_LAYER_PARALLAX
 
-#	if defined(SPECULAR)
+#	if defined(SPECULAR) && !(defined(SKIN) && defined(PBR_SKIN))
 #		if defined(EMAT_ENVMAP)
 	specularColor = (specularColor * glossiness * MaterialData.yyy) * lerp(SpecularColor.xyz, complexSpecular, complexMaterial);
 #		else
@@ -2533,8 +2666,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	specularColor *= complexSpecular;
 #	endif  // defined (EMAT) && defined(ENVMAP)
 
-#	if !defined(TRUE_PBR)
+#	if !defined(TRUE_PBR) && !(defined(SKIN) && defined(PBR_SKIN))
 	specularColor = Color::GammaToLinear(specularColor);
+#	endif
+
+#	if defined(SKIN) && defined(PBR_SKIN)
+	if (SharedData::skinData.skinParams.w == 0) {
+		specularColor = Color::GammaToLinear(specularColor);
+	}
 #	endif
 
 #	if !defined(DEFERRED) && defined(DYNAMIC_CUBEMAPS) && (defined(ENVMAP) || defined(MULTI_LAYER_PARALLAX) || defined(EYE))
@@ -2542,7 +2681,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		specularColor += envColor;
 #	endif
 
-#	if defined(WETNESS_EFFECTS) && !defined(TRUE_PBR)
+#	if defined(WETNESS_EFFECTS) && !defined(TRUE_PBR) && !(defined(SKIN) && defined(PBR_SKIN))
 	specularColor += wetnessSpecular * wetnessGlossinessSpecular;
 #	endif
 
@@ -2564,6 +2703,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	color.xyz *= Color::PBRLightingScale;
 	specularColorPBR *= Color::PBRLightingScale;
 	specularColor += specularColorPBR;
+#	endif
+
+#	if defined(SKIN) && defined(PBR_SKIN)
+	if (SharedData::skinData.skinParams.w > 0) {
+		color.xyz *= Color::PBRLightingScale;
+		specularColorPBR *= Color::PBRLightingScale;
+		specularColor += specularColorPBR;
+	}
 #	endif
 
 #	if !defined(DEFERRED)
@@ -2683,6 +2830,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float ssrMask = glossiness;
 #		if defined(TRUE_PBR)
 	ssrMask = Color::RGBToLuminanceAlternative(pbrSurfaceProperties.F0);
+#		elif defined(SKIN) && defined(PBR_SKIN)
+	if (SharedData::skinData.skinParams.w > 0) {
+		ssrMask = Color::RGBToLuminanceAlternative(skinSurfaceProperties.F0);
+	}
 #		endif
 	psout.ScreenSpaceNormals.w = smoothstep(-1e-5 + SSRParams.x, SSRParams.y, ssrMask) * SSRParams.w;
 
@@ -2707,6 +2858,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 outputAlbedo = baseColor.xyz * vertexColor;
 #		if defined(TRUE_PBR)
 	outputAlbedo = indirectDiffuseLobeWeight;
+#		elif defined(SKIN) && defined(PBR_SKIN)
+	if (SharedData::skinData.skinParams.w > 0) {
+		outputAlbedo = indirectDiffuseLobeWeight;
+	}
 #		endif
 	psout.Albedo = float4(outputAlbedo, psout.Diffuse.w);
 
@@ -2715,6 +2870,20 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		if defined(TRUE_PBR)
 	psout.Reflectance = float4(indirectSpecularLobeWeight, psout.Diffuse.w);
 	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), pbrGlossiness, psout.Diffuse.w);
+#		elif defined(SKIN) && defined(PBR_SKIN)
+	if (SharedData::skinData.skinParams.w > 0) {
+		psout.Reflectance = float4(indirectSpecularLobeWeight, psout.Diffuse.w);
+		psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), pbrGlossiness, psout.Diffuse.w);
+	}
+	else {
+#			if defined(WETNESS_EFFECTS)
+		psout.Reflectance = float4(wetnessReflectance, psout.Diffuse.w);
+		psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), lerp(outGlossiness, 1.0, wetnessGlossinessSpecular), psout.Diffuse.w);
+#			else
+		psout.Reflectance = float4(0.0.xxx, psout.Diffuse.w);
+		psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), outGlossiness, psout.Diffuse.w);
+#			endif
+	}
 #		elif defined(WETNESS_EFFECTS)
 	psout.Reflectance = float4(wetnessReflectance, psout.Diffuse.w);
 	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), lerp(outGlossiness, 1.0, wetnessGlossinessSpecular), psout.Diffuse.w);

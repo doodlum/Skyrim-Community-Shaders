@@ -16,6 +16,7 @@
 #include "Features/VolumetricLighting.h"
 #include "Features/WaterEffects.h"
 #include "Features/WetnessEffects.h"
+#include "Features/Skin.h"
 
 #include "State.h"
 
@@ -133,7 +134,8 @@ const std::vector<Feature*>& Feature::GetFeatureList()
 		globals::features::screenSpaceGI,
 		globals::features::skylighting,
 		globals::features::terrainBlending,
-		globals::features::volumetricLighting
+		globals::features::volumetricLighting,
+		globals::features::skin
 	};
 
 	static std::vector<Feature*> featuresVR(features);
