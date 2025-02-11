@@ -134,6 +134,7 @@ namespace SharedData
     {
         float4 skinParams;
 		float4 skinParams2;
+		float4 skinDetailParams;
     };
 
 	cbuffer FeatureData : register(b6)

@@ -3,6 +3,8 @@
 #include "Common/Color.hlsli"
 
 namespace Skin{
+    Texture2D<float4> TexSkinDetailNormal : register(t72);
+
     struct SkinSurfaceProperties
     {
         float RoughnessPrimary;
@@ -12,6 +14,8 @@ namespace Skin{
         float CurvatureScale;
         float3 Albedo;
         float Thickness;
+        float3 SubsurfaceColor;
+        float AO;
     };
 
     SkinSurfaceProperties InitSkinSurfaceProperties()
@@ -24,6 +28,8 @@ namespace Skin{
         skin.CurvatureScale = 1.0;
         skin.Albedo = float3(0.8, 0.6, 0.5);
         skin.Thickness = 0.15;
+        skin.SubsurfaceColor = float3(0.6,0.3,0.2);
+        skin.AO = 0.0;
         return skin;
     }
 
@@ -54,21 +60,25 @@ namespace Skin{
 
     void SkinDirectLightInput(
         out float3 diffuse,
+        out float3 transmission,
         out float3 specular,
         PBR::LightProperties light,
         SkinSurfaceProperties skin,
         float3 N, float3 V, float3 L)
     {
         diffuse = 0;
+        transmission = 0;
         specular = 0;
 
         light.LightColor *= Math::PI;
 
         const float3 H = normalize(V + L);
-        const float NdotL = clamp(dot(N, L), 1e-5, 1.0);
+        const float oNdotL = dot(N, L);
+        const float NdotL = clamp(oNdotL, 1e-5, 1.0);
         const float NdotV = saturate(abs(dot(N, V)) + 1e-5);
         const float NdotH = saturate(dot(N, H));
         const float VdotH = saturate(dot(V, H));
+        const float VdotL = dot(V, L);
 
         float averageRoughness = lerp(skin.RoughnessPrimary, skin.RoughnessSecondary, skin.SecondarySpecIntensity);
 
@@ -80,6 +90,12 @@ namespace Skin{
 
         float2 specularBRDF = PBR::GetEnvBRDFApproxLazarov(averageRoughness, NdotV);
         specular *= 1 + skin.F0 * (1 / (specularBRDF.x + specularBRDF.y) - 1);
+
+        const float subsurfacePower = 12.234;
+        float forwardScatter = exp2(saturate(-VdotL) * subsurfacePower - subsurfacePower);
+        float backScatter = saturate(oNdotL * skin.Thickness + (1.0 - skin.Thickness)) * 0.5;
+        float subsurface = lerp(backScatter, 1, forwardScatter) * (1.0 - skin.Thickness);
+        transmission += skin.SubsurfaceColor * subsurface * light.LightColor * PBR::GetDiffuseDirectLightMultiplierLambert();
     }
 
     void SkinIndirectLobeWeights(
@@ -95,7 +111,7 @@ namespace Skin{
         float2 specularBRDF = PBR::GetEnvBRDFApproxLazarov(averageRoughness, NdotV);
         specularWeight = skin.F0 * specularBRDF.x + specularBRDF.y;
 
-        diffuseWeight = skin.Albedo * (1.0 - specularWeight) * Color::PBRLightingScale;
+        diffuseWeight = skin.Albedo * (1.0 - specularWeight);
         
         const float curvature = CalculateCurvature(N);
         specularWeight *= 1.0 - saturate(curvature * skin.CurvatureScale);
@@ -105,5 +121,14 @@ namespace Skin{
         float horizon = min(1.0 + dot(R, VN), 1.0);
         horizon *= horizon;
         specularWeight *= horizon;
+
+        float3 diffuseAO = skin.AO;
+        float3 specularAO = PBR::SpecularAOLagarde(NdotV, skin.AO, averageRoughness);
+
+        diffuseAO = PBR::MultiBounceAO(skin.Albedo, diffuseAO.x).y;
+        specularAO = PBR::MultiBounceAO(skin.F0, specularAO.x).y;
+
+        diffuseWeight *= diffuseAO * Color::PBRLightingScale;
+        specularWeight *= specularAO;
     }
 }

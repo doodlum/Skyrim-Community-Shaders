@@ -24,6 +24,12 @@ struct Skin : Feature
 	virtual void LoadSettings(json& o_json) override;
 	virtual void SaveSettings(json& o_json) override;
 
+    virtual void Prepass() override;
+
+    virtual void SetupResources() override;
+
+    void ReloadSkinDetail();
+
     struct Settings
     {
         bool EnableSkin = true;
@@ -34,13 +40,19 @@ struct Skin : Feature
         float Thickness = 0.15f;
         float F0 = 0.028f;
         float SkinColorMultiplier = 1.5f;
+        bool EnableSkinDetail = true;
+        float SkinDetailStrength = 0.15f;
+        float SkinDetailTiling = 10.0f;
     } settings;
 
     struct alignas(16) SkinData
     {
         float4 skinParams;
         float4 skinParams2;
+        float4 skinDetailParams;
     };
+
+    eastl::unique_ptr<Texture2D> texSkinDetail = nullptr;
 
     SkinData GetCommonBufferData();
 };

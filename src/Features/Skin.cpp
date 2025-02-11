@@ -1,7 +1,9 @@
 #include "Skin.h"
+#include <DirectXTex.h>
 
 #include "ShaderCache.h"
 #include "State.h"
+#include "Menu.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
     Skin::Settings,
@@ -12,7 +14,10 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
     SecondarySpecularStrength,
     Thickness,
     F0,
-    SkinColorMultiplier
+    SkinColorMultiplier,
+    EnableSkinDetail,
+    SkinDetailStrength,
+    SkinDetailTiling
 )
 
 void Skin::DrawSettings()
@@ -58,6 +63,115 @@ void Skin::DrawSettings()
     if (auto _tt = Util::HoverTooltipWrapper()) {
         ImGui::Text("Multiplier for skin color");
     }
+
+    ImGui::Checkbox("Enable Skin Detail", &settings.EnableSkinDetail);
+    if (auto _tt = Util::HoverTooltipWrapper()) {
+        ImGui::Text("Enable skin detail texture");
+    }
+
+    ImGui::SliderFloat("Skin Detail Strength", &settings.SkinDetailStrength, 0.0f, 1.0f);
+    if (auto _tt = Util::HoverTooltipWrapper()) {
+        ImGui::Text("Strength of skin detail texture");
+    }
+
+    ImGui::SliderFloat("Skin Detail Tiling", &settings.SkinDetailTiling, 0.0f, 100.0f, "%.1f");
+    if (auto _tt = Util::HoverTooltipWrapper()) {
+        ImGui::Text("Tiling of skin detail texture");
+    }
+
+    if (ImGui::Button("Reload Skin Detail Texture")) {
+        ReloadSkinDetail();
+    }
+
+    BUFFER_VIEWER_NODE(texSkinDetail, 1.0f)
+}
+
+void Skin::SetupResources()
+{
+	auto device = globals::d3d::device;
+
+    logger::debug("Loading skin detail texture...");
+    {
+        DirectX::ScratchImage image;
+        try {
+            std::filesystem::path path{ "Data\\Shaders\\Skin\\skin_detail_n.dds" };
+
+            DX::ThrowIfFailed(LoadFromDDSFile(path.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image));
+		} catch (const DX::com_exception& e) {
+			logger::error("{}", e.what());
+			return;
+		}
+
+        ID3D11Resource* pResource = nullptr;
+		try {
+			DX::ThrowIfFailed(CreateTexture(device,
+				image.GetImages(), image.GetImageCount(),
+				image.GetMetadata(), &pResource));
+		} catch (const DX::com_exception& e) {
+			logger::error("{}", e.what());
+			return;
+		}
+
+        texSkinDetail = eastl::make_unique<Texture2D>(reinterpret_cast<ID3D11Texture2D*>(pResource));
+
+        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+			.Format = texSkinDetail->desc.Format,
+			.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
+			.Texture2D = {
+				.MostDetailedMip = 0,
+				.MipLevels = 1 }
+		};
+        texSkinDetail->CreateSRV(srvDesc);
+    }
+}
+
+void Skin::ReloadSkinDetail()
+{
+    auto device = globals::d3d::device;
+
+    logger::debug("Reloading skin detail texture...");
+    {
+        DirectX::ScratchImage image;
+        try {
+            std::filesystem::path path{ "Data\\Shaders\\Skin\\skin_detail_n.dds" };
+
+            DX::ThrowIfFailed(LoadFromDDSFile(path.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image));
+        } catch (const DX::com_exception& e) {
+            logger::error("{}", e.what());
+            return;
+        }
+
+        ID3D11Resource* pResource = nullptr;
+        try {
+            DX::ThrowIfFailed(CreateTexture(device,
+                image.GetImages(), image.GetImageCount(),
+                image.GetMetadata(), &pResource));
+        } catch (const DX::com_exception& e) {
+            logger::error("{}", e.what());
+            return;
+        }
+
+        texSkinDetail = eastl::make_unique<Texture2D>(reinterpret_cast<ID3D11Texture2D*>(pResource));
+
+        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+            .Format = texSkinDetail->desc.Format,
+            .ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
+            .Texture2D = {
+                .MostDetailedMip = 0,
+                .MipLevels = 1 }
+        };
+        texSkinDetail->CreateSRV(srvDesc);
+    }
+}
+
+void Skin::Prepass()
+{
+    auto context = globals::d3d::context;
+
+    if (texSkinDetail) {
+        ID3D11ShaderResourceView* srv = texSkinDetail->srv.get();
+        context->PSSetShaderResources(72, 1, &srv);
+    }
 }
 
 Skin::SkinData Skin::GetCommonBufferData()
@@ -65,6 +179,7 @@ Skin::SkinData Skin::GetCommonBufferData()
     SkinData data{};
     data.skinParams = float4(settings.SkinMainRoughness, settings.SkinSecondRoughness, settings.SkinSpecularTexMultiplier, float(settings.EnableSkin));
     data.skinParams2 = float4(settings.SecondarySpecularStrength, settings.Thickness, settings.F0, settings.SkinColorMultiplier);
+    data.skinDetailParams = float4(settings.SkinDetailTiling, settings.SkinDetailTiling, settings.SkinDetailStrength, float(settings.EnableSkinDetail));
     return data;
 }
 
