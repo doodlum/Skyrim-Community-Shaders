@@ -208,7 +208,7 @@ void Upscaling::UpdateJitter()
 
 		auto state = globals::state;
 
-		ffxFsr3UpscalerGetJitterOffset(&jitter.x, &jitter.y, gameViewport->frameCount, 8);
+		ffxFsr3UpscalerGetJitterOffset(&jitter.x, &jitter.y, globals::state->frameCount, 8);
 
 		if (globals::game::isVR)
 			gameViewport->projectionPosScaleX = -jitter.x / state->screenSize.x;

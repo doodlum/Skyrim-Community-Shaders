@@ -159,6 +159,7 @@ public:
 	ConstantBuffer* featureDataCB = nullptr;
 
 	Util::FrameChecker frameChecker;
+	uint frameCount = 0;
 
 	// Skyrim constants
 	float2 screenSize = {};
