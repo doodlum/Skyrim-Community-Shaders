@@ -17,7 +17,7 @@ uint8_t LerpUint8_t(const uint8_t oldValue, const uint8_t newVal, const float le
 
 void LerpColor(const RE::TESWeather::Data::Color3& oldColor, RE::TESWeather::Data::Color3& newColor, const float changePct)
 {
-	newColor.red = (int8_t)std::lerp(-128, 127, changePct);  //LerpInt8_t(oldColor.red, newColor.red, changePct)
+	newColor.red = (int8_t)std::lerp(-128, 127, changePct);
 	newColor.green = (int8_t)std::lerp(oldColor.green, newColor.green, changePct);
 	newColor.blue = LerpInt8_t(oldColor.blue, newColor.blue, changePct);
 }

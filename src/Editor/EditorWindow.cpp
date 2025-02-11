@@ -2,6 +2,9 @@
 
 #include "State.h"
 #include "features/Weather.h"
+#include "imgui_internal.h"
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(EditorWindow::Settings, recordMarkers, markedRecords)
 
 bool ContainsStringIgnoreCase(const std::string_view a_string, const std::string_view a_substring)
 {
@@ -90,10 +93,12 @@ void EditorWindow::ShowObjectsWindow()
 		HelpMarker("Type a part of an object name to filter the list.");
 
 		// Create a table for the right column with "Name" and "ID" headers
-		if (ImGui::BeginTable("DetailsTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+		if (ImGui::BeginTable("DetailsTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
 			ImGui::TableSetupColumn("Editor ID", ImGuiTableColumnFlags_WidthStretch);
 			ImGui::TableSetupColumn("Form ID", ImGuiTableColumnFlags_WidthStretch);
-			ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthStretch);  // Added File column
+			ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthStretch);    // Added File column
+			ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthStretch);  // Added File column
+
 			ImGui::TableHeadersRow();
 
 			// Display objects based on the selected category
@@ -106,15 +111,46 @@ void EditorWindow::ShowObjectsWindow()
 				if (!ContainsStringIgnoreCase(widgets[i]->GetEditorID(), filterBuffer))
 					continue;  // Skip widgets that don't match the filter
 
+				auto editorLabel = widgets[i]->GetEditorID();
+				auto markedRecord = settings.markedRecords.find(editorLabel);
 				ImGui::TableNextRow();
+
+				// Set background colour
+				if (markedRecord != settings.markedRecords.end()) {
+					auto& color = settings.recordMarkers[markedRecord->second];
+					ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::ColorConvertFloat4ToU32(color));
+					ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg1, ImGui::ColorConvertFloat4ToU32(color));
+				} else {
+					ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGuiCol_TableRowBg);
+					ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg1, ImGuiCol_TableRowBgAlt);
+				}
 
 				ImGui::TableSetColumnIndex(0);
 
 				// Editor ID column
-				if (ImGui::Selectable(widgets[i]->GetEditorID().c_str(), widgets[i]->IsOpen(), ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick)) {
+				if (ImGui::Selectable(editorLabel.c_str(), widgets[i]->IsOpen(), ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick)) {
 					if (ImGui::IsMouseDoubleClicked(0)) {
 						widgets[i]->SetOpen(true);
 					}
+				}
+
+				// Opens a context menu on right click to mark records by color
+				if (ImGui::BeginPopupContextItem(std::format("widget_context_menu##{}", widgets[i]->GetFormID()).c_str(), ImGuiPopupFlags_MouseButtonRight)) {
+					auto& markedRecords = settings.markedRecords;
+
+					for (auto& recordMarker : settings.recordMarkers) {
+						if (ImGui::MenuItem(recordMarker.first.c_str())) {
+							settings.markedRecords[editorLabel] = recordMarker.first;
+							Save();
+						}
+					}
+
+					if (ImGui::MenuItem("Remove")) {
+						markedRecords.erase(editorLabel);
+						Save();
+					}
+
+					ImGui::EndPopup();
 				}
 
 				// Form ID column
@@ -124,6 +160,13 @@ void EditorWindow::ShowObjectsWindow()
 				// File column
 				ImGui::TableNextColumn();
 				ImGui::Text(widgets[i]->GetFilename().c_str());
+
+				// Status column
+				ImGui::TableNextColumn();
+
+				if (markedRecord != settings.markedRecords.end()) {
+					ImGui::Text(markedRecord->second.c_str());
+				}
 			}
 
 			ImGui::EndTable();
@@ -204,6 +247,8 @@ void EditorWindow::RenderUI()
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Save all"))
 				SaveAll();
+			if (ImGui::MenuItem("Settings"))
+				showSettingsWindow = !showSettingsWindow;
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Edit")) {
@@ -219,14 +264,22 @@ void EditorWindow::RenderUI()
 	}
 
 	auto width = ImGui::GetIO().DisplaySize.x;
+	auto height = ImGui::GetIO().DisplaySize.y;
 	auto viewportWidth = width * 0.5f;                // Make the viewport take up 50% of the width
 	auto sideWidth = (width - viewportWidth) / 2.0f;  // Divide the remaining width equally between the side windows
-
 	ImGui::SetNextWindowSize(ImVec2(sideWidth, ImGui::GetIO().DisplaySize.y * 0.75f));
 	ShowObjectsWindow();
 
 	ImGui::SetNextWindowSize(ImVec2(viewportWidth, ImGui::GetIO().DisplaySize.y * 0.5f));
 	ShowViewportWindow();
+
+	auto settingsWindowHeight = height * 0.25f;
+	auto settingsWindowWidth = width * 0.25f;
+	ImGui::SetNextWindowSizeConstraints(ImVec2(settingsWindowWidth, settingsWindowHeight), ImVec2(FLT_MAX, FLT_MAX));
+	ImGui::SetNextWindowPos({ (width / 2.0f) - (settingsWindowWidth / 2.0f), (height / 2.0f) - (settingsWindowHeight / 2.0f) });
+	if (showSettingsWindow) {
+		ShowSettingsWindow();
+	}
 
 	ShowWidgetWindow();
 }
@@ -235,6 +288,8 @@ void EditorWindow::SetupResources()
 {
 	auto dataHandler = RE::TESDataHandler::GetSingleton();
 	auto& weatherArray = dataHandler->GetFormArray<RE::TESWeather>();
+
+	Load();
 
 	for (auto weather : weatherArray) {
 		auto widget = new WeatherWidget(weather);
@@ -301,4 +356,138 @@ void EditorWindow::SaveAll()
 		if (lightingTemplate->IsOpen())
 			lightingTemplate->Save();
 	}
+
+	Save();
+}
+
+void EditorWindow::SaveSettings()
+{
+	j = settings;
+}
+
+void EditorWindow::LoadSettings()
+{
+	if (!j.empty())
+		settings = j;
+}
+
+void EditorWindow::ShowSettingsWindow()
+{
+	ImGui::Begin("Settings");
+
+	// Static variable to track the selected category
+	static std::string selectedOption = "Preferences";
+
+	// Create a table with two columns
+	if (ImGui::BeginTable("SettingsTable", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInner | ImGuiTableFlags_NoHostExtendX)) {
+		// Set up column widths
+		ImGui::TableSetupColumn("Options", ImGuiTableColumnFlags_WidthStretch, 0.3f);     // 30% width
+		ImGui::TableSetupColumn("##Settings", ImGuiTableColumnFlags_WidthStretch, 0.7f);  // 70% width
+
+		ImGui::TableNextRow();
+
+		// Left column: Options
+		ImGui::TableSetColumnIndex(0);
+		// List of options
+		const char* options[] = { "Preferences" };
+		for (int i = 0; i < IM_ARRAYSIZE(options); ++i) {
+			if (ImGui::Selectable(options[i], selectedOption == options[i])) {
+				selectedOption = options[i];  // Update selected option
+			}
+		}
+
+		// Right column: Option settings
+		ImGui::TableSetColumnIndex(1);
+
+		// Create a table for the right column.
+		if (selectedOption == "Preferences") {
+			if (ImGui::BeginTable("PreferencesTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+				ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch);
+				ImGui::TableSetupColumn("Colour", ImGuiTableColumnFlags_WidthStretch);
+
+				auto& recordMarkers = settings.recordMarkers;
+
+				for (auto& recordMarker : recordMarkers) {
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text(recordMarker.first.c_str());
+
+					ImGui::TableSetColumnIndex(1);
+					if (ImGui::ColorEdit4(std::format("Color##{}", recordMarker.first).c_str(), (float*)&recordMarker.second)) {
+						Save();
+					};
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+
+				if (recordMarkers.size() < maxRecordMarkers && ImGui::Selectable("Add new marker")) {
+					recordMarkers.insert({ std::string("New marker##new{}", recordMarkers.size()), { 0, 0, 0, 255 } });
+					Save();
+				}
+
+				ImGui::EndTable();
+			}
+		}
+		ImGui::EndTable();
+	}
+
+	ImGui::End();
+}
+
+void EditorWindow::Save()
+{
+	SaveSettings();
+	const std::string filePath = State::GetSingleton()->folderPath;
+	const std::string file = std::format("{}\\{}.json", filePath, settingsFilename);
+
+	std::ofstream settingsFile(file);
+
+	if (!settingsFile.good() || !settingsFile.is_open()) {
+		logger::warn("Failed to open settings file: {}", file);
+		return;
+	}
+
+	if (settingsFile.fail()) {
+		logger::warn("Unable to create settings file: {}", file);
+		settingsFile.close();
+		return;
+	}
+
+	logger::info("Saving settings file: {}", file);
+
+	try {
+		settingsFile << j.dump(1);
+
+		settingsFile.close();
+	} catch (const nlohmann::json::parse_error& e) {
+		logger::warn("Error parsing settings for settings file ({}) : {}\n", filePath, e.what());
+		settingsFile.close();
+	}
+}
+
+void EditorWindow::Load()
+{
+	std::string filePath = std::format("{}\\{}.json", State::GetSingleton()->folderPath, settingsFilename);
+
+	std::ifstream settingsFile(filePath);
+
+	if (!std::filesystem::exists(filePath)) {
+		// Does not have any settings so just return.
+		return;
+	}
+
+	if (!settingsFile.good() || !settingsFile.is_open()) {
+		logger::warn("Failed to load settings file: {}", filePath);
+		return;
+	}
+
+	try {
+		j << settingsFile;
+		settingsFile.close();
+	} catch (const nlohmann::json::parse_error& e) {
+		logger::warn("Error parsing settings for file ({}) : {}\n", filePath, e.what());
+		settingsFile.close();
+	}
+	LoadSettings();
 }
