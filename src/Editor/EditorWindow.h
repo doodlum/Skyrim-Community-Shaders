@@ -18,6 +18,7 @@ public:
 	}
 
 	bool open = false;
+	const static int maxRecordMarkers = 10;
 
 	Texture2D* tempTexture;
 
@@ -37,6 +38,26 @@ public:
 
 	void Draw();
 
+	struct Settings
+	{
+		std::map<std::string, ImVec4> recordMarkers = {
+			{ "TO-DO", { 0.9f, 0.15, 0.15, 1 } },
+			{ "In-progress", { 0.5f, 0.8f, 0.0f, 1 } },
+			{ "Done", { 0.05f, 0.85f, 0.3f, 1 } }
+		};
+		std::map<std::string, std::string> markedRecords;
+	};
+
+	Settings settings;
+
 private:
 	void SaveAll();
+	void SaveSettings();
+	void LoadSettings();
+	void ShowSettingsWindow();
+	void Save();
+	void Load();
+	json j;
+	std::string settingsFilename = "EditorSettings";
+	bool showSettingsWindow = false;
 };
