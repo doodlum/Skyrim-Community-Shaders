@@ -277,14 +277,15 @@ namespace Glints
 				selectedSample = 2;
 		}
 
-		int2 selectedGlint = (selectedSample == 0) ? glint0 : (selectedSample == 1) ? glint1 : glint2;
+		int2 selectedGlint = (selectedSample == 0) ? glint0 : (selectedSample == 1) ? glint1 :
+		                                                                              glint2;
 		float3 randSelected = Random::pcg3d(uint3(selectedGlint + 2147483648, vars.gridSeed)) / 4294967296.0;
 
 		// Get per surface cell per slope cell random numbers
 		float4 randSlopesB, randSlopesG;
 		float2 slopeLerp;
 		CustomRand4Texture(roughness, slope, randSelected.yz, randSlopesB, randSlopesG, slopeLerp);
-		
+
 		// Compute microfacet count with randomization
 		float logDensityRand = clamp(sampleNormalDistribution(float(randSelected.x), logDensity.r, densityRandomization), 0.0, 50.0);
 		float microfacetCount = max(1e-8, vars.footprintArea.r * exp(logDensityRand));
@@ -493,8 +494,7 @@ namespace Glints
 		tetraB.x *= 2;
 		tetraC.x *= 2;
 		tetraD.x *= 2;
-		if (centerSpecialCase)
-		{
+		if (centerSpecialCase) {
 			tetraA.x = (tetraA.y == 0) ? 3 : tetraA.x;
 			tetraB.x = (tetraB.y == 0) ? 3 : tetraB.x;
 			tetraC.x = (tetraC.y == 0) ? 3 : tetraC.x;
@@ -505,29 +505,22 @@ namespace Glints
 		accumWeights.y += accumWeights.x;
 		accumWeights.z += accumWeights.y;
 
-		if (rnd < accumWeights.x)
-		{
+		if (rnd < accumWeights.x) {
 			vars.uv = RotateUV(uv, thetaBins[tetraA.x], 0.0.rr) / divLods[tetraA.z] / float2(1.0, ratios[tetraA.y]);
 			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraA.z]), fmod(thetaBins[tetraA.x], Math::TAU), ratios[tetraA.y])) * 4294967296.0;
 			vars.footprintArea = ratios[tetraA.y] * footprintAreas[tetraA.z];
 			vars.gridWeight = tetraBarycentricWeights.x;
-		}
-		else if (rnd < accumWeights.y)
-		{
+		} else if (rnd < accumWeights.y) {
 			vars.uv = RotateUV(uv, thetaBins[tetraB.x], 0.0.rr) / divLods[tetraB.z] / float2(1.0, ratios[tetraB.y]);
 			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraB.z]), fmod(thetaBins[tetraB.x], Math::TAU), ratios[tetraB.y])) * 4294967296.0;
 			vars.footprintArea = ratios[tetraB.y] * footprintAreas[tetraB.z];
 			vars.gridWeight = tetraBarycentricWeights.y;
-		}
-		else if (rnd < accumWeights.z)
-		{
+		} else if (rnd < accumWeights.z) {
 			vars.uv = RotateUV(uv, thetaBins[tetraC.x], 0.0.rr) / divLods[tetraC.z] / float2(1.0, ratios[tetraC.y]);
 			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraC.z]), fmod(thetaBins[tetraC.x], Math::TAU), ratios[tetraC.y])) * 4294967296.0;
 			vars.footprintArea = ratios[tetraC.y] * footprintAreas[tetraC.z];
 			vars.gridWeight = tetraBarycentricWeights.z;
-		}
-		else
-		{
+		} else {
 			vars.uv = RotateUV(uv, thetaBins[tetraD.x], 0.0.rr) / divLods[tetraD.z] / float2(1.0, ratios[tetraD.y]);
 			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraD.z]), fmod(thetaBins[tetraD.x], Math::TAU), ratios[tetraD.y])) * 4294967296.0;
 			vars.footprintArea = ratios[tetraD.y] * footprintAreas[tetraD.z];

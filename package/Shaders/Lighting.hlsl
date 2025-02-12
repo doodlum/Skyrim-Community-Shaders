@@ -1681,7 +1681,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	PBR::SurfaceProperties pbrSurfaceProperties = PBR::InitSurfaceProperties();
 
 	pbrSurfaceProperties.Noise = screenNoise;
-	
+
 	pbrSurfaceProperties.Roughness = saturate(rawRMAOS.x);
 	pbrSurfaceProperties.Metallic = saturate(rawRMAOS.y);
 	pbrSurfaceProperties.AO = rawRMAOS.z;
