@@ -96,7 +96,7 @@ void EditorWindow::ShowObjectsWindow()
 		if (ImGui::BeginTable("DetailsTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
 			ImGui::TableSetupColumn("Editor ID", ImGuiTableColumnFlags_WidthStretch);
 			ImGui::TableSetupColumn("Form ID", ImGuiTableColumnFlags_WidthStretch);
-			ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthStretch);    // Added File column
+			ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthStretch);  // Added File column
 			ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthStretch);
 
 			ImGui::TableHeadersRow();
