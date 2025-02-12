@@ -18,12 +18,10 @@ Texture2DArray<float3> stbn_vec3_2Dx1D_128x128x64 : register(t4);
 
 #endif
 
-Texture2D<float3> Masks2Texture : register(t5);
-
 #if defined(SSGI)
-Texture2D<float> SsgiAoTexture : register(t6);
-Texture2D<float4> SsgiYTexture : register(t7);
-Texture2D<float2> SsgiCoCgTexture : register(t8);
+Texture2D<float> SsgiAoTexture : register(t5);
+Texture2D<float4> SsgiYTexture : register(t6);
+Texture2D<float2> SsgiCoCgTexture : register(t7);
 #endif
 
 RWTexture2D<float4> MainRW : register(u0);
@@ -53,7 +51,6 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 
 	float3 diffuseColor = MainRW[dispatchID.xy];
 	float3 albedo = AlbedoTexture[dispatchID.xy];
-	float3 masks2 = Masks2Texture[dispatchID.xy];
 
 	float3 normalWS = normalize(mul(FrameBuffer::CameraViewInverse[eyeIndex], float4(normalVS, 0)).xyz);
 
@@ -109,6 +106,8 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 	visibility *= ssgiAo;
 #	if defined(INTERIOR)
 	linDiffuseColor *= ssgiAo;
+#	else
+	linDiffuseColor *= lerp(ssgiAo, 1.0, 0.5);
 #	endif
 
 	float clampedLinAlbedo = min(linAlbedo, 0.5);

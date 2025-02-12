@@ -51,9 +51,9 @@ struct ScreenSpaceGI : Feature
 		int ResolutionMode = 1;  // 0-full, 1-half, 2-quarter
 		// visual
 		float MinScreenRadius = 0.01f;
-		float AORadius = 100.f;
-		float GIRadius = 400.f;
-		float Thickness = 75.f;
+		float AORadius = 256.f;
+		float GIRadius = 256.f;
+		float Thickness = 64.f;
 		float2 DepthFadeRange = { 4e4, 5e4 };
 		// gi
 		float GISaturation = .9f;
@@ -61,8 +61,8 @@ struct ScreenSpaceGI : Feature
 		float GIBounceFade = .3f;
 		float GIDistanceCompensation = 0.f;
 		// mix
-		float AOPower = 2.f;
-		float GIStrength = 1.5f;
+		float AOPower = 1.f;
+		float GIStrength = 1.f;
 		// denoise
 		bool EnableTemporalDenoiser = true;
 		bool EnableBlur = true;

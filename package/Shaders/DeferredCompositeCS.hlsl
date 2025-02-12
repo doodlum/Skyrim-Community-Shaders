@@ -11,17 +11,16 @@ Texture2D<float3> SpecularTexture : register(t0);
 Texture2D<unorm float3> AlbedoTexture : register(t1);
 Texture2D<unorm float3> NormalRoughnessTexture : register(t2);
 Texture2D<unorm float3> MasksTexture : register(t3);
-Texture2D<unorm float3> Masks2Texture : register(t4);
 
 RWTexture2D<float4> MainRW : register(u0);
 RWTexture2D<float4> NormalTAAMaskSpecularMaskRW : register(u1);
 RWTexture2D<float2> MotionVectorsRW : register(u2);
-Texture2D<float> DepthTexture : register(t5);
+Texture2D<float> DepthTexture : register(t4);
 
 #if defined(DYNAMIC_CUBEMAPS)
-Texture2D<float3> ReflectanceTexture : register(t6);
-TextureCube<float3> EnvTexture : register(t7);
-TextureCube<float3> EnvReflectionsTexture : register(t8);
+Texture2D<float3> ReflectanceTexture : register(t5);
+TextureCube<float3> EnvTexture : register(t6);
+TextureCube<float3> EnvReflectionsTexture : register(t7);
 
 SamplerState LinearSampler : register(s0);
 #endif
@@ -29,21 +28,20 @@ SamplerState LinearSampler : register(s0);
 #if defined(SKYLIGHTING)
 #	include "Skylighting/Skylighting.hlsli"
 
-Texture3D<sh2> SkylightingProbeArray : register(t9);
-Texture2DArray<float3> stbn_vec3_2Dx1D_128x128x64 : register(t10);
+Texture3D<sh2> SkylightingProbeArray : register(t8);
+Texture2DArray<float3> stbn_vec3_2Dx1D_128x128x64 : register(t9);
 
 #endif
 
 #if defined(SSGI)
-Texture2D<float4> SsgiAoTexture : register(t11);
-Texture2D<float4> SsgiYTexture : register(t12);
-Texture2D<float4> SsgiCoCgTexture : register(t13);
-Texture2D<float4> SsgiSpecularTexture : register(t14);
+Texture2D<float4> SsgiAoTexture : register(t10);
+Texture2D<float4> SsgiYTexture : register(t11);
+Texture2D<float4> SsgiCoCgTexture : register(t12);
+Texture2D<float4> SsgiSpecularTexture : register(t13);
 
 void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 {
 	ao = 1 - SsgiAoTexture[pixCoord];
-	ao = pow(ao, 0.25);
 
 	float4 ssgiIlYSh = SsgiYTexture[pixCoord];
 	float ssgiIlY = SphericalHarmonics::FuncProductIntegral(ssgiIlYSh, lobe);
@@ -77,7 +75,6 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 	float3 diffuseColor = MainRW[dispatchID.xy];
 	float3 specularColor = SpecularTexture[dispatchID.xy];
 	float3 albedo = AlbedoTexture[dispatchID.xy];
-	float3 masks2 = Masks2Texture[dispatchID.xy];
 
 	float depth = DepthTexture[dispatchID.xy];
 	float4 positionWS = float4(2 * float2(uv.x, -uv.y + 1) - 1, depth, 1);
@@ -89,7 +86,7 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 
 	float glossiness = normalGlossiness.z;
 
-	float3 color = diffuseColor + specularColor;
+	float3 color = Color::GammaToLinear(diffuseColor) + specularColor;
 
 #if defined(DYNAMIC_CUBEMAPS)
 
@@ -167,13 +164,17 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 		ssgiIlSpecular = ssgiMixed.rgb;
 #		endif
 
-		finalIrradiance = finalIrradiance * ssgiAo + ssgiIlSpecular;
+		finalIrradiance = (finalIrradiance * ssgiAo * smoothstep(0.0, 1.0 - (1.0 / 7.0), glossiness)) + ssgiIlSpecular;
+#	else
+		finalIrradiance *= smoothstep(0.0, 1.0 - (1.0 / 7.0), glossiness);
 #	endif
 
-		color += reflectance * Color::LinearToGamma(finalIrradiance);
+		color += reflectance * finalIrradiance;
 	}
 
 #endif
+
+	color = Color::LinearToGamma(color);
 
 #if defined(DEBUG)
 
