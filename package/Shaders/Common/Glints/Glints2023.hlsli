@@ -222,7 +222,7 @@ namespace Glints
 
 	void CustomRand4Texture(float microfacetRoughness, float2 slope, float2 slopeRandOffset, out float4 outUniform, out float4 outGaussian, out float2 slopeLerp)
 	{
-		uint2 size = 64;
+		uint2 size = 128;
 		float2 slope2 = abs(slope) / microfacetRoughness;
 		slope2 = slope2 + (slopeRandOffset * size);
 		slopeLerp = frac(slope2);
