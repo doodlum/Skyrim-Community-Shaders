@@ -500,7 +500,7 @@ namespace Glints
 		} else if (rnd < accumWeights.y) {
 			// PREPARE NEEDED ROTATIONS
 			tetraB.x *= 2;
-			if (centerSpecialCase) 
+			if (centerSpecialCase)
 				tetraB.x = (tetraB.y == 0) ? 3 : tetraB.x;
 			vars.uv = RotateUV(uv, thetaBins[tetraB.x], 0.0.rr) / divLods[tetraB.z] / float2(1.0, ratios[tetraB.y]);
 			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraB.z]), fmod(thetaBins[tetraB.x], Math::TAU), ratios[tetraB.y])) * 4294967296.0;
