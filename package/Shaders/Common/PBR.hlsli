@@ -106,7 +106,7 @@ namespace PBR
 #ifdef GLINT
 		surfaceProperties.GlintCache.uv = 0;
 		surfaceProperties.GlintCache.gridSeed = 0;
-		surfaceProperties.GlintCache.footprintArea = surfaceProperties.GlintCache.gridWeight = 0;
+		surfaceProperties.GlintCache.footprintArea = 0;
 		surfaceProperties.Noise = 0;
 #endif
 

@@ -217,7 +217,6 @@ namespace Glints
 		float2 uv;
 		uint gridSeed;
 		float footprintArea;
-		float gridWeight;
 	};
 
 	void CustomRand4Texture(float microfacetRoughness, float2 slope, float2 slopeRandOffset, out float4 outUniform, out float4 outGaussian, out float2 slopeLerp)
@@ -289,20 +288,17 @@ namespace Glints
 		// Compute microfacet count with randomization
 		float logDensityRand = clamp(sampleNormalDistribution(float(randSelected.x), logDensity.r, densityRandomization), 0.0, 50.0);
 		float microfacetCount = max(1e-8, vars.footprintArea.r * exp(logDensityRand));
-		float microfacetCountBlended = microfacetCount * vars.gridWeight;
 
 		// Compute binomial properties
 		float hitProba = roughness * targetNDF;
-		float footprintOneHitProba = (1.0 - pow(abs(1.0 - hitProba), microfacetCountBlended));
-		float footprintMean = (microfacetCountBlended - 1.0) * hitProba;
-		float footprintSTD = sqrt((microfacetCountBlended - 1.0) * hitProba * (1.0 - hitProba));
+		float footprintOneHitProba = (1.0 - pow(abs(1.0 - hitProba), microfacetCount));
+		float footprintMean = (microfacetCount - 1.0) * hitProba;
+		float footprintSTD = sqrt((microfacetCount - 1.0) * hitProba * (1.0 - hitProba));
 		float binomialSmoothWidth = 0.1 * clamp(footprintOneHitProba * 10, 0.0, 1.0) * clamp((1.0 - footprintOneHitProba) * 10, 0.0, 1.0);
 
 		// Generate numbers of reflecting microfacets
-		float result = GenerateAngularBinomialValueForSurfaceCell(randSlopesB, randSlopesG, slopeLerp, footprintOneHitProba, binomialSmoothWidth, footprintMean, footprintSTD, microfacetCountBlended);
-		result /= microfacetCount;
-
-		return result;
+		float result = GenerateAngularBinomialValueForSurfaceCell(randSlopesB, randSlopesG, slopeLerp, footprintOneHitProba, binomialSmoothWidth, footprintMean, footprintSTD, microfacetCount);
+		return result / microfacetCount;
 	}
 
 	void GetAnisoCorrectingGridTetrahedron(bool centerSpecialCase, inout float thetaBinLerp, float ratioLerp, float lodLerp, out float3 p0, out float3 p1, out float3 p2, out float3 p3)
@@ -489,7 +485,7 @@ namespace Glints
 			thetaBinLerp = Remap01To(thetaBinLerp, 0.0, ratioLerp);
 		float4 tetraBarycentricWeights = GetBarycentricWeightsTetrahedron(float3(thetaBinLerp, ratioLerp, lodLerp), tetraA, tetraB, tetraC, tetraD);  // Compute barycentric coordinates within chosen tetrahedron
 
-		float3 accumWeights = normalize(tetraBarycentricWeights);
+		float3 accumWeights = tetraBarycentricWeights;
 		accumWeights.y += accumWeights.x;
 		accumWeights.z += accumWeights.y;
 
@@ -501,16 +497,14 @@ namespace Glints
 			vars.uv = RotateUV(uv, thetaBins[tetraA.x], 0.0.rr) / divLods[tetraA.z] / float2(1.0, ratios[tetraA.y]);
 			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraA.z]), fmod(thetaBins[tetraA.x], Math::TAU), ratios[tetraA.y])) * 4294967296.0;
 			vars.footprintArea = ratios[tetraA.y] * footprintAreas[tetraA.z];
-			vars.gridWeight = tetraBarycentricWeights.x;
 		} else if (rnd < accumWeights.y) {
 			// PREPARE NEEDED ROTATIONS
 			tetraB.x *= 2;
-			if (centerSpecialCase)
+			if (centerSpecialCase) 
 				tetraB.x = (tetraB.y == 0) ? 3 : tetraB.x;
 			vars.uv = RotateUV(uv, thetaBins[tetraB.x], 0.0.rr) / divLods[tetraB.z] / float2(1.0, ratios[tetraB.y]);
 			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraB.z]), fmod(thetaBins[tetraB.x], Math::TAU), ratios[tetraB.y])) * 4294967296.0;
 			vars.footprintArea = ratios[tetraB.y] * footprintAreas[tetraB.z];
-			vars.gridWeight = tetraBarycentricWeights.y;
 		} else if (rnd < accumWeights.z) {
 			// PREPARE NEEDED ROTATIONS
 			tetraC.x *= 2;
@@ -519,7 +513,6 @@ namespace Glints
 			vars.uv = RotateUV(uv, thetaBins[tetraC.x], 0.0.rr) / divLods[tetraC.z] / float2(1.0, ratios[tetraC.y]);
 			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraC.z]), fmod(thetaBins[tetraC.x], Math::TAU), ratios[tetraC.y])) * 4294967296.0;
 			vars.footprintArea = ratios[tetraC.y] * footprintAreas[tetraC.z];
-			vars.gridWeight = tetraBarycentricWeights.z;
 		} else {
 			// PREPARE NEEDED ROTATIONS
 			tetraD.x *= 2;
@@ -528,7 +521,6 @@ namespace Glints
 			vars.uv = RotateUV(uv, thetaBins[tetraD.x], 0.0.rr) / divLods[tetraD.z] / float2(1.0, ratios[tetraD.y]);
 			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraD.z]), fmod(thetaBins[tetraD.x], Math::TAU), ratios[tetraD.y])) * 4294967296.0;
 			vars.footprintArea = ratios[tetraD.y] * footprintAreas[tetraD.z];
-			vars.gridWeight = tetraBarycentricWeights.w;
 		}
 	}
 
@@ -536,7 +528,7 @@ namespace Glints
 	{
 		float2 slope = H.xy;  // Orthographic slope projected grid
 		float rescaledTargetNDF = targetNDF / maxNDF;
-		float sampleContribution = SampleGlintGridSimplex(noise, logDensity, roughness, densityRandomization, vars, slope, rescaledTargetNDF) / vars.gridWeight;
+		float sampleContribution = SampleGlintGridSimplex(noise, logDensity, roughness, densityRandomization, vars, slope, rescaledTargetNDF);
 		return min(sampleContribution * (1.0 / roughness), 20) * maxNDF;  // somewhat brute force way of prevent glazing angle extremities}
 	}
 }
