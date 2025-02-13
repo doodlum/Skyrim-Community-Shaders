@@ -1,5 +1,6 @@
 #include "FeatureBuffer.h"
 
+#include "Features/CloudShadows.h"
 #include "Features/DynamicCubemaps.h"
 #include "Features/ExtendedMaterials.h"
 #include "Features/GrassLighting.h"
@@ -7,7 +8,6 @@
 #include "Features/Skylighting.h"
 #include "Features/TerrainShadows.h"
 #include "Features/WetnessEffects.h"
-#include "Features/CloudShadows.h"
 
 #include "TruePBR.h"
 
