@@ -322,13 +322,8 @@ struct PS_OUTPUT
 	float4 NormalGlossiness : SV_Target2;
 	float4 Albedo : SV_Target3;
 	float4 Specular : SV_Target4;
-#		if defined(TRUE_PBR)
 	float4 Reflectance : SV_Target5;
-#		endif  // TRUE_PBR
 	float4 Masks : SV_Target6;
-#		if defined(TRUE_PBR)
-	float4 Parameters : SV_Target7;
-#		endif  // TRUE_PBR
 #	endif      // RENDER_DEPTH
 };
 #else
@@ -717,10 +712,24 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	psout.Albedo = float4(Color::LinearToGamma(indirectDiffuseLobeWeight), 1);
 	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(normalVS), 1 - pbrSurfaceProperties.Roughness, 1);
 	psout.Reflectance = float4(indirectSpecularLobeWeight, 1);
-	psout.Parameters = float4(0, 0, 1, 1);
 #			else
+
+	float3 F0 = 0.04;
+	float roughness = 1.0;
+
+#	if defined(DYNAMIC_CUBEMAPS)
+#		if defined(SKYLIGHTING)
+	float3 reflectance = DynamicCubemaps::GetDynamicCubemap(normal, normal, viewDirection, roughness, F0, 0);
+#		else
+	float3 reflectance = DynamicCubemaps::GetDynamicCubemap(normal, normal, viewDirection, roughness, F0);
+#		endif
+#	else
+	float3 reflectance = 0;
+#	endif
+
+	psout.Reflectance = float4(reflectance, 1);
 	psout.Albedo = float4(albedo, 1);
-	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(normalVS), specColor.w, 1);
+	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(normalVS), 1.0 - roughness, 1);
 #			endif
 
 	psout.Specular = float4(specularColor, 1);
