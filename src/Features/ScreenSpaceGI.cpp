@@ -97,7 +97,7 @@ void ScreenSpaceGI::DrawSettings()
 
 		ImGui::TableNextColumn();
 		if (ImGui::Button("Standard", { -1, 0 })) {
-			settings.NumSlices = 5;
+			settings.NumSlices = 2;
 			settings.NumSteps = 8;
 			settings.ResolutionMode = 1;
 			settings.EnableBlur = true;
@@ -562,8 +562,6 @@ bool ScreenSpaceGI::ShadersOK()
 
 void ScreenSpaceGI::UpdateSB()
 {
-	auto viewport = globals::game::graphicsState;
-
 	float2 res = { (float)texRadiance->desc.Width, (float)texRadiance->desc.Height };
 	float2 dynres = Util::ConvertToDynamic(res);
 	dynres = { floor(dynres.x), floor(dynres.y) };
@@ -588,7 +586,7 @@ void ScreenSpaceGI::UpdateSB()
 		data.RcpTexDim = float2(1.0f) / res;
 		data.FrameDim = dynres;
 		data.RcpFrameDim = float2(1.0f) / dynres;
-		data.FrameIndex = viewport->frameCount;
+		data.FrameIndex = globals::state->frameCount;
 
 		data.NumSlices = settings.NumSlices;
 		data.NumSteps = settings.NumSteps;

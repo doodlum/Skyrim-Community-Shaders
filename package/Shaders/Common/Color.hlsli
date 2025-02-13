@@ -68,15 +68,6 @@ namespace Color
 	{
 #if defined(TRUE_PBR)
 		return color * Math::PI;  // Compensate for traditional Lambertian diffuse
-#elif defined(SKIN) && defined(PBR_SKIN)
-		if (SharedData::skinData.skinParams.w > 0.0)
-		{
-			return color * Math::PI;  // Compensate for traditional Lambertian diffuse
-		}
-		else
-		{
-			return color;
-		}
 #else
 		return color;
 #endif
