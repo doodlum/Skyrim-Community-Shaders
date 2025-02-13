@@ -2301,7 +2301,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 F0 = 0.04;
 	float roughness = 1.0;
-	
+
 #	if defined(ENVMAP) || defined(MULTI_LAYER_PARALLAX) || defined(EYE)
 	float envMask = EnvmapData.x * MaterialData.x;
 
@@ -2404,7 +2404,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	else
 	float3 reflectance = 0;
 #	endif
-	
+
 	float2 screenMotionVector = MotionBlur::GetSSMotionVector(input.WorldPosition, input.PreviousWorldPosition, eyeIndex);
 
 #	if defined(WETNESS_EFFECTS)

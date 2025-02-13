@@ -166,7 +166,7 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, out float ao, out float3 il)
 
 		finalIrradiance = (finalIrradiance * ssgiAo) + ssgiIlSpecular;
 #	else
-	//	finalIrradiance *= sqrt(glossiness);
+		//	finalIrradiance *= sqrt(glossiness);
 #	endif
 
 		color += reflectance * finalIrradiance;

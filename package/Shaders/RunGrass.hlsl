@@ -324,7 +324,7 @@ struct PS_OUTPUT
 	float4 Specular : SV_Target4;
 	float4 Reflectance : SV_Target5;
 	float4 Masks : SV_Target6;
-#	endif      // RENDER_DEPTH
+#	endif  // RENDER_DEPTH
 };
 #else
 struct PS_OUTPUT
@@ -717,15 +717,15 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 F0 = 0.04;
 	float roughness = 1.0;
 
-#	if defined(DYNAMIC_CUBEMAPS)
-#		if defined(SKYLIGHTING)
+#				if defined(DYNAMIC_CUBEMAPS)
+#					if defined(SKYLIGHTING)
 	float3 reflectance = DynamicCubemaps::GetDynamicCubemap(normal, normal, viewDirection, roughness, F0, 0);
-#		else
+#					else
 	float3 reflectance = DynamicCubemaps::GetDynamicCubemap(normal, normal, viewDirection, roughness, F0);
-#		endif
-#	else
+#					endif
+#				else
 	float3 reflectance = 0;
-#	endif
+#				endif
 
 	psout.Reflectance = float4(reflectance, 1);
 	psout.Albedo = float4(albedo, 1);
