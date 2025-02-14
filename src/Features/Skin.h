@@ -43,6 +43,7 @@ struct Skin : Feature
         bool EnableSkinDetail = true;
         float SkinDetailStrength = 0.15f;
         float SkinDetailTiling = 10.0f;
+        bool ApplySpecularToWetness = false;
     } settings;
 
     struct alignas(16) SkinData
@@ -50,6 +51,8 @@ struct Skin : Feature
         float4 skinParams;
         float4 skinParams2;
         float4 skinDetailParams;
+        uint ApplySpecularToWetness;
+        uint pad0[3];
     };
 
     eastl::unique_ptr<Texture2D> texSkinDetail = nullptr;

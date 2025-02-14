@@ -1898,6 +1898,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float puddleWetness = SharedData::wetnessEffectsSettings.PuddleWetness * minWetnessAngle;
 #		if defined(SKIN)
 	rainWetness = SharedData::wetnessEffectsSettings.SkinWetness * SharedData::wetnessEffectsSettings.Wetness;
+#			if defined(PBR_SKIN)
+	if (SharedData::skinData.ApplySpecularToWetness) {
+		rainWetness += glossiness;
+		puddleWetness += glossiness;
+	}
+#			endif
 #		endif
 #		if defined(HAIR)
 	rainWetness = SharedData::wetnessEffectsSettings.SkinWetness * SharedData::wetnessEffectsSettings.Wetness * 0.8f;

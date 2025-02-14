@@ -135,6 +135,7 @@ namespace SharedData
         float4 skinParams;
 		float4 skinParams2;
 		float4 skinDetailParams;
+		uint ApplySpecularToWetness;
     };
 
 	cbuffer FeatureData : register(b6)
