@@ -529,6 +529,6 @@ namespace Glints
 		float2 slope = H.xy;  // Orthographic slope projected grid
 		float rescaledTargetNDF = targetNDF / maxNDF;
 		float sampleContribution = SampleGlintGridSimplex(noise, logDensity, roughness, densityRandomization, vars, slope, rescaledTargetNDF);
-		return min(sampleContribution * (1.0 / roughness), 20) * maxNDF;  // somewhat brute force way of prevent glazing angle extremities}
+		return min(sampleContribution * (1.0 / roughness), 60) * maxNDF;  // somewhat brute force way of prevent glazing angle extremities}
 	}
 }
