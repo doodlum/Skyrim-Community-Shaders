@@ -1190,8 +1190,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			refractedViewDirection = -refract(-viewDirection, entryNormal, eta);
 			[flatten] if (!input.WorldSpace)
 				refractedViewDirectionWS = normalize(mul(input.World[eyeIndex], float4(refractedViewDirection, 0)));
-			else
-				refractedViewDirectionWS = refractedViewDirection;
+			else refractedViewDirectionWS = refractedViewDirection;
 		}
 		else
 		{
