@@ -130,6 +130,12 @@ namespace SharedData
 		uint2 pad0;
 	};
 
+	struct CloudShadowsSettings
+	{
+		float Opacity;
+		float3 pad0;
+	};
+
 	struct SkinData
     {
         float4 skinParams;
@@ -147,6 +153,7 @@ namespace SharedData
 		LightLimitFixSettings lightLimitFixSettings;
 		WetnessEffectsSettings wetnessEffectsSettings;
 		SkylightingSettings skylightingSettings;
+		CloudShadowsSettings cloudShadowsSettings;
 		SkinData skinData;
 	};
 

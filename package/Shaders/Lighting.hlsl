@@ -1177,6 +1177,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #		if defined(TRUE_PBR) && !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 	bool PBRParallax = false;
+	float4 sampledCoatProperties = PBRParams2;
+	[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture0) != 0)
+	{
+		sampledCoatProperties = TexRimSoftLightWorldMapOverlaySampler.Sample(SampRimSoftLightWorldMapOverlaySampler, uv);
+		sampledCoatProperties.rgb = Color::Diffuse(sampledCoatProperties.rgb);
+	}
 	[branch] if (SharedData::extendedMaterialSettings.EnableParallax && (PBRFlags & PBR::Flags::HasDisplacement) != 0)
 	{
 		PBRParallax = true;
@@ -1185,7 +1191,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			displacementParams.HeightScale = PBRParams1.y;
 			displacementParams.DisplacementScale = 0.5;
 			displacementParams.DisplacementOffset = -0.25;
-			eta = (1 - sqrt(MultiLayerParallaxData.y)) / (1 + sqrt(MultiLayerParallaxData.y));
+
+			eta = lerp(1.0, (1 - sqrt(MultiLayerParallaxData.y)) / (1 + sqrt(MultiLayerParallaxData.y)), sampledCoatProperties.w);
 			[branch] if ((PBRFlags & PBR::Flags::CoatNormal) != 0)
 			{
 				entryNormalTS = normalize(TransformNormal(TexBackLightSampler.Sample(SampBackLightSampler, uvOriginal).xyz));
@@ -1196,7 +1203,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			}
 			entryNormal = normalize(mul(tbn, entryNormalTS));
 			refractedViewDirection = -refract(-viewDirection, entryNormal, eta);
-			refractedViewDirectionWS = normalize(mul(input.World[eyeIndex], float4(refractedViewDirection, 0)));
+			[flatten] if (!input.WorldSpace)
+				refractedViewDirectionWS = normalize(mul(input.World[eyeIndex], float4(refractedViewDirection, 0)));
+			else refractedViewDirectionWS = refractedViewDirection;
 		}
 		else
 		{
@@ -1715,6 +1724,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(TRUE_PBR)
 	PBR::SurfaceProperties pbrSurfaceProperties = PBR::InitSurfaceProperties();
 
+	pbrSurfaceProperties.Noise = screenNoise;
+
 	pbrSurfaceProperties.Roughness = saturate(rawRMAOS.x);
 	pbrSurfaceProperties.Metallic = saturate(rawRMAOS.y);
 	pbrSurfaceProperties.AO = rawRMAOS.z;
@@ -1726,7 +1737,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	pbrSurfaceProperties.GlintDensityRandomization = clamp(glintParameters.w, 0, 5);
 
 #		if defined(GLINT)
-	float glintNoise = Random::R1Modified(SharedData::FrameCountAlwaysActive, Random::pcg2d(uint2(input.Position.xy)) / 4294967296.0);
+	float glintNoise = Random::R1Modified(SharedData::FrameCount, Random::pcg2d(uint2(input.Position.xy)) / 4294967296.0);
 	PBR::Glints::PrecomputeGlints(glintNoise, uvOriginal, ddx(uvOriginal), ddy(uvOriginal), pbrSurfaceProperties.GlintScreenSpaceScale, pbrSurfaceProperties.GlintCache);
 #		endif
 
@@ -1745,15 +1756,15 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture0) != 0)
 		{
 			float4 sampledSubsurfaceProperties = TexRimSoftLightWorldMapOverlaySampler.Sample(SampRimSoftLightWorldMapOverlaySampler, uv);
-			pbrSurfaceProperties.SubsurfaceColor *= sampledSubsurfaceProperties.xyz;
+			pbrSurfaceProperties.SubsurfaceColor *= Color::Diffuse(sampledSubsurfaceProperties.xyz);
 			pbrSurfaceProperties.Thickness *= sampledSubsurfaceProperties.w;
 		}
 		pbrSurfaceProperties.Thickness = lerp(pbrSurfaceProperties.Thickness, 1, projectedMaterialWeight);
 	}
 	else if ((PBRFlags & PBR::Flags::TwoLayer) != 0)
 	{
-		pbrSurfaceProperties.CoatColor = PBRParams2.xyz;
-		pbrSurfaceProperties.CoatStrength = PBRParams2.w;
+		pbrSurfaceProperties.CoatColor = sampledCoatProperties.xyz;
+		pbrSurfaceProperties.CoatStrength = sampledCoatProperties.w;
 		pbrSurfaceProperties.CoatRoughness = MultiLayerParallaxData.x;
 		pbrSurfaceProperties.CoatF0 = MultiLayerParallaxData.y;
 
@@ -1761,12 +1772,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 		{
 			coatUv = uvOriginal;
-		}
-		[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture0) != 0)
-		{
-			float4 sampledCoatProperties = TexRimSoftLightWorldMapOverlaySampler.Sample(SampRimSoftLightWorldMapOverlaySampler, coatUv);
-			pbrSurfaceProperties.CoatColor *= sampledCoatProperties.xyz;
-			pbrSurfaceProperties.CoatStrength *= sampledCoatProperties.w;
 		}
 		[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture1) != 0)
 		{
@@ -1794,7 +1799,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture1) != 0)
 		{
 			float4 sampledFuzzProperties = TexBackLightSampler.Sample(SampBackLightSampler, uv);
-			pbrSurfaceProperties.FuzzColor *= sampledFuzzProperties.xyz;
+			pbrSurfaceProperties.FuzzColor *= Color::Diffuse(sampledFuzzProperties.xyz);
 			pbrSurfaceProperties.FuzzWeight *= sampledFuzzProperties.w;
 		}
 		pbrSurfaceProperties.FuzzWeight = lerp(pbrSurfaceProperties.FuzzWeight, 0, projectedMaterialWeight);
@@ -2404,7 +2409,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 	[branch] if (hasEmissive)
 	{
-		float3 glowColor = TexGlowSampler.Sample(SampGlowSampler, uv).xyz;
+		float3 glowColor = Color::Diffuse(TexGlowSampler.Sample(SampGlowSampler, uv).xyz);
 		emitColor *= glowColor;
 	}
 #	endif
@@ -2550,7 +2555,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	baseColor.xyz = lerp(baseColor.xyz, pow(baseColor.xyz, 1.0 + wetnessDarkeningAmount), 0.8);
 #		endif
 
-	float3 wetnessReflectance = WetnessEffects::GetWetnessAmbientSpecular(screenUV, wetnessNormal, worldSpaceVertexNormal, worldSpaceViewDirection, 1.0 - wetnessGlossinessSpecular) * wetnessGlossinessSpecular;
+	float3 wetnessReflectance = WetnessEffects::GetWetnessAmbientSpecular(screenUV, wetnessNormal, worldSpaceVertexNormal, worldSpaceViewDirection, waterRoughnessSpecular) * wetnessGlossinessSpecular;
 
 #		if !defined(DEFERRED)
 	wetnessSpecular += wetnessReflectance;
@@ -2901,20 +2906,28 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		endif
 	psout.Albedo = float4(outputAlbedo, psout.Diffuse.w);
 
+	const float wetnessGlossinessGain = 0.65;
 	float outGlossiness = saturate(glossiness * SSRParams.w);
 
 #		if defined(TRUE_PBR)
 	psout.Reflectance = float4(indirectSpecularLobeWeight, psout.Diffuse.w);
+#			if defined(WETNESS_EFFECTS)
+	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), lerp(pbrGlossiness, saturate(pbrGlossiness + wetnessGlossinessGain), wetnessGlossinessSpecular), psout.Diffuse.w);
+#			else
 	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), pbrGlossiness, psout.Diffuse.w);
 #		elif defined(SKIN) && defined(PBR_SKIN)
 	if (SharedData::skinData.skinParams.w > 0) {
 		psout.Reflectance = float4(indirectSpecularLobeWeight, psout.Diffuse.w);
+#				if defined(WETNESS_EFFECTS)
+		psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), lerp(pbrGlossiness, saturate(pbrGlossiness + wetnessGlossinessGain), wetnessGlossinessSpecular), psout.Diffuse.w);
+#				else
 		psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), pbrGlossiness, psout.Diffuse.w);
+#				endif
 	}
 	else {
 #			if defined(WETNESS_EFFECTS)
 		psout.Reflectance = float4(wetnessReflectance, psout.Diffuse.w);
-		psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), lerp(outGlossiness, 1.0, wetnessGlossinessSpecular), psout.Diffuse.w);
+		psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), lerp(outGlossiness, saturate(outGlossiness + wetnessGlossinessGain), wetnessGlossinessSpecular), psout.Diffuse.w);
 #			else
 		psout.Reflectance = float4(0.0.xxx, psout.Diffuse.w);
 		psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), outGlossiness, psout.Diffuse.w);
@@ -2922,7 +2935,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 #		elif defined(WETNESS_EFFECTS)
 	psout.Reflectance = float4(wetnessReflectance, psout.Diffuse.w);
-	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), lerp(outGlossiness, 1.0, wetnessGlossinessSpecular), psout.Diffuse.w);
+	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), lerp(outGlossiness, saturate(outGlossiness + wetnessGlossinessGain), wetnessGlossinessSpecular), psout.Diffuse.w);
 #		else
 	psout.Reflectance = float4(0.0.xxx, psout.Diffuse.w);
 	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), outGlossiness, psout.Diffuse.w);
@@ -2941,7 +2954,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (dynamicCubemap) {
 #				if defined(WETNESS_EFFECTS)
 		psout.Reflectance.xyz = max(envColor, wetnessReflectance);
-		psout.NormalGlossiness.z = lerp(1.0 - envRoughness, 1.0, wetnessGlossinessSpecular);
+		psout.NormalGlossiness.z = lerp(1.0 - envRoughness, saturate(1.0 - envRoughness + wetnessGlossinessGain), wetnessGlossinessSpecular);
 #				else
 		psout.Reflectance.xyz = envColor;
 		psout.NormalGlossiness.z = 1.0 - envRoughness;
