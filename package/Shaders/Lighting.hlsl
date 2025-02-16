@@ -2915,6 +2915,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), lerp(pbrGlossiness, saturate(pbrGlossiness + wetnessGlossinessGain), wetnessGlossinessSpecular), psout.Diffuse.w);
 #			else
 	psout.NormalGlossiness = float4(GBuffer::EncodeNormal(screenSpaceNormal), pbrGlossiness, psout.Diffuse.w);
+#			endif
 #		elif defined(SKIN) && defined(PBR_SKIN)
 	if (SharedData::skinData.skinParams.w > 0) {
 		psout.Reflectance = float4(indirectSpecularLobeWeight, psout.Diffuse.w);
