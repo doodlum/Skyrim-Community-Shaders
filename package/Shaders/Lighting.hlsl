@@ -1866,7 +1866,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 
 	puddle *= nearFactor;
-	puddle *= saturate(dot(worldSpaceNormal, float3(0, 0, 1)));
 
 	float3 wetnessSpecular = 0.0;
 
