@@ -1183,7 +1183,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			displacementParams.HeightScale = PBRParams1.y;
 			displacementParams.DisplacementScale = 0.5;
 			displacementParams.DisplacementOffset = -0.25;
-			
+
 			eta = lerp(1.0, (1 - sqrt(MultiLayerParallaxData.y)) / (1 + sqrt(MultiLayerParallaxData.y)), sampledCoatProperties.w);
 			[branch] if ((PBRFlags & PBR::Flags::CoatNormal) != 0)
 			{
@@ -1197,8 +1197,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			refractedViewDirection = -refract(-viewDirection, entryNormal, eta);
 			[flatten] if (!input.WorldSpace)
 				refractedViewDirectionWS = normalize(mul(input.World[eyeIndex], float4(refractedViewDirection, 0)));
-			else
-				refractedViewDirectionWS = refractedViewDirection;
+			else refractedViewDirectionWS = refractedViewDirection;
 		}
 		else
 		{
