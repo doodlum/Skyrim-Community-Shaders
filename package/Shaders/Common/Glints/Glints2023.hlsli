@@ -479,49 +479,33 @@ namespace Glints
 		float2 footprintAreas = float2(footprintAreaLOD0, footprintAreaLOD1);
 		float2 ratios = float2(ratio0, ratio1);
 		float4 thetaBins = float4(thetaBin0, thetaBinH, thetaBin1, 0.0);  // added 0.0 for center singularity case
-		float3 tetraA, tetraB, tetraC, tetraD;
-		GetAnisoCorrectingGridTetrahedron(centerSpecialCase, thetaBinLerp, ratioLerp, lodLerp, tetraA, tetraB, tetraC, tetraD);
+		float3 tetras[4];
+		GetAnisoCorrectingGridTetrahedron(centerSpecialCase, thetaBinLerp, ratioLerp, lodLerp, tetras[0], tetras[1], tetras[2], tetras[3]);
 		if (centerSpecialCase == true)  // Account for center singularity in barycentric computation
 			thetaBinLerp = Remap01To(thetaBinLerp, 0.0, ratioLerp);
-		float4 tetraBarycentricWeights = GetBarycentricWeightsTetrahedron(float3(thetaBinLerp, ratioLerp, lodLerp), tetraA, tetraB, tetraC, tetraD);  // Compute barycentric coordinates within chosen tetrahedron
+		float4 tetraBarycentricWeights = GetBarycentricWeightsTetrahedron(float3(thetaBinLerp, ratioLerp, lodLerp), tetras[0], tetras[1], tetras[2], tetras[3]);  // Compute barycentric coordinates within chosen tetrahedron
 
-		float3 accumWeights = tetraBarycentricWeights;
+		float3 accumWeights = normalize(tetraBarycentricWeights);
 		accumWeights.y += accumWeights.x;
 		accumWeights.z += accumWeights.y;
 
-		if (rnd < accumWeights.x) {
-			// PREPARE NEEDED ROTATIONS
-			tetraA.x *= 2;
-			if (centerSpecialCase)
-				tetraA.x = (tetraA.y == 0) ? 3 : tetraA.x;
-			vars.uv = RotateUV(uv, thetaBins[tetraA.x], 0.0.rr) / divLods[tetraA.z] / float2(1.0, ratios[tetraA.y]);
-			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraA.z]), fmod(thetaBins[tetraA.x], Math::TAU), ratios[tetraA.y])) * 4294967296.0;
-			vars.footprintArea = ratios[tetraA.y] * footprintAreas[tetraA.z];
-		} else if (rnd < accumWeights.y) {
-			// PREPARE NEEDED ROTATIONS
-			tetraB.x *= 2;
-			if (centerSpecialCase)
-				tetraB.x = (tetraB.y == 0) ? 3 : tetraB.x;
-			vars.uv = RotateUV(uv, thetaBins[tetraB.x], 0.0.rr) / divLods[tetraB.z] / float2(1.0, ratios[tetraB.y]);
-			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraB.z]), fmod(thetaBins[tetraB.x], Math::TAU), ratios[tetraB.y])) * 4294967296.0;
-			vars.footprintArea = ratios[tetraB.y] * footprintAreas[tetraB.z];
-		} else if (rnd < accumWeights.z) {
-			// PREPARE NEEDED ROTATIONS
-			tetraC.x *= 2;
-			if (centerSpecialCase)
-				tetraC.x = (tetraC.y == 0) ? 3 : tetraC.x;
-			vars.uv = RotateUV(uv, thetaBins[tetraC.x], 0.0.rr) / divLods[tetraC.z] / float2(1.0, ratios[tetraC.y]);
-			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraC.z]), fmod(thetaBins[tetraC.x], Math::TAU), ratios[tetraC.y])) * 4294967296.0;
-			vars.footprintArea = ratios[tetraC.y] * footprintAreas[tetraC.z];
-		} else {
-			// PREPARE NEEDED ROTATIONS
-			tetraD.x *= 2;
-			if (centerSpecialCase)
-				tetraD.x = (tetraD.y == 0) ? 3 : tetraD.x;
-			vars.uv = RotateUV(uv, thetaBins[tetraD.x], 0.0.rr) / divLods[tetraD.z] / float2(1.0, ratios[tetraD.y]);
-			vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetraD.z]), fmod(thetaBins[tetraD.x], Math::TAU), ratios[tetraD.y])) * 4294967296.0;
-			vars.footprintArea = ratios[tetraD.y] * footprintAreas[tetraD.z];
-		}
+		int selectedTetra = 3;
+		if (rnd < accumWeights.x)
+			selectedTetra = 0;
+		else if (rnd < accumWeights.y)
+			selectedTetra = 1;
+		else if (rnd < accumWeights.z)
+			selectedTetra = 2;
+
+		// PREPARE NEEDED ROTATIONS
+		float3 tetra = tetras[selectedTetra];
+		tetra.x *= 2;
+		if (centerSpecialCase)
+			tetra.x = (tetra.y == 0) ? 3 : tetra.x;
+
+		vars.uv = RotateUV(uv, thetaBins[tetra.x], 0.0.rr) / divLods[tetra.z] / float2(1.0, ratios[tetra.y]);
+		vars.gridSeed = HashWithoutSine13(float3(log2(divLods[tetra.z]), fmod(thetaBins[tetra.x], Math::TAU), ratios[tetra.y])) * 4294967296.0;
+		vars.footprintArea = ratios[tetra.y] * footprintAreas[tetra.z];
 	}
 
 	float4 SampleGlints2023NDF(float noise, float logDensity, float roughness, float densityRandomization, GlintCachedVars vars, float3 H, float targetNDF, float maxNDF)
