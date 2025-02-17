@@ -1172,8 +1172,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	bool PBRParallax = false;
 	[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture0) != 0)
 	{
-		sampledCoatColor = TexRimSoftLightWorldMapOverlaySampler.Sample(SampRimSoftLightWorldMapOverlaySampler, uv);
-		sampledCoatColor.rgb = Color::Diffuse(sampledCoatColor.rgb);
+		float4 sampledCoatProperties = TexRimSoftLightWorldMapOverlaySampler.Sample(SampRimSoftLightWorldMapOverlaySampler, uv);
+		sampledCoatColor.rgb *= Color::Diffuse(sampledCoatProperties.rgb);
+		sampledCoatColor.a *= sampledCoatProperties.a;
 	}
 	[branch] if (SharedData::extendedMaterialSettings.EnableParallax && (PBRFlags & PBR::Flags::HasDisplacement) != 0)
 	{
@@ -1929,7 +1930,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(TRUE_PBR) && !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 	[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 	{
-		refractedDirLightDirection = -refract(-DirLightDirection, coatModelNormal, eta);
+		if(dot(DirLightDirection, coatModelNormal) > 0)
+			refractedDirLightDirection = -refract(-DirLightDirection, coatModelNormal, eta);
 	}
 #	endif
 
@@ -2070,7 +2072,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #				if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 			[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 			{
-				refractedLightDirection = -refract(-normalizedLightDirection, coatModelNormal, eta);
+				if(dot(normalizedLightDirection, coatModelNormal) > 0)
+					refractedLightDirection = -refract(-normalizedLightDirection, coatModelNormal, eta);
 			}
 #				endif
 			PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor, lightShadow, 1);
@@ -2174,7 +2177,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			if defined(TRUE_PBR) && !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 		[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 		{
-			refractedLightDirection = -refract(-normalizedLightDirection, coatWorldNormal, eta);
+			if(dot(normalizedLightDirection, coatWorldNormal) > 0)
+				refractedLightDirection = -refract(-normalizedLightDirection, coatWorldNormal, eta);
 		}
 #			endif
 
