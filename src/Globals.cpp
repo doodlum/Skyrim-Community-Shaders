@@ -17,6 +17,7 @@
 #include "Features/LightLimitFix.h"
 #include "Features/ScreenSpaceGI.h"
 #include "Features/ScreenSpaceShadows.h"
+#include "Features/Skin.h"
 #include "Features/Skylighting.h"
 #include "Features/SubsurfaceScattering.h"
 #include "Features/TerrainBlending.h"
@@ -24,7 +25,6 @@
 #include "Features/VolumetricLighting.h"
 #include "Features/WaterEffects.h"
 #include "Features/WetnessEffects.h"
-#include "Features/Skin.h"
 
 #include "Features/LightLimitFix/ParticleLights.h"
 
