@@ -61,7 +61,7 @@ struct ScreenSpaceGI : Feature
 		float GIBounceFade = .3f;
 		float GIDistanceCompensation = 0.f;
 		// mix
-		float AOPower = 1.f;
+		float AOPower = 0.5f;
 		float GIStrength = 1.f;
 		// denoise
 		bool EnableTemporalDenoiser = true;
