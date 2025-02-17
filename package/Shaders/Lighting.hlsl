@@ -1604,7 +1604,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		if defined(FACEGEN)
 		float2 detailUV = input.TexCoord0.xy * SharedData::skinData.skinDetailParams.x;
 #		else
-		float2 detailUV = input.TexCoord0.xy * SharedData::skinData.skinDetailParams.x * 2;
+		float2 detailUV = input.TexCoord0.xy * SharedData::skinData.skinDetailParams.x * SharedData::skinData.skinDetailParams.y;
 #		endif  // FACEGEN
 		float3 detailNormal = float3(Skin::TexSkinDetailNormal.Sample(SampNormalSampler, detailUV).xy, 0.5f);
 		SkinAO = Skin::TexSkinDetailNormal.Sample(SampNormalSampler, detailUV).w;
@@ -1902,9 +1902,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		if defined(SKIN)
 	rainWetness = SharedData::wetnessEffectsSettings.SkinWetness * SharedData::wetnessEffectsSettings.Wetness;
 #			if defined(CS_SKIN)
-	if (SharedData::skinData.skinDetailParams.y) {
-		rainWetness += SharedData::skinData.skinDetailParams.y;
-		puddleWetness += SharedData::skinData.skinDetailParams.y;
+	if (SharedData::skinData.skinParams2.y) {
+		rainWetness += SharedData::skinData.skinParams2.y;
+		puddleWetness += SharedData::skinData.skinParams2.y;
 	}
 	if (SharedData::skinData.ApplySpecularToWetness) {
 		rainWetness += glossiness * SharedData::skinData.skinParams.z;

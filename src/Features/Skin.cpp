@@ -18,6 +18,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	EnableSkinDetail,
 	SkinDetailStrength,
 	SkinDetailTiling,
+    BodyTilingMultiplier,
 	ApplySpecularToWetness,
 	ExtraSkinWetness)
 
@@ -84,8 +85,13 @@ void Skin::DrawSettings()
 
 	ImGui::SliderFloat("Skin Detail Tiling", &settings.SkinDetailTiling, 0.0f, 100.0f, "%.1f");
 	if (auto _tt = Util::HoverTooltipWrapper()) {
-		ImGui::Text("Tiling of skin detail texture");
+		ImGui::Text("The more tiling, the more detailed the skin will be");
 	}
+
+    ImGui::SliderFloat("Body Tiling Multiplier", &settings.BodyTilingMultiplier, 0.5f, 5.0f, "%.1f");
+    if (auto _tt = Util::HoverTooltipWrapper()) {
+        ImGui::Text("Multiply the tiling for the body to match the face");
+    }
 
 	if (ImGui::Button("Reload Skin Detail Texture")) {
 		ReloadSkinDetail();
@@ -186,8 +192,8 @@ Skin::SkinData Skin::GetCommonBufferData()
 {
 	SkinData data{};
 	data.skinParams = float4(settings.SkinMainRoughness, settings.SkinSecondRoughness, settings.SkinSpecularTexMultiplier, float(settings.EnableSkin));
-	data.skinParams2 = float4(settings.SecondarySpecularStrength, settings.Thickness, settings.F0, settings.SkinColorMultiplier);
-	data.skinDetailParams = float4(settings.SkinDetailTiling, settings.ExtraSkinWetness, settings.SkinDetailStrength, float(settings.EnableSkinDetail));
+	data.skinParams2 = float4(settings.SecondarySpecularStrength, settings.ExtraSkinWetness, settings.F0, settings.SkinColorMultiplier);
+	data.skinDetailParams = float4(settings.SkinDetailTiling, settings.BodyTilingMultiplier, settings.SkinDetailStrength, float(settings.EnableSkinDetail));
 	data.ApplySpecularToWetness = uint(settings.ApplySpecularToWetness);
 	return data;
 }
