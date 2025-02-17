@@ -1930,7 +1930,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(TRUE_PBR) && !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 	[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 	{
-		if(dot(DirLightDirection, coatModelNormal) > 0)
+		if (dot(DirLightDirection, coatModelNormal) > 0)
 			refractedDirLightDirection = -refract(-DirLightDirection, coatModelNormal, eta);
 	}
 #	endif
@@ -2072,7 +2072,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #				if !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 			[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 			{
-				if(dot(normalizedLightDirection, coatModelNormal) > 0)
+				if (dot(normalizedLightDirection, coatModelNormal) > 0)
 					refractedLightDirection = -refract(-normalizedLightDirection, coatModelNormal, eta);
 			}
 #				endif
@@ -2177,7 +2177,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			if defined(TRUE_PBR) && !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 		[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
 		{
-			if(dot(normalizedLightDirection, coatWorldNormal) > 0)
+			if (dot(normalizedLightDirection, coatWorldNormal) > 0)
 				refractedLightDirection = -refract(-normalizedLightDirection, coatWorldNormal, eta);
 		}
 #			endif
