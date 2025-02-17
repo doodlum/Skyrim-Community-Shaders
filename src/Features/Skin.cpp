@@ -18,7 +18,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
     EnableSkinDetail,
     SkinDetailStrength,
     SkinDetailTiling,
-    ApplySpecularToWetness
+    ApplySpecularToWetness,
+    ExtraSkinWetness
 )
 
 void Skin::DrawSettings()
@@ -62,7 +63,14 @@ void Skin::DrawSettings()
 
     ImGui::SliderFloat("Skin Color Multiplier", &settings.SkinColorMultiplier, 0.0f, 5.0f);
     if (auto _tt = Util::HoverTooltipWrapper()) {
-        ImGui::Text("Multiplier for skin color");
+        ImGui::Text("Multiplier for skin color (1.0 to keep original color)");
+    }
+
+    ImGui::Spacing();
+
+    ImGui::SliderFloat("Extra Skin Wetness", &settings.ExtraSkinWetness, 0.0f, 1.0f);
+    if (auto _tt = Util::HoverTooltipWrapper()) {
+        ImGui::Text("Extra wetness for skin adding to wetness feature");
     }
 
     ImGui::Checkbox("Apply Specular to Wetness", &settings.ApplySpecularToWetness);
@@ -185,7 +193,7 @@ Skin::SkinData Skin::GetCommonBufferData()
     SkinData data{};
     data.skinParams = float4(settings.SkinMainRoughness, settings.SkinSecondRoughness, settings.SkinSpecularTexMultiplier, float(settings.EnableSkin));
     data.skinParams2 = float4(settings.SecondarySpecularStrength, settings.Thickness, settings.F0, settings.SkinColorMultiplier);
-    data.skinDetailParams = float4(settings.SkinDetailTiling, settings.SkinDetailTiling, settings.SkinDetailStrength, float(settings.EnableSkinDetail));
+    data.skinDetailParams = float4(settings.SkinDetailTiling, settings.ExtraSkinWetness, settings.SkinDetailStrength, float(settings.EnableSkinDetail));
     data.ApplySpecularToWetness = uint(settings.ApplySpecularToWetness);
     return data;
 }

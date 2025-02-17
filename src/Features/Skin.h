@@ -44,6 +44,7 @@ struct Skin : Feature
         float SkinDetailStrength = 0.15f;
         float SkinDetailTiling = 10.0f;
         bool ApplySpecularToWetness = false;
+        float ExtraSkinWetness = 0.0f;
     } settings;
 
     struct alignas(16) SkinData
