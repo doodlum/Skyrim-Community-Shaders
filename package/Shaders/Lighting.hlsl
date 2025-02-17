@@ -1403,7 +1403,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if defined(SKIN) && defined(PBR_SKIN)
 	if (SharedData::skinData.skinParams.w > 0.0f) {
-		baseColor.xyz = baseColor.xyz * SharedData::skinData.skinParams2.www;
+		baseColor.xyz = baseColor.xyz * SharedData::skinData.skinParams2.www * 1.5f;
 		}
 #	endif  // PBR_SKIN
 
@@ -1606,9 +1606,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (SharedData::skinData.skinDetailParams.w > 0.0f) {
 		float3 tangentNormal = mul(modelNormal.xyz, tbn);
 #		if defined(FACEGEN)
-		float2 detailUV = input.TexCoord0.xy * SharedData::skinData.skinDetailParams.xx;
+		float2 detailUV = input.TexCoord0.xy * SharedData::skinData.skinDetailParams.x;
 #		else
-		float2 detailUV = input.TexCoord0.xy * SharedData::skinData.skinDetailParams.xx * 2;
+		float2 detailUV = input.TexCoord0.xy * SharedData::skinData.skinDetailParams.x * 2;
 #		endif  // FACEGEN
 		float3 detailNormal = float3(Skin::TexSkinDetailNormal.Sample(SampNormalSampler, detailUV).xy, 0.5f);
 		SkinAO = Skin::TexSkinDetailNormal.Sample(SampNormalSampler, detailUV).w;
