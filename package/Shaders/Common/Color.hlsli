@@ -2,7 +2,6 @@
 #define __COLOR_DEPENDENCY_HLSL__
 
 #include "Common/Math.hlsli"
-#include "Common/SharedData.hlsli"
 
 namespace Color
 {
