@@ -10,7 +10,7 @@ struct Skin : Feature
 
     virtual inline std::string GetName() override { return "Skin"; }
     virtual inline std::string GetShortName() override { return "Skin"; }
-    virtual inline std::string_view GetShaderDefineName() override { return "PBR_SKIN"; }
+    virtual inline std::string_view GetShaderDefineName() override { return "CS_SKIN"; }
     virtual inline bool HasShaderDefine(RE::BSShader::Type t) override
 	{
 		return t == RE::BSShader::Type::Lighting;
