@@ -6,8 +6,8 @@
 #include <sl_dlss.h>
 #include <sl_dlss_g.h>
 #include <sl_matrix_helpers.h>
-#include <sl_reflex.h>
 #include <sl_nis.h>
+#include <sl_reflex.h>
 
 class Streamline
 {

@@ -333,8 +333,7 @@ void Upscaling::SharpenTAA()
 
 	state->BeginPerfEvent("Sharpening");
 
-	if (globals::streamline->featureNIS)
-	{
+	if (globals::streamline->featureNIS) {
 		context->CopyResource(upscalingTexture->resource.get(), outputTextureResource);
 		globals::streamline->Sharpen(upscalingTexture, settings.sharpness);
 	} else {
