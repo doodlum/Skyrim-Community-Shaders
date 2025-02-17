@@ -1907,8 +1907,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	rainWetness = SharedData::wetnessEffectsSettings.SkinWetness * SharedData::wetnessEffectsSettings.Wetness;
 #			if defined(PBR_SKIN)
 	if (SharedData::skinData.skinDetailParams.y) {
-		rainWetness += skinData.skinDetailParams.y;
-		puddleWetness += skinData.skinDetailParams.y;
+		rainWetness += SharedData::skinData.skinDetailParams.y;
+		puddleWetness += SharedData::skinData.skinDetailParams.y;
 	}
 	if (SharedData::skinData.ApplySpecularToWetness) {
 		rainWetness += glossiness * SharedData::skinData.skinParams.z;
