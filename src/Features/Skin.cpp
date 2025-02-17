@@ -18,7 +18,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	EnableSkinDetail,
 	SkinDetailStrength,
 	SkinDetailTiling,
-    BodyTilingMultiplier,
+	BodyTilingMultiplier,
 	ApplySpecularToWetness,
 	ExtraSkinWetness)
 
@@ -88,10 +88,10 @@ void Skin::DrawSettings()
 		ImGui::Text("The more tiling, the more detailed the skin will be");
 	}
 
-    ImGui::SliderFloat("Body Tiling Multiplier", &settings.BodyTilingMultiplier, 0.5f, 5.0f, "%.1f");
-    if (auto _tt = Util::HoverTooltipWrapper()) {
-        ImGui::Text("Multiply the tiling for the body to match the face");
-    }
+	ImGui::SliderFloat("Body Tiling Multiplier", &settings.BodyTilingMultiplier, 0.5f, 5.0f, "%.1f");
+	if (auto _tt = Util::HoverTooltipWrapper()) {
+		ImGui::Text("Multiply the tiling for the body to match the face");
+	}
 
 	if (ImGui::Button("Reload Skin Detail Texture")) {
 		ReloadSkinDetail();
