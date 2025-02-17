@@ -428,7 +428,7 @@ float3 GetFlowmapNormal(PS_INPUT input, float2 uvShift, float multiplier, float 
 	float2x2 flowRotationMatrix = float2x2(flowSinCos.x, flowSinCos.y, -flowSinCos.y, flowSinCos.x);
 	float2 rotatedFlowVector = mul(transpose(flowRotationMatrix), flowVector);
 	float2 uv = offset + (rotatedFlowVector - float2(multiplier * ((0.001 * ReflectionColor.w) * flowmapColor.w), 0));
-	return float3(FlowMapNormalsTex.SampleBias(FlowMapNormalsSampler, uv).xy, flowmapColor.z, SharedData::MipBias);
+	return float3(FlowMapNormalsTex.SampleBias(FlowMapNormalsSampler, uv, SharedData::MipBias).xy, flowmapColor.z);
 }
 #			endif
 
