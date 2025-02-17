@@ -50,11 +50,6 @@ void Skin::DrawSettings()
 		ImGui::Text("Intensity of secondary specular highlights");
 	}
 
-	ImGui::SliderFloat("Thickness", &settings.Thickness, 0.0f, 1.0f);
-	if (auto _tt = Util::HoverTooltipWrapper()) {
-		ImGui::Text("Optical thickness for energy compensation");
-	}
-
 	ImGui::SliderFloat("Fresnel F0", &settings.F0, 0.0f, 0.1f);
 	if (auto _tt = Util::HoverTooltipWrapper()) {
 		ImGui::Text("Fresnel reflectance");
