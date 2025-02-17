@@ -1131,6 +1131,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float eta = 1;
 	float3 refractedViewDirection = viewDirection;
 	float3 refractedViewDirectionWS = worldSpaceViewDirection;
+	float4 sampledCoatColor = PBRParams2;
 
 #	if defined(EMAT)
 #		if defined(PARALLAX)
@@ -1169,11 +1170,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #		if defined(TRUE_PBR) && !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
 	bool PBRParallax = false;
-	float4 sampledCoatProperties = PBRParams2;
 	[branch] if ((PBRFlags & PBR::Flags::HasFeatureTexture0) != 0)
 	{
-		sampledCoatProperties = TexRimSoftLightWorldMapOverlaySampler.Sample(SampRimSoftLightWorldMapOverlaySampler, uv);
-		sampledCoatProperties.rgb = Color::Diffuse(sampledCoatProperties.rgb);
+		sampledCoatColor = TexRimSoftLightWorldMapOverlaySampler.Sample(SampRimSoftLightWorldMapOverlaySampler, uv);
+		sampledCoatColor.rgb = Color::Diffuse(sampledCoatColor.rgb);
 	}
 	[branch] if (SharedData::extendedMaterialSettings.EnableParallax && (PBRFlags & PBR::Flags::HasDisplacement) != 0)
 	{
@@ -1184,7 +1184,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 			displacementParams.DisplacementScale = 0.5;
 			displacementParams.DisplacementOffset = -0.25;
 
-			eta = lerp(1.0, (1 - sqrt(MultiLayerParallaxData.y)) / (1 + sqrt(MultiLayerParallaxData.y)), sampledCoatProperties.w);
+			eta = lerp(1.0, (1 - sqrt(MultiLayerParallaxData.y)) / (1 + sqrt(MultiLayerParallaxData.y)), sampledCoatColor.w);
 			[branch] if ((PBRFlags & PBR::Flags::CoatNormal) != 0)
 			{
 				entryNormalTS = normalize(TransformNormal(TexBackLightSampler.Sample(SampBackLightSampler, uvOriginal).xyz));
@@ -1728,8 +1728,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 	else if ((PBRFlags & PBR::Flags::TwoLayer) != 0)
 	{
-		pbrSurfaceProperties.CoatColor = sampledCoatProperties.xyz;
-		pbrSurfaceProperties.CoatStrength = sampledCoatProperties.w;
+		pbrSurfaceProperties.CoatColor = sampledCoatColor.xyz;
+		pbrSurfaceProperties.CoatStrength = sampledCoatColor.w;
 		pbrSurfaceProperties.CoatRoughness = MultiLayerParallaxData.x;
 		pbrSurfaceProperties.CoatF0 = MultiLayerParallaxData.y;
 
