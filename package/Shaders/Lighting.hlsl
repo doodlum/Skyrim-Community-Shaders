@@ -1818,7 +1818,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	skinSurfaceProperties.Albedo = baseColor.xyz;
 
-	skinSurfaceProperties.RoughnessPrimary = saturate(SharedData::skinData.skinParams.x - SharedData::skinData.skinParams.z * glossiness);
+	skinSurfaceProperties.RoughnessPrimary = SharedData::skinData.skinParams.x;
+	if (!SharedData::skinData.ApplySpecularToWetness)
+		skinSurfaceProperties.RoughnessPrimary = saturate(SharedData::skinData.skinParams.x - SharedData::skinData.skinParams.z * glossiness);
 	skinSurfaceProperties.RoughnessSecondary = SharedData::skinData.skinParams.y;
 	skinSurfaceProperties.SecondarySpecIntensity = SharedData::skinData.skinParams2.x;
 	float4 skinsk = TexRimSoftLightWorldMapOverlaySampler.Sample(SampRimSoftLightWorldMapOverlaySampler, uv);
@@ -1905,8 +1907,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	rainWetness = SharedData::wetnessEffectsSettings.SkinWetness * SharedData::wetnessEffectsSettings.Wetness;
 #			if defined(PBR_SKIN)
 	if (SharedData::skinData.ApplySpecularToWetness) {
-		rainWetness += glossiness;
-		puddleWetness += glossiness;
+		rainWetness += glossiness * SharedData::skinData.skinParams.z;
+		puddleWetness += glossiness * SharedData::skinData.skinParams.z;
 	}
 #			endif
 #		endif

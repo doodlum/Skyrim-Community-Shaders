@@ -67,7 +67,7 @@ void Skin::DrawSettings()
 
     ImGui::Checkbox("Apply Specular to Wetness", &settings.ApplySpecularToWetness);
     if (auto _tt = Util::HoverTooltipWrapper()) {
-        ImGui::Text("Applies specular texture to wetness feature (needs Wetness Effects enabled)");
+        ImGui::Text("Applies specular texture to wetness feature instead of roughness (needs Wetness Effects enabled)");
     }
 
     ImGui::Checkbox("Enable Skin Detail", &settings.EnableSkinDetail);
