@@ -51,7 +51,7 @@ namespace Color
 
 	float3 LinearToGamma(float3 color)
 	{
-		return pow(color, 1.0 / 1.1);
+		return pow(color, 1.0 / 1.6);
 	}
 
 	float3 Diffuse(float3 color)
