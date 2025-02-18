@@ -2297,11 +2297,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	skylightingDiffuse = saturate(skylightingDiffuse);
 
 	float skylightingBoost = skylightingDiffuse * saturate(worldSpaceNormal.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
-	
+
 	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
 
 	skylightingDiffuse += skylightingBoost;
-	
+
 	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
 	directionalAmbientColor *= skylightingDiffuse;
 	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
