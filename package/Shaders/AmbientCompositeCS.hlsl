@@ -64,26 +64,28 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 
 	float visibility = 1.0;
 #if defined(SKYLIGHTING)
-	float rawDepth = DepthTexture[dispatchID.xy];
-	float4 positionCS = float4(2 * float2(uv.x, -uv.y + 1) - 1, rawDepth, 1);
-	float4 positionMS = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], positionCS);
-	positionMS.xyz = positionMS.xyz / positionMS.w;
+	if (!SharedData::InInterior){
+		float rawDepth = DepthTexture[dispatchID.xy];
+		float4 positionCS = float4(2 * float2(uv.x, -uv.y + 1) - 1, rawDepth, 1);
+		float4 positionMS = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], positionCS);
+		positionMS.xyz = positionMS.xyz / positionMS.w;
 #	if defined(VR)
-	positionMS.xyz += FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
+		positionMS.xyz += FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #	endif
 
-	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, stbn_vec3_2Dx1D_128x128x64, dispatchID.xy, positionMS.xyz, normalWS);
-	float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5))) / Math::PI;
-	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(positionMS.xyz));
-	skylightingDiffuse = saturate(skylightingDiffuse);
+		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, stbn_vec3_2Dx1D_128x128x64, dispatchID.xy, positionMS.xyz, normalWS);
+		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5))) / Math::PI;
+		skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(positionMS.xyz));
+		skylightingDiffuse = saturate(skylightingDiffuse);
+		
+		float skylightingBoost = skylightingDiffuse * saturate(normalWS.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
+		
+		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
+		
+		skylightingDiffuse += skylightingBoost;
 
-	float skylightingBoost = skylightingDiffuse * saturate(normalWS.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
-
-	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
-
-	skylightingDiffuse += skylightingBoost;
-
-	visibility = skylightingDiffuse;
+		visibility = skylightingDiffuse;
+	}
 #endif
 
 #if defined(SSGI)
