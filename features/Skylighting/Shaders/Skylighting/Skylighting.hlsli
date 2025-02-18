@@ -27,7 +27,7 @@ namespace Skylighting
 
 	float mixDiffuse(SharedData::SkylightingSettings params, float visibility)
 	{
-		return lerp(params.MinDiffuseVisibility, 1.0, saturate(visibility));
+		return lerp(params.MinDiffuseVisibility, 1.0, visibility);
 	}
 
 	float mixSpecular(SharedData::SkylightingSettings params, float visibility)

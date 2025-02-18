@@ -2294,7 +2294,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(SKYLIGHTING)
 	float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(worldSpaceNormal.xy, worldSpaceNormal.z * 0.5 + 0.5))) / Math::PI;
 	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition.xyz));
+	skylightingDiffuse = saturate(skylightingDiffuse);
+
+	float skylightingBoost = skylightingDiffuse * saturate(worldSpaceNormal.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
+	
 	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
+
+	skylightingDiffuse += skylightingBoost;
+	
 	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
 	directionalAmbientColor *= skylightingDiffuse;
 	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
