@@ -670,14 +670,16 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #					if defined(SKYLIGHTING)
 	if (!SharedData::InInterior){
+		float3 skylightingNormal = normalize(float3(normal.xy, max(0, normal.z)));
+
 #						if defined(VR)
 		float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #						else
 		float3 positionMSSkylight = input.WorldPosition.xyz;
 #						endif
 
-		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, normal);
-		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(normal.xy, normal.z * 0.5 + 0.5))) / Math::PI;
+		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, skylightingNormal);
+		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
 		skylightingDiffuse = saturate(skylightingDiffuse);
 
 		float skylightingBoost = skylightingDiffuse * saturate(normal.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
@@ -836,14 +838,16 @@ PS_OUTPUT main(PS_INPUT input)
 
 #				if defined(SKYLIGHTING)
 	if (!SharedData::InInterior){
+		float3 skylightingNormal = normalize(float3(normal.xy, max(0, normal.z)));
+
 #					if defined(VR)
 		float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #					else
 		float3 positionMSSkylight = input.WorldPosition.xyz;
 #					endif
 
-		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, normal);
-		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(normal.xy, normal.z * 0.5 + 0.5))) / Math::PI;
+		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, skylightingNormal);
+		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
 		skylightingDiffuse = saturate(skylightingDiffuse);
 
 		float skylightingBoost = skylightingDiffuse * saturate(normal.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
