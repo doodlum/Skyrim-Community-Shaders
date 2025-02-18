@@ -47,7 +47,7 @@ float3 GetTonemapFactorHejlBurgessDawson(float3 luminance)
 {
 	float3 tmp = max(0, luminance - 0.004);
 	return Param.y *
-	       pow(((tmp * 6.2 + 0.5) * tmp) / (tmp * (tmp * 6.2 + 1.7) + 0.06), Color::GammaCorrectionValue);
+	       pow(((tmp * 6.2 + 0.5) * tmp) / (tmp * (tmp * 6.2 + 1.7) + 0.06), 2);
 }
 
 #	include "Common/DisplayMapping.hlsli"
