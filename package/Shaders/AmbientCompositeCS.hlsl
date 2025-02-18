@@ -64,7 +64,7 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 
 	float visibility = 1.0;
 #if defined(SKYLIGHTING)
-	if (!SharedData::InInterior){
+	if (!SharedData::InInterior) {
 		float rawDepth = DepthTexture[dispatchID.xy];
 		float4 positionCS = float4(2 * float2(uv.x, -uv.y + 1) - 1, rawDepth, 1);
 		float4 positionMS = mul(FrameBuffer::CameraViewProjInverse[eyeIndex], positionCS);
@@ -77,11 +77,11 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(normalWS.xy, normalWS.z * 0.5 + 0.5))) / Math::PI;
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(positionMS.xyz));
 		skylightingDiffuse = saturate(skylightingDiffuse);
-		
+
 		float skylightingBoost = skylightingDiffuse * saturate(normalWS.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
-		
+
 		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
-		
+
 		skylightingDiffuse += skylightingBoost;
 
 		visibility = skylightingDiffuse;
