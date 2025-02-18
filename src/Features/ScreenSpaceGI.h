@@ -65,11 +65,11 @@ struct ScreenSpaceGI : Feature
 		float GIStrength = 1.5f;
 		// denoise
 		bool EnableTemporalDenoiser = true;
-		bool EnableBlur = false;
+		bool EnableBlur = true;
 		float DepthDisocclusion = .1f;
 		float NormalDisocclusion = .1f;
 		uint MaxAccumFrames = 16;
-		float BlurRadius = 5.f;
+		float BlurRadius = 2.f;
 		float DistanceNormalisation = 2.f;
 	} settings;
 
