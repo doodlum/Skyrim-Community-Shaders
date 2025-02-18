@@ -42,7 +42,7 @@ namespace Skylighting
 
 		if (SharedData::InInterior)
 			return scaledUnitSH;
-			
+
 		positionMS.xyz += normalWS * CELL_SIZE;  // Receiver normal bias
 
 		if (SharedData::FrameCount) {  // Check TAA
