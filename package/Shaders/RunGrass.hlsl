@@ -842,7 +842,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition));
 	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
-	
+
 	skylightingDiffuse += skylightingBoost;
 
 	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
