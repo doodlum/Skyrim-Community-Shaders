@@ -484,7 +484,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 viewPosition = mul(FrameBuffer::CameraView[eyeIndex], float4(input.WorldPosition.xyz, 1)).xyz;
 	float2 screenUV = FrameBuffer::ViewToUV(viewPosition, true, eyeIndex);
 	float screenNoise = Random::InterleavedGradientNoise(input.HPosition.xy, SharedData::FrameCount);
-	
+
 	// Swaps direction of the backfaces otherwise they seem to get lit from the wrong direction.
 	if (!frontFace)
 		normal = -normal;
@@ -669,7 +669,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 
 #					if defined(SKYLIGHTING)
-	if (!SharedData::InInterior){
+	if (!SharedData::InInterior) {
 #						if defined(VR)
 		float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #						else
@@ -835,7 +835,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 
 #				if defined(SKYLIGHTING)
-	if (!SharedData::InInterior){
+	if (!SharedData::InInterior) {
 #					if defined(VR)
 		float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #					else
@@ -850,7 +850,7 @@ PS_OUTPUT main(PS_INPUT input)
 
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition));
 		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
-		
+
 		skylightingDiffuse += skylightingBoost;
 
 		directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
