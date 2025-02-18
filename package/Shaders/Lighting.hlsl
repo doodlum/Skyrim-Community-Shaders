@@ -1607,7 +1607,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #		else
 		float2 detailUV = input.TexCoord0.xy * SharedData::skinData.skinDetailParams.x * SharedData::skinData.skinDetailParams.y;
 #		endif  // FACEGEN
-		float3 detailNormal = float3(Skin::TexSkinDetailNormal.Sample(SampNormalSampler, detailUV).xy, 0.5f);
+		float3 detailNormal = float3(Skin::TexSkinDetailNormal.SampleBias(SampNormalSampler, detailUV, SharedData::MipBias).xy, 0.5f);
 		SkinAO = Skin::TexSkinDetailNormal.Sample(SampNormalSampler, detailUV).w;
 		detailNormal = (detailNormal * 2.0 - 1.0) * SharedData::skinData.skinDetailParams.z;
 		float3 combinedTangentNormal = tangentNormal + detailNormal;

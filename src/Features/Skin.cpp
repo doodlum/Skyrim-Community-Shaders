@@ -24,7 +24,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 
 void Skin::DrawSettings()
 {
-	ImGui::Checkbox("Enable Skin", &settings.EnableSkin);
+	ImGui::Checkbox("Enable Advanced Skin", &settings.EnableSkin);
 
 	ImGui::Text("Advanced Skin Shader using dual specular lobes.");
 
@@ -133,7 +133,7 @@ void Skin::SetupResources()
 			.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
 			.Texture2D = {
 				.MostDetailedMip = 0,
-				.MipLevels = 1 }
+				.MipLevels = 10 }
 		};
 		texSkinDetail->CreateSRV(srvDesc);
 	}
@@ -172,7 +172,7 @@ void Skin::ReloadSkinDetail()
 			.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
 			.Texture2D = {
 				.MostDetailedMip = 0,
-				.MipLevels = 1 }
+				.MipLevels = 10 }
 		};
 		texSkinDetail->CreateSRV(srvDesc);
 	}
