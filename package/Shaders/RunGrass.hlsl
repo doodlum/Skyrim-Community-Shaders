@@ -669,7 +669,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 
 #					if defined(SKYLIGHTING)
-	if (!SharedData::InInterior){
+	if (!SharedData::InInterior) {
 		float3 skylightingNormal = normalize(float3(normal.xy, max(0, normal.z)));
 
 #						if defined(VR)
@@ -837,7 +837,7 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 
 #				if defined(SKYLIGHTING)
-	if (!SharedData::InInterior){
+	if (!SharedData::InInterior) {
 		float3 skylightingNormal = normalize(float3(normal.xy, max(0, normal.z)));
 
 #					if defined(VR)
