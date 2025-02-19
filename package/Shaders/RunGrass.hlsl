@@ -585,7 +585,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 albedo = max(0, baseColor.xyz * input.VertexColor.xyz);
 
-	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * saturate(input.VertexNormal.w * 10.0);
+	float3 subsurfaceColor = albedo.xyz * albedo.xyz * saturate(input.VertexNormal.w * 10.0);
 
 	float3 sss = dirLightColor * saturate(-dirLightAngle);
 
@@ -669,20 +669,25 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 
 #					if defined(SKYLIGHTING)
+	if (!SharedData::InInterior) {
+		float3 skylightingNormal = normalize(float3(normal.xy, max(0, normal.z)));
+
 #						if defined(VR)
-	float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
+		float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #						else
-	float3 positionMSSkylight = input.WorldPosition.xyz;
+		float3 positionMSSkylight = input.WorldPosition.xyz;
 #						endif
 
-	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, normal);
-	float skylighting = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(normal.xy, normal.z * 0.5 + 0.5))) / Math::PI;
-	skylighting = lerp(1.0, skylighting, Skylighting::getFadeOutFactor(input.WorldPosition));
-	skylighting = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylighting);
+		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, skylightingNormal);
+		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(normal)) / Math::PI;
+		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
+		skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition));
+		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
 
-	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
-	directionalAmbientColor *= skylighting;
-	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
+		directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
+		directionalAmbientColor *= skylightingDiffuse;
+		directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
+	}
 #					endif  // SKYLIGHTING
 
 	diffuseColor += directionalAmbientColor;
@@ -821,26 +826,32 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 ddy = ddy_coarse(input.WorldPosition);
 	float3 normal = normalize(cross(ddx, ddy));
 
-	normal = float3(normal.xy, normal.z * 0.5 + 0.5);
+	normal = normalize(float3(normal.xy, normal.z * 0.5 + 0.5));
 
 #			if !defined(SSGI)
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 
 #				if defined(SKYLIGHTING)
+	if (!SharedData::InInterior) {
+		float3 skylightingNormal = normalize(float3(normal.xy, max(0, normal.z)));
+
 #					if defined(VR)
-	float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
+		float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
 #					else
-	float3 positionMSSkylight = input.WorldPosition.xyz;
+		float3 positionMSSkylight = input.WorldPosition.xyz;
 #					endif
 
-	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, normal);
-	float skylighting = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(normal.xy, normal.z * 0.5 + 0.5))) / Math::PI;
-	skylighting = lerp(1.0, skylighting, Skylighting::getFadeOutFactor(input.WorldPosition));
-	skylighting = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylighting);
+		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, skylightingNormal);
+		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(normal)) / Math::PI;
+		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
 
-	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
-	directionalAmbientColor *= skylighting;
-	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
+		skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition));
+		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
+
+		directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
+		directionalAmbientColor *= skylightingDiffuse;
+		directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
+	}
 #				endif  // SKYLIGHTING
 
 	diffuseColor += directionalAmbientColor;

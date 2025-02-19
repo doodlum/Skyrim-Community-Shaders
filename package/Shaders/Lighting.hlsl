@@ -1788,10 +1788,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 positionMSSkylight = input.WorldPosition.xyz;
 #		endif
 
+	float3 skylightingNormal = normalize(float3(worldSpaceNormal.xy, max(0, worldSpaceNormal.z)));
+
 #		if defined(DEFERRED)
-	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.Position.xy, positionMSSkylight, worldSpaceNormal);
+	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.Position.xy, positionMSSkylight, skylightingNormal);
 #		else
-	sh2 skylightingSH = inWorld ? Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.Position.xy, positionMSSkylight, worldSpaceNormal) : float4(sqrt(4.0 * Math::PI), 0, 0, 0);
+	sh2 skylightingSH = inWorld ? Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.Position.xy, positionMSSkylight, skylightingNormal) : float4(sqrt(4.0 * Math::PI), 0, 0, 0);
 #		endif
 
 #	endif
@@ -2292,12 +2294,19 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 reflectionDiffuseColor = diffuseColor + directionalAmbientColor;
 
 #	if defined(SKYLIGHTING)
-	float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(float3(worldSpaceNormal.xy, worldSpaceNormal.z * 0.5 + 0.5))) / Math::PI;
-	skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition.xyz));
-	skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
-	directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
-	directionalAmbientColor *= skylightingDiffuse;
-	directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
+	float skylightingFadeOutFactor = 1.0;
+	if (!SharedData::InInterior) {
+		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
+
+		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(worldSpaceNormal)) / Math::PI;
+		skylightingDiffuse = lerp(1.0, skylightingDiffuse, skylightingFadeOutFactor);
+		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
+		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
+
+		directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
+		directionalAmbientColor *= skylightingDiffuse;
+		directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
+	}
 #	endif
 
 #	if defined(TRUE_PBR) && defined(LOD_LAND_BLEND) && !defined(DEFERRED)
@@ -2433,6 +2442,15 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if defined(HAIR)
 	float3 vertexColor = lerp(1, TintColor.xyz, input.Color.y);
+#	elif defined(SKYLIGHTING)
+	float3 vertexColor = input.Color.xyz;
+	if (!SharedData::InInterior && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree)) {
+		// Remove AO
+		float3 normalizedColor = normalize(vertexColor);
+		float maxChannel = max(max(normalizedColor.r, normalizedColor.g), normalizedColor.b);
+		vertexColor = normalizedColor / maxChannel;
+		vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
+	}
 #	else
 	float3 vertexColor = input.Color.xyz;
 #	endif  // defined (HAIR)
@@ -2512,12 +2530,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if defined(SPECULAR)
 #		if defined(EMAT_ENVMAP)
-	specularColor = (specularColor * glossiness * MaterialData.yyy) * lerp(SpecularColor.xyz, complexSpecular, complexMaterial);
+	specularColor = 2.0 * (specularColor * glossiness * MaterialData.yyy) * lerp(SpecularColor.xyz, complexSpecular, complexMaterial);
 #		else
-	specularColor = (specularColor * glossiness * MaterialData.yyy) * SpecularColor.xyz;
+	specularColor = 2.0 * (specularColor * glossiness * MaterialData.yyy) * SpecularColor.xyz;
 #		endif
 #	elif defined(SPARKLE)
-	specularColor *= glossiness;
+	specularColor *= 2.0 * glossiness;
 #	endif  // SPECULAR
 
 #	if defined(SNOW)

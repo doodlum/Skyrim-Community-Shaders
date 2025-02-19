@@ -27,7 +27,7 @@ namespace Skylighting
 
 	float mixDiffuse(SharedData::SkylightingSettings params, float visibility)
 	{
-		return lerp(params.MinDiffuseVisibility, 1.0, saturate(visibility));
+		return lerp(params.MinDiffuseVisibility, 1.0, visibility);
 	}
 
 	float mixSpecular(SharedData::SkylightingSettings params, float visibility)
@@ -43,11 +43,7 @@ namespace Skylighting
 		if (SharedData::InInterior)
 			return scaledUnitSH;
 
-		// Fix objects which are too dark
-		normalWS.z = normalWS.z * 0.5 + 0.5;
-		normalWS = normalize(normalWS);
-
-		positionMS.xyz += normalWS * CELL_SIZE * 0.5;  // Receiver normal bias
+		positionMS.xyz += normalWS * CELL_SIZE;  // Receiver normal bias
 
 		if (SharedData::FrameCount) {  // Check TAA
 			float3 offset = blueNoise[int3(screenPosition.xy % 128, SharedData::FrameCount % 64)] * 2.0 - 1.0;
