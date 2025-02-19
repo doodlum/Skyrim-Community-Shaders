@@ -70,8 +70,12 @@ namespace Skylighting
 			float3 cellCentreMS = cellID + 0.5 - ARRAY_DIM / 2;
 			cellCentreMS = cellCentreMS * CELL_SIZE;
 
+			// https://handmade.network/p/75/monter/blog/p/7288-engine_work__global_illumination_with_irradiance_probes
+			// basic tangent checks
+			float tangentWeight = dot(normalize(cellCentreMS - positionMSAdjusted), normalWS) * 0.5 + 0.5;
+
 			float3 trilinearWeights = 1 - abs(offset - trilinearPos);
-			float w = trilinearWeights.x * trilinearWeights.y * trilinearWeights.z;
+			float w = trilinearWeights.x * trilinearWeights.y * trilinearWeights.z * tangentWeight;
 
 			uint3 cellTexID = (cellID + params.ArrayOrigin.xyz) % ARRAY_DIM;
 			sh2 probe = SphericalHarmonics::Scale(probeArray[cellTexID], w);
