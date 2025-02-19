@@ -2294,13 +2294,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 reflectionDiffuseColor = diffuseColor + directionalAmbientColor;
 
 #	if defined(SKYLIGHTING)
-	float skylightingDiffuse = 1.0;
 	float skylightingFadeOutFactor = 1.0;
-
 	if (!SharedData::InInterior) {
 		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
 
-		skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
+		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, skylightingFadeOutFactor);
 		skylightingDiffuse = saturate(skylightingDiffuse);
 
@@ -2451,14 +2449,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 vertexColor = lerp(1, TintColor.xyz, input.Color.y);
 #	elif defined(SKYLIGHTING)
 	float3 vertexColor = input.Color.xyz;
-	if (!SharedData::InInterior && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree)) {
+	if (!SharedData::InInterior && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree)){
 		// Remove AO
 		float3 normalizedColor = normalize(vertexColor);
-		float maxChannel = max(max(normalizedColor.r, normalizedColor.g), normalizedColor.b);
-		vertexColor = saturate(normalizedColor / maxChannel);
+    	float maxChannel = max(max(normalizedColor.r, normalizedColor.g), normalizedColor.b);    	
+		vertexColor = normalizedColor / maxChannel;
 		vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
 	}
-#	else
+# 	else
 	float3 vertexColor = input.Color.xyz;
 #	endif  // defined (HAIR)
 
