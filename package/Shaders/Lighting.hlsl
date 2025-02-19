@@ -2300,7 +2300,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, skylightingFadeOutFactor);
-		skylightingDiffuse = saturate(skylightingDiffuse);
+		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
 
 		float skylightingBoost = skylightingDiffuse * saturate(worldSpaceNormal.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
 
