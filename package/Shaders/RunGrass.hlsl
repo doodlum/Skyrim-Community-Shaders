@@ -585,7 +585,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 albedo = max(0, baseColor.xyz * input.VertexColor.xyz);
 
-	float3 subsurfaceColor = lerp(Color::RGBToLuminance(albedo.xyz), albedo.xyz, 2.0) * saturate(input.VertexNormal.w * 10.0);
+	float3 subsurfaceColor = albedo.xyz * albedo.xyz * saturate(input.VertexNormal.w * 10.0);
 
 	float3 sss = dirLightColor * saturate(-dirLightAngle);
 
