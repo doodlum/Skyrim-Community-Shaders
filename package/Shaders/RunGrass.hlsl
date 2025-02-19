@@ -665,12 +665,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	diffuseColor.xyz = Color::LinearToGamma(diffuseColor.xyz);
 #			else
 
+	normal = normalize(float3(normal.xy, max(0, normal.z)));
+
 #				if !defined(SSGI)
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 
 #					if defined(SKYLIGHTING)
 	if (!SharedData::InInterior) {
-		float3 skylightingNormal = normalize(float3(normal.xy, max(0, normal.z)));
+		float3 skylightingNormal = normal;
 
 #						if defined(VR)
 		float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
@@ -678,14 +680,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		float3 positionMSSkylight = input.WorldPosition.xyz;
 #						endif
 
-		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, skylightingNormal);
+		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, normal);
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
-		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
+		skylightingDiffuse = saturate(skylightingDiffuse);
 
 		float skylightingBoost = skylightingDiffuse * saturate(normal.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
 
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition));
-		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
+		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, sqrt(skylightingDiffuse));
 
 		skylightingDiffuse += skylightingBoost;
 
@@ -831,14 +833,14 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 ddy = ddy_coarse(input.WorldPosition);
 	float3 normal = normalize(cross(ddx, ddy));
 
-	normal = normalize(float3(normal.xy, normal.z * 0.5 + 0.5));
+	normal = normalize(float3(normal.xy, max(0, normal.z)));
 
 #			if !defined(SSGI)
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 
 #				if defined(SKYLIGHTING)
 	if (!SharedData::InInterior) {
-		float3 skylightingNormal = normalize(float3(normal.xy, max(0, normal.z)));
+		float3 skylightingNormal = normal;
 
 #					if defined(VR)
 		float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
@@ -848,12 +850,12 @@ PS_OUTPUT main(PS_INPUT input)
 
 		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, skylightingNormal);
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
-		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
+		skylightingDiffuse = saturate(skylightingDiffuse);
 
 		float skylightingBoost = skylightingDiffuse * saturate(normal.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
 
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition));
-		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
+		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, sqrt(skylightingDiffuse));
 
 		skylightingDiffuse += skylightingBoost;
 

@@ -75,14 +75,15 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 #	endif
 		float3 skylightingNormal = normalize(float3(normalWS.xy, max(0, normalWS.z)));
 
-		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, stbn_vec3_2Dx1D_128x128x64, dispatchID.xy, positionMS.xyz, skylightingNormal);
+		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, SkylightingProbeArray, stbn_vec3_2Dx1D_128x128x64, dispatchID.xy, positionMS.xyz, normalWS);
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
-		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
+		skylightingDiffuse = saturate(skylightingDiffuse);
+		
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(positionMS.xyz));
 
 		float skylightingBoost = skylightingDiffuse * saturate(normalWS.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
 
-		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
+		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, sqrt(skylightingDiffuse));
 
 		skylightingDiffuse += skylightingBoost;
 

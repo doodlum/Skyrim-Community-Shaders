@@ -1791,9 +1791,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 skylightingNormal = normalize(float3(worldSpaceNormal.xy, max(0, worldSpaceNormal.z)));
 
 #		if defined(DEFERRED)
-	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.Position.xy, positionMSSkylight, skylightingNormal);
+	sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.Position.xy, positionMSSkylight, worldSpaceNormal);
 #		else
-	sh2 skylightingSH = inWorld ? Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.Position.xy, positionMSSkylight, skylightingNormal) : float4(sqrt(4.0 * Math::PI), 0, 0, 0);
+	sh2 skylightingSH = inWorld ? Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.Position.xy, positionMSSkylight, worldSpaceNormal) : float4(sqrt(4.0 * Math::PI), 0, 0, 0);
 #		endif
 
 #	endif
@@ -2299,12 +2299,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
 
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
+		skylightingDiffuse = saturate(skylightingDiffuse);
+
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, skylightingFadeOutFactor);
-		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
 
 		float skylightingBoost = skylightingDiffuse * saturate(worldSpaceNormal.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
 
-		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
+		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, sqrt(skylightingDiffuse));
 
 		skylightingDiffuse += skylightingBoost;
 
@@ -2449,14 +2450,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 vertexColor = lerp(1, TintColor.xyz, input.Color.y);
 #	elif defined(SKYLIGHTING)
 	float3 vertexColor = input.Color.xyz;
-	if (!SharedData::InInterior && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree)) {
+	if (!SharedData::InInterior && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree)){
 		// Remove AO
 		float3 normalizedColor = normalize(vertexColor);
-		float maxChannel = max(max(normalizedColor.r, normalizedColor.g), normalizedColor.b);
+    	float maxChannel = max(max(normalizedColor.r, normalizedColor.g), normalizedColor.b);    	
 		vertexColor = normalizedColor / maxChannel;
 		vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
 	}
-#	else
+# 	else
 	float3 vertexColor = input.Color.xyz;
 #	endif  // defined (HAIR)
 
