@@ -45,11 +45,6 @@ namespace Skylighting
 
 		positionMS.xyz += normalWS * CELL_SIZE;  // Receiver normal bias
 
-		if (SharedData::FrameCount) {  // Check TAA
-			float3 offset = blueNoise[int3(screenPosition.xy % 128, SharedData::FrameCount % 64)] * 2.0 - 1.0;
-			positionMS.xyz += offset * CELL_SIZE * 0.5;
-		}
-
 		float3 positionMSAdjusted = positionMS - params.PosOffset.xyz;
 		float3 uvw = positionMSAdjusted / ARRAY_SIZE + .5;
 
@@ -75,15 +70,8 @@ namespace Skylighting
 			float3 cellCentreMS = cellID + 0.5 - ARRAY_DIM / 2;
 			cellCentreMS = cellCentreMS * CELL_SIZE;
 
-			// https://handmade.network/p/75/monter/blog/p/7288-engine_work__global_illumination_with_irradiance_probes
-			// basic tangent checks
-			float tangentWeight = dot(normalize(cellCentreMS - positionMSAdjusted), normalWS);
-			if (tangentWeight <= 0.0)
-				continue;
-			tangentWeight = sqrt(tangentWeight);
-
 			float3 trilinearWeights = 1 - abs(offset - trilinearPos);
-			float w = trilinearWeights.x * trilinearWeights.y * trilinearWeights.z * tangentWeight;
+			float w = trilinearWeights.x * trilinearWeights.y * trilinearWeights.z;
 
 			uint3 cellTexID = (cellID + params.ArrayOrigin.xyz) % ARRAY_DIM;
 			sh2 probe = SphericalHarmonics::Scale(probeArray[cellTexID], w);
