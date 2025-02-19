@@ -1927,7 +1927,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 puddleCoords = ((input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz) * 0.5 + 0.5) * 0.01 / SharedData::wetnessEffectsSettings.PuddleRadius;
 	float puddle = wetness;
 	if (wetness > 0.0 || puddleWetness > 0) {
-#		if !defined(SKINNED)
+#		if !defined(SKINNED) && !(defined(SKIN) && defined(CS_SKIN))
 		puddle = Random::perlinNoise(puddleCoords) * .5 + .5;
 		puddle = puddle * ((minWetnessAngle / SharedData::wetnessEffectsSettings.PuddleMaxAngle) * SharedData::wetnessEffectsSettings.MaxPuddleWetness * 0.25) + 0.5;
 		wetness = lerp(wetness, puddleWetness, saturate(puddle - 0.25));
@@ -2754,6 +2754,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		specularColorPBR *= Color::PBRLightingScale;
 		specularColor += specularColorPBR;
 	}
+#		if defined(WETNESS_EFFECTS)
+	else {
+		specularColor += wetnessSpecular * wetnessGlossinessSpecular;
+	}
+#		endif
 #	endif
 
 #	if !defined(DEFERRED)
