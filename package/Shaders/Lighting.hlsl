@@ -2444,14 +2444,14 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 vertexColor = lerp(1, TintColor.xyz, input.Color.y);
 #	elif defined(SKYLIGHTING)
 	float3 vertexColor = input.Color.xyz;
-	if (!SharedData::InInterior && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree)){
+	if (!SharedData::InInterior && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree)) {
 		// Remove AO
 		float3 normalizedColor = normalize(vertexColor);
-    	float maxChannel = max(max(normalizedColor.r, normalizedColor.g), normalizedColor.b);    	
+		float maxChannel = max(max(normalizedColor.r, normalizedColor.g), normalizedColor.b);
 		vertexColor = normalizedColor / maxChannel;
 		vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
 	}
-# 	else
+#	else
 	float3 vertexColor = input.Color.xyz;
 #	endif  // defined (HAIR)
 

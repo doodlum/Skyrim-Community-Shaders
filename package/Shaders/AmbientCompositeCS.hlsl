@@ -79,9 +79,9 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(normalWS)) / Math::PI;
 		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(positionMS.xyz));
-		
+
 		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
-	
+
 		visibility = skylightingDiffuse;
 	}
 #endif
