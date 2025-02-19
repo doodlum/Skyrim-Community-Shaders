@@ -17,6 +17,7 @@
 #include "Features/LightLimitFix.h"
 #include "Features/ScreenSpaceGI.h"
 #include "Features/ScreenSpaceShadows.h"
+#include "Features/Skin.h"
 #include "Features/Skylighting.h"
 #include "Features/SubsurfaceScattering.h"
 #include "Features/TerrainBlending.h"
@@ -55,6 +56,7 @@ namespace globals
 		VolumetricLighting* volumetricLighting = nullptr;
 		WaterEffects* waterEffects = nullptr;
 		WetnessEffects* wetnessEffects = nullptr;
+		Skin* skin = nullptr;
 
 		namespace llf
 		{
@@ -148,6 +150,7 @@ namespace globals
 		features::volumetricLighting = VolumetricLighting::GetSingleton();
 		features::waterEffects = WaterEffects::GetSingleton();
 		features::wetnessEffects = WetnessEffects::GetSingleton();
+		features::skin = Skin::GetSingleton();
 
 		features::llf::particleLights = ParticleLights::GetSingleton();
 	}

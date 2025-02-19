@@ -137,6 +137,14 @@ namespace SharedData
 		float3 pad0;
 	};
 
+	struct SkinData
+	{
+		float4 skinParams;
+		float4 skinParams2;
+		float4 skinDetailParams;
+		uint ApplySpecularToWetness;
+	};
+
 	cbuffer FeatureData : register(b6)
 	{
 		GrassLightingSettings grassLightingSettings;
@@ -147,6 +155,7 @@ namespace SharedData
 		WetnessEffectsSettings wetnessEffectsSettings;
 		SkylightingSettings skylightingSettings;
 		CloudShadowsSettings cloudShadowsSettings;
+		SkinData skinData;
 	};
 
 	Texture2D<float4> DepthTexture : register(t17);
