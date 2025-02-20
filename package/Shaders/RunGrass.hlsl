@@ -30,7 +30,7 @@ struct VS_OUTPUT
 {
 	float4 HPosition : SV_POSITION0;
 	float4 VertexColor : COLOR0;
-	float VertexMult : COLOR1;
+	float  VertexMult : COLOR1;
 	float3 TexCoord : TEXCOORD0;
 	float3 ViewSpacePosition :
 #	if !defined(VR)
@@ -59,7 +59,7 @@ struct VS_OUTPUT
 {
 	float4 HPosition : SV_POSITION0;
 	float4 VertexColor : COLOR0;
-	float VertexMult : COLOR1;
+	float  VertexMult : COLOR1;
 	float3 TexCoord : TEXCOORD0;
 	float4 AmbientColor : TEXCOORD1;
 	float3 ViewSpacePosition : TEXCOORD2;
@@ -582,21 +582,21 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			else
 	dirLightColor *= dirLightColorMultiplier;
 	dirLightColor *= dirShadow;
-
+	
 	float wrapAmount = saturate(input.VertexNormal.w * 10.0);
-
+	
 	float wrappedDirLight = saturate(dot(normal, SharedData::DirLightDirection.xyz) + wrapAmount) / (1.0 + wrapAmount);
 	lightsDiffuseColor += dirLightColor * saturate(wrappedDirLight) * dirDetailShadow;
 
 	float3 vertexColor = input.VertexColor.xyz;
 
-#				if defined(SKYLIGHTING)
+#					if defined(SKYLIGHTING)
 	float skylightingFadeOutFactor = 1.0;
-	if (!SharedData::InInterior) {
+	if (!SharedData::InInterior){
 		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
 		vertexColor = lerp(input.VertexColor.xyz * input.VertexMult, vertexColor, skylightingFadeOutFactor);
 	}
-#				endif
+#	endif
 
 	float3 albedo = max(0, baseColor.xyz * vertexColor);
 
@@ -652,7 +652,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				}
 #				else
 				lightColor *= lightShadow;
-
+				
 				float wrappedLight = saturate(dot(normal, normalizedLightDirection) + wrapAmount) / (1.0 + wrapAmount);
 
 				float3 lightDiffuseColor = lightColor * wrappedLight;
@@ -697,12 +697,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, normal);
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
-		skylightingDiffuse = saturate(skylightingDiffuse);
+		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
 
 		float skylightingBoost = skylightingDiffuse * saturate(normal.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
 
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, skylightingFadeOutFactor);
-		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, sqrt(skylightingDiffuse));
+		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
 
 		skylightingDiffuse += skylightingBoost;
 
@@ -852,13 +852,13 @@ PS_OUTPUT main(PS_INPUT input)
 
 	float3 vertexColor = input.VertexColor.xyz;
 
-#			if defined(SKYLIGHTING)
+#	if defined(SKYLIGHTING)
 	float skylightingFadeOutFactor = 1.0;
-	if (!SharedData::InInterior) {
+	if (!SharedData::InInterior){
 		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
 		vertexColor = lerp(input.VertexColor.xyz * input.VertexMult, vertexColor, skylightingFadeOutFactor);
 	}
-#			endif
+#	endif
 
 #			if !defined(SSGI)
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
@@ -875,12 +875,12 @@ PS_OUTPUT main(PS_INPUT input)
 
 		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, skylightingNormal);
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
-		skylightingDiffuse = saturate(skylightingDiffuse);
+		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
 
 		float skylightingBoost = skylightingDiffuse * saturate(normal.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
 
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition));
-		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, sqrt(skylightingDiffuse));
+		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
 
 		skylightingDiffuse += skylightingBoost;
 
