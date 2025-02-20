@@ -2454,7 +2454,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		vertexColor = vertexColor / maxChannel;
 		
 		// Brighten skylighting
-		//vertexColor *= 1.0 + (1.0 - maxChannel) * (1.0 - Color::LinearToGamma(skylightingDiffuse));
+		vertexColor *= 1.0 + (1.0 - maxChannel) * (1.0 - Color::LinearToGamma(skylightingDiffuse));
 
 		vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
 		// Apply AO to direct lighting only
