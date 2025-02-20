@@ -30,6 +30,7 @@ struct VS_OUTPUT
 {
 	float4 HPosition : SV_POSITION0;
 	float4 VertexColor : COLOR0;
+	float  VertexMult : COLOR1;
 	float3 TexCoord : TEXCOORD0;
 	float3 ViewSpacePosition :
 #	if !defined(VR)
@@ -57,7 +58,8 @@ struct VS_OUTPUT
 struct VS_OUTPUT
 {
 	float4 HPosition : SV_POSITION0;
-	float4 DiffuseColor : COLOR0;
+	float4 VertexColor : COLOR0;
+	float  VertexMult : COLOR1;
 	float3 TexCoord : TEXCOORD0;
 	float4 AmbientColor : TEXCOORD1;
 	float3 ViewSpacePosition : TEXCOORD2;
@@ -208,8 +210,9 @@ VS_OUTPUT main(VS_INPUT input)
 #		endif
 
 	// Note: input.Color.w is used for wind speed
-	vsout.VertexColor.xyz = input.Color.xyz * input.InstanceData1.www;
+	vsout.VertexColor.xyz = input.Color.xyz;
 	vsout.VertexColor.w = distanceFade * perInstanceFade;
+	vsout.VertexMult = input.InstanceData1.w;
 
 	vsout.TexCoord.xy = input.TexCoord.xy;
 	vsout.TexCoord.z = FogNearColor.w;
@@ -276,8 +279,9 @@ VS_OUTPUT main(VS_INPUT input)
 	float distanceFade = 1 - saturate((length(projSpacePosition.xyz) - AlphaParam1) / AlphaParam2);
 #		endif
 
-	vsout.DiffuseColor.xyz = diffuseMultiplier;
-	vsout.DiffuseColor.w = distanceFade * perInstanceFade;
+	vsout.VertexColor.xyz = input.Color.xyz;
+	vsout.VertexColor.w = distanceFade * perInstanceFade;
+	vsout.VertexMult = input.InstanceData1.w;
 
 	vsout.TexCoord.xy = input.TexCoord.xy;
 	vsout.TexCoord.z = FogNearColor.w;
@@ -582,8 +586,18 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	dirLightColor *= dirShadow;
 
 	lightsDiffuseColor += dirLightColor * saturate(dirLightAngle) * dirDetailShadow;
+	
+	float3 vertexColor = input.VertexColor.xyz;
 
-	float3 albedo = max(0, baseColor.xyz * input.VertexColor.xyz);
+#					if defined(SKYLIGHTING)
+	float skylightingFadeOutFactor = 1.0;
+	if (!SharedData::InInterior){
+		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
+		vertexColor = lerp(input.VertexColor.xyz * input.VertexMult, vertexColor, skylightingFadeOutFactor);
+	}
+#	endif
+
+	float3 albedo = max(0, baseColor.xyz * vertexColor);
 
 	float3 subsurfaceColor = albedo.xyz * albedo.xyz * saturate(input.VertexNormal.w * 10.0);
 
@@ -686,7 +700,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		float skylightingBoost = skylightingDiffuse * saturate(normal.z) * (1.0 - SharedData::skylightingSettings.MinDiffuseVisibility);
 
-		skylightingDiffuse = lerp(1.0, skylightingDiffuse, Skylighting::getFadeOutFactor(input.WorldPosition));
+		skylightingDiffuse = lerp(1.0, skylightingDiffuse, skylightingFadeOutFactor);
 		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, sqrt(skylightingDiffuse));
 
 		skylightingDiffuse += skylightingBoost;
@@ -835,6 +849,16 @@ PS_OUTPUT main(PS_INPUT input)
 
 	normal = normalize(float3(normal.xy, max(0, normal.z)));
 
+	float3 vertexColor = input.VertexColor.xyz;
+
+#	if defined(SKYLIGHTING)
+	float skylightingFadeOutFactor = 1.0;
+	if (!SharedData::InInterior){
+		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
+		vertexColor = lerp(input.VertexColor.xyz * input.VertexMult, vertexColor, skylightingFadeOutFactor);
+	}
+#	endif
+
 #			if !defined(SSGI)
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 
@@ -868,7 +892,7 @@ PS_OUTPUT main(PS_INPUT input)
 	diffuseColor += directionalAmbientColor;
 #			endif      // !SSGI
 
-	float3 albedo = baseColor.xyz * input.DiffuseColor.xyz;
+	float3 albedo = baseColor.xyz * vertexColor;
 	psout.Diffuse.xyz = diffuseColor * albedo;
 
 	psout.Diffuse.w = 1;

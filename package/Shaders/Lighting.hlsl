@@ -1950,13 +1950,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	bool useScreenSpaceShadows = inWorld && !SharedData::InInterior && Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsDecal;
 #		endif
 
-	if (useScreenSpaceShadows) {
+	if (useScreenSpaceShadows)
 		dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.Position.xyz, screenUV, screenNoise, eyeIndex);
-#		if defined(TREE_ANIM)
-		ShadowSampling::ShadowData sD = ShadowSampling::SharedShadowData[0];
-		dirDetailShadow = lerp(1.0, dirDetailShadow, saturate(viewPosition.z / sqrt(sD.ShadowLightParam.z)));
-#		endif
-	}
 #	endif
 
 #	if defined(EMAT) && (defined(SKINNED) || !defined(MODELSPACENORMALS))
@@ -2450,14 +2445,17 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 vertexColor = lerp(1, TintColor.xyz, input.Color.y);
 #	elif defined(SKYLIGHTING)
 	float3 vertexColor = input.Color.xyz;
-	if (!SharedData::InInterior && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree)) {
+
+#if !defined(LANDSCAPE)
+	if (!SharedData::InInterior && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree))
+#endif
+	{
 		// Remove AO
-		float3 normalizedColor = normalize(vertexColor);
-		float maxChannel = max(max(normalizedColor.r, normalizedColor.g), normalizedColor.b);
-		vertexColor = normalizedColor / maxChannel;
+    	float maxChannel = max(max(vertexColor.r, vertexColor.g), vertexColor.b);    	
+		vertexColor = vertexColor / maxChannel;
 		vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
 	}
-#	else
+# 	else
 	float3 vertexColor = input.Color.xyz;
 #	endif  // defined (HAIR)
 
