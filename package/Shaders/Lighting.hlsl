@@ -2534,12 +2534,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if defined(SPECULAR)
 #		if defined(EMAT_ENVMAP)
-	specularColor = 2.0 * (specularColor * glossiness * MaterialData.yyy) * lerp(SpecularColor.xyz, complexSpecular, complexMaterial);
+	specularColor = 1.5 * (specularColor * glossiness * MaterialData.yyy) * lerp(SpecularColor.xyz, complexSpecular, complexMaterial);
 #		else
-	specularColor = 2.0 * (specularColor * glossiness * MaterialData.yyy) * SpecularColor.xyz;
+	specularColor = 1.5 * (specularColor * glossiness * MaterialData.yyy) * SpecularColor.xyz;
 #		endif
 #	elif defined(SPARKLE)
-	specularColor *= 2.0 * glossiness;
+	specularColor *= 1.5 * glossiness;
 #	endif  // SPECULAR
 
 #	if defined(SNOW)
