@@ -18,8 +18,8 @@ struct GrassLighting : Feature
 		float Glossiness = 20.0f;
 		float SpecularStrength = 0.5f;
 		float SubsurfaceScatteringAmount = 0.5f;
-		uint OverrideComplexGrassSettings = true;
-		float BasicGrassBrightness = 0.666f;
+		uint OverrideComplexGrassSettings = false;
+		float BasicGrassBrightness = 1.0f;
 		uint pad[3];
 	};
 

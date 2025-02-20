@@ -585,7 +585,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float wrapAmount = saturate(input.VertexNormal.w * 10.0);
 
-	float wrappedDirLight = saturate(dot(normal, SharedData::DirLightDirection.xyz) + wrapAmount) / (1.0 + wrapAmount);
+	float wrappedDirLight = saturate(dirLightAngle + wrapAmount) / (1.0 + wrapAmount);
 	lightsDiffuseColor += dirLightColor * saturate(wrappedDirLight) * dirDetailShadow;
 
 	float3 vertexColor = input.VertexColor.xyz;
@@ -602,7 +602,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 subsurfaceColor = albedo.xyz * albedo.xyz * saturate(input.VertexNormal.w * 10.0);
 
-	float3 sss = dirLightColor * (1.0 - wrappedDirLight);
+	float3 sss = dirLightColor * saturate(-dirLightAngle);
 
 	if (complex)
 		lightsSpecularColor += GrassLighting::GetLightSpecularInput(DirLightDirection, viewDirection, normal, dirLightColor, SharedData::grassLightingSettings.Glossiness);
@@ -653,10 +653,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #				else
 				lightColor *= lightShadow;
 
-				float wrappedLight = saturate(dot(normal, normalizedLightDirection) + wrapAmount) / (1.0 + wrapAmount);
+				float lightAngle = dot(normal, normalizedLightDirection);
+
+				float wrappedLight = saturate(lightAngle + wrapAmount) / (1.0 + wrapAmount);
 
 				float3 lightDiffuseColor = lightColor * wrappedLight;
-				sss += lightColor * saturate(1.0 - wrappedLight);
+				sss += lightColor * saturate(-lightAngle);
 
 				lightsDiffuseColor += lightDiffuseColor;
 
