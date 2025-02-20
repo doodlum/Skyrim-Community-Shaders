@@ -1978,6 +1978,15 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (dirShadow != 0.0 && (inWorld || inReflection))
 		dirShadow *= ShadowSampling::GetWorldShadow(input.WorldPosition, FrameBuffer::CameraPosAdjust[eyeIndex], eyeIndex);
 
+#	if defined(SKYLIGHTING)
+	float skylightingFadeOutFactor = 1.0;
+	if (!SharedData::InInterior) {
+		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
+		// Shadow bias fix
+		dirShadow *= lerp(1.0, saturate(SphericalHarmonics::Unproject(skylightingSH, SharedData::DirLightDirection.xyz)), skylightingFadeOutFactor);
+	}
+#	endif
+
 	dirLightColorMultiplier *= dirShadow;
 
 	float3 diffuseColor = 0.0.xxx;
@@ -2289,11 +2298,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 reflectionDiffuseColor = diffuseColor + directionalAmbientColor;
 
 #	if defined(SKYLIGHTING)
-	float skylightingFadeOutFactor = 1.0;
 	float skylightingDiffuse = 1;
 	if (!SharedData::InInterior) {
-		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
-
 		skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
 		skylightingDiffuse = saturate(skylightingDiffuse);
 
@@ -2446,13 +2452,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 vertexColor = input.Color.xyz;
 	float vertexAO = max(max(vertexColor.r, vertexColor.g), vertexColor.b);
 
-	if (!SharedData::InInterior) {
-#		if defined(LANDSCAPE)
+	if (!SharedData::InInterior){
+#		if defined(LANDSCAPE)		
 		// Remove AO
 		vertexColor = vertexColor / vertexAO;
 #		else
 
-		if (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree) {
+		if (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree){
 			// Remove AO
 			vertexColor = vertexColor / vertexAO;
 			vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
@@ -2464,7 +2470,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		// Brighten skylighting on vertex AO
 		vertexColor *= 1.0 + (1.0 - vertexAO) * (1.0 - skylightingDiffuse);
-#		endif
+	#	endif
 	}
 #	else
 	float3 vertexColor = input.Color.xyz;
