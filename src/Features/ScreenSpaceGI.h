@@ -53,7 +53,7 @@ struct ScreenSpaceGI : Feature
 		float MinScreenRadius = 0.01f;
 		float AORadius = 256.f;
 		float GIRadius = 256.f;
-		float Thickness = 32.f;
+		float Thickness = 16.f;
 		float2 DepthFadeRange = { 4e4, 5e4 };
 		// gi
 		float GISaturation = 0.9f;
