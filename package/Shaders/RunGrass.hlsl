@@ -30,7 +30,7 @@ struct VS_OUTPUT
 {
 	float4 HPosition : SV_POSITION0;
 	float4 VertexColor : COLOR0;
-	float  VertexMult : COLOR1;
+	float VertexMult : COLOR1;
 	float3 TexCoord : TEXCOORD0;
 	float3 ViewSpacePosition :
 #	if !defined(VR)
@@ -59,7 +59,7 @@ struct VS_OUTPUT
 {
 	float4 HPosition : SV_POSITION0;
 	float4 VertexColor : COLOR0;
-	float  VertexMult : COLOR1;
+	float VertexMult : COLOR1;
 	float3 TexCoord : TEXCOORD0;
 	float4 AmbientColor : TEXCOORD1;
 	float3 ViewSpacePosition : TEXCOORD2;
@@ -590,13 +590,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 vertexColor = input.VertexColor.xyz;
 
-#					if defined(SKYLIGHTING)
+#				if defined(SKYLIGHTING)
 	float skylightingFadeOutFactor = 1.0;
-	if (!SharedData::InInterior){
+	if (!SharedData::InInterior) {
 		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
 		vertexColor = lerp(input.VertexColor.xyz * input.VertexMult, vertexColor, skylightingFadeOutFactor);
 	}
-#	endif
+#				endif
 
 	float3 albedo = max(0, baseColor.xyz * vertexColor);
 
@@ -852,13 +852,13 @@ PS_OUTPUT main(PS_INPUT input)
 
 	float3 vertexColor = input.VertexColor.xyz;
 
-#	if defined(SKYLIGHTING)
+#			if defined(SKYLIGHTING)
 	float skylightingFadeOutFactor = 1.0;
-	if (!SharedData::InInterior){
+	if (!SharedData::InInterior) {
 		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
 		vertexColor = lerp(input.VertexColor.xyz * input.VertexMult, vertexColor, skylightingFadeOutFactor);
 	}
-#	endif
+#			endif
 
 #			if !defined(SSGI)
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
