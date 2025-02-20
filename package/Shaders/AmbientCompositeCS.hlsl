@@ -115,7 +115,7 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 #	endif
 
 	visibility = min(visibility, ssgiAo);
-	
+
 #	if defined(INTERIOR)
 	linDiffuseColor *= ssgiAo;
 #	else
