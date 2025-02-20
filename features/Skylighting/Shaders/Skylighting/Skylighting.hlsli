@@ -44,6 +44,11 @@ namespace Skylighting
 			return scaledUnitSH;
 
 		positionMS.xyz += normalWS * CELL_SIZE;  // Receiver normal bias
+		
+		if (SharedData::FrameCount) {  // Check TAA
+			float3 offset = blueNoise[int3(screenPosition.xy % 128, SharedData::FrameCount % 64)] * 2.0 - 1.0;
+			positionMS.xyz += offset * CELL_SIZE * 0.5;
+		}
 
 		float3 positionMSAdjusted = positionMS - params.PosOffset.xyz;
 		float3 uvw = positionMSAdjusted / ARRAY_SIZE + .5;
@@ -57,9 +62,9 @@ namespace Skylighting
 
 		sh2 sum = 0;
 		float wsum = 0;
-		[unroll] for (int i = 0; i < 2; i++)
-			[unroll] for (int j = 0; j < 2; j++)
-				[unroll] for (int k = 0; k < 2; k++)
+		for (int i = 0; i < 2; i++)
+			for (int j = 0; j < 2; j++)
+				for (int k = 0; k < 2; k++)
 		{
 			int3 offset = int3(i, j, k);
 			int3 cellID = cell000 + offset;
