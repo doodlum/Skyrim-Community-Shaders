@@ -2294,7 +2294,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
 
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
-		skylightingDiffuse = sqrt(saturate(skylightingDiffuse));
+		skylightingDiffuse = saturate(skylightingDiffuse);
 
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, skylightingFadeOutFactor);
 
