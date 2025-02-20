@@ -2444,24 +2444,27 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 vertexColor = lerp(1, TintColor.xyz, input.Color.y);
 #	elif defined(SKYLIGHTING)
 	float3 vertexColor = input.Color.xyz;
+	float vertexAO = max(max(vertexColor.r, vertexColor.g), vertexColor.b);
 
-#		if !defined(LANDSCAPE)
-	if (!SharedData::InInterior && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree))
-#		endif
-	{
+	if (!SharedData::InInterior){
+#		if defined(LANDSCAPE)		
 		// Remove AO
-		float maxChannel = max(max(vertexColor.r, vertexColor.g), vertexColor.b);
-		vertexColor = vertexColor / maxChannel;
+		vertexColor = vertexColor / vertexAO;
+#		else
 
-		// Brighten skylighting
-		vertexColor *= 1.0 + (1.0 - maxChannel) * (1.0 - Color::LinearToGamma(skylightingDiffuse));
+		if (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree){
+			// Remove AO
+			vertexColor = vertexColor / vertexAO;
+			vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
 
-		vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
-		// Apply AO to direct lighting only
-#		if !defined(LANDSCAPE)
-		diffuseColor -= lightsDiffuseColor;
-		diffuseColor += lerp(lightsDiffuseColor, lightsDiffuseColor * maxChannel, skylightingFadeOutFactor);
-#		endif
+			// Apply AO to direct lighting only
+			diffuseColor -= lightsDiffuseColor;
+			diffuseColor += lerp(lightsDiffuseColor, lightsDiffuseColor * vertexAO, skylightingFadeOutFactor);
+		}
+
+		// Brighten skylighting on vertex AO
+		vertexColor *= 1.0 + (1.0 - vertexAO) * (1.0 - skylightingDiffuse);
+	#	endif
 	}
 #	else
 	float3 vertexColor = input.Color.xyz;
