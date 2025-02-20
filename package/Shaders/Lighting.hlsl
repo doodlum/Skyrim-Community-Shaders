@@ -2452,7 +2452,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		// Remove AO
 		float maxChannel = max(max(vertexColor.r, vertexColor.g), vertexColor.b);
 		vertexColor = vertexColor / maxChannel;
-		
+
 		// Brighten skylighting
 		//vertexColor *= 1.0 + (1.0 - maxChannel) * (1.0 - Color::LinearToGamma(skylightingDiffuse));
 
