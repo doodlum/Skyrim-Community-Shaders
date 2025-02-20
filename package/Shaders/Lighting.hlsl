@@ -2290,10 +2290,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if defined(SKYLIGHTING)
 	float skylightingFadeOutFactor = 1.0;
+	float skylightingDiffuse = 1;
 	if (!SharedData::InInterior) {
 		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
 
-		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
+		skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
 		skylightingDiffuse = saturate(skylightingDiffuse);
 
 		skylightingDiffuse = lerp(1.0, skylightingDiffuse, skylightingFadeOutFactor);
@@ -2302,10 +2303,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		skylightingDiffuse = Skylighting::mixDiffuse(SharedData::skylightingSettings, skylightingDiffuse);
 
-		skylightingDiffuse += skylightingBoost;
-
 		directionalAmbientColor = Color::GammaToLinear(directionalAmbientColor);
-		directionalAmbientColor *= skylightingDiffuse;
+		directionalAmbientColor *= skylightingDiffuse + skylightingBoost;
 		directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
 	}
 #	endif
@@ -2453,8 +2452,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		// Remove AO
 		float maxChannel = max(max(vertexColor.r, vertexColor.g), vertexColor.b);
 		vertexColor = vertexColor / maxChannel;
-		vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
+		
+		// Brighten skylighting
+		//vertexColor *= 1.0 + (1.0 - maxChannel) * (1.0 - Color::LinearToGamma(skylightingDiffuse));
 
+		vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
 		// Apply AO to direct lighting only
 #		if !defined(LANDSCAPE)
 		diffuseColor -= lightsDiffuseColor;
