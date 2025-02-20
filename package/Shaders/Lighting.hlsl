@@ -2454,6 +2454,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		float maxChannel = max(max(vertexColor.r, vertexColor.g), vertexColor.b);
 		vertexColor = vertexColor / maxChannel;
 		vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
+
+		// Apply AO to direct lighting only
+#		if !defined(LANDSCAPE)
+		diffuseColor -= lightsDiffuseColor;
+		diffuseColor += lerp(lightsDiffuseColor, lightsDiffuseColor * maxChannel, skylightingFadeOutFactor);
+#		endif
 	}
 #	else
 	float3 vertexColor = input.Color.xyz;
