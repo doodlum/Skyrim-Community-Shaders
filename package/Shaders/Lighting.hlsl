@@ -2323,7 +2323,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	lodLandDiffuseColor += directionalAmbientColor;
 #	endif
 
-#   if !defined(TRUE_PBR)
+#	if !defined(TRUE_PBR)
 #		if defined(DEFERRED) && defined(SSGI)
 	diffuseColor += directionalAmbientColorDirect;
 #		else
@@ -2460,13 +2460,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 vertexColor = input.Color.xyz;
 	float vertexAO = max(max(vertexColor.r, vertexColor.g), vertexColor.b);
 
-	if (!SharedData::InInterior){
-#		if defined(LANDSCAPE)		
+	if (!SharedData::InInterior) {
+#		if defined(LANDSCAPE)
 		// Remove AO
 		vertexColor = vertexColor / vertexAO;
 #		else
 
-		if (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree){
+		if (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree) {
 			// Remove AO
 			vertexColor = vertexColor / vertexAO;
 			vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
@@ -2478,7 +2478,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		// Brighten skylighting on vertex AO
 		vertexColor *= 1.0 + (1.0 - vertexAO) * (1.0 - skylightingDiffuse);
-	#	endif
+#		endif
 	}
 #	else
 	float3 vertexColor = input.Color.xyz;
