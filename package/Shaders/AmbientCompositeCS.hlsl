@@ -114,7 +114,7 @@ void SampleSSGI(uint2 pixCoord, float3 normalWS, out float ao, out float3 il)
 	ssgiIl = ssgiMixed.rgb;
 #	endif
 
-	visibility = min(visibility, ssgiAo);
+	visibility *= ssgiAo;
 
 #	if defined(INTERIOR)
 	linDiffuseColor *= ssgiAo;
