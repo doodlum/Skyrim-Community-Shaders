@@ -549,11 +549,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float dirDetailShadow = 1.0;
 
 	if (dirShadow > 0.0 && !SharedData::InInterior) {
-		if (dirLightAngle > 0.0) {
 #			if defined(SCREEN_SPACE_SHADOWS)
-			dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
+		dirDetailShadow = ScreenSpaceShadows::GetScreenSpaceShadow(input.HPosition.xyz, screenUV, screenNoise, eyeIndex);
 #			endif  // SCREEN_SPACE_SHADOWS
-		}
 
 		if (dirShadow != 0.0)
 			dirShadow *= ShadowSampling::GetWorldShadow(input.WorldPosition, FrameBuffer::CameraPosAdjust[eyeIndex], eyeIndex);
@@ -584,9 +582,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #			else
 	dirLightColor *= dirLightColorMultiplier;
 	dirLightColor *= dirShadow;
-
-	lightsDiffuseColor += dirLightColor * saturate(dirLightAngle) * dirDetailShadow;
 	
+	float wrapAmount = saturate(input.VertexNormal.w * 10.0);
+	
+	float wrappedDirLight = saturate(dot(normal, SharedData::DirLightDirection.xyz) + wrapAmount) / (1.0 + wrapAmount);
+	lightsDiffuseColor += dirLightColor * saturate(wrappedDirLight) * dirDetailShadow;
+
 	float3 vertexColor = input.VertexColor.xyz;
 
 #					if defined(SKYLIGHTING)
@@ -601,7 +602,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 	float3 subsurfaceColor = albedo.xyz * albedo.xyz * saturate(input.VertexNormal.w * 10.0);
 
-	float3 sss = dirLightColor * saturate(-dirLightAngle);
+	float3 sss = dirLightColor * (1.0 - wrappedDirLight);
 
 	if (complex)
 		lightsSpecularColor += GrassLighting::GetLightSpecularInput(DirLightDirection, viewDirection, normal, dirLightColor, SharedData::grassLightingSettings.Glossiness);
@@ -640,8 +641,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 				float3 normalizedLightDirection = normalize(lightDirection);
 
-				float lightAngle = dot(normal, normalizedLightDirection);
-
 #				if defined(TRUE_PBR)
 				{
 					PBR::LightProperties lightProperties = PBR::InitLightProperties(lightColor, lightShadow, 1);
@@ -653,9 +652,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				}
 #				else
 				lightColor *= lightShadow;
+				
+				float wrappedLight = saturate(dot(normal, normalizedLightDirection) + wrapAmount) / (1.0 + wrapAmount);
 
-				float3 lightDiffuseColor = lightColor * saturate(dirLightAngle);
-				sss += lightColor * saturate(-lightAngle);
+				float3 lightDiffuseColor = lightColor * wrappedLight;
+				sss += lightColor * saturate(1.0 - wrappedLight);
 
 				lightsDiffuseColor += lightDiffuseColor;
 
