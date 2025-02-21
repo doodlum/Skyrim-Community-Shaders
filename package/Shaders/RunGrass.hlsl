@@ -584,7 +584,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	dirLightColor *= dirShadow;
 
 	float wrapAmount = saturate(input.VertexNormal.w * 10.0);
-	
+
 	float dirNoL = dot(SharedData::DirLightDirection.xyz, viewDirection);
 	float dirViewWrap = -dirNoL * 0.5 + 0.5;
 	float wrappedDirLight = saturate(dirLightAngle + wrapAmount * dirViewWrap) / (1.0 + wrapAmount * dirViewWrap);
@@ -603,7 +603,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 albedo = max(0, baseColor.xyz * vertexColor);
 
 	float3 subsurfaceColor = albedo.xyz * albedo.xyz * saturate(input.VertexNormal.w * 10.0);
-	
+
 	float dirBacklighting = 1.0 + saturate(-dirNoL);
 
 	float3 sss = dirBacklighting * dirLightColor * saturate(-dirLightAngle);
@@ -663,7 +663,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 				float wrappedLight = saturate(lightAngle + wrapAmount * lightViewWrap) / (1.0 + wrapAmount * lightViewWrap);
 
 				float3 lightDiffuseColor = lightColor * wrappedLight;
-				
+
 				float lightBacklighting = 1.0 + saturate(-lightNoL);
 
 				sss += lightBacklighting * lightColor * saturate(-lightAngle);
@@ -699,11 +699,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (!SharedData::InInterior) {
 		float3 skylightingNormal = normal;
 
-#						if defined(VR)
+#					if defined(VR)
 		float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
-#						else
+#					else
 		float3 positionMSSkylight = input.WorldPosition.xyz;
-#						endif
+#					endif
 
 		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, normal);
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
@@ -723,11 +723,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	}
 #				endif  // SKYLIGHTING
 
-#		if defined(DEFERRED) && defined(SSGI)
+#				if defined(DEFERRED) && defined(SSGI)
 	diffuseColor += directionalAmbientColorDirect;
-#		else
+#				else
 	diffuseColor += directionalAmbientColor;
-#		endif
+#				endif
 
 	diffuseColor *= albedo;
 	diffuseColor += max(0, sss * subsurfaceColor * SharedData::grassLightingSettings.SubsurfaceScatteringAmount);
@@ -877,15 +877,15 @@ PS_OUTPUT main(PS_INPUT input)
 	float3 directionalAmbientColor = mul(SharedData::DirectionalAmbient, float4(normal, 1.0));
 	float3 directionalAmbientColorDirect = 0;
 
-#				if defined(SKYLIGHTING)
+#			if defined(SKYLIGHTING)
 	if (!SharedData::InInterior) {
 		float3 skylightingNormal = normal;
 
-#						if defined(VR)
+#				if defined(VR)
 		float3 positionMSSkylight = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust[eyeIndex].xyz - FrameBuffer::CameraPosAdjust[0].xyz;
-#						else
+#				else
 		float3 positionMSSkylight = input.WorldPosition.xyz;
-#						endif
+#				endif
 
 		sh2 skylightingSH = Skylighting::sample(SharedData::skylightingSettings, Skylighting::SkylightingProbeArray, Skylighting::stbn_vec3_2Dx1D_128x128x64, input.HPosition.xy, positionMSSkylight, normal);
 		float skylightingDiffuse = SphericalHarmonics::FuncProductIntegral(skylightingSH, SphericalHarmonics::EvaluateCosineLobe(skylightingNormal)) / Math::PI;
@@ -903,13 +903,13 @@ PS_OUTPUT main(PS_INPUT input)
 		directionalAmbientColor *= skylightingDiffuse + skylightingBoost;
 		directionalAmbientColor = Color::LinearToGamma(directionalAmbientColor);
 	}
-#				endif  // SKYLIGHTING
+#			endif  // SKYLIGHTING
 
-#		if defined(DEFERRED) && defined(SSGI)
+#			if defined(DEFERRED) && defined(SSGI)
 	diffuseColor += directionalAmbientColorDirect;
-#		else
+#			else
 	diffuseColor += directionalAmbientColor;
-#		endif
+#			endif
 
 	float3 albedo = baseColor.xyz * vertexColor;
 	psout.Diffuse.xyz = diffuseColor * albedo;
