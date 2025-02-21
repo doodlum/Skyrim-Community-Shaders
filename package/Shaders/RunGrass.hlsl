@@ -188,7 +188,7 @@ VS_OUTPUT main(VS_INPUT input)
 	float4 msPosition = GetMSPosition(input, WindTimer, world3x3);
 
 #		ifdef GRASS_COLLISION
-	float3 displacement = GrassCollision::GetDisplacedPosition(msPosition.xyz, input.Color.w, eyeIndex);
+	float3 displacement = GrassCollision::GetDisplacedPosition(input, msPosition.xyz, eyeIndex);
 	msPosition.xyz += displacement;
 #		endif  // GRASS_COLLISION
 
@@ -254,7 +254,7 @@ VS_OUTPUT main(VS_INPUT input)
 	float4 msPosition = GetMSPosition(input, WindTimer);
 
 #		ifdef GRASS_COLLISION
-	float3 displacement = GrassCollision::GetDisplacedPosition(msPosition.xyz, input.Color.w, 0);
+	float3 displacement = GrassCollision::GetDisplacedPosition(input, msPosition.xyz, eyeIndex);
 	msPosition.xyz += displacement;
 #		endif  // GRASS_COLLISION
 
