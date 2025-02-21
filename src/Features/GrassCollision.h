@@ -42,10 +42,10 @@ struct GrassCollision : Feature
 	bool updatePerFrame = false;
 	ConstantBuffer* perFrame = nullptr;
 	int eyeCount = !REL::Module::IsVR() ? 1 : 2;
-	
+
 	ID3D11ComputeShader* GetCollisionUpdateCS();
 	ID3D11ComputeShader* collisionUpdateCS;
-	
+
 	bool useCollisionSwap = false;
 
 	Texture2D* collisionTexture = nullptr;

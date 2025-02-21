@@ -288,7 +288,6 @@ VS_OUTPUT main(VS_INPUT input)
 
 	vsout.ViewSpacePosition = mul(WorldView[eyeIndex], msPosition).xyz;
 
-
 	float4 previousMsPosition = GetMSPosition(input, PreviousWindTimer);
 #		if defined(VR)
 	Stereo::VR_OUTPUT VRout = Stereo::GetVRVSOutput(projSpacePosition, eyeIndex);

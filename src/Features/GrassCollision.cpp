@@ -1,7 +1,7 @@
 #include "GrassCollision.h"
 
-#include "State.h"
 #include "Deferred.h"
+#include "State.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	GrassCollision::Settings,
@@ -188,20 +188,20 @@ void GrassCollision::UpdateCollision()
 
 	auto inputCollision = useCollisionSwap ? collisionTextureSwap : collisionTexture;
 	auto outputCollision = !useCollisionSwap ? collisionTextureSwap : collisionTexture;
-	
+
 	useCollisionSwap = !useCollisionSwap;
 
 	ID3D11ShaderResourceView* srvs[] = { inputCollision->srv.get() };
 	context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
 
-	ID3D11UnorderedAccessView* uavs[] = { outputCollision->uav.get()};
+	ID3D11UnorderedAccessView* uavs[] = { outputCollision->uav.get() };
 	context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
 
 	context->CSGetSamplers(0, 1, &globals::deferred->linearSampler);
 
 	context->CSSetShader(GetCollisionUpdateCS(), nullptr, 0);
 	context->Dispatch(1024 / 8, 1024 / 8, 1);
-	
+
 	context->CSSetShader(nullptr, nullptr, 0);
 
 	ID3D11Buffer* null_buffer = nullptr;

@@ -34,10 +34,10 @@ namespace GrassCollision
 	{
 		float2 uv = (worldPosXY / 2048.0) * 0.5 + 0.5;
 		float2 texSize = float2(1024.0, 1024.0);
-		
+
 		// Convert UV to texture space
 		float2 texCoord = uv * texSize;
-		
+
 		// Get integer and fractional parts
 		int2 texel = int2(floor(texCoord));
 		float2 f = frac(texCoord);
@@ -56,27 +56,23 @@ namespace GrassCollision
 		return v;
 	}
 
-	float easeInOutElastic(float x) 
+	float easeInOutElastic(float x)
 	{
 		const float c5 = (2 * Math::PI) / 4.5;
 
-		return x == 0
-		? 0
-		: x == 1
-		? 1
-		: x < 0.5
-		? -(pow(2, 20 * x - 10) * sin((20 * x - 11.125) * c5)) / 2
-		: (pow(2, -20 * x + 10) * sin((20 * x - 11.125) * c5)) / 2 + 1;
+		return x == 0 ? 0 : x == 1 ? 1 :
+		                x < 0.5    ? -(pow(2, 20 * x - 10) * sin((20 * x - 11.125) * c5)) / 2 :
+		                             (pow(2, -20 * x + 10) * sin((20 * x - 11.125) * c5)) / 2 + 1;
 	}
 
 	float SampleHeight(float2 worldPosXY, float2 offset = 0.0)
 	{
 		float2 uv = (worldPosXY / 2048.0) * 0.5 + 0.5;
 		float2 texSize = float2(1024.0, 1024.0);
-		
+
 		// Convert UV to texture space
 		float2 texCoord = uv * texSize;
-		
+
 		// Get integer and fractional parts
 		int2 texel = int2(floor(texCoord));
 		float2 f = frac(texCoord);
@@ -116,9 +112,9 @@ namespace GrassCollision
 			float3 displacement = 0.0;
 
 			float2 heightField = SampleHeightField(worldPosition.xy);
-			
+
 			const float fadeRate = 100.0;
-			
+
 			float collisionAge = saturate((heightField.y - heightField.x) / fadeRate);
 			float collisionAnimation = easeInOutElastic(1.0 - collisionAge);
 
