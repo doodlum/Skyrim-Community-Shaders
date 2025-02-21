@@ -16,8 +16,7 @@ namespace GrassCollision
 		float lengthSq = dot(displacement, displacement);
 		float maxLengthSq = maxLength * maxLength;
 
-		if (lengthSq > maxLengthSq)
-		{
+		if (lengthSq > maxLengthSq) {
 			float length = sqrt(lengthSq);
 			float smoothFactor = smoothstep(0.0, maxLength, length);
 			float scale = lerp(1.0, maxLength / length, smoothFactor);
@@ -44,7 +43,7 @@ namespace GrassCollision
 				displacement += shift;
 				displacement -= length(shift);
 			}
-		
+
 			displacement *= distance(position.xyz, input.InstanceData1.xyz) * alpha * 0.01;
 
 			SmoothLimitDisplacement(displacement, 10.0);
