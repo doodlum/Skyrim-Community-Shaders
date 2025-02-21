@@ -186,7 +186,7 @@ VS_OUTPUT main(VS_INPUT input)
 	float4 msPosition = GetMSPosition(input, WindTimer, world3x3);
 
 #		ifdef GRASS_COLLISION
-	float3 displacement = GrassCollision::GetDisplacedPosition(msPosition.xyz, input.Color.w, eyeIndex);
+	float3 displacement = GrassCollision::GetDisplacedPosition(input, msPosition.xyz, eyeIndex);
 	msPosition.xyz += displacement;
 #		endif  // GRASS_COLLISION
 
@@ -251,7 +251,7 @@ VS_OUTPUT main(VS_INPUT input)
 	float4 msPosition = GetMSPosition(input, WindTimer);
 
 #		ifdef GRASS_COLLISION
-	float3 displacement = GrassCollision::GetDisplacedPosition(msPosition.xyz, input.Color.w, 0);
+	float3 displacement = GrassCollision::GetDisplacedPosition(input, msPosition.xyz, 0);
 	msPosition.xyz += displacement;
 #		endif  // GRASS_COLLISION
 
@@ -278,6 +278,7 @@ VS_OUTPUT main(VS_INPUT input)
 
 	vsout.DiffuseColor.xyz = diffuseMultiplier;
 	vsout.DiffuseColor.w = distanceFade * perInstanceFade;
+	vsout.WorldPosition = mul(World[eyeIndex], msPosition);
 
 	vsout.TexCoord.xy = input.TexCoord.xy;
 	vsout.TexCoord.z = FogNearColor.w;
@@ -286,7 +287,7 @@ VS_OUTPUT main(VS_INPUT input)
 	vsout.AmbientColor.w = ShadowClampValue;
 
 	vsout.ViewSpacePosition = mul(WorldView[eyeIndex], msPosition).xyz;
-	vsout.WorldPosition = mul(World[eyeIndex], msPosition);
+
 
 	float4 previousMsPosition = GetMSPosition(input, PreviousWindTimer);
 #		if defined(VR)
