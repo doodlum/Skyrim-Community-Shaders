@@ -2020,7 +2020,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	dirLightColor *= dirLightColorMultiplier;
 
 	float3 dirDiffuseColor = dirLightColor * saturate(dirLightAngle) * dirDetailShadow;
-	float dirBacklighting = 1.0 + saturate(dot(DirLightDirection.xyz, viewDirection));
+	float dirBacklighting = 1.0 + saturate(-dot(DirLightDirection.xyz, viewDirection));
 
 #		if defined(SOFT_LIGHTING)
 	lightsDiffuseColor += dirBacklighting * dirLightColor * GetSoftLightMultiplier(dirLightAngle) * rimSoftLightColor.xyz;
@@ -2095,7 +2095,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 		lightColor *= lightShadow;
 		float lightAngle = dot(modelNormal.xyz, normalizedLightDirection.xyz);
 		float3 lightDiffuseColor = lightColor * saturate(lightAngle.xxx);
-		float lightBacklighting = 1.0 + saturate(dot(normalizedLightDirection.xyz, viewDirection));
+		float lightBacklighting = 1.0 + saturate(-dot(normalizedLightDirection.xyz, viewDirection));
 
 #				if defined(SOFT_LIGHTING)
 		lightDiffuseColor += lightBacklighting * lightColor * GetSoftLightMultiplier(lightAngle) * rimSoftLightColor.xyz;
@@ -2327,7 +2327,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	lodLandDiffuseColor += directionalAmbientColor;
 #	endif
 
-#	if !defined(TRUE_PBR)
+#   if !defined(TRUE_PBR)
 #		if defined(DEFERRED) && defined(SSGI)
 	diffuseColor += directionalAmbientColorDirect;
 #		else
@@ -2464,13 +2464,13 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	float3 vertexColor = input.Color.xyz;
 	float vertexAO = max(max(vertexColor.r, vertexColor.g), vertexColor.b);
 
-	if (!SharedData::InInterior) {
-#		if defined(LANDSCAPE)
+	if (!SharedData::InInterior){
+#		if defined(LANDSCAPE)		
 		// Remove AO
 		vertexColor = vertexColor / vertexAO;
 #		else
 
-		if (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree) {
+		if (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsTree){
 			// Remove AO
 			vertexColor = vertexColor / vertexAO;
 			vertexColor = lerp(input.Color.xyz, vertexColor, skylightingFadeOutFactor);
@@ -2482,7 +2482,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 		// Brighten skylighting on vertex AO
 		vertexColor *= 1.0 + (1.0 - vertexAO) * (1.0 - skylightingDiffuse);
-#		endif
+	#	endif
 	}
 #	else
 	float3 vertexColor = input.Color.xyz;
