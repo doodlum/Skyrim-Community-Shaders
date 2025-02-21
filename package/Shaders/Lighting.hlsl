@@ -751,7 +751,8 @@ float3 GetLightSpecularInput(PS_INPUT input, float3 L, float3 V, float3 N, float
 	sparkleMultiplier = sparkleMultiplier >= 0.5 ? 1 : 0;
 	lightColorMultiplier += sparkleMultiplier * HdotN;
 #	endif
-	return lightColor * lightColorMultiplier.xxx;
+	float fresnel = 1.0 + pow(1 - dot(V, H), 5);
+	return lightColor * lightColorMultiplier.xxx * fresnel;
 }
 
 float3 TransformNormal(float3 normal)
@@ -1983,7 +1984,8 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 	if (!SharedData::InInterior) {
 		skylightingFadeOutFactor = Skylighting::getFadeOutFactor(input.WorldPosition.xyz);
 		// Shadow bias fix
-		dirShadow *= lerp(1.0, saturate(SphericalHarmonics::Unproject(skylightingSH, SharedData::DirLightDirection.xyz)), skylightingFadeOutFactor);
+		float skylightingDirShadow = saturate(SphericalHarmonics::Unproject(skylightingSH, SharedData::DirLightDirection.xyz));
+		dirShadow *= lerp(1.0, skylightingDirShadow * skylightingDirShadow, skylightingFadeOutFactor);
 	}
 #	endif
 
@@ -2565,12 +2567,12 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 
 #	if defined(SPECULAR)
 #		if defined(EMAT_ENVMAP)
-	specularColor = 1.5 * (specularColor * glossiness * MaterialData.yyy) * lerp(SpecularColor.xyz, complexSpecular, complexMaterial);
+	specularColor = (specularColor * glossiness * MaterialData.yyy) * lerp(SpecularColor.xyz, complexSpecular, complexMaterial);
 #		else
-	specularColor = 1.5 * (specularColor * glossiness * MaterialData.yyy) * SpecularColor.xyz;
+	specularColor = (specularColor * glossiness * MaterialData.yyy) * SpecularColor.xyz;
 #		endif
 #	elif defined(SPARKLE)
-	specularColor *= 1.5 * glossiness;
+	specularColor *= glossiness;
 #	endif  // SPECULAR
 
 #	if defined(SNOW)
@@ -2590,10 +2592,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace
 #	if defined(EMAT_ENVMAP)
 	specularColor *= complexSpecular;
 #	endif  // defined (EMAT) && defined(ENVMAP)
-
-#	if !defined(TRUE_PBR)
-	specularColor = Color::GammaToLinear(specularColor);
-#	endif
 
 #	if !defined(DEFERRED) && defined(DYNAMIC_CUBEMAPS) && (defined(ENVMAP) || defined(MULTI_LAYER_PARALLAX) || defined(EYE))
 	if (dynamicCubemap)
